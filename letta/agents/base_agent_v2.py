@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator
 
 from letta.constants import DEFAULT_MAX_STEPS
 from letta.log import get_logger
@@ -9,6 +9,9 @@ from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, Messag
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
+
+if TYPE_CHECKING:
+    from letta.schemas.letta_request import ClientToolSchema
 
 
 class BaseAgentV2(ABC):
@@ -42,9 +45,14 @@ class BaseAgentV2(ABC):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        client_tools: list["ClientToolSchema"] | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
+
+        Args:
+            client_tools: Optional list of client-side tools. When called, execution pauses
+                for client to provide tool returns.
         """
         raise NotImplementedError
 
@@ -58,11 +66,17 @@ class BaseAgentV2(ABC):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+ conversation_id: str | None = None,
+        client_tools: list["ClientToolSchema"] | None = None,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
         If stream_tokens is True, individual tokens are streamed as they arrive from the LLM,
         providing the lowest latency experience, otherwise each complete step (reasoning +
         tool call + tool return) is yielded as it completes.
+
+        Args:
+            client_tools: Optional list of client-side tools. When called, execution pauses
+                for client to provide tool returns.
         """
         raise NotImplementedError

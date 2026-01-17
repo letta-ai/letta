@@ -258,14 +258,14 @@ async def test_create_agent_with_model_handle_uses_correct_llm_config(server: Sy
     """When CreateAgent.model is provided, ensure the correct handle is used to resolve llm_config.
 
     This verifies that the model handle passed by the client is forwarded into
-    SyncServer.get_cached_llm_config_async and that the resulting AgentState
+    SyncServer.get_llm_config_from_handle_async and that the resulting AgentState
     carries an llm_config with the same handle.
     """
 
     # Track the arguments used to resolve the LLM config
     captured_kwargs: dict = {}
 
-    async def fake_get_cached_llm_config_async(self, actor, **kwargs):  # type: ignore[override]
+    async def fake_get_llm_config_from_handle_async(self, actor, **kwargs):  # type: ignore[override]
         from letta.schemas.llm_config import LLMConfig as PydanticLLMConfig
 
         captured_kwargs.update(kwargs)
@@ -282,8 +282,8 @@ async def test_create_agent_with_model_handle_uses_correct_llm_config(server: Sy
 
     model_handle = "openai/gpt-4o-mini"
 
-    # Patch SyncServer.get_cached_llm_config_async so we don't depend on provider DB state
-    with patch.object(SyncServer, "get_cached_llm_config_async", new=fake_get_cached_llm_config_async):
+    # Patch SyncServer.get_llm_config_from_handle_async so we don't depend on provider DB state
+    with patch.object(SyncServer, "get_llm_config_from_handle_async", new=fake_get_llm_config_from_handle_async):
         created_agent = await server.create_agent_async(
             request=CreateAgent(
                 name="agent_with_model_handle",
@@ -1520,6 +1520,46 @@ async def test_agent_environment_variables_update_encryption(server: SyncServer,
 
 
 @pytest.mark.asyncio
+async def test_agent_secrets_clear_with_empty_dict(server: SyncServer, default_user, encryption_key):
+    """Test that updating agent secrets with empty dict clears all secrets."""
+    from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+
+    # Create agent with initial secrets
+    agent_create = CreateAgent(
+        name="test-agent-clear-secrets",
+        agent_type="memgpt_v2_agent",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        include_base_tools=False,
+        secrets={
+            "SECRET_KEY_1": "secret-value-1",
+            "SECRET_KEY_2": "secret-value-2",
+        },
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(agent_create, actor=default_user)
+    agent_id = created_agent.id
+
+    # Verify secrets were created
+    assert created_agent.secrets is not None
+    assert len(created_agent.secrets) == 2
+
+    # Update with empty dict to clear all secrets
+    agent_update = UpdateAgent(secrets={})
+    updated_agent = await server.agent_manager.update_agent_async(agent_id=agent_id, agent_update=agent_update, actor=default_user)
+
+    # Verify secrets are cleared
+    assert updated_agent.secrets is not None
+    assert len(updated_agent.secrets) == 0
+
+    # Verify in database
+    async with db_registry.async_session() as session:
+        env_vars = await session.execute(select(AgentEnvironmentVariableModel).where(AgentEnvironmentVariableModel.agent_id == agent_id))
+        env_var_list = list(env_vars.scalars().all())
+        assert len(env_var_list) == 0
+
+
+@pytest.mark.asyncio
 async def test_agent_state_schema_unchanged(server: SyncServer):
     """
     Test that the AgentState pydantic schema structure has not changed.
@@ -1531,6 +1571,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
     from letta.schemas.embedding_config import EmbeddingConfig
     from letta.schemas.environment_variables import AgentEnvironmentVariable
     from letta.schemas.group import Group
+    from letta.schemas.letta_message import ApprovalRequestMessage
     from letta.schemas.llm_config import LLMConfig
     from letta.schemas.memory import Memory
     from letta.schemas.model import ModelSettingsUnion
@@ -1580,6 +1621,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "entity_id": (str, type(None)),
         "identity_ids": list,
         "identities": list,
+        "pending_approval": (ApprovalRequestMessage, type(None)),
         # Advanced configuration
         "message_buffer_autoclear": bool,
         "enable_sleeptime": (bool, type(None)),

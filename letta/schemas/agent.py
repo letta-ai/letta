@@ -14,6 +14,7 @@ from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
 from letta.schemas.identity import Identity
 from letta.schemas.letta_base import OrmMetadataBase
+from letta.schemas.letta_message import ApprovalRequestMessage
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -51,6 +52,7 @@ AgentRelationships = Literal[
     "agent.blocks",
     "agent.identities",
     "agent.managed_group",
+    "agent.pending_approval",
     "agent.secrets",
     "agent.sources",
     "agent.tags",
@@ -81,8 +83,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     llm_config: LLMConfig = Field(
         ..., description="Deprecated: Use `model` field instead. The LLM configuration used by the agent.", deprecated=True
     )
-    embedding_config: EmbeddingConfig = Field(
-        ..., description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
+    embedding_config: Optional[EmbeddingConfig] = Field(
+        None, description="Deprecated: Use `embedding` field instead. The embedding configuration used by the agent.", deprecated=True
     )
     model: Optional[str] = Field(None, description="The model handle used by the agent (format: provider/model-name).")
     embedding: Optional[str] = Field(None, description="The embedding model handle used by the agent (format: provider/model-name).")
@@ -125,6 +127,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         [], description="Deprecated: Use `identities` field instead. The ids of the identities associated with this agent.", deprecated=True
     )
     identities: List[Identity] = Field([], description="The identities associated with this agent.")
+    pending_approval: Optional[ApprovalRequestMessage] = Field(
+        None, description="The latest approval request message pending for this agent, if any."
+    )
 
     # An advanced configuration that makes it so this agent does not remember any previous messages
     message_buffer_autoclear: bool = Field(

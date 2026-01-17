@@ -29,7 +29,7 @@ from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import AssistantMessage, LettaErrorMessage, MessageType
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_request import LettaStreamingRequest
+from letta.schemas.letta_request import ClientToolSchema, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
@@ -72,6 +72,7 @@ class StreamingService:
         actor: User,
         request: LettaStreamingRequest,
         run_type: str = "streaming",
+        conversation_id: Optional[str] = None,
     ) -> tuple[Optional[PydanticRun], Union[StreamingResponse, LettaResponse]]:
         """
         Create a streaming response for an agent.
@@ -81,6 +82,7 @@ class StreamingService:
             actor: The user making the request
             request: The LettaStreamingRequest containing all request parameters
             run_type: Type of run for tracking
+            conversation_id: Optional conversation ID for conversation-scoped messaging
 
         Returns:
             Tuple of (run object or None, streaming response)
@@ -100,14 +102,24 @@ class StreamingService:
         model_compatible = self._is_model_compatible(agent)
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
 
+        # Attempt to acquire conversation lock if conversation_id is provided
+        # This prevents concurrent message processing for the same conversation
+        # Skip locking if Redis is not available (graceful degradation)
+        if conversation_id and not isinstance(redis_client, NoopAsyncRedisClient):
+            await redis_client.acquire_conversation_lock(
+                conversation_id=conversation_id,
+                token=str(uuid4()),
+            )
+
         # create run if tracking is enabled
         run = None
         run_update_metadata = None
-        if settings.track_agent_run:
-            run = await self._create_run(agent_id, request, run_type, actor)
-            await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
         try:
+            if settings.track_agent_run:
+                run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
+                await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
+
             if agent_eligible and model_compatible:
                 # use agent loop for streaming
                 agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
@@ -123,6 +135,8 @@ class StreamingService:
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=request.include_return_message_types,
                     actor=actor,
+                    conversation_id=conversation_id,
+                    client_tools=request.client_tools,
                 )
 
                 # handle background streaming if requested
@@ -152,6 +166,7 @@ class StreamingService:
                             run_id=run.id,
                             run_manager=self.server.run_manager,
                             actor=actor,
+                            conversation_id=conversation_id,
                         ),
                         label=f"background_stream_processor_{run.id}",
                     )
@@ -214,6 +229,7 @@ class StreamingService:
             if settings.track_agent_run and run:
                 await self.server.run_manager.update_run_by_id_async(
                     run_id=run.id,
+                    conversation_id=conversation_id,
                     update=RunUpdate(status=run_status, metadata=run_update_metadata),
                     actor=actor,
                 )
@@ -287,6 +303,8 @@ class StreamingService:
         request_start_timestamp_ns: int,
         include_return_message_types: Optional[list[MessageType]],
         actor: User,
+        conversation_id: Optional[str] = None,
+        client_tools: Optional[list[ClientToolSchema]] = None,
     ) -> AsyncIterator:
         """
         Create a stream with unified error handling.
@@ -313,6 +331,8 @@ class StreamingService:
                     use_assistant_message=use_assistant_message,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_return_message_types=include_return_message_types,
+                    conversation_id=conversation_id,
+                    client_tools=client_tools,
                 )
 
                 async for chunk in stream:
@@ -438,6 +458,7 @@ class StreamingService:
                     stop_reason_value = stop_reason.stop_reason if stop_reason else StopReasonType.error.value
                     await self.runs_manager.update_run_by_id_async(
                         run_id=run_id,
+                        conversation_id=conversation_id,
                         update=RunUpdate(status=run_status, stop_reason=stop_reason_value, metadata=error_data),
                         actor=actor,
                     )
@@ -460,24 +481,28 @@ class StreamingService:
             "ollama",
             "azure",
             "xai",
+            "zai",
             "groq",
             "deepseek",
         ]
 
     def _is_token_streaming_compatible(self, agent: AgentState) -> bool:
         """Check if agent's model supports token-level streaming."""
-        base_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek"]
+        base_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek", "zai"]
         google_letta_v1 = agent.agent_type == AgentType.letta_v1_agent and agent.llm_config.model_endpoint_type in [
             "google_ai",
             "google_vertex",
         ]
         return base_compatible or google_letta_v1
 
-    async def _create_run(self, agent_id: str, request: LettaStreamingRequest, run_type: str, actor: User) -> PydanticRun:
+    async def _create_run(
+        self, agent_id: str, request: LettaStreamingRequest, run_type: str, actor: User, conversation_id: Optional[str] = None
+    ) -> PydanticRun:
         """Create a run for tracking execution."""
         run = await self.runs_manager.create_run(
             pydantic_run=PydanticRun(
                 agent_id=agent_id,
+                conversation_id=conversation_id,
                 background=request.background or False,
                 metadata={
                     "run_type": run_type,
@@ -495,6 +520,7 @@ class StreamingService:
         actor: User,
         error: Optional[str] = None,
         stop_reason: Optional[str] = None,
+        conversation_id: Optional[str] = None,
     ):
         """Update the status of a run."""
         if not self.runs_manager:
@@ -510,6 +536,7 @@ class StreamingService:
             run_id=run_id,
             update=update,
             actor=actor,
+            conversation_id=conversation_id,
         )
 
 

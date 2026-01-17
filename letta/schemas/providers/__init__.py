@@ -18,6 +18,7 @@ from .openrouter import OpenRouterProvider
 from .together import TogetherProvider
 from .vllm import VLLMProvider
 from .xai import XAIProvider
+from .zai import ZAIProvider
 
 __all__ = [
     # Base classes
@@ -43,5 +44,6 @@ __all__ = [
     "TogetherProvider",
     "VLLMProvider",  # Replaces ChatCompletions and Completions
     "XAIProvider",
+    "ZAIProvider",
     "OpenRouterProvider",
 ]

@@ -1,15 +1,22 @@
 import asyncio
 import base64
+import hashlib
 import os
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Optional
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from letta.settings import settings
+
+# Eagerly load the cryptography backend at module import time.
+_CRYPTO_BACKEND = default_backend()
+
+# Dedicated thread pool for CPU-intensive crypto operations
+# Prevents crypto from blocking health checks and other operations
+_crypto_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="CryptoWorker")
 
 # Common API key prefixes that should not be considered encrypted
 # These are plaintext credentials that happen to be long strings
@@ -46,6 +53,11 @@ class CryptoUtils:
     # Salt size for key derivation
     SALT_SIZE = 16
 
+    # WARNING: DO NOT CHANGE THIS VALUE UNLESS YOU ARE SURE WHAT YOU ARE DOING
+    # EXISTING ENCRYPTED SECRETS MUST BE DECRYPTED WITH THE SAME ITERATIONS
+    # Number of PBKDF2 iterations
+    PBKDF2_ITERATIONS = 100000
+
     @classmethod
     @lru_cache(maxsize=256)
     def _derive_key_cached(cls, master_key: str, salt: bytes) -> bytes:
@@ -55,11 +67,19 @@ class CryptoUtils:
         This is a CPU-intensive operation (100k iterations of PBKDF2-HMAC-SHA256)
         that can take 100-500ms. Results are cached since key derivation is deterministic.
 
+        Uses Python's standard hashlib.pbkdf2_hmac which produces identical output
+        to the cryptography library's PBKDF2HMAC for the same parameters.
+
         WARNING: This is a synchronous blocking operation. Use _derive_key_async()
         in async contexts to avoid blocking the event loop.
         """
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=cls.KEY_SIZE, salt=salt, iterations=100000, backend=default_backend())
-        return kdf.derive(master_key.encode())
+        return hashlib.pbkdf2_hmac(
+            hash_name="sha256",
+            password=master_key.encode(),
+            salt=salt,
+            iterations=cls.PBKDF2_ITERATIONS,
+            dklen=cls.KEY_SIZE,
+        )
 
     @classmethod
     def _derive_key(cls, master_key: str, salt: bytes) -> bytes:
@@ -69,13 +89,16 @@ class CryptoUtils:
     @classmethod
     async def _derive_key_async(cls, master_key: str, salt: bytes) -> bytes:
         """
-        Async version of _derive_key that runs PBKDF2 in a thread pool.
+        Async version of _derive_key that runs PBKDF2 in a dedicated thread pool.
 
-        This prevents PBKDF2 (a CPU-intensive operation) from blocking the event loop.
-        PBKDF2 with 100k iterations typically takes 100-500ms, which would freeze
-        the event loop and prevent all other requests from being processed.
+        Uses a dedicated crypto thread pool (8 workers) to prevent PBKDF2 operations
+        from exhausting the default ThreadPoolExecutor (16 threads) and blocking
+        health checks and other operations during high load.
+
+        PBKDF2 with 100k iterations typically takes 100-500ms per operation.
         """
-        return await asyncio.to_thread(cls._derive_key, master_key, salt)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(_crypto_executor, cls._derive_key, master_key, salt)
 
     @classmethod
     def encrypt(cls, plaintext: str, master_key: Optional[str] = None) -> str:
@@ -111,7 +134,7 @@ class CryptoUtils:
         key = cls._derive_key(master_key, salt)
 
         # Create cipher
-        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
+        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=_CRYPTO_BACKEND)
         encryptor = cipher.encryptor()
 
         # Encrypt the plaintext
@@ -160,7 +183,7 @@ class CryptoUtils:
         key = await cls._derive_key_async(master_key, salt)
 
         # Create cipher
-        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend())
+        cipher = Cipher(algorithms.AES(key), modes.GCM(iv), backend=_CRYPTO_BACKEND)
         encryptor = cipher.encryptor()
 
         # Encrypt the plaintext
@@ -215,7 +238,7 @@ class CryptoUtils:
             key = cls._derive_key(master_key, salt)
 
             # Create cipher
-            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
+            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=_CRYPTO_BACKEND)
             decryptor = cipher.decryptor()
 
             # Decrypt the ciphertext
@@ -266,7 +289,7 @@ class CryptoUtils:
             key = await cls._derive_key_async(master_key, salt)
 
             # Create cipher
-            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend())
+            cipher = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=_CRYPTO_BACKEND)
             decryptor = cipher.decryptor()
 
             # Decrypt the ciphertext

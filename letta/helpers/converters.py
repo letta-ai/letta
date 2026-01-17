@@ -6,6 +6,10 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from sqlalchemy import Dialect
 
 from letta.functions.mcp_client.types import StdioServerConfig
+from letta.helpers.json_helpers import sanitize_null_bytes
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, ToolRuleType
 from letta.schemas.letta_message import ApprovalReturn, MessageReturnType
@@ -184,16 +188,22 @@ def deserialize_tool_rule(
 
 
 def serialize_tool_calls(tool_calls: Optional[List[Union[OpenAIToolCall, dict]]]) -> List[Dict]:
-    """Convert a list of OpenAI ToolCall objects into JSON-serializable format."""
+    """Convert a list of OpenAI ToolCall objects into JSON-serializable format.
+
+    Note: Tool call arguments may contain null bytes from various sources.
+    These are sanitized to prevent PostgreSQL errors.
+    """
     if not tool_calls:
         return []
 
     serialized_calls = []
     for call in tool_calls:
         if isinstance(call, OpenAIToolCall):
-            serialized_calls.append(call.model_dump(mode="json"))
+            # Sanitize null bytes from tool call data to prevent PostgreSQL errors
+            serialized_calls.append(sanitize_null_bytes(call.model_dump(mode="json")))
         elif isinstance(call, dict):
-            serialized_calls.append(call)  # Already a dictionary, leave it as-is
+            # Sanitize null bytes from dictionary data
+            serialized_calls.append(sanitize_null_bytes(call))
         else:
             raise TypeError(f"Unexpected tool call type: {type(call)}")
 
@@ -221,16 +231,22 @@ def deserialize_tool_calls(data: Optional[List[Dict]]) -> List[OpenAIToolCall]:
 
 
 def serialize_tool_returns(tool_returns: Optional[List[Union[ToolReturn, dict]]]) -> List[Dict]:
-    """Convert a list of ToolReturn objects into JSON-serializable format."""
+    """Convert a list of ToolReturn objects into JSON-serializable format.
+
+    Note: Tool returns may contain null bytes from sandbox execution or binary data.
+    These are sanitized to prevent PostgreSQL errors.
+    """
     if not tool_returns:
         return []
 
     serialized_tool_returns = []
     for tool_return in tool_returns:
         if isinstance(tool_return, ToolReturn):
-            serialized_tool_returns.append(tool_return.model_dump(mode="json"))
+            # Sanitize null bytes from tool return data to prevent PostgreSQL errors
+            serialized_tool_returns.append(sanitize_null_bytes(tool_return.model_dump(mode="json")))
         elif isinstance(tool_return, dict):
-            serialized_tool_returns.append(tool_return)  # Already a dictionary, leave it as-is
+            # Sanitize null bytes from dictionary data
+            serialized_tool_returns.append(sanitize_null_bytes(tool_return))
         else:
             raise TypeError(f"Unexpected tool return type: {type(tool_return)}")
 
@@ -256,18 +272,24 @@ def deserialize_tool_returns(data: Optional[List[Dict]]) -> List[ToolReturn]:
 
 
 def serialize_approvals(approvals: Optional[List[Union[ApprovalReturn, ToolReturn, dict]]]) -> List[Dict]:
-    """Convert a list of ToolReturn objects into JSON-serializable format."""
+    """Convert a list of ToolReturn objects into JSON-serializable format.
+
+    Note: Approval data may contain null bytes from various sources.
+    These are sanitized to prevent PostgreSQL errors.
+    """
     if not approvals:
         return []
 
     serialized_approvals = []
     for approval in approvals:
         if isinstance(approval, ApprovalReturn):
-            serialized_approvals.append(approval.model_dump(mode="json"))
+            # Sanitize null bytes from approval data to prevent PostgreSQL errors
+            serialized_approvals.append(sanitize_null_bytes(approval.model_dump(mode="json")))
         elif isinstance(approval, ToolReturn):
-            serialized_approvals.append(approval.model_dump(mode="json"))
+            serialized_approvals.append(sanitize_null_bytes(approval.model_dump(mode="json")))
         elif isinstance(approval, dict):
-            serialized_approvals.append(approval)  # Already a dictionary, leave it as-is
+            # Sanitize null bytes from dictionary data
+            serialized_approvals.append(sanitize_null_bytes(approval))
         else:
             raise TypeError(f"Unexpected approval type: {type(approval)}")
 
@@ -318,7 +340,11 @@ def deserialize_approvals(data: Optional[List[Dict]]) -> List[Union[ApprovalRetu
 
 
 def serialize_message_content(message_content: Optional[List[Union[MessageContent, dict]]]) -> List[Dict]:
-    """Convert a list of MessageContent objects into JSON-serializable format."""
+    """Convert a list of MessageContent objects into JSON-serializable format.
+
+    Note: Message content may contain null bytes from various sources.
+    These are sanitized to prevent PostgreSQL errors.
+    """
     if not message_content:
         return []
 
@@ -327,9 +353,11 @@ def serialize_message_content(message_content: Optional[List[Union[MessageConten
         if isinstance(content, MessageContent):
             if content.type == MessageContentType.image:
                 assert content.source.type == ImageSourceType.letta, f"Invalid image source type: {content.source.type}"
-            serialized_message_content.append(content.model_dump(mode="json"))
+            # Sanitize null bytes from message content to prevent PostgreSQL errors
+            serialized_message_content.append(sanitize_null_bytes(content.model_dump(mode="json")))
         elif isinstance(content, dict):
-            serialized_message_content.append(content)  # Already a dictionary, leave it as-is
+            # Sanitize null bytes from dictionary data
+            serialized_message_content.append(sanitize_null_bytes(content))
         else:
             raise TypeError(f"Unexpected message content type: {type(content)}")
     return serialized_message_content

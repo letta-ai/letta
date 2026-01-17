@@ -37,6 +37,9 @@ _excluded_v1_endpoints_regex: List[str] = [
 
 
 async def _trace_request_middleware(request: Request, call_next):
+    # Capture earliest possible timestamp when request enters application
+    entry_time = time.time()
+
     if not _is_tracing_initialized:
         return await call_next(request)
     initial_span_name = f"{request.method} {request.url.path}"
@@ -47,8 +50,17 @@ async def _trace_request_middleware(request: Request, call_next):
         initial_span_name,
         kind=trace.SpanKind.SERVER,
     ) as span:
+        # Record when we entered the application (useful for detecting worker queuing)
+        span.set_attribute("entry.timestamp_ms", int(entry_time * 1000))
+
         try:
             response = await call_next(request)
+
+            # Update span name with route pattern after FastAPI has matched the route
+            route = request.scope.get("route")
+            if route and hasattr(route, "path"):
+                span.update_name(f"{request.method} {route.path}")
+
             span.set_attribute("http.status_code", response.status_code)
             span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
             return response
@@ -67,44 +79,50 @@ async def _update_trace_attributes(request: Request):
     if not span:
         return
 
-    # Update span name with route pattern
-    route = request.scope.get("route")
-    if route and hasattr(route, "path"):
-        span.update_name(f"{request.method} {route.path}")
+    # Wrap attribute-setting work in a span to measure time before body parsing
+    with tracer.start_as_current_span("trace.set_attributes"):
+        # Update span name with route pattern
+        route = request.scope.get("route")
+        if route and hasattr(route, "path"):
+            span.update_name(f"{request.method} {route.path}")
 
-    # Add request info
-    span.set_attribute("http.method", request.method)
-    span.set_attribute("http.url", str(request.url))
+        # Add request info
+        span.set_attribute("http.method", request.method)
+        span.set_attribute("http.url", str(request.url))
 
-    # Add path params
-    for key, value in request.path_params.items():
-        span.set_attribute(f"http.{key}", value)
+        # Add path params
+        for key, value in request.path_params.items():
+            span.set_attribute(f"http.{key}", value)
 
-    # Add the following headers to span if available
-    header_attributes = {
-        "user_id": "user.id",
-        "x-organization-id": "organization.id",
-        "x-project-id": "project.id",
-        "x-agent-id": "agent.id",
-        "x-template-id": "template.id",
-        "x-base-template-id": "base_template.id",
-        "user-agent": "client",
-        "x-stainless-package-version": "sdk.version",
-        "x-stainless-lang": "sdk.language",
-        "x-letta-source": "source",
-    }
-    for header_key, span_key in header_attributes.items():
-        header_value = request.headers.get(header_key)
-        if header_value:
-            span.set_attribute(span_key, header_value)
+        # Add the following headers to span if available
+        header_attributes = {
+            "user_id": "user.id",
+            "x-organization-id": "organization.id",
+            "x-project-id": "project.id",
+            "x-agent-id": "agent.id",
+            "x-template-id": "template.id",
+            "x-base-template-id": "base_template.id",
+            "user-agent": "client",
+            "x-stainless-package-version": "sdk.version",
+            "x-stainless-lang": "sdk.language",
+            "x-letta-source": "source",
+        }
+        for header_key, span_key in header_attributes.items():
+            header_value = request.headers.get(header_key)
+            if header_value:
+                span.set_attribute(span_key, header_value)
 
-    # Add request body if available
-    try:
-        body = await request.json()
-        for key, value in body.items():
-            span.set_attribute(f"http.request.body.{key}", str(value))
-    except Exception:
-        pass
+    # Add request body if available (only for JSON requests)
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type and request.method in ("POST", "PUT", "PATCH"):
+        try:
+            with tracer.start_as_current_span("trace.request_body"):
+                body = await request.json()
+                for key, value in body.items():
+                    span.set_attribute(f"http.request.body.{key}", str(value))
+        except Exception:
+            # Ignore JSON parsing errors (empty body, invalid JSON, etc.)
+            pass
 
 
 async def _trace_error_handler(_request: Request, exc: Exception) -> JSONResponse:

@@ -15,7 +15,7 @@ from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.source import Source as PydanticSource, SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.utils import enforce_types, printd
+from letta.utils import bounded_gather, decrypt_agent_secrets, enforce_types, printd
 from letta.validators import raise_on_invalid_id
 
 
@@ -151,6 +151,10 @@ class SourceManager:
                 source_dict["_last_updated_by_id"] = actor.id
                 source_dict["organization_id"] = actor.organization_id
 
+            # Remove created_at if it's None to let database default handle it
+            if source_dict.get("created_at") is None:
+                source_dict.pop("created_at", None)
+
             # filter to only include columns that exist in the table
             filtered_dict = {k: v for k, v in source_dict.items() if k in valid_columns}
             insert_data.append(filtered_dict)
@@ -170,7 +174,8 @@ class SourceManager:
 
         upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
         await session.execute(upsert_stmt)
-        await session.commit()
+        # context manager now handles commits
+        # await session.commit()
 
         # fetch results
         source_names = [source.name for source in source_data_list]
@@ -321,7 +326,13 @@ class SourceManager:
                 result = await session.execute(query)
                 agents_orm = result.scalars().all()
 
-                return await asyncio.gather(*[agent.to_pydantic_async(include=[]) for agent in agents_orm])
+                # Convert without decrypting to release DB connection before PBKDF2
+                agents_encrypted = await bounded_gather(
+                    [agent.to_pydantic_async(include_relationships=[], include=[], decrypt=False) for agent in agents_orm]
+                )
+
+            # Decrypt secrets outside session
+            return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)

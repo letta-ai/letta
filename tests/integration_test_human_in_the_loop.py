@@ -131,7 +131,6 @@ def approval_tool_fixture(client: Letta):
     """
     Creates and returns a tool that requires approval for testing.
     """
-    client.tools.upsert_base_tools()
     approval_tool = client.tools.upsert_from_function(
         func=get_secret_code_tool,
         default_requires_approval=True,
@@ -143,7 +142,6 @@ def approval_tool_fixture(client: Letta):
 
 @pytest.fixture(scope="function")
 def dice_tool_fixture(client: Letta):
-    client.tools.upsert_base_tools()
     dice_tool = client.tools.upsert_from_function(
         func=roll_dice_tool,
     )
@@ -276,7 +274,20 @@ def test_invoke_approval_request(
 
     client.get(f"/v1/agents/{agent.id}/context", cast_to=dict[str, Any])
 
+    # Test pending_approval relationship field
+    agent_with_pending = client.agents.retrieve(agent_id=agent.id, include=["agent.pending_approval"])
+    assert agent_with_pending.pending_approval is not None
+    # Client SDK returns it as a dict, so use dict access
+    assert agent_with_pending.pending_approval["tool_call"]["name"] == "get_secret_code_tool"
+    assert len(agent_with_pending.pending_approval["tool_calls"]) > 0
+    assert agent_with_pending.pending_approval["tool_calls"][0]["name"] == "get_secret_code_tool"
+    assert agent_with_pending.pending_approval["tool_calls"][0]["tool_call_id"] == response.messages[-1].tool_call.tool_call_id
+
     approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
+
+    # After approval, pending_approval should be None (latest message is no longer approval request)
+    agent_after_approval = client.agents.retrieve(agent_id=agent.id, include=["agent.pending_approval"])
+    assert agent_after_approval.pending_approval is None
 
 
 def test_invoke_approval_request_stream(

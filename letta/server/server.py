@@ -18,7 +18,13 @@ import letta.system as system
 from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
-from letta.errors import HandleNotFoundError, LettaInvalidArgumentError, LettaMCPConnectionError, LettaMCPTimeoutError
+from letta.errors import (
+    EmbeddingConfigRequiredError,
+    HandleNotFoundError,
+    LettaInvalidArgumentError,
+    LettaMCPConnectionError,
+    LettaMCPTimeoutError,
+)
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, MCPToolHealth, SSEServerConfig, StdioServerConfig
 from letta.functions.schema_validator import validate_complete_json_schema
 from letta.groups.helpers import load_multi_agent
@@ -69,6 +75,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMProvider,
     XAIProvider,
+    ZAIProvider,
 )
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate
 from letta.schemas.secret import Secret
@@ -91,7 +98,8 @@ from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
 from letta.services.mcp.base_client import AsyncBaseMCPClient
-from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
+from letta.services.mcp.fastmcp_client import AsyncFastMCPSSEClient
+from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp_manager import MCPManager
 from letta.services.mcp_server_manager import MCPServerManager
@@ -109,7 +117,7 @@ from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import DatabaseChoice, model_settings, settings, tool_settings
 from letta.streaming_interface import AgentChunkStreamingInterface
-from letta.utils import get_friendly_error_msg, get_persona_text, make_key, safe_create_task
+from letta.utils import get_friendly_error_msg, get_persona_text, safe_create_task
 
 config = LettaConfig.load()
 logger = get_logger(__name__)
@@ -203,12 +211,10 @@ class SyncServer(object):
         """Initialize the MCP clients (there may be multiple)"""
         self.mcp_clients: Dict[str, AsyncBaseMCPClient] = {}
 
-        # TODO: Remove these in memory caches
-        self._llm_config_cache = {}
-        self._embedding_config_cache = {}
-
         # collect providers (always has Letta as a default)
-        self._enabled_providers: List[Provider] = [LettaProvider(name="letta")]
+        from letta.constants import LETTA_MODEL_ENDPOINT
+
+        self._enabled_providers: List[Provider] = [LettaProvider(name="letta", base_url=LETTA_MODEL_ENDPOINT)]
         if model_settings.openai_api_key:
             self._enabled_providers.append(
                 OpenAIProvider(
@@ -316,6 +322,14 @@ class SyncServer(object):
                     api_key_enc=Secret.from_plaintext(model_settings.xai_api_key),
                 )
             )
+        if model_settings.zai_api_key:
+            self._enabled_providers.append(
+                ZAIProvider(
+                    name="zai",
+                    api_key_enc=Secret.from_plaintext(model_settings.zai_api_key),
+                    base_url=model_settings.zai_base_url,
+                )
+            )
         if model_settings.openrouter_api_key:
             self._enabled_providers.append(
                 OpenRouterProvider(
@@ -331,6 +345,12 @@ class SyncServer(object):
             self.default_user = await self.user_manager.create_default_actor_async()
             print(f"Default user: {self.default_user} and org: {self.default_org}")
             await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
+
+            # Sync environment-based providers to database (idempotent, safe for multi-pod startup)
+            await self.provider_manager.sync_base_providers(base_providers=self._enabled_providers, actor=self.default_user)
+
+            # Sync provider models to database
+            await self._sync_provider_models_async()
 
             # For OSS users, create a local sandbox config
             oss_default_user = await self.user_manager.get_default_actor_async()
@@ -368,13 +388,72 @@ class SyncServer(object):
                         force_recreate=True,
                     )
 
+    def _get_enabled_provider(self, provider_name: str) -> Optional[Provider]:
+        """Find and return an enabled provider by name.
+
+        Args:
+            provider_name: The name of the provider to find
+
+        Returns:
+            The matching enabled provider, or None if not found
+        """
+        for provider in self._enabled_providers:
+            if provider.name == provider_name:
+                return provider
+        return None
+
+    async def _sync_provider_models_async(self):
+        """Sync all provider models to database at startup."""
+        logger.info("Syncing provider models to database")
+
+        # Get persisted providers from database (they now have IDs)
+        persisted_providers = await self.provider_manager.list_providers_async(actor=self.default_user)
+
+        for persisted_provider in persisted_providers:
+            try:
+                # Find the matching enabled provider instance to call list_models on
+                enabled_provider = self._get_enabled_provider(persisted_provider.name)
+
+                if not enabled_provider:
+                    # Only delete base providers that are no longer enabled
+                    # BYOK providers are user-created and should not be automatically deleted
+                    if persisted_provider.provider_category == ProviderCategory.base:
+                        logger.info(f"Base provider {persisted_provider.name} is no longer enabled, deleting from database")
+                        try:
+                            await self.provider_manager.delete_provider_by_id_async(
+                                provider_id=persisted_provider.id, actor=self.default_user
+                            )
+                        except NoResultFound:
+                            # Provider was already deleted (race condition in multi-pod startup)
+                            logger.debug(f"Provider {persisted_provider.name} was already deleted, skipping")
+                    else:
+                        logger.debug(f"No enabled provider for BYOK provider {persisted_provider.name}, skipping model sync")
+                    continue
+
+                # Fetch models from provider
+                llm_models = await enabled_provider.list_llm_models_async()
+                embedding_models = await enabled_provider.list_embedding_models_async()
+
+                # Save to database with the persisted provider (which has an ID)
+                await self.provider_manager.sync_provider_models_async(
+                    provider=persisted_provider,
+                    llm_models=llm_models,
+                    embedding_models=embedding_models,
+                    organization_id=None,  # Global models
+                )
+                logger.info(
+                    f"Synced {len(llm_models)} LLM models and {len(embedding_models)} embedding models for provider {persisted_provider.name}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to sync models for provider {persisted_provider.name}: {e}", exc_info=True)
+
     async def init_mcp_clients(self):
         # TODO: remove this
         mcp_server_configs = self.get_mcp_servers()
 
         for server_name, server_config in mcp_server_configs.items():
             if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = AsyncSSEMCPClient(server_config)
+                self.mcp_clients[server_name] = AsyncFastMCPSSEClient(server_config)
             elif server_config.type == MCPServerType.STDIO:
                 self.mcp_clients[server_name] = AsyncStdioMCPClient(server_config)
             else:
@@ -394,39 +473,6 @@ class SyncServer(object):
             mcp_tools = await client.list_tools()
             logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
             logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
-
-    @trace_method
-    def get_cached_llm_config(self, actor: User, **kwargs):
-        key = make_key(**kwargs)
-        if key not in self._llm_config_cache:
-            self._llm_config_cache[key] = self.get_llm_config_from_handle(actor=actor, **kwargs)
-            logger.info(f"LLM config cache size: {len(self._llm_config_cache)} entries")
-        return self._llm_config_cache[key]
-
-    @trace_method
-    async def get_cached_llm_config_async(self, actor: User, **kwargs):
-        key = make_key(**kwargs)
-        if key not in self._llm_config_cache:
-            self._llm_config_cache[key] = await self.get_llm_config_from_handle_async(actor=actor, **kwargs)
-            logger.info(f"LLM config cache size: {len(self._llm_config_cache)} entries")
-        return self._llm_config_cache[key]
-
-    @trace_method
-    def get_cached_embedding_config(self, actor: User, **kwargs):
-        key = make_key(**kwargs)
-        if key not in self._embedding_config_cache:
-            self._embedding_config_cache[key] = self.get_embedding_config_from_handle(actor=actor, **kwargs)
-            logger.info(f"Embedding config cache size: {len(self._embedding_config_cache)} entries")
-        return self._embedding_config_cache[key]
-
-    # @async_redis_cache(key_func=lambda (actor, **kwargs): actor.id + hash(kwargs))
-    @trace_method
-    async def get_cached_embedding_config_async(self, actor: User, **kwargs):
-        key = make_key(**kwargs)
-        if key not in self._embedding_config_cache:
-            self._embedding_config_cache[key] = await self.get_embedding_config_from_handle_async(actor=actor, **kwargs)
-            logger.info(f"Embedding config cache size: {len(self._embedding_config_cache)} entries")
-        return self._embedding_config_cache[key]
 
     @trace_method
     async def create_agent_async(
@@ -461,10 +507,9 @@ class SyncServer(object):
                 "max_reasoning_tokens": request.max_reasoning_tokens,
                 "enable_reasoner": request.enable_reasoner,
             }
-            config_params.update(additional_config_params)
-            log_event(name="start get_cached_llm_config", attributes=config_params)
-            request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
-            log_event(name="end get_cached_llm_config", attributes=config_params)
+            log_event(name="start get_llm_config_from_handle", attributes=config_params)
+            request.llm_config = await self.get_llm_config_from_handle_async(actor=actor, **config_params)
+            log_event(name="end get_llm_config_from_handle", attributes=config_params)
             if request.model and isinstance(request.model, str):
                 assert request.llm_config.handle == request.model, (
                     f"LLM config handle {request.llm_config.handle} does not match request handle {request.model}"
@@ -484,19 +529,17 @@ class SyncServer(object):
 
         if request.embedding_config is None:
             if request.embedding is None:
-                if settings.default_embedding_handle is None:
-                    raise LettaInvalidArgumentError(
-                        "Must specify either embedding or embedding_config in request", argument_name="embedding"
-                    )
-                else:
+                if settings.default_embedding_handle is not None:
                     request.embedding = settings.default_embedding_handle
-            embedding_config_params = {
-                "handle": request.embedding,
-                "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
-            }
-            log_event(name="start get_cached_embedding_config", attributes=embedding_config_params)
-            request.embedding_config = await self.get_cached_embedding_config_async(actor=actor, **embedding_config_params)
-            log_event(name="end get_cached_embedding_config", attributes=embedding_config_params)
+            # Only resolve embedding config if we have an embedding handle
+            if request.embedding is not None:
+                embedding_config_params = {
+                    "handle": request.embedding,
+                    "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+                }
+                log_event(name="start get_embedding_config_from_handle", attributes=embedding_config_params)
+                request.embedding_config = await self.get_embedding_config_from_handle_async(actor=actor, **embedding_config_params)
+                log_event(name="end get_embedding_config_from_handle", attributes=embedding_config_params)
 
         log_event(name="start create_agent db")
         main_agent = await self.agent_manager.create_agent_async(
@@ -545,9 +588,9 @@ class SyncServer(object):
                 "context_window_limit": request.context_window_limit,
                 "max_tokens": request.max_tokens,
             }
-            log_event(name="start get_cached_llm_config", attributes=config_params)
-            request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
-            log_event(name="end get_cached_llm_config", attributes=config_params)
+            log_event(name="start get_llm_config_from_handle", attributes=config_params)
+            request.llm_config = await self.get_llm_config_from_handle_async(actor=actor, **config_params)
+            log_event(name="end get_llm_config_from_handle", attributes=config_params)
 
         # update with model_settings
         if request.model_settings is not None:
@@ -584,6 +627,8 @@ class SyncServer(object):
         )
 
     async def create_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        if main_agent.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_sleeptime_agent")
         request = CreateAgent(
             name=main_agent.name + "-sleeptime",
             agent_type=AgentType.sleeptime_agent,
@@ -616,6 +661,8 @@ class SyncServer(object):
         return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
 
     async def create_voice_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+        if main_agent.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_voice_sleeptime_agent")
         # TODO: Inject system
         request = CreateAgent(
             name=main_agent.name + "-sleeptime",
@@ -771,6 +818,7 @@ class SyncServer(object):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
+        conversation_id: Optional[str] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=agent_id,
@@ -781,6 +829,7 @@ class SyncServer(object):
             ascending=not reverse,
             group_id=group_id,
             include_err=include_err,
+            conversation_id=conversation_id,
         )
 
         if not return_message_object:
@@ -816,6 +865,7 @@ class SyncServer(object):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
+        conversation_id: Optional[str] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=None,
@@ -826,6 +876,7 @@ class SyncServer(object):
             ascending=not reverse,
             group_id=group_id,
             include_err=include_err,
+            conversation_id=conversation_id,
         )
 
         if not return_message_object:
@@ -989,6 +1040,8 @@ class SyncServer(object):
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> AgentState:
+        if main_agent.embedding_config is None:
+            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_document_sleeptime_agent")
         try:
             block = await self.agent_manager.get_block_with_label_async(agent_id=main_agent.id, block_label=source.name, actor=actor)
         except:
@@ -1043,6 +1096,18 @@ class SyncServer(object):
         passage_count, document_count = await load_data(connector, source, self.passage_manager, self.file_manager, actor=actor)
         return passage_count, document_count
 
+    def _get_provider_sort_key(self, model: LLMConfig) -> Tuple[int, str, str]:
+        """Get sort key for a model: (provider_priority, provider_name, model_name)"""
+        provider_priority = constants.PROVIDER_ORDER.get(model.provider_name, 999)
+        return (provider_priority, model.provider_name or "", model.model or "")
+
+    def _get_embedding_provider_sort_key(self, model: EmbeddingConfig) -> Tuple[int, str, str]:
+        """Get sort key for an embedding model: (provider_priority, provider_name, model_name)"""
+        # Extract provider name from handle (format: "provider_name/model_name")
+        provider_name = model.handle.split("/")[0] if model.handle and "/" in model.handle else ""
+        provider_priority = constants.PROVIDER_ORDER.get(provider_name, 999)
+        return (provider_priority, provider_name, model.embedding_model or "")
+
     @trace_method
     async def list_llm_models_async(
         self,
@@ -1051,73 +1116,121 @@ class SyncServer(object):
         provider_name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
     ) -> List[LLMConfig]:
-        """Asynchronously list available models with maximum concurrency"""
-        import asyncio
-
-        providers = await self.get_enabled_providers_async(
-            provider_category=provider_category,
-            provider_name=provider_name,
-            provider_type=provider_type,
-            actor=actor,
-        )
-
-        async def get_provider_models(provider: Provider) -> list[LLMConfig]:
-            try:
-                async with asyncio.timeout(constants.GET_PROVIDERS_TIMEOUT_SECONDS):
-                    return await provider.list_llm_models_async()
-            except asyncio.TimeoutError:
-                logger.warning(f"Timeout while listing LLM models for provider {provider}")
-                return []
-            except Exception as e:
-                logger.exception(f"Error while listing LLM models for provider {provider}: {e}")
-                return []
-
-        # Execute all provider model listing tasks concurrently
-        provider_results = await asyncio.gather(*[get_provider_models(provider) for provider in providers])
-
-        # Flatten the results
+        """List available LLM models - base from DB, BYOK from provider endpoints"""
         llm_models = []
-        for models in provider_results:
-            llm_models.extend(models)
 
-        # Get local configs - if this is potentially slow, consider making it async too
-        local_configs = self.get_local_llm_configs()
-        llm_models.extend(local_configs)
+        # Determine which categories to include
+        include_base = not provider_category or ProviderCategory.base in provider_category
+        include_byok = not provider_category or ProviderCategory.byok in provider_category
 
-        # dedupe by handle for uniqueness
-        # Seems like this is required from the tests?
-        seen_handles = set()
-        unique_models = []
-        for model in llm_models:
-            if model.handle not in seen_handles:
-                seen_handles.add(model.handle)
-                unique_models.append(model)
+        # Get base provider models from database
+        if include_base:
+            provider_models = await self.provider_manager.list_models_async(
+                actor=actor,
+                model_type="llm",
+                enabled=True,
+            )
 
-        return unique_models
+            # Build LLMConfig objects from database
+            provider_cache: Dict[str, Provider] = {}
+            for model in provider_models:
+                # Get provider details (with caching to avoid N+1 queries)
+                if model.provider_id not in provider_cache:
+                    provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)
+                provider = provider_cache[model.provider_id]
+
+                # Skip non-base providers (they're handled separately)
+                if provider.provider_category != ProviderCategory.base:
+                    continue
+
+                # Apply provider_name/provider_type filters if specified
+                if provider_name and provider.name != provider_name:
+                    continue
+                if provider_type and provider.provider_type != provider_type:
+                    continue
+
+                llm_config = LLMConfig(
+                    model=model.name,
+                    model_endpoint_type=model.model_endpoint_type,
+                    model_endpoint=provider.base_url or model.model_endpoint_type,
+                    context_window=model.max_context_window or 16384,
+                    handle=model.handle,
+                    provider_name=provider.name,
+                    provider_category=provider.provider_category,
+                )
+                llm_models.append(llm_config)
+
+        # Get BYOK provider models by hitting provider endpoints directly
+        if include_byok:
+            byok_providers = await self.provider_manager.list_providers_async(
+                actor=actor,
+                name=provider_name,
+                provider_type=provider_type,
+                provider_category=[ProviderCategory.byok],
+            )
+
+            for provider in byok_providers:
+                try:
+                    typed_provider = provider.cast_to_subtype()
+                    models = await typed_provider.list_llm_models_async()
+                    llm_models.extend(models)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch models from BYOK provider {provider.name}: {e}")
+
+        # Sort by provider order (matching old _enabled_providers order), then by model name
+        llm_models.sort(key=self._get_provider_sort_key)
+
+        return llm_models
 
     async def list_embedding_models_async(self, actor: User) -> List[EmbeddingConfig]:
-        """Asynchronously list available embedding models with maximum concurrency"""
-        import asyncio
-
-        # Get all eligible providers first
-        providers = await self.get_enabled_providers_async(actor=actor)
-
-        # Fetch embedding models from each provider concurrently
-        async def get_provider_embedding_models(provider):
-            try:
-                # All providers now have list_embedding_models_async
-                return await provider.list_embedding_models_async()
-            except Exception as e:
-                logger.exception(f"An error occurred while listing embedding models for provider {provider}: {e}")
-                return []
-
-        # Execute all provider model listing tasks concurrently
-        provider_results = await asyncio.gather(*[get_provider_embedding_models(provider) for provider in providers])
-
-        # Flatten the results
+        """List available embedding models - base from DB, BYOK from provider endpoints"""
         embedding_models = []
-        for models in provider_results:
-            embedding_models.extend(models)
+
+        # Get base provider models from database
+        provider_models = await self.provider_manager.list_models_async(
+            actor=actor,
+            model_type="embedding",
+            enabled=True,
+        )
+
+        # Build EmbeddingConfig objects from database (base providers only)
+        provider_cache: Dict[str, Provider] = {}
+        for model in provider_models:
+            # Get provider details (with caching to avoid N+1 queries)
+            if model.provider_id not in provider_cache:
+                provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)
+            provider = provider_cache[model.provider_id]
+
+            # Skip non-base providers (they're handled separately)
+            if provider.provider_category != ProviderCategory.base:
+                continue
+
+            embedding_config = EmbeddingConfig(
+                embedding_model=model.name,
+                embedding_endpoint_type=model.model_endpoint_type,
+                embedding_endpoint=provider.base_url or model.model_endpoint_type,
+                embedding_dim=model.embedding_dim or 1536,
+                embedding_chunk_size=constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+                handle=model.handle,
+            )
+            embedding_models.append(embedding_config)
+
+        # Get BYOK provider models by hitting provider endpoints directly
+        byok_providers = await self.provider_manager.list_providers_async(
+            actor=actor,
+            provider_category=[ProviderCategory.byok],
+        )
+
+        for provider in byok_providers:
+            try:
+                typed_provider = provider.cast_to_subtype()
+                models = await typed_provider.list_embedding_models_async()
+                embedding_models.extend(models)
+            except Exception as e:
+                logger.warning(f"Failed to fetch embedding models from BYOK provider {provider.name}: {e}")
+
+        # Sort by provider order (matching old _enabled_providers order), then by model name
+        embedding_models.sort(key=self._get_embedding_provider_sort_key)
 
         return embedding_models
 
@@ -1128,25 +1241,17 @@ class SyncServer(object):
         provider_name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
     ) -> List[Provider]:
-        providers = []
-        if not provider_category or ProviderCategory.base in provider_category:
-            providers_from_env = [p for p in self._enabled_providers]
-            providers.extend(providers_from_env)
+        # Query all persisted providers from database
+        persisted_providers = await self.provider_manager.list_providers_async(
+            name=provider_name,
+            provider_type=provider_type,
+            actor=actor,
+        )
+        providers = [p.cast_to_subtype() for p in persisted_providers]
 
-        if not provider_category or ProviderCategory.byok in provider_category:
-            providers_from_db = await self.provider_manager.list_providers_async(
-                name=provider_name,
-                provider_type=provider_type,
-                actor=actor,
-            )
-            providers_from_db = [p.cast_to_subtype() for p in providers_from_db if p.provider_category == ProviderCategory.byok]
-            providers.extend(providers_from_db)
-
-        if provider_name is not None:
-            providers = [p for p in providers if p.name == provider_name]
-
-        if provider_type is not None:
-            providers = [p for p in providers if p.provider_type == provider_type]
+        # Filter by category if specified
+        if provider_category:
+            providers = [p for p in providers if p.provider_category in provider_category]
 
         return providers
 
@@ -1160,32 +1265,19 @@ class SyncServer(object):
         max_reasoning_tokens: Optional[int] = None,
         enable_reasoner: Optional[bool] = None,
     ) -> LLMConfig:
+        # Use provider_manager to get LLMConfig from handle
         try:
-            provider_name, model_name = handle.split("/", 1)
-            provider = await self.get_provider_from_name_async(provider_name, actor)
-
-            all_llm_configs = await provider.list_llm_models_async()
-            llm_configs = [config for config in all_llm_configs if config.handle == handle]
-            if not llm_configs:
-                llm_configs = [config for config in all_llm_configs if config.model == model_name]
-            if not llm_configs:
-                available_handles = [config.handle for config in all_llm_configs]
-                raise HandleNotFoundError(handle, available_handles)
-        except ValueError as e:
-            llm_configs = [config for config in self.get_local_llm_configs() if config.handle == handle]
-            if not llm_configs:
-                llm_configs = [config for config in self.get_local_llm_configs() if config.model == model_name]
-            if not llm_configs:
-                raise e
-
-        if len(llm_configs) == 1:
-            llm_config = llm_configs[0]
-        elif len(llm_configs) > 1:
-            raise LettaInvalidArgumentError(
-                f"Multiple LLM models with name {model_name} supported by {provider_name}", argument_name="model_name"
+            llm_config = await self.provider_manager.get_llm_config_from_handle(
+                handle=handle,
+                actor=actor,
             )
-        else:
-            llm_config = llm_configs[0]
+        except Exception as e:
+            # Convert to HandleNotFoundError for backwards compatibility
+            from letta.orm.errors import NoResultFound
+
+            if isinstance(e, NoResultFound):
+                raise HandleNotFoundError(handle, [])
+            raise
 
         if context_window_limit is not None:
             if context_window_limit > llm_config.context_window:
@@ -1217,33 +1309,22 @@ class SyncServer(object):
     async def get_embedding_config_from_handle_async(
         self, actor: User, handle: str, embedding_chunk_size: int = constants.DEFAULT_EMBEDDING_CHUNK_SIZE
     ) -> EmbeddingConfig:
+        # Use provider_manager to get EmbeddingConfig from handle
         try:
-            provider_name, model_name = handle.split("/", 1)
-            provider = await self.get_provider_from_name_async(provider_name, actor)
-
-            all_embedding_configs = await provider.list_embedding_models_async()
-            embedding_configs = [config for config in all_embedding_configs if config.handle == handle]
-            if not embedding_configs:
-                raise LettaInvalidArgumentError(
-                    f"Embedding model {model_name} is not supported by {provider_name}", argument_name="model_name"
-                )
-        except LettaInvalidArgumentError as e:
-            # search local configs
-            embedding_configs = [config for config in self.get_local_embedding_configs() if config.handle == handle]
-            if not embedding_configs:
-                raise e
-
-        if len(embedding_configs) == 1:
-            embedding_config = embedding_configs[0]
-        elif len(embedding_configs) > 1:
-            raise LettaInvalidArgumentError(
-                f"Multiple embedding models with name {model_name} supported by {provider_name}", argument_name="model_name"
+            embedding_config = await self.provider_manager.get_embedding_config_from_handle(
+                handle=handle,
+                actor=actor,
             )
-        else:
-            embedding_config = embedding_configs[0]
+        except Exception as e:
+            # Convert to LettaInvalidArgumentError for backwards compatibility
+            from letta.orm.errors import NoResultFound
 
-        if embedding_chunk_size:
-            embedding_config.embedding_chunk_size = embedding_chunk_size
+            if isinstance(e, NoResultFound):
+                raise LettaInvalidArgumentError(f"Embedding model {handle} not found", argument_name="handle")
+            raise
+
+        # Override chunk size if provided
+        embedding_config.embedding_chunk_size = embedding_chunk_size
 
         return embedding_config
 
@@ -1252,56 +1333,16 @@ class SyncServer(object):
         providers = [provider for provider in all_providers if provider.name == provider_name]
         if not providers:
             raise LettaInvalidArgumentError(
-                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in self._enabled_providers])})",
+                f"Provider {provider_name} is not supported (supported providers: {', '.join([provider.name for provider in all_providers])})",
                 argument_name="provider_name",
             )
         elif len(providers) > 1:
-            logger.warning(f"Multiple providers with name {provider_name} supported", argument_name="provider_name")
+            logger.warning(f"Multiple providers with name {provider_name} supported")
             provider = providers[0]
         else:
             provider = providers[0]
 
         return provider
-
-    def get_local_llm_configs(self):
-        llm_models = []
-        # NOTE: deprecated
-        # try:
-        #    llm_configs_dir = os.path.expanduser("~/.letta/llm_configs")
-        #    if os.path.exists(llm_configs_dir):
-        #        for filename in os.listdir(llm_configs_dir):
-        #            if filename.endswith(".json"):
-        #                filepath = os.path.join(llm_configs_dir, filename)
-        #                try:
-        #                    with open(filepath, "r") as f:
-        #                        config_data = json.load(f)
-        #                        llm_config = LLMConfig(**config_data)
-        #                        llm_models.append(llm_config)
-        #                except (json.JSONDecodeError, ValueError) as e:
-        #                    logger.warning(f"Error parsing LLM config file {filename}: {e}")
-        # except Exception as e:
-        #    logger.warning(f"Error reading LLM configs directory: {e}")
-        return llm_models
-
-    def get_local_embedding_configs(self):
-        embedding_models = []
-        # NOTE: deprecated
-        # try:
-        #    embedding_configs_dir = os.path.expanduser("~/.letta/embedding_configs")
-        #    if os.path.exists(embedding_configs_dir):
-        #        for filename in os.listdir(embedding_configs_dir):
-        #            if filename.endswith(".json"):
-        #                filepath = os.path.join(embedding_configs_dir, filename)
-        #                try:
-        #                    with open(filepath, "r") as f:
-        #                        config_data = json.load(f)
-        #                        embedding_config = EmbeddingConfig(**config_data)
-        #                        embedding_models.append(embedding_config)
-        #                except (json.JSONDecodeError, ValueError) as e:
-        #                    logger.warning(f"Error parsing embedding config file {filename}: {e}")
-        # except Exception as e:
-        #    logger.warning(f"Error reading embedding configs directory: {e}")
-        return embedding_models
 
     def add_llm_model(self, request: LLMConfig) -> LLMConfig:
         """Add a new LLM model"""
@@ -1533,7 +1574,7 @@ class SyncServer(object):
 
         # Attempt to initialize the connection to the server
         if server_config.type == MCPServerType.SSE:
-            new_mcp_client = AsyncSSEMCPClient(server_config)
+            new_mcp_client = AsyncFastMCPSSEClient(server_config)
         elif server_config.type == MCPServerType.STDIO:
             new_mcp_client = AsyncStdioMCPClient(server_config)
         else:

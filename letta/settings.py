@@ -134,6 +134,10 @@ class ModelSettings(BaseSettings):
     # xAI / Grok
     xai_api_key: Optional[str] = None
 
+    # Z.ai (ZhipuAI)
+    zai_api_key: Optional[str] = None
+    zai_base_url: str = "https://api.z.ai/api/paas/v4/"
+
     # groq
     groq_api_key: Optional[str] = None
 

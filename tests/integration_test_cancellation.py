@@ -107,7 +107,7 @@ def server_url() -> str:
         thread = threading.Thread(target=_run_server, daemon=True)
         thread.start()
 
-        timeout_seconds = 30
+        timeout_seconds = 60
         import time
 
         import httpx

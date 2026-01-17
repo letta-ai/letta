@@ -69,6 +69,34 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin, AsyncAttrs):
         cascade="all, delete-orphan",
     )
 
+    def to_pydantic(self, strip_directory_prefix: bool = False) -> PydanticFileMetadata:
+        """
+        Convert to Pydantic model without any relationship loading.
+        """
+        file_name = self.file_name
+        if strip_directory_prefix and "/" in file_name:
+            file_name = "/".join(file_name.split("/")[1:])
+
+        return PydanticFileMetadata(
+            id=self.id,
+            organization_id=self.organization_id,
+            source_id=self.source_id,
+            file_name=file_name,
+            original_file_name=self.original_file_name,
+            file_path=self.file_path,
+            file_type=self.file_type,
+            file_size=self.file_size,
+            file_creation_date=self.file_creation_date,
+            file_last_modified_date=self.file_last_modified_date,
+            processing_status=self.processing_status,
+            error_message=self.error_message,
+            total_chunks=self.total_chunks,
+            chunks_embedded=self.chunks_embedded,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            content=None,
+        )
+
     async def to_pydantic_async(self, include_content: bool = False, strip_directory_prefix: bool = False) -> PydanticFileMetadata:
         """
         Async version of `to_pydantic` that supports optional relationship loading

@@ -211,6 +211,7 @@ class Message(BaseMessage):
             tool_returns (List[ToolReturn]): The list of tool returns requested.
             group_id (str): The multi-agent group that the message was sent in.
             sender_id (str): The id of the sender of the message, can be an identity id or agent id.
+            conversation_id (str): The conversation this message belongs to.
     t
     """
 
@@ -237,6 +238,7 @@ class Message(BaseMessage):
     group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
     sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
     batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
+    conversation_id: Optional[str] = Field(default=None, description="The conversation this message belongs to")
     is_err: Optional[bool] = Field(
         default=None, description="Whether this message is part of an error step. Used only for debugging purposes."
     )
@@ -1639,13 +1641,13 @@ class Message(BaseMessage):
                         # TextContent, ImageContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent
                         if isinstance(content_part, ReasoningContent):
                             if current_model == self.model:
-                                content.append(
-                                    {
-                                        "type": "thinking",
-                                        "thinking": content_part.reasoning,
-                                        "signature": content_part.signature,
-                                    }
-                                )
+                                block = {
+                                    "type": "thinking",
+                                    "thinking": content_part.reasoning,
+                                }
+                                if content_part.signature:
+                                    block["signature"] = content_part.signature
+                                content.append(block)
                         elif isinstance(content_part, RedactedReasoningContent):
                             if current_model == self.model:
                                 content.append(
@@ -1671,13 +1673,13 @@ class Message(BaseMessage):
                     for content_part in self.content:
                         if isinstance(content_part, ReasoningContent):
                             if current_model == self.model:
-                                content.append(
-                                    {
-                                        "type": "thinking",
-                                        "thinking": content_part.reasoning,
-                                        "signature": content_part.signature,
-                                    }
-                                )
+                                block = {
+                                    "type": "thinking",
+                                    "thinking": content_part.reasoning,
+                                }
+                                if content_part.signature:
+                                    block["signature"] = content_part.signature
+                                content.append(block)
                         if isinstance(content_part, RedactedReasoningContent):
                             if current_model == self.model:
                                 content.append(
@@ -1729,29 +1731,42 @@ class Message(BaseMessage):
         elif self.role == "tool":
             # NOTE: Anthropic uses role "user" for "tool" responses
             content = []
-            for tool_return in self.tool_returns:
-                if not tool_return.tool_call_id:
-                    from letta.log import get_logger
+            # Handle the case where tool_returns is None or empty
+            if self.tool_returns:
+                # For single tool returns, we can use the message's tool_call_id as fallback
+                # since self.tool_call_id == tool_returns[0].tool_call_id for legacy compatibility.
+                # For multiple tool returns (parallel tool calls), each must have its own ID
+                # to correctly map results to their corresponding tool invocations.
+                use_message_fallback = len(self.tool_returns) == 1
+                for idx, tool_return in enumerate(self.tool_returns):
+                    # Get tool_call_id from tool_return; only use message fallback for single returns
+                    resolved_tool_call_id = tool_return.tool_call_id
+                    if not resolved_tool_call_id and use_message_fallback:
+                        resolved_tool_call_id = self.tool_call_id
+                    if not resolved_tool_call_id:
+                        from letta.log import get_logger
 
-                    logger = get_logger(__name__)
-                    logger.error(
-                        f"Missing tool_call_id in tool return. "
-                        f"Message ID: {self.id}, "
-                        f"Tool name: {getattr(tool_return, 'name', 'unknown')}, "
-                        f"Tool return: {tool_return}"
+                        logger = get_logger(__name__)
+                        logger.error(
+                            f"Missing tool_call_id in tool return and no fallback available. "
+                            f"Message ID: {self.id}, "
+                            f"Tool name: {self.name or 'unknown'}, "
+                            f"Tool return index: {idx}/{len(self.tool_returns)}, "
+                            f"Tool return status: {tool_return.status}"
+                        )
+                        raise TypeError(
+                            f"Anthropic API requires tool_use_id to be set. "
+                            f"Message ID: {self.id}, Tool: {self.name or 'unknown'}, "
+                            f"Tool return index: {idx}/{len(self.tool_returns)}"
+                        )
+                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                    content.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": resolved_tool_call_id,
+                            "content": func_response,
+                        }
                     )
-                    raise TypeError(
-                        f"Anthropic API requires tool_use_id to be set. "
-                        f"Message ID: {self.id}, Tool: {getattr(tool_return, 'name', 'unknown')}"
-                    )
-                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
-                content.append(
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": tool_return.tool_call_id,
-                        "content": func_response,
-                    }
-                )
             if content:
                 anthropic_message = {
                     "role": "user",
@@ -2302,6 +2317,7 @@ class MessageSearchRequest(BaseModel):
     agent_id: Optional[str] = Field(None, description="Filter messages by agent ID")
     project_id: Optional[str] = Field(None, description="Filter messages by project ID")
     template_id: Optional[str] = Field(None, description="Filter messages by template ID")
+    conversation_id: Optional[str] = Field(None, description="Filter messages by conversation ID")
     limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
     start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")
@@ -2310,6 +2326,8 @@ class MessageSearchRequest(BaseModel):
 class SearchAllMessagesRequest(BaseModel):
     query: str = Field(..., description="Text query for full-text search")
     search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
+    agent_id: Optional[str] = Field(None, description="Filter messages by agent ID")
+    conversation_id: Optional[str] = Field(None, description="Filter messages by conversation ID")
     limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
     start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")

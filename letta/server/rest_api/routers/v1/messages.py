@@ -40,6 +40,7 @@ async def list_all_messages(
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
+    conversation_id: Optional[str] = Query(None, description="Conversation ID to filter messages by"),
 ):
     """
     List messages across all agents for the current user.
@@ -51,6 +52,7 @@ async def list_all_messages(
         limit=limit,
         reverse=(order == "desc"),
         return_message_object=False,
+        conversation_id=conversation_id,
         actor=actor,
     )
 
@@ -73,6 +75,8 @@ async def search_all_messages(
         actor=actor,
         query_text=request.query,
         search_mode=request.search_mode,
+        agent_id=request.agent_id,
+        conversation_id=request.conversation_id,
         limit=request.limit,
         start_date=request.start_date,
         end_date=request.end_date,

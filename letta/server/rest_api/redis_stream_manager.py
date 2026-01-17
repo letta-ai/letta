@@ -4,7 +4,9 @@ import asyncio
 import json
 import time
 from collections import defaultdict
-from typing import AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import aclosing
+from typing import Dict, List, Optional
 
 from letta.data_sources.redis_client import AsyncRedisClient
 from letta.log import get_logger
@@ -194,12 +196,13 @@ class RedisSSEStreamWriter:
 
 
 async def create_background_stream_processor(
-    stream_generator,
+    stream_generator: AsyncGenerator[str | bytes | tuple[str | bytes, int], None],
     redis_client: AsyncRedisClient,
     run_id: str,
     writer: Optional[RedisSSEStreamWriter] = None,
     run_manager: Optional[RunManager] = None,
     actor: Optional[User] = None,
+    conversation_id: Optional[str] = None,
 ) -> None:
     """
     Process a stream in the background and store chunks to Redis.
@@ -214,10 +217,12 @@ async def create_background_stream_processor(
         writer: Optional pre-configured writer (creates new if not provided)
         run_manager: Optional run manager for updating run status
         actor: Optional actor for run status updates
+        conversation_id: Optional conversation ID for releasing lock on terminal states
     """
     stop_reason = None
     saw_done = False
     saw_error = False
+    error_metadata = None
 
     if writer is None:
         writer = RedisSSEStreamWriter(redis_client)
@@ -227,32 +232,52 @@ async def create_background_stream_processor(
         should_stop_writer = False
 
     try:
-        async for chunk in stream_generator:
-            if isinstance(chunk, tuple):
-                chunk = chunk[0]
+        # Always close the upstream async generator so its `finally` blocks run.
+        # (e.g., stream adapters may persist terminal error metadata on close)
+        async with aclosing(stream_generator):
+            async for chunk in stream_generator:
+                if isinstance(chunk, tuple):
+                    chunk = chunk[0]
 
-            # Track terminal events
-            if isinstance(chunk, str):
-                if "data: [DONE]" in chunk:
-                    saw_done = True
-                if "event: error" in chunk:
-                    saw_error = True
+                # Track terminal events
+                if isinstance(chunk, str):
+                    if "data: [DONE]" in chunk:
+                        saw_done = True
+                    if "event: error" in chunk:
+                        saw_error = True
 
-            is_done = saw_done or saw_error
+                    # Best-effort extraction of the error payload so we can persist it on the run.
+                    # Chunk format is typically: "event: error\ndata: {json}\n\n"
+                    if saw_error and error_metadata is None:
+                        try:
+                            # Grab the first `data:` line after `event: error`
+                            for line in chunk.splitlines():
+                                if line.startswith("data: "):
+                                    maybe_json = line[len("data: ") :].strip()
+                                    if maybe_json and maybe_json[0] in "[{":
+                                        error_metadata = {"error": json.loads(maybe_json)}
+                                    else:
+                                        error_metadata = {"error": {"message": maybe_json}}
+                                    break
+                        except Exception:
+                            # Don't let parsing failures interfere with streaming
+                            error_metadata = {"error": {"message": "Failed to parse error payload from stream."}}
 
-            await writer.write_chunk(run_id=run_id, data=chunk, is_complete=is_done)
+                is_done = saw_done or saw_error
 
-            if is_done:
-                break
+                await writer.write_chunk(run_id=run_id, data=chunk, is_complete=is_done)
 
-            try:
-                # Extract stop_reason from stop_reason chunks
-                maybe_json_chunk = chunk.split("data: ")[1]
-                maybe_stop_reason = json.loads(maybe_json_chunk) if maybe_json_chunk and maybe_json_chunk[0] == "{" else None
-                if maybe_stop_reason and maybe_stop_reason.get("message_type") == "stop_reason":
-                    stop_reason = maybe_stop_reason.get("stop_reason")
-            except:
-                pass
+                if is_done:
+                    break
+
+                try:
+                    # Extract stop_reason from stop_reason chunks
+                    maybe_json_chunk = chunk.split("data: ")[1]
+                    maybe_stop_reason = json.loads(maybe_json_chunk) if maybe_json_chunk and maybe_json_chunk[0] == "{" else None
+                    if maybe_stop_reason and maybe_stop_reason.get("message_type") == "stop_reason":
+                        stop_reason = maybe_stop_reason.get("stop_reason")
+                except:
+                    pass
 
         # Stream ended naturally - check if we got a proper terminal
         if not saw_done and not saw_error:
@@ -319,6 +344,7 @@ async def create_background_stream_processor(
                 run_id=run_id,
                 update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value, metadata={"error": str(e)}),
                 actor=actor,
+                conversation_id=conversation_id,
             )
     finally:
         if should_stop_writer:
@@ -357,10 +383,15 @@ async def create_background_stream_processor(
                 logger.warning(f"Unknown stop_reason '{final_stop_reason}' for run {run_id}, defaulting to completed")
                 run_status = RunStatus.completed
 
+            update_kwargs = {"status": run_status, "stop_reason": final_stop_reason}
+            if run_status == RunStatus.failed and error_metadata is not None:
+                update_kwargs["metadata"] = error_metadata
+
             await run_manager.update_run_by_id_async(
                 run_id=run_id,
-                update=RunUpdate(status=run_status, stop_reason=final_stop_reason),
+                update=RunUpdate(**update_kwargs),
                 actor=actor,
+                conversation_id=conversation_id,
             )
 
         # Belt-and-suspenders: always append a terminal [DONE] chunk to ensure clients terminate

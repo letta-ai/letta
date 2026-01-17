@@ -115,40 +115,35 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             else:
                 letta_api_key = additional_env_vars.get("LETTA_SECRET_API_KEY", None)
 
-            # Construct dynamic env vars
-            # Priority order (later overrides earlier):
-            # 1. Sandbox-level env vars (from database)
-            # 2. Agent-specific env vars
-            # 3. Additional runtime env vars
+            # Construct dynamic env vars with proper layering:
+            # 1. Global sandbox env vars from DB (always included)
+            # 2. Provided sandbox env vars (agent-scoped, override global on key collision)
+            # 3. Agent-specific env vars from secrets
+            # 4. Additional runtime env vars (highest priority)
             env_vars = {}
 
-            # Load sandbox-level environment variables from the database
-            # These can be updated after deployment and will be available at runtime
+            # Always load global sandbox-level environment variables from the database
+            try:
+                sandbox_config = await self.sandbox_config_manager.get_or_create_default_sandbox_config_async(
+                    sandbox_type=SandboxType.MODAL, actor=self.user
+                )
+                if sandbox_config:
+                    global_env_vars = await self.sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
+                        sandbox_config_id=sandbox_config.id, actor=self.user, limit=None
+                    )
+                    env_vars.update(global_env_vars)
+            except Exception as e:
+                logger.warning(f"Could not load global sandbox env vars for tool {self.tool_name}: {e}")
+
+            # Override with provided sandbox env vars (agent-scoped)
             if self.provided_sandbox_env_vars:
                 env_vars.update(self.provided_sandbox_env_vars)
-            else:
-                try:
-                    from letta.services.sandbox_config_manager import SandboxConfigManager
 
-                    sandbox_config_manager = SandboxConfigManager()
-                    sandbox_config = await sandbox_config_manager.get_or_create_default_sandbox_config_async(
-                        sandbox_type=SandboxType.MODAL, actor=self.user
-                    )
-                    if sandbox_config:
-                        sandbox_env_vars = await sandbox_config_manager.get_sandbox_env_vars_as_dict_async(
-                            sandbox_config_id=sandbox_config.id, actor=self.user, limit=None
-                        )
-                        env_vars.update(sandbox_env_vars)
-                except Exception as e:
-                    logger.warning(f"Could not load sandbox env vars for tool {self.tool_name}: {e}")
+            # Override with agent-specific environment variables from secrets
+            if agent_state:
+                env_vars.update(agent_state.get_agent_env_vars_as_dict())
 
-            # Add agent-specific environment variables (these override sandbox-level)
-            # Use the pre-decrypted value field which was populated in from_orm_async()
-            if agent_state and agent_state.secrets:
-                for secret in agent_state.secrets:
-                    env_vars[secret.key] = secret.value or ""
-
-            # Add any additional env vars passed at runtime (highest priority)
+            # Override with additional env vars passed at runtime (highest priority)
             if additional_env_vars:
                 env_vars.update(additional_env_vars)
 

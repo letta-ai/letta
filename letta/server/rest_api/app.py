@@ -18,7 +18,7 @@ faulthandler.enable()
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.middleware.cors import CORSMiddleware
@@ -32,6 +32,9 @@ from letta.errors import (
     AgentFileImportError,
     AgentNotFoundForExportError,
     BedrockPermissionError,
+    ConcurrentUpdateError,
+    ConversationBusyError,
+    EmbeddingConfigRequiredError,
     HandleNotFoundError,
     LettaAgentNotFoundError,
     LettaExpiredError,
@@ -49,6 +52,7 @@ from letta.errors import (
     LLMProviderOverloaded,
     LLMRateLimitError,
     LLMTimeoutError,
+    NoActiveRunsToCancelError,
     PendingApprovalError,
 )
 from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pinecone, upsert_pinecone_indices
@@ -69,7 +73,7 @@ from letta.server.global_exception_handler import setup_global_exception_handler
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
 from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware
+from letta.server.rest_api.middleware import CheckPasswordMiddleware, LoggingMiddleware, RequestIdMiddleware
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
 from letta.server.rest_api.routers.v1.organizations import router as organizations_router
 from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
@@ -241,10 +245,6 @@ def create_application() -> "FastAPI":
             os.environ.setdefault("DD_PROFILING_MEMORY_ENABLED", str(telemetry_settings.datadog_profiling_memory_enabled).lower())
             os.environ.setdefault("DD_PROFILING_HEAP_ENABLED", str(telemetry_settings.datadog_profiling_heap_enabled).lower())
 
-            # Enable LLM Observability for tracking LLM calls, prompts, and completions
-            os.environ.setdefault("DD_LLMOBS_ENABLED", "1")
-            os.environ.setdefault("DD_LLMOBS_ML_APP", "memgpt-server")
-
             # Note: DD_LOGS_INJECTION, DD_APPSEC_ENABLED, DD_IAST_ENABLED, DD_APPSEC_SCA_ENABLED
             # are set via deployment configs and automatically picked up by ddtrace
 
@@ -252,6 +252,49 @@ def create_application() -> "FastAPI":
             import ddtrace
 
             ddtrace.patch_all()  # Auto-instrument FastAPI, HTTP, DB, etc.
+
+            llmobs_flag = os.getenv("DD_LLMOBS_ENABLED", "")
+            from ddtrace.llmobs import LLMObs
+
+            try:
+                from ddtrace.llmobs._constants import MODEL_PROVIDER
+                from ddtrace.llmobs._integrations.openai import OpenAIIntegration
+
+                if not getattr(OpenAIIntegration, "_letta_provider_patch_done", False):
+                    original_set_tags = OpenAIIntegration._llmobs_set_tags
+
+                    def _letta_set_tags(self, span, args, kwargs, response=None, operation=""):
+                        original_set_tags(self, span, args, kwargs, response=response, operation=operation)
+
+                        base_url = span.get_tag("openai.api_base")
+                        if not base_url:
+                            try:
+                                client = getattr(self, "_client", None)
+                                base_url = str(getattr(client, "_base_url", "") or "")
+                            except Exception:
+                                base_url = ""
+
+                        u = (base_url or "").lower()
+                        provider = None
+                        if "openrouter" in u:
+                            provider = "openrouter"
+                        elif "groq" in u:
+                            provider = "groq"
+
+                        if provider:
+                            span._set_ctx_item(MODEL_PROVIDER, provider)
+                            span._set_tag_str("openai.request.provider", provider)
+
+                    OpenAIIntegration._llmobs_set_tags = _letta_set_tags
+                    OpenAIIntegration._letta_provider_patch_done = True
+            except Exception:
+                logger.exception("Failed to patch ddtrace OpenAI LLMObs provider detection")
+
+            if llmobs_flag:
+                LLMObs.enable(
+                    ml_app=os.getenv("DD_LLMOBS_ML_APP") or telemetry_settings.datadog_service_name,
+                )
+
             logger.info(
                 f"Datadog tracer initialized: env={dd_env}, "
                 f"service={telemetry_settings.datadog_service_name}, "
@@ -296,6 +339,7 @@ def create_application() -> "FastAPI":
         version=letta_version,
         debug=debug_mode,  # if True, the stack trace will be printed in the response
         lifespan=lifespan,
+        default_response_class=ORJSONResponse,  # Use orjson for 10x faster JSON serialization
     )
 
     # === Global Exception Handlers ===
@@ -431,6 +475,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaToolCreateError, _error_handler_400)
     app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
     app.add_exception_handler(AgentFileImportError, _error_handler_400)
+    app.add_exception_handler(EmbeddingConfigRequiredError, _error_handler_400)
     app.add_exception_handler(ValueError, _error_handler_400)
 
     # 404 Not Found errors
@@ -451,7 +496,10 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(ForeignKeyConstraintViolationError, _error_handler_409)
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
+    app.add_exception_handler(ConcurrentUpdateError, _error_handler_409)
+    app.add_exception_handler(ConversationBusyError, _error_handler_409)
     app.add_exception_handler(PendingApprovalError, _error_handler_409)
+    app.add_exception_handler(NoActiveRunsToCancelError, _error_handler_409)
 
     # 415 Unsupported Media Type errors
     app.add_exception_handler(LettaUnsupportedFileUploadError, _error_handler_415)
@@ -586,6 +634,10 @@ def create_application() -> "FastAPI":
     # Add unified logging middleware - enriches log context and logs exceptions
     app.add_middleware(LoggingMiddleware)
 
+    # Add request ID middleware - extracts x-api-request-log-id header and sets it in contextvar
+    # This is a pure ASGI middleware to properly propagate contextvars to streaming responses
+    app.add_middleware(RequestIdMiddleware)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -633,9 +685,6 @@ def create_application() -> "FastAPI":
         # we should always tie this to the newest version of the api.
         # app.include_router(route, prefix="", include_in_schema=False)
         app.include_router(route, prefix="/latest", include_in_schema=False)
-
-    # NOTE: ethan these are the extra routes
-    # TODO(ethan) remove
 
     # admin/users
     app.include_router(users_router, prefix=ADMIN_PREFIX)

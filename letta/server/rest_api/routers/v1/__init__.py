@@ -3,6 +3,7 @@ from letta.server.rest_api.routers.v1.anthropic import router as anthropic_route
 from letta.server.rest_api.routers.v1.archives import router as archives_router
 from letta.server.rest_api.routers.v1.blocks import router as blocks_router
 from letta.server.rest_api.routers.v1.chat_completions import router as chat_completions_router, router as openai_chat_completions_router
+from letta.server.rest_api.routers.v1.conversations import router as conversations_router
 from letta.server.rest_api.routers.v1.embeddings import router as embeddings_router
 from letta.server.rest_api.routers.v1.folders import router as folders_router
 from letta.server.rest_api.routers.v1.groups import router as groups_router
@@ -36,6 +37,7 @@ ROUTERS = [
     sources_router,
     folders_router,
     agents_router,
+    conversations_router,
     chat_completions_router,
     groups_router,
     identities_router,

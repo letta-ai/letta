@@ -47,6 +47,7 @@ class Model(LLMConfig, ModelBase):
         "bedrock",
         "deepseek",
         "xai",
+        "zai",
     ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the model.", deprecated=True)
     context_window: int = Field(
         ..., description="Deprecated: Use 'max_context_window' field instead. The context window size for the model.", deprecated=True
@@ -131,6 +132,7 @@ class Model(LLMConfig, ModelBase):
             ProviderType.google_vertex: GoogleVertexModelSettings,
             ProviderType.azure: AzureModelSettings,
             ProviderType.xai: XAIModelSettings,
+            ProviderType.zai: ZAIModelSettings,
             ProviderType.groq: GroqModelSettings,
             ProviderType.deepseek: DeepseekModelSettings,
             ProviderType.together: TogetherModelSettings,
@@ -352,6 +354,22 @@ class XAIModelSettings(ModelSettings):
         }
 
 
+class ZAIModelSettings(ModelSettings):
+    """Z.ai (ZhipuAI) model configuration (OpenAI-compatible)."""
+
+    provider_type: Literal[ProviderType.zai] = Field(ProviderType.zai, description="The type of the provider.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
+    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
+
+    def _to_legacy_config_params(self) -> dict:
+        return {
+            "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
+            "response_format": self.response_format,
+            "parallel_tool_calls": self.parallel_tool_calls,
+        }
+
+
 class GroqModelSettings(ModelSettings):
     """Groq model configuration (OpenAI-compatible)."""
 
@@ -424,6 +442,7 @@ ModelSettingsUnion = Annotated[
         GoogleVertexModelSettings,
         AzureModelSettings,
         XAIModelSettings,
+        ZAIModelSettings,
         GroqModelSettings,
         DeepseekModelSettings,
         TogetherModelSettings,

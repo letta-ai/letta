@@ -2,11 +2,12 @@ import json
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
+import httpx
 from anthropic.types.beta.messages import BetaMessageBatch
 from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from letta.errors import LLMError
+from letta.errors import ErrorCode, LLMConnectionError, LLMError
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, ProviderCategory
@@ -215,29 +216,59 @@ class LLMClientBase:
         Returns:
             An LLMError subclass that represents the error in a provider-agnostic way
         """
+        # Handle httpx.RemoteProtocolError which can occur during streaming
+        # when the remote server closes the connection unexpectedly
+        # (e.g., "peer closed connection without sending complete message body")
+        if isinstance(e, httpx.RemoteProtocolError):
+            from letta.log import get_logger
+
+            logger = get_logger(__name__)
+            logger.warning(f"[LLM] Remote protocol error during streaming: {e}")
+            return LLMConnectionError(
+                message=f"Connection error during streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
         return LLMError(f"Unhandled LLM error: {str(e)}")
 
     def get_byok_overrides(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Returns the override key for the given llm config.
+        Only fetches API key from database for BYOK providers.
+        Base providers use environment variables directly.
         """
         api_key = None
+        # Only fetch API key from database for BYOK providers
+        # Base providers should always use environment variables
         if llm_config.provider_category == ProviderCategory.byok:
             from letta.services.provider_manager import ProviderManager
 
             api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+            # If we got an empty string from the database, treat it as None
+            # so the client can fall back to environment variables or default behavior
+            if api_key == "":
+                api_key = None
 
         return api_key, None, None
 
     async def get_byok_overrides_async(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Returns the override key for the given llm config.
+        Only fetches API key from database for BYOK providers.
+        Base providers use environment variables directly.
         """
         api_key = None
+        # Only fetch API key from database for BYOK providers
+        # Base providers should always use environment variables
         if llm_config.provider_category == ProviderCategory.byok:
             from letta.services.provider_manager import ProviderManager
 
             api_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
+            # If we got an empty string from the database, treat it as None
+            # so the client can fall back to environment variables or default behavior
+            if api_key == "":
+                api_key = None
 
         return api_key, None, None
 

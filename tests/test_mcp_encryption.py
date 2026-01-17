@@ -167,7 +167,8 @@ class TestMCPServerEncryption:
                     updated_at=datetime.now(timezone.utc),
                 )
                 session.add(db_server)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
             # Retrieve server directly by ID to avoid issues with other servers in DB
             test_server = await server.mcp_manager.get_mcp_server_by_id_async(server_id, actor=default_user)
@@ -183,7 +184,8 @@ class TestMCPServerEncryption:
                 result = await session.execute(select(ORMMCPServer).where(ORMMCPServer.id == server_id))
                 db_server = result.scalar_one()
                 await session.delete(db_server)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
         finally:
             # Restore original encryption key
@@ -338,7 +340,8 @@ class TestMCPOAuthEncryption:
                     updated_at=datetime.now(timezone.utc),
                 )
                 session.add(db_oauth)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
             # Retrieve through manager by ID
             test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
@@ -456,7 +459,8 @@ class TestMCPOAuthEncryption:
                     updated_at=datetime.now(timezone.utc),
                 )
                 session.add(db_oauth)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
             # Retrieve through manager
             test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)
@@ -505,7 +509,8 @@ class TestMCPOAuthEncryption:
                     updated_at=datetime.now(timezone.utc),
                 )
                 session.add(db_oauth)
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
 
             # Retrieve through manager
             test_session = await server.mcp_manager.get_oauth_session_by_id(session_id, actor=default_user)

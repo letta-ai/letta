@@ -1,6 +1,9 @@
 from typing import List, Optional, Tuple, Union
 
+from sqlalchemy import and_, select
+
 from letta.log import get_logger
+from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -30,8 +33,6 @@ class ProviderManager:
             is_byok: If True, creates a BYOK provider (default). If False, creates a base provider.
         """
         async with db_registry.async_session() as session:
-            from letta.schemas.enums import ProviderCategory
-
             # Check for name conflicts
             if is_byok:
                 # BYOK providers cannot use the same name as base providers
@@ -57,6 +58,54 @@ class ProviderManager:
                 if existing_base_providers:
                     raise ValueError(f"Base provider name '{request.name}' already exists. Please choose a different name.")
 
+            # Check if there's a soft-deleted provider with the same name that we can restore
+            org_id = actor.organization_id if is_byok else None
+            if org_id is not None:
+                stmt = select(ProviderModel).where(
+                    and_(
+                        ProviderModel.name == request.name,
+                        ProviderModel.organization_id == org_id,
+                        ProviderModel.is_deleted == True,
+                    )
+                )
+            else:
+                stmt = select(ProviderModel).where(
+                    and_(
+                        ProviderModel.name == request.name,
+                        ProviderModel.organization_id.is_(None),
+                        ProviderModel.is_deleted == True,
+                    )
+                )
+            result = await session.execute(stmt)
+            deleted_provider = result.scalar_one_or_none()
+
+            if deleted_provider:
+                # Restore the soft-deleted provider and update its fields
+                logger.info(f"Restoring soft-deleted provider '{request.name}' with id: {deleted_provider.id}")
+                deleted_provider.is_deleted = False
+                deleted_provider.provider_type = request.provider_type
+                deleted_provider.provider_category = ProviderCategory.byok if is_byok else ProviderCategory.base
+                deleted_provider.base_url = request.base_url
+                deleted_provider.region = request.region
+                deleted_provider.api_version = request.api_version
+
+                # Update encrypted fields (async to avoid blocking event loop)
+                if request.api_key is not None:
+                    api_key_secret = await Secret.from_plaintext_async(request.api_key)
+                    deleted_provider.api_key_enc = api_key_secret.get_encrypted()
+                if request.access_key is not None:
+                    access_key_secret = await Secret.from_plaintext_async(request.access_key)
+                    deleted_provider.access_key_enc = access_key_secret.get_encrypted()
+
+                await deleted_provider.update_async(session, actor=actor)
+                provider_pydantic = deleted_provider.to_pydantic()
+
+                # For BYOK providers, automatically sync available models
+                if is_byok:
+                    await self._sync_default_models_for_provider(provider_pydantic, actor)
+
+                return provider_pydantic
+
             # Create provider with the appropriate category
             provider_data = request.model_dump()
 
@@ -78,11 +127,11 @@ class ProviderManager:
             # Lazily create the provider id prior to persistence
             provider.resolve_identifier()
 
-            # Explicitly populate encrypted fields from plaintext
+            # Explicitly populate encrypted fields from plaintext (async to avoid blocking event loop)
             if request.api_key is not None:
-                provider.api_key_enc = Secret.from_plaintext(request.api_key)
+                provider.api_key_enc = await Secret.from_plaintext_async(request.api_key)
             if request.access_key is not None:
-                provider.access_key_enc = Secret.from_plaintext(request.access_key)
+                provider.access_key_enc = await Secret.from_plaintext_async(request.access_key)
 
             new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
             await new_provider.create_async(session, actor=actor)
@@ -117,9 +166,10 @@ class ProviderManager:
                     existing_secret = Secret.from_encrypted(existing_provider.api_key_enc)
                     existing_api_key = await existing_secret.get_plaintext_async()
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_api_key != update_data["api_key"]:
-                    existing_provider.api_key_enc = Secret.from_plaintext(update_data["api_key"]).get_encrypted()
+                    api_key_secret = await Secret.from_plaintext_async(update_data["api_key"])
+                    existing_provider.api_key_enc = api_key_secret.get_encrypted()
 
                 # Remove from update_data since we set directly on existing_provider
                 update_data.pop("api_key", None)
@@ -134,9 +184,10 @@ class ProviderManager:
                     existing_secret = Secret.from_encrypted(existing_provider.access_key_enc)
                     existing_access_key = await existing_secret.get_plaintext_async()
 
-                # Only re-encrypt if different
+                # Only re-encrypt if different (async to avoid blocking event loop)
                 if existing_access_key != update_data["access_key"]:
-                    existing_provider.access_key_enc = Secret.from_plaintext(update_data["access_key"]).get_encrypted()
+                    access_key_secret = await Secret.from_plaintext_async(update_data["access_key"])
+                    existing_provider.access_key_enc = access_key_secret.get_encrypted()
 
                 # Remove from update_data since we set directly on existing_provider
                 update_data.pop("access_key", None)
@@ -154,7 +205,7 @@ class ProviderManager:
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
     @trace_method
     async def delete_provider_by_id_async(self, provider_id: str, actor: PydanticUser):
-        """Delete a provider."""
+        """Delete a provider and its associated models."""
         async with db_registry.async_session() as session:
             # Clear api key field
             existing_provider = await ProviderModel.read_async(
@@ -171,10 +222,20 @@ class ProviderManager:
 
             await existing_provider.update_async(session, actor=actor)
 
+            # Soft delete all models associated with this provider
+            provider_models = await ProviderModelORM.list_async(
+                db_session=session,
+                provider_id=provider_id,
+                check_is_deleted=True,
+            )
+            for model in provider_models:
+                await model.delete_async(session, actor=actor)
+
             # Soft delete in provider table
             await existing_provider.delete_async(session, actor=actor)
 
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
     @enforce_types
     @trace_method
@@ -183,6 +244,7 @@ class ProviderManager:
         actor: PydanticUser,
         name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
+        provider_category: Optional[List[ProviderCategory]] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -223,7 +285,14 @@ class ProviderManager:
             )
 
             # Combine both lists
-            all_providers = org_providers + global_providers
+            all_providers = []
+            if not provider_category:
+                all_providers = org_providers + global_providers
+            else:
+                if ProviderCategory.byok in provider_category:
+                    all_providers += org_providers
+                if ProviderCategory.base in provider_category:
+                    all_providers += global_providers
 
             # Remove deprecated api_key and access_key fields from the response
             for provider in all_providers:
@@ -420,6 +489,7 @@ class ProviderManager:
             from letta.schemas.providers.groq import GroqProvider
             from letta.schemas.providers.ollama import OllamaProvider
             from letta.schemas.providers.openai import OpenAIProvider
+            from letta.schemas.providers.zai import ZAIProvider
 
             provider_type_to_class = {
                 "openai": OpenAIProvider,
@@ -429,6 +499,7 @@ class ProviderManager:
                 "ollama": OllamaProvider,
                 "bedrock": BedrockProvider,
                 "azure": AzureProvider,
+                "zai": ZAIProvider,
             }
 
             provider_type = provider.provider_type.value if hasattr(provider.provider_type, "value") else str(provider.provider_type)
@@ -516,13 +587,14 @@ class ProviderManager:
                         continue
 
                     # Convert Provider to ProviderCreate
-                    api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
-                    access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
+                    # NOTE: Do NOT store API keys for base providers in the database.
+                    # Base providers should always use environment variables for API keys.
+                    # This ensures keys stay in sync with env vars and aren't duplicated in DB.
                     provider_create = ProviderCreate(
                         name=provider.name,
                         provider_type=provider.provider_type,
-                        api_key=api_key or "",  # ProviderCreate requires api_key, use empty string if None
-                        access_key=access_key,
+                        api_key="",  # Base providers use env vars, not DB-stored keys
+                        access_key=None,
                         region=provider.region,
                         base_url=provider.base_url,
                         api_version=provider.api_version,
@@ -651,11 +723,11 @@ class ProviderManager:
                         await model.create_async(session)
                         logger.info(f"    ✓ Successfully created LLM model {llm_config.handle} with ID {model.id}")
                     except Exception as e:
-                        logger.error(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
+                        logger.info(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
                         # Log the full error details
                         import traceback
 
-                        logger.error(f"    Full traceback: {traceback.format_exc()}")
+                        logger.info(f"    Full traceback: {traceback.format_exc()}")
                         # Roll back the session to clear the failed transaction
                         await session.rollback()
                 else:
@@ -839,18 +911,47 @@ class ProviderManager:
             LLMConfig constructed from the provider and model data
 
         Raises:
-            NoResultFound: If the handle doesn't exist in the database
+            NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
 
-        # Look up the model by handle
+        # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
 
         if not model:
+            # Model not in DB - check if it's from a BYOK provider
+            # Handle format is "provider_name/model_name"
+            if "/" in handle:
+                provider_name, model_name = handle.split("/", 1)
+                byok_providers = await self.list_providers_async(
+                    actor=actor,
+                    name=provider_name,
+                    provider_category=[ProviderCategory.byok],
+                )
+                if byok_providers:
+                    # Fetch models dynamically from BYOK provider
+                    provider = byok_providers[0]
+                    typed_provider = provider.cast_to_subtype()
+                    try:
+                        all_llm_configs = await typed_provider.list_llm_models_async()
+                        # Match by handle first (original logic)
+                        llm_configs = [config for config in all_llm_configs if config.handle == handle]
+                        # Fallback to match by model name (original logic)
+                        if not llm_configs:
+                            llm_configs = [config for config in all_llm_configs if config.model == model_name]
+                        if llm_configs:
+                            return llm_configs[0]
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch models from BYOK provider {provider_name}: {e}")
+
             raise NoResultFound(f"LLM model not found with handle='{handle}'")
 
-        # Get the provider for this model
+        # Get the provider for this model and cast to subtype to access provider-specific methods
         provider = await self.get_provider_async(provider_id=model.provider_id, actor=actor)
+        typed_provider = provider.cast_to_subtype()
+
+        # Get the default max_output_tokens from the provider (provider-specific logic)
+        max_tokens = typed_provider.get_default_max_output_tokens(model.name)
 
         # Construct the LLMConfig from the model and provider data
         llm_config = LLMConfig(
@@ -861,6 +962,7 @@ class ProviderManager:
             handle=model.handle,
             provider_name=provider.name,
             provider_category=provider.provider_category,
+            max_tokens=max_tokens,
         )
 
         return llm_config
@@ -882,14 +984,36 @@ class ProviderManager:
             EmbeddingConfig constructed from the provider and model data
 
         Raises:
-            NoResultFound: If the handle doesn't exist in the database
+            NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
 
-        # Look up the model by handle
+        # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="embedding")
 
         if not model:
+            # Model not in DB - check if it's from a BYOK provider
+            # Handle format is "provider_name/model_name"
+            if "/" in handle:
+                provider_name, model_name = handle.split("/", 1)
+                byok_providers = await self.list_providers_async(
+                    actor=actor,
+                    name=provider_name,
+                    provider_category=[ProviderCategory.byok],
+                )
+                if byok_providers:
+                    # Fetch models dynamically from BYOK provider
+                    provider = byok_providers[0]
+                    typed_provider = provider.cast_to_subtype()
+                    try:
+                        all_embedding_configs = await typed_provider.list_embedding_models_async()
+                        # Match by handle (original logic - no model_name fallback for embeddings)
+                        embedding_configs = [config for config in all_embedding_configs if config.handle == handle]
+                        if embedding_configs:
+                            return embedding_configs[0]
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch embedding models from BYOK provider {provider_name}: {e}")
+
             raise NoResultFound(f"Embedding model not found with handle='{handle}'")
 
         # Get the provider for this model

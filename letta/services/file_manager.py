@@ -22,7 +22,7 @@ from letta.schemas.source_metadata import FileStats, OrganizationSourcesStats, S
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import settings
-from letta.utils import enforce_types
+from letta.utils import bounded_gather, enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
@@ -85,7 +85,7 @@ class FileManager:
                 # invalidate cache for this new file
                 await self._invalidate_file_caches(file_orm.id, actor, file_orm.original_file_name, file_orm.source_id)
 
-                return await file_orm.to_pydantic_async()
+                return file_orm.to_pydantic()
 
             except IntegrityError:
                 await session.rollback()
@@ -124,14 +124,20 @@ class FileManager:
                     )
 
                 result = await session.execute(query)
-                file_orm = result.scalar_one()
+                file_orm = result.scalar_one_or_none()
             else:
                 # fast path (metadata only)
-                file_orm = await FileMetadataModel.read_async(
-                    db_session=session,
-                    identifier=file_id,
-                    actor=actor,
-                )
+                try:
+                    file_orm = await FileMetadataModel.read_async(
+                        db_session=session,
+                        identifier=file_id,
+                        actor=actor,
+                    )
+                except NoResultFound:
+                    return None
+
+            if file_orm is None:
+                return None
 
             return await file_orm.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
 
@@ -278,7 +284,7 @@ class FileManager:
                 identifier=file_id,
                 actor=actor,
             )
-            return await file_orm.to_pydantic_async()
+            return file_orm.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -408,7 +414,7 @@ class FileManager:
         actor: PydanticUser,
         before: Optional[str] = None,
         after: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit: Optional[int] = 1000,
         ascending: Optional[bool] = True,
         include_content: bool = False,
         strip_directory_prefix: bool = False,
@@ -445,9 +451,15 @@ class FileManager:
             )
 
             # convert all files to pydantic models
-            file_metadatas = await asyncio.gather(
-                *[file.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix) for file in files]
-            )
+            if include_content:
+                file_metadatas = await bounded_gather(
+                    [
+                        file.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
+                        for file in files
+                    ]
+                )
+            else:
+                file_metadatas = [file.to_pydantic(strip_directory_prefix=strip_directory_prefix) for file in files]
 
             # if status checking is enabled, check all files sequentially to avoid db pool exhaustion
             # Each status check may update the file in the database, so concurrent checks with many
@@ -473,7 +485,7 @@ class FileManager:
             await self._invalidate_file_caches(file_id, actor, file.original_file_name, file.source_id)
 
             await file.hard_delete_async(db_session=session, actor=actor)
-            return await file.to_pydantic_async()
+            return file.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -555,7 +567,7 @@ class FileManager:
             file_orm = result.scalar_one_or_none()
 
             if file_orm:
-                return await file_orm.to_pydantic_async()
+                return file_orm.to_pydantic()
             return None
 
     @enforce_types
@@ -664,7 +676,10 @@ class FileManager:
             result = await session.execute(query)
             files_orm = result.scalars().all()
 
-            return await asyncio.gather(*[file.to_pydantic_async(include_content=include_content) for file in files_orm])
+            if include_content:
+                return await bounded_gather([file.to_pydantic_async(include_content=include_content) for file in files_orm])
+            else:
+                return [file.to_pydantic() for file in files_orm]
 
     @enforce_types
     @trace_method
@@ -709,4 +724,7 @@ class FileManager:
             result = await session.execute(query)
             files_orm = result.scalars().all()
 
-            return await asyncio.gather(*[file.to_pydantic_async(include_content=include_content) for file in files_orm])
+            if include_content:
+                return await bounded_gather([file.to_pydantic_async(include_content=include_content) for file in files_orm])
+            else:
+                return [file.to_pydantic() for file in files_orm]

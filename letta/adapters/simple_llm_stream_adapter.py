@@ -75,7 +75,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 run_id=self.run_id,
                 step_id=step_id,
             )
-        elif self.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.deepseek]:
+        elif self.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.deepseek, ProviderType.zai]:
             # Decide interface based on payload shape
             use_responses = "input" in request_data and "messages" not in request_data
             # No support for Responses API proxy

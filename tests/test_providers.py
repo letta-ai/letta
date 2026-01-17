@@ -15,6 +15,7 @@ from letta.schemas.providers import (
     OpenAIProvider,
     TogetherProvider,
     VLLMProvider,
+    ZAIProvider,
 )
 from letta.schemas.secret import Secret
 from letta.settings import model_settings
@@ -99,6 +100,19 @@ async def test_google_vertex():
 @pytest.mark.asyncio
 async def test_deepseek():
     provider = DeepSeekProvider(name="deepseek", api_key_enc=Secret.from_plaintext(model_settings.deepseek_api_key))
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+
+@pytest.mark.skipif(model_settings.zai_api_key is None, reason="Only run if ZAI_API_KEY is set.")
+@pytest.mark.asyncio
+async def test_zai():
+    provider = ZAIProvider(
+        name="zai",
+        api_key_enc=Secret.from_plaintext(model_settings.zai_api_key),
+        base_url=model_settings.zai_base_url,
+    )
     models = await provider.list_llm_models_async()
     assert len(models) > 0
     assert models[0].handle == f"{provider.name}/{models[0].model}"

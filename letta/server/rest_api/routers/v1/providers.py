@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Literal, Optional
 from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.responses import JSONResponse
 
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.providers import Provider, ProviderBase, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.validators import ProviderId
@@ -39,7 +39,14 @@ async def list_providers(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     providers = await server.provider_manager.list_providers_async(
-        before=before, after=after, limit=limit, actor=actor, name=name, provider_type=provider_type, ascending=(order == "asc")
+        before=before,
+        after=after,
+        limit=limit,
+        actor=actor,
+        name=name,
+        provider_type=provider_type,
+        provider_category=[ProviderCategory.byok],
+        ascending=(order == "asc"),
     )
     return providers
 

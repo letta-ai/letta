@@ -31,6 +31,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
@@ -46,6 +47,7 @@ from letta.server.rest_api.utils import (
     create_parallel_tool_messages_from_llm_response,
     create_tool_returns_for_denials,
 )
+from letta.services.conversation_manager import ConversationManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.summarizer.summarizer_all import summarize_all
 from letta.services.summarizer.summarizer_config import CompactionSettings
@@ -79,6 +81,10 @@ class LettaAgentV3(LettaAgentV2):
         # affecting step-level telemetry.
         self.context_token_estimate: int | None = None
         self.in_context_messages: list[Message] = []  # in-memory tracker
+        # Conversation mode: when set, messages are tracked per-conversation
+        self.conversation_id: str | None = None
+        # Client-side tools passed in the request (executed by client, not server)
+        self.client_tools: list[ClientToolSchema] = []
 
     def _compute_tool_return_truncation_chars(self) -> int:
         """Compute a dynamic cap for tool returns in requests.
@@ -101,6 +107,8 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -112,16 +120,27 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            conversation_id: Optional conversation ID for conversation-scoped messaging
+            client_tools: Optional list of client-side tools. When called, execution pauses
+                for client to provide tool returns.
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
         """
         self._initialize_state()
+        self.conversation_id = conversation_id
+        self.client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
 
+        # Prepare in-context messages (conversation mode if conversation_id provided)
         curr_in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-            input_messages, self.agent_state, self.message_manager, self.actor, run_id
+            input_messages,
+            self.agent_state,
+            self.message_manager,
+            self.actor,
+            run_id,
+            conversation_id=conversation_id,
         )
         follow_up_messages = []
         if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
@@ -234,6 +253,8 @@ class LettaAgentV3(LettaAgentV2):
         use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
+        conversation_id: str | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -251,11 +272,16 @@ class LettaAgentV3(LettaAgentV2):
             use_assistant_message: Whether to use assistant message format
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
+            conversation_id: Optional conversation ID for conversation-scoped messaging
+            client_tools: Optional list of client-side tools. When called, execution pauses
+                for client to provide tool returns.
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
         """
         self._initialize_state()
+        self.conversation_id = conversation_id
+        self.client_tools = client_tools or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True
@@ -273,8 +299,14 @@ class LettaAgentV3(LettaAgentV2):
             )
 
         try:
+            # Prepare in-context messages (conversation mode if conversation_id provided)
             in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
-                input_messages, self.agent_state, self.message_manager, self.actor, run_id
+                input_messages,
+                self.agent_state,
+                self.message_manager,
+                self.actor,
+                run_id,
+                conversation_id=conversation_id,
             )
             follow_up_messages = []
             if len(input_messages_to_persist) > 1 and input_messages_to_persist[0].role == "approval":
@@ -424,7 +456,7 @@ class LettaAgentV3(LettaAgentV2):
         This handles:
         - Persisting the new messages into the `messages` table
         - Updating the in-memory trackers for in-context messages (`self.in_context_messages`) and agent state (`self.agent_state.message_ids`)
-        - Updating the DB with the current in-context messages (`self.agent_state.message_ids`)
+        - Updating the DB with the current in-context messages (`self.agent_state.message_ids`) OR conversation_messages table
 
         Args:
             run_id: The run ID to associate with the messages
@@ -446,14 +478,33 @@ class LettaAgentV3(LettaAgentV2):
             template_id=self.agent_state.template_id,
         )
 
-        # persist the in-context messages
-        # TODO: somehow make sure all the message ids are already persisted
-        await self.agent_manager.update_message_ids_async(
-            agent_id=self.agent_state.id,
-            message_ids=[m.id for m in in_context_messages],
-            actor=self.actor,
-        )
-        self.agent_state.message_ids = [m.id for m in in_context_messages]  # update in-memory state
+        if self.conversation_id:
+            # Conversation mode: update conversation_messages table
+            # Add new messages to conversation tracking
+            new_message_ids = [m.id for m in new_messages]
+            if new_message_ids:
+                await ConversationManager().add_messages_to_conversation(
+                    conversation_id=self.conversation_id,
+                    agent_id=self.agent_state.id,
+                    message_ids=new_message_ids,
+                    actor=self.actor,
+                )
+
+            # Update which messages are in context
+            await ConversationManager().update_in_context_messages(
+                conversation_id=self.conversation_id,
+                in_context_message_ids=[m.id for m in in_context_messages],
+                actor=self.actor,
+            )
+        else:
+            # Default mode: update agent.message_ids
+            await self.agent_manager.update_message_ids_async(
+                agent_id=self.agent_state.id,
+                message_ids=[m.id for m in in_context_messages],
+                actor=self.actor,
+            )
+            self.agent_state.message_ids = [m.id for m in in_context_messages]  # update in-memory state
+
         self.in_context_messages = in_context_messages  # update in-memory state
 
     @trace_method
@@ -658,7 +709,8 @@ class LettaAgentV3(LettaAgentV2):
                             use_assistant_message=False,  # NOTE: set to false
                             requires_approval_tools=self.tool_rules_solver.get_requires_approval_tools(
                                 set([t["name"] for t in valid_tools])
-                            ),
+                            )
+                            + [ct.name for ct in self.client_tools],
                             step_id=step_id,
                             actor=self.actor,
                         )
@@ -684,7 +736,7 @@ class LettaAgentV3(LettaAgentV2):
                             # checkpoint summarized messages
                             # TODO: might want to delay this checkpoint in case of corrupated state
                             try:
-                                summary_message, messages = await self.compact(
+                                summary_message, messages, _ = await self.compact(
                                     messages, trigger_threshold=self.agent_state.llm_config.context_window
                                 )
                                 self.logger.info("Summarization succeeded, continuing to retry LLM request")
@@ -725,6 +777,15 @@ class LettaAgentV3(LettaAgentV2):
                     tool_calls = [llm_adapter.tool_call]
                 else:
                     tool_calls = []
+
+                # Enforce parallel_tool_calls=false by truncating to first tool call
+                # Some providers (e.g. Gemini) don't respect this setting via API, so we enforce it client-side
+                if len(tool_calls) > 1 and not self.agent_state.llm_config.parallel_tool_calls:
+                    self.logger.warning(
+                        f"LLM returned {len(tool_calls)} tool calls but parallel_tool_calls=false. "
+                        f"Truncating to first tool call: {tool_calls[0].function.name}"
+                    )
+                    tool_calls = [tool_calls[0]]
 
             # get the new generated `Message` objects from handling the LLM response
             new_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
@@ -795,7 +856,7 @@ class LettaAgentV3(LettaAgentV2):
                 self.logger.info(
                     f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
                 )
-                summary_message, messages = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
+                summary_message, messages, _ = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
                 # TODO: persist + return the summary message
                 # TODO: convert this to a SummaryMessage
                 self.response_messages.append(summary_message)
@@ -964,10 +1025,22 @@ class LettaAgentV3(LettaAgentV2):
                 messages_to_persist = (initial_messages or []) + assistant_message
             return messages_to_persist, continue_stepping, stop_reason
 
-        # 2. Check whether tool call requires approval
+        # 2. Check whether tool call requires approval (includes client-side tools)
         if not is_approval_response:
-            requested_tool_calls = [t for t in tool_calls if tool_rules_solver.is_requires_approval_tool(t.function.name)]
-            allowed_tool_calls = [t for t in tool_calls if not tool_rules_solver.is_requires_approval_tool(t.function.name)]
+            # Get names of client-side tools (these are executed by client, not server)
+            client_tool_names = {ct.name for ct in self.client_tools} if self.client_tools else set()
+
+            # Tools requiring approval: requires_approval tools OR client-side tools
+            requested_tool_calls = [
+                t
+                for t in tool_calls
+                if tool_rules_solver.is_requires_approval_tool(t.function.name) or t.function.name in client_tool_names
+            ]
+            allowed_tool_calls = [
+                t
+                for t in tool_calls
+                if not tool_rules_solver.is_requires_approval_tool(t.function.name) and t.function.name not in client_tool_names
+            ]
             if requested_tool_calls:
                 approval_messages = create_approval_request_message_from_llm_response(
                     agent_id=self.agent_state.id,
@@ -1037,15 +1110,11 @@ class LettaAgentV3(LettaAgentV2):
 
         # 5. Unified tool execution path (works for both single and multiple tools)
 
-        # 5a. Validate parallel tool calling constraints
-        if len(tool_calls) > 1:
-            # No parallel tool calls with tool rules
-            if self.agent_state.tool_rules and len([r for r in self.agent_state.tool_rules if r.type != "requires_approval"]) > 0:
-                raise ValueError(
-                    "Parallel tool calling is not allowed when tool rules are present. Disable tool rules to use parallel tool calls."
-                )
+        # 5. Unified tool execution path (works for both single and multiple tools)
+        # Note: Parallel tool calling with tool rules is validated at agent create/update time.
+        # At runtime, we trust that if tool_rules exist, parallel_tool_calls=false is enforced earlier.
 
-        # 5b. Prepare execution specs for all tools
+        # 5a. Prepare execution specs for all tools
         exec_specs = []
         for tc in tool_calls:
             call_id = tc.id or f"call_{uuid.uuid4().hex[:8]}"
@@ -1321,7 +1390,25 @@ class LettaAgentV3(LettaAgentV2):
             last_function_response=self.last_function_response,
             error_on_empty=False,  # Return empty list instead of raising error
         ) or list(set(t.name for t in tools))
-        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+
+        # Get client tool names to filter out server tools with same name (client tools override)
+        client_tool_names = {ct.name for ct in self.client_tools} if self.client_tools else set()
+
+        # Build allowed tools from server tools, excluding those overridden by client tools
+        allowed_tools = [
+            enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names) and t.name not in client_tool_names
+        ]
+
+        # Merge client-side tools (use flat format matching enable_strict_mode output)
+        if self.client_tools:
+            for ct in self.client_tools:
+                client_tool_schema = {
+                    "name": ct.name,
+                    "description": ct.description,
+                    "parameters": ct.parameters or {"type": "object", "properties": {}},
+                }
+                allowed_tools.append(client_tool_schema)
+
         terminal_tool_names = {rule.tool_name for rule in self.tool_rules_solver.terminal_tool_rules}
         allowed_tools = runtime_override_tool_json_schema(
             tool_list=allowed_tools,
@@ -1332,7 +1419,9 @@ class LettaAgentV3(LettaAgentV2):
         return allowed_tools
 
     @trace_method
-    async def compact(self, messages, trigger_threshold: Optional[int] = None) -> Message:
+    async def compact(
+        self, messages, trigger_threshold: Optional[int] = None, compaction_settings: Optional["CompactionSettings"] = None
+    ) -> tuple[Message, list[Message], str]:
         """Compact the current in-context messages for this agent.
 
         Compaction uses a summarizer LLM configuration derived from
@@ -1341,9 +1430,11 @@ class LettaAgentV3(LettaAgentV2):
         localized to summarization.
         """
 
-        # Use agent's compaction_settings if set, otherwise fall back to
-        # global defaults based on the agent's model handle.
-        if self.agent_state.compaction_settings is not None:
+        # Use the passed-in compaction_settings first, then agent's compaction_settings if set,
+        # otherwise fall back to global defaults based on the agent's model handle.
+        if compaction_settings is not None:
+            summarizer_config = compaction_settings
+        elif self.agent_state.compaction_settings is not None:
             summarizer_config = self.agent_state.compaction_settings
         else:
             # Prefer the new handle field if set, otherwise derive from llm_config
@@ -1466,7 +1557,7 @@ class LettaAgentV3(LettaAgentV2):
         if len(compacted_messages) > 1:
             final_messages += compacted_messages[1:]
 
-        return summary_message_obj, final_messages
+        return summary_message_obj, final_messages, summary
 
     @staticmethod
     def _build_summarizer_llm_config(
@@ -1489,17 +1580,16 @@ class LettaAgentV3(LettaAgentV2):
             # Parse provider/model from the handle, falling back to the agent's
             # provider type when only a model name is given.
             if "/" in summarizer_config.model:
-                provider, model_name = summarizer_config.model.split("/", 1)
-                if provider == "openai-proxy":
-                    # fix for pydantic LLMConfig validation
-                    provider = "openai"
+                provider_name, model_name = summarizer_config.model.split("/", 1)
             else:
-                provider = agent_llm_config.model_endpoint_type
+                provider_name = agent_llm_config.provider_name
                 model_name = summarizer_config.model
 
-            # Start from the agent's config and override model + provider + handle
+            # Start from the agent's config and override model + provider_name + handle
+            # Note: model_endpoint_type is NOT overridden - the parsed provider_name
+            # is a custom label (e.g. "claude-pro-max"), not the endpoint type (e.g. "anthropic")
             base = agent_llm_config.model_copy()
-            base.model_endpoint_type = provider
+            base.provider_name = provider_name
             base.model = model_name
             base.handle = summarizer_config.model
 

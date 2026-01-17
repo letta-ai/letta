@@ -43,9 +43,10 @@ from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.mcp.base_client import AsyncBaseMCPClient
-from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
+from letta.services.mcp.fastmcp_client import AsyncFastMCPSSEClient, AsyncFastMCPStreamableHTTPClient
+from letta.services.mcp.server_side_oauth import ServerSideOAuth
+from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
-from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings, tool_settings
 from letta.utils import enforce_types, printd, safe_create_task_with_return
@@ -257,7 +258,8 @@ class MCPManager:
                     logger.info(f"Deleted MCP tool {tool_name} as it no longer exists on server {mcp_server_name}")
 
             # Commit deletions
-            await session.commit()
+            # context manager now handles commits
+            # await session.commit()
 
         # 2. Update existing tools and add new tools
         for tool_name, current_tool in current_tool_map.items():
@@ -394,7 +396,8 @@ class MCPManager:
                             f"Linked {len(oauth_sessions)} OAuth sessions to MCP server {mcp_server.id} (URL: {server_url}) for user {actor.id}"
                         )
 
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
                 return mcp_server.to_pydantic()
             except Exception as e:
                 await session.rollback()
@@ -700,7 +703,8 @@ class MCPManager:
                     )
                 )
 
-                await session.commit()
+                # context manager now handles commits
+                # await session.commit()
             except NoResultFound:
                 await session.rollback()
                 raise ValueError(f"MCP server with id {mcp_server_id} not found.")
@@ -773,16 +777,17 @@ class MCPManager:
         self,
         server_config: Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig],
         actor: PydanticUser,
-        oauth_provider: Optional[Any] = None,
+        oauth: Optional[ServerSideOAuth] = None,
         agent_id: Optional[str] = None,
-    ) -> Union[AsyncSSEMCPClient, AsyncStdioMCPClient, AsyncStreamableHTTPMCPClient]:
+    ) -> Union[AsyncFastMCPSSEClient, AsyncStdioMCPClient, AsyncFastMCPStreamableHTTPClient]:
         """
         Helper function to create the appropriate MCP client based on server configuration.
 
         Args:
             server_config: The server configuration object
             actor: The user making the request
-            oauth_provider: Optional OAuth provider for authentication
+            oauth: Optional ServerSideOAuth instance for authentication
+            agent_id: Optional agent ID for request headers
 
         Returns:
             The appropriate MCP client instance
@@ -790,31 +795,29 @@ class MCPManager:
         Raises:
             ValueError: If server config type is not supported
         """
-        # If no OAuth provider is provided, check if we have stored OAuth credentials
-        if oauth_provider is None and hasattr(server_config, "server_url"):
+        # If no OAuth is provided, check if we have stored OAuth credentials
+        if oauth is None and hasattr(server_config, "server_url"):
             oauth_session = await self.get_oauth_session_by_server(server_config.server_url, actor)
             # Check if access token exists by attempting to decrypt it
             if oauth_session and oauth_session.access_token_enc and await oauth_session.access_token_enc.get_plaintext_async():
-                # Create OAuth provider from stored credentials
-                from letta.services.mcp.oauth_utils import create_oauth_provider
-
-                oauth_provider = await create_oauth_provider(
+                # Create ServerSideOAuth from stored credentials
+                oauth = ServerSideOAuth(
+                    mcp_url=oauth_session.server_url,
                     session_id=oauth_session.id,
-                    server_url=oauth_session.server_url,
-                    redirect_uri=oauth_session.redirect_uri,
                     mcp_manager=self,
                     actor=actor,
+                    redirect_uri=oauth_session.redirect_uri,
                 )
 
         if server_config.type == MCPServerType.SSE:
             server_config = SSEServerConfig(**server_config.model_dump())
-            return AsyncSSEMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
+            return AsyncFastMCPSSEClient(server_config=server_config, oauth=oauth, agent_id=agent_id)
         elif server_config.type == MCPServerType.STDIO:
             server_config = StdioServerConfig(**server_config.model_dump())
-            return AsyncStdioMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
+            return AsyncStdioMCPClient(server_config=server_config, oauth_provider=None, agent_id=agent_id)
         elif server_config.type == MCPServerType.STREAMABLE_HTTP:
             server_config = StreamableHTTPServerConfig(**server_config.model_dump())
-            return AsyncStreamableHTTPMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
+            return AsyncFastMCPStreamableHTTPClient(server_config=server_config, oauth=oauth, agent_id=agent_id)
         else:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
 
@@ -1054,7 +1057,7 @@ class MCPManager:
         """
         import asyncio
 
-        from letta.services.mcp.oauth_utils import create_oauth_provider, oauth_stream_event
+        from letta.services.mcp.oauth_utils import oauth_stream_event
         from letta.services.mcp.types import OauthStreamEvent
 
         # OAuth required, yield state to client to prepare to handle authorization URL
@@ -1095,8 +1098,16 @@ class MCPManager:
             )
             raise HTTPException(status_code=400, detail="No redirect URI found")
 
-        # Create OAuth provider for the instance of the stream connection
-        oauth_provider = await create_oauth_provider(session_id, request.server_url, redirect_uri, self, actor, logo_uri=logo_uri)
+        # Create ServerSideOAuth for FastMCP client
+        oauth = ServerSideOAuth(
+            mcp_url=request.server_url,
+            session_id=session_id,
+            mcp_manager=self,
+            actor=actor,
+            redirect_uri=redirect_uri,
+            url_callback=None,  # URL is stored by redirect_handler
+            logo_uri=logo_uri,
+        )
 
         # Get authorization URL by triggering OAuth flow
         temp_client = None
@@ -1115,7 +1126,7 @@ class MCPManager:
 
         try:
             ready_queue = asyncio.Queue()
-            temp_client = await self.get_mcp_client(request, actor, oauth_provider)
+            temp_client = await self.get_mcp_client(request, actor, oauth)
             temp_client._cleanup_event = asyncio.Event()
 
             # Run connect_to_server in background to avoid blocking
