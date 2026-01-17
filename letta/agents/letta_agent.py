@@ -414,7 +414,9 @@ class LettaAgent(BaseAgent):
                             provider_trace=ProviderTrace(
                                 request_json=request_data,
                                 response_json=response_data,
-                                step_id=step_id,  # Use original step_id for telemetry
+                                step_id=step_id,
+                                agent_id=self.agent_id,
+                                run_id=self.current_run_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -759,7 +761,9 @@ class LettaAgent(BaseAgent):
                             provider_trace=ProviderTrace(
                                 request_json=request_data,
                                 response_json=response_data,
-                                step_id=step_id,  # Use original step_id for telemetry
+                                step_id=step_id,
+                                agent_id=self.agent_id,
+                                run_id=self.current_run_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -1117,6 +1121,22 @@ class LettaAgent(BaseAgent):
                         stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value)
                         raise e
                     reasoning_content = interface.get_reasoning_content()
+
+                    # Log provider trace telemetry after stream processing
+                    await llm_client.log_provider_trace_async(
+                        request_data=request_data,
+                        response_json={
+                            "content": {
+                                "tool_call": tool_call.model_dump() if tool_call else None,
+                                "reasoning": [c.model_dump() for c in reasoning_content] if reasoning_content else [],
+                            },
+                            "model": getattr(interface, "model", None),
+                            "usage": {
+                                "input_tokens": interface.input_tokens,
+                                "output_tokens": interface.output_tokens,
+                            },
+                        },
+                    )
                     persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                         tool_call,
                         valid_tool_names,
@@ -1208,7 +1228,9 @@ class LettaAgent(BaseAgent):
                                         "output_tokens": usage.completion_tokens,
                                     },
                                 },
-                                step_id=step_id,  # Use original step_id for telemetry
+                                step_id=step_id,
+                                agent_id=self.agent_id,
+                                run_id=self.current_run_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -1430,8 +1452,14 @@ class LettaAgent(BaseAgent):
                 log_event("agent.stream_no_tokens.llm_request.created")
 
                 async with AsyncTimer() as timer:
-                    # Attempt LLM request
-                    response = await llm_client.request_async(request_data, agent_state.llm_config)
+                    # Attempt LLM request with telemetry
+                    llm_client.set_telemetry_context(
+                        telemetry_manager=self.telemetry_manager,
+                        agent_id=self.agent_id,
+                        run_id=self.current_run_id,
+                        call_type="agent_step",
+                    )
+                    response = await llm_client.request_async_with_telemetry(request_data, agent_state.llm_config)
 
                 # Track LLM request time
                 step_metrics.llm_request_ns = int(timer.elapsed_ns)
@@ -1492,10 +1520,18 @@ class LettaAgent(BaseAgent):
                         attributes={"request_start_to_provider_request_start_ns": ns_to_ms(request_start_to_provider_request_start_ns)},
                     )
 
-                # Attempt LLM request
+                # Set telemetry context before streaming
+                llm_client.set_telemetry_context(
+                    telemetry_manager=self.telemetry_manager,
+                    agent_id=self.agent_id,
+                    run_id=self.current_run_id,
+                    call_type="agent_step",
+                )
+
+                # Attempt LLM request with telemetry wrapper
                 return (
                     request_data,
-                    await llm_client.stream_async(request_data, agent_state.llm_config),
+                    await llm_client.stream_async_with_telemetry(request_data, agent_state.llm_config),
                     current_in_context_messages,
                     new_in_context_messages,
                     valid_tool_names,

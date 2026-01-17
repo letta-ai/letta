@@ -952,7 +952,13 @@ async def generate_tool_from_prompt(
         llm_config,
         tools=[tool],
     )
-    response_data = await llm_client.request_async(request_data, llm_config)
+    from letta.services.telemetry_manager import TelemetryManager
+
+    llm_client.set_telemetry_context(
+        telemetry_manager=TelemetryManager(),
+        call_type="tool_generation",
+    )
+    response_data = await llm_client.request_async_with_telemetry(request_data, llm_config)
     response = await llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)
 
     # Validate that we got a tool call response

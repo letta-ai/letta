@@ -20,9 +20,17 @@ class LettaLLMAdapter(ABC):
     through a consistent API.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig) -> None:
+    def __init__(
+        self,
+        llm_client: LLMClientBase,
+        llm_config: LLMConfig,
+        agent_id: str | None = None,
+        run_id: str | None = None,
+    ) -> None:
         self.llm_client: LLMClientBase = llm_client
         self.llm_config: LLMConfig = llm_config
+        self.agent_id: str | None = agent_id
+        self.run_id: str | None = run_id
         self.message_id: str | None = None
         self.request_data: dict | None = None
         self.response_data: dict | None = None

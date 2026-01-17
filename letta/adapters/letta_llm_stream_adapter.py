@@ -26,9 +26,8 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     specific streaming formats.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig, run_id: str | None = None) -> None:
-        super().__init__(llm_client, llm_config)
-        self.run_id = run_id
+    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig, agent_id: str | None = None, run_id: str | None = None) -> None:
+        super().__init__(llm_client, llm_config, agent_id=agent_id, run_id=run_id)
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
 
     async def invoke_llm(
