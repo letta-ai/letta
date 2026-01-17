@@ -1127,11 +1127,14 @@ class MCPManager:
             and http_request.headers.__contains__("x-organization-id")
         )
 
+        # Check if request is from letta-code CLI (uses web callback for OAuth)
+        is_letta_code_request = http_request and http_request.headers and http_request.headers.get("x-letta-source", "") == "letta-code"
+
         logo_uri = None
         NEXT_PUBLIC_CURRENT_HOST = os.getenv("NEXT_PUBLIC_CURRENT_HOST")
         LETTA_AGENTS_ENDPOINT = os.getenv("LETTA_AGENTS_ENDPOINT")
 
-        if is_web_request and NEXT_PUBLIC_CURRENT_HOST:
+        if (is_web_request or is_letta_code_request) and NEXT_PUBLIC_CURRENT_HOST:
             # Use static callback URI - session is identified via state parameter
             redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/mcp"
             logo_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/seo/favicon.svg"
