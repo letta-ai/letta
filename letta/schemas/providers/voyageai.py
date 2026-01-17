@@ -35,6 +35,9 @@ class VoyageAIProvider(Provider):
         # Token limits per batch are handled in the batching logic (voyageai_embedder.py)
         voyageai_model_config = [
             # Text embedding models
+            ("voyage-4", 1024),
+            ("voyage-4-lite", 1024),
+            ("voyage-4-large", 1024),
             ("voyage-3-large", 1024),
             ("voyage-3.5", 1024),
             ("voyage-3.5-lite", 512),

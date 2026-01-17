@@ -240,7 +240,12 @@ print("📊 Summary of VoyageAI Embedding Models")
 print("=" * 80)
 
 print("""
-General Purpose:
+Voyage-4 Series (Latest):
+  • voyage-4            - Balanced general-purpose & multilingual (1024-dim, 320K tokens/batch)
+  • voyage-4-lite       - Best cost/performance ratio (1024-dim, 1M tokens/batch)
+  • voyage-4-large      - Best retrieval quality (1024-dim, 120K tokens/batch)
+
+Voyage-3 Series:
   • voyage-3.5          - High-quality, general-purpose (1024-dim)
   • voyage-3.5-lite     - Lightweight, faster performance (512-dim)
   • voyage-3            - Previous generation (1024-dim)
@@ -249,10 +254,12 @@ General Purpose:
 Specialized Models:
   • voyage-context-3    - Contextual embeddings for documents (1024-dim)
   • voyage-multimodal-3   - Text + image support (1024-dim)
-  • voyage-multimodal-3.5 - Text + image + video support (1024-dim, preview)
+  • voyage-multimodal-3.5 - Text + image + video support (1024-dim)
   • voyage-code-3       - Optimized for code (1024-dim)
   • voyage-finance-2    - Financial domain (1024-dim)
   • voyage-law-2        - Legal domain (1024-dim)
+
+Note: Voyage-4 models support flexible output dimensions (256, 512, 1024, 2048).
 
 For more information: https://docs.voyageai.com/
 """)

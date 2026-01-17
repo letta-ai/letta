@@ -24,26 +24,46 @@ class TestVoyageAIClientHelpers:
 
     def test_is_contextual_model(self):
         """Test contextual model detection."""
+        # Contextual models
         assert is_contextual_model("voyage-context-3") is True
+        # Non-contextual models
         assert is_contextual_model("voyage-3") is False
         assert is_contextual_model("voyage-multimodal-3") is False
         assert is_contextual_model("voyage-multimodal-3.5") is False
+        # voyage-4 family are standard text embedding models
+        assert is_contextual_model("voyage-4") is False
+        assert is_contextual_model("voyage-4-lite") is False
+        assert is_contextual_model("voyage-4-large") is False
 
     def test_is_multimodal_model(self):
         """Test multimodal model detection."""
+        # Multimodal models
         assert is_multimodal_model("voyage-multimodal-3") is True
         assert is_multimodal_model("voyage-multimodal-3.5") is True
+        # Non-multimodal models
         assert is_multimodal_model("voyage-3") is False
         assert is_multimodal_model("voyage-context-3") is False
+        # voyage-4 family are standard text embedding models
+        assert is_multimodal_model("voyage-4") is False
+        assert is_multimodal_model("voyage-4-lite") is False
+        assert is_multimodal_model("voyage-4-large") is False
 
     def test_get_token_limit(self):
-        """Test token limit retrieval."""
-        assert get_token_limit("voyage-context-3") == 32_000
+        """Test token limit retrieval for all models."""
+        # voyage-4 family
+        assert get_token_limit("voyage-4") == 320_000
+        assert get_token_limit("voyage-4-lite") == 1_000_000
+        assert get_token_limit("voyage-4-large") == 120_000
+        # voyage-3 family
+        assert get_token_limit("voyage-3.5") == 320_000
         assert get_token_limit("voyage-3.5-lite") == 1_000_000
         assert get_token_limit("voyage-3") == 120_000
+        # contextual and multimodal
+        assert get_token_limit("voyage-context-3") == 32_000
         assert get_token_limit("voyage-multimodal-3") == 32_000
         assert get_token_limit("voyage-multimodal-3.5") == 32_000
-        assert get_token_limit("unknown-model") == 120_000  # default
+        # default for unknown models
+        assert get_token_limit("unknown-model") == 120_000
 
 
 class TestVoyageAIClientFunctions:
@@ -368,25 +388,31 @@ class TestVoyageAIIntegration:
         return user
 
     @pytest.mark.asyncio
-    async def test_real_embeddings_voyage_3(self):
-        """Test real API call with voyage-3 model."""
+    @pytest.mark.parametrize("model_name,expected_dim", [
+        ("voyage-3", 1024),
+        ("voyage-4", 1024),
+        ("voyage-4-lite", 1024),
+        ("voyage-4-large", 1024),
+    ])
+    async def test_real_embeddings_text_models(self, model_name, expected_dim):
+        """Test real API call with text embedding models."""
         config = EmbeddingConfig(
-            embedding_model="voyage-3",
+            embedding_model=model_name,
             embedding_endpoint_type="voyageai",
             embedding_endpoint="https://api.voyageai.com/v1",
-            embedding_dim=1024,
+            embedding_dim=expected_dim,
             embedding_chunk_size=10,
             batch_size=120,
         )
 
-        texts = ["This is a test sentence.", "Another test sentence for embeddings."]
+        texts = [f"This is a test sentence for {model_name}.", "Another test sentence for embeddings."]
         embeddings = await voyageai_get_embeddings_async(
             texts=texts, embedding_config=config, api_key=model_settings.voyageai_api_key
         )
 
         assert len(embeddings) == 2
-        assert len(embeddings[0]) == 1024
-        assert len(embeddings[1]) == 1024
+        assert len(embeddings[0]) == expected_dim
+        assert len(embeddings[1]) == expected_dim
         assert all(isinstance(x, float) for x in embeddings[0])
 
     @pytest.mark.asyncio
@@ -568,6 +594,34 @@ class TestVoyageAIIntegration:
             assert all(isinstance(x, float) for x in embeddings[0])
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("model_name", ["voyage-4", "voyage-4-lite", "voyage-4-large"])
+    async def test_real_voyage_4_flexible_output_dimension(self, model_name):
+        """Test voyage-4 family with flexible output dimensions (256, 512, 1024, 2048)."""
+        config = EmbeddingConfig(
+            embedding_model=model_name,
+            embedding_endpoint_type="voyageai",
+            embedding_endpoint="https://api.voyageai.com/v1",
+            embedding_dim=1024,
+            embedding_chunk_size=10,
+            batch_size=100,
+        )
+
+        texts = [f"A test sentence for dimension testing with {model_name}."]
+
+        # Test different output dimensions supported by voyage-4 family
+        for dim in [256, 512, 1024, 2048]:
+            embeddings = await voyageai_get_embeddings_async(
+                texts=texts,
+                embedding_config=config,
+                api_key=model_settings.voyageai_api_key,
+                output_dimension=dim,
+            )
+
+            assert len(embeddings) == 1
+            assert len(embeddings[0]) == dim, f"Expected dimension {dim}, got {len(embeddings[0])}"
+            assert all(isinstance(x, float) for x in embeddings[0])
+
+    @pytest.mark.asyncio
     async def test_real_multimodal_3_5_token_limit(self):
         """Test that voyage-multimodal-3.5 respects its 32k token limit."""
         # Verify token limit is configured correctly
@@ -594,3 +648,4 @@ class TestVoyageAIIntegration:
         assert len(embeddings) == 10
         for emb in embeddings:
             assert len(emb) == 1024
+
