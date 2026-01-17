@@ -225,7 +225,9 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                     provider_trace=ProviderTrace(
                         request_json=self.request_data,
                         response_json=response_json,
-                        step_id=step_id,  # Use original step_id for telemetry
+                        step_id=step_id,
+                        agent_id=self.agent_id,
+                        run_id=self.run_id,
                     ),
                 ),
                 label="create_provider_trace",

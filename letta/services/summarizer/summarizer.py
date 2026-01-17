@@ -171,6 +171,7 @@ class Summarizer:
             llm_config=agent_state.llm_config,
             actor=self.actor,
             include_ack=True,
+            agent_id=self.agent_id,
         )
 
         # TODO add counts back
