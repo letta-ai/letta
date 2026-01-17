@@ -271,10 +271,10 @@ async def retrieve_trace_for_run(
     Requires ClickHouse to be configured for trace storage.
     """
     # OTEL traces are only available when ClickHouse is configured
-    if not settings.use_clickhouse_for_provider_traces:
+    if not settings.clickhouse_endpoint:
         raise HTTPException(
             status_code=501,
-            detail="OTEL traces require ClickHouse. Set use_clickhouse_for_provider_traces=true and configure ClickHouse connection.",
+            detail="OTEL traces require ClickHouse. Set LETTA_CLICKHOUSE_ENDPOINT and configure ClickHouse connection.",
         )
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)

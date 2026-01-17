@@ -39221,13 +39221,64 @@
             ],
             "title": "Step Id",
             "description": "ID of the step that this trace is associated with"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "ID of the agent that generated this trace"
+          },
+          "agent_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Tags",
+            "description": "Tags associated with the agent for filtering"
+          },
+          "call_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Type",
+            "description": "Type of call (agent_step, summarization, etc.)"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "ID of the run this trace is associated with"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": ["request_json", "response_json"],
         "title": "ProviderTrace",
-        "description": "Letta's internal representation of a provider trace.\n\nAttributes:\n    id (str): The unique identifier of the provider trace.\n    request_json (Dict[str, Any]): JSON content of the provider request.\n    response_json (Dict[str, Any]): JSON content of the provider response.\n    step_id (str): ID of the step that this trace is associated with.\n    organization_id (str): The unique identifier of the organization.\n    created_at (datetime): The timestamp when the object was created."
+        "description": "Letta's internal representation of a provider trace.\n\nAttributes:\n    id (str): The unique identifier of the provider trace.\n    request_json (Dict[str, Any]): JSON content of the provider request.\n    response_json (Dict[str, Any]): JSON content of the provider response.\n    step_id (str): ID of the step that this trace is associated with.\n    agent_id (str): ID of the agent that generated this trace.\n    agent_tags (list[str]): Tags associated with the agent for filtering.\n    call_type (str): Type of call (agent_step, summarization, etc.).\n    run_id (str): ID of the run this trace is associated with.\n    organization_id (str): The unique identifier of the organization.\n    created_at (datetime): The timestamp when the object was created."
       },
       "ProviderType": {
         "type": "string",

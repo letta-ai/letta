@@ -9,7 +9,7 @@ from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.settings import settings
@@ -223,7 +223,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             safe_create_task(
                 self.telemetry_manager.create_provider_trace_async(
                     actor=actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=self.request_data,
                         response_json=response_json,
                         step_id=step_id,  # Use original step_id for telemetry

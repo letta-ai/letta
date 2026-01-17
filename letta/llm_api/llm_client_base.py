@@ -14,7 +14,7 @@ from letta.schemas.enums import AgentType, ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import settings
 
@@ -71,7 +71,7 @@ class LLMClientBase:
             if step_id and telemetry_manager:
                 telemetry_manager.create_provider_trace(
                     actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=request_data,
                         response_json=response_data,
                         step_id=step_id,
@@ -104,7 +104,7 @@ class LLMClientBase:
             if settings.track_provider_trace and telemetry_manager:
                 await telemetry_manager.create_provider_trace_async(
                     actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=request_data,
                         response_json=response_data,
                         step_id=step_id,

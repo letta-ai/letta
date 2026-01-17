@@ -49,7 +49,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatisticsCompletionTokenDetails,
     UsageStatisticsPromptTokenDetails,
 )
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -411,7 +411,7 @@ class LettaAgent(BaseAgent):
                     if settings.track_provider_trace:
                         await self.telemetry_manager.create_provider_trace_async(
                             actor=self.actor,
-                            provider_trace_create=ProviderTraceCreate(
+                            provider_trace=ProviderTrace(
                                 request_json=request_data,
                                 response_json=response_data,
                                 step_id=step_id,  # Use original step_id for telemetry
@@ -756,7 +756,7 @@ class LettaAgent(BaseAgent):
                     if settings.track_provider_trace:
                         await self.telemetry_manager.create_provider_trace_async(
                             actor=self.actor,
-                            provider_trace_create=ProviderTraceCreate(
+                            provider_trace=ProviderTrace(
                                 request_json=request_data,
                                 response_json=response_data,
                                 step_id=step_id,  # Use original step_id for telemetry
@@ -1190,7 +1190,7 @@ class LettaAgent(BaseAgent):
                     if settings.track_provider_trace:
                         await self.telemetry_manager.create_provider_trace_async(
                             actor=self.actor,
-                            provider_trace_create=ProviderTraceCreate(
+                            provider_trace=ProviderTrace(
                                 request_json=request_data,
                                 response_json={
                                     "content": {

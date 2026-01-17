@@ -74,6 +74,7 @@ dependencies = [
     "psutil>=5.9.0",
     "fastmcp>=2.12.5",
     "ddtrace>=4.2.1",
+    "clickhouse-connect>=0.10.0",
 ]
 
 [project.scripts]

@@ -26,12 +26,9 @@ def _parse_clickhouse_endpoint(endpoint: str) -> tuple[str, int, bool]:
 @singleton
 class ClickhouseOtelTracesReader:
     def __init__(self):
-        self._client = None
+        pass
 
     def _get_client(self):
-        if self._client is not None:
-            return self._client
-
         import clickhouse_connect
 
         if not settings.clickhouse_endpoint:
@@ -47,7 +44,7 @@ class ClickhouseOtelTracesReader:
         if not password:
             raise ValueError("CLICKHOUSE_PASSWORD is required")
 
-        self._client = clickhouse_connect.get_client(
+        return clickhouse_connect.get_client(
             host=host,
             port=port,
             username=username,
@@ -56,7 +53,6 @@ class ClickhouseOtelTracesReader:
             secure=secure,
             verify=True,
         )
-        return self._client
 
     def _get_traces_by_trace_id_sync(self, trace_id: str, limit: int, filter_ui_spans: bool = False) -> list[dict[str, Any]]:
         client = self._get_client()
