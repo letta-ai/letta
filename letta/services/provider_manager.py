@@ -969,11 +969,24 @@ class ProviderManager:
         # Get the default max_output_tokens from the provider (provider-specific logic)
         max_tokens = typed_provider.get_default_max_output_tokens(model.name)
 
+        # Determine the model endpoint - use provider's base_url if set,
+        # otherwise use provider-specific defaults
+
+        if provider.base_url:
+            model_endpoint = provider.base_url
+        elif provider.provider_type == ProviderType.chatgpt_oauth:
+            # ChatGPT OAuth uses the ChatGPT backend API, not a generic endpoint pattern
+            from letta.schemas.providers.chatgpt_oauth import CHATGPT_CODEX_ENDPOINT
+
+            model_endpoint = CHATGPT_CODEX_ENDPOINT
+        else:
+            model_endpoint = f"https://api.{provider.provider_type.value}.com/v1"
+
         # Construct the LLMConfig from the model and provider data
         llm_config = LLMConfig(
             model=model.name,
             model_endpoint_type=model.model_endpoint_type,
-            model_endpoint=provider.base_url or f"https://api.{provider.provider_type.value}.com/v1",
+            model_endpoint=model_endpoint,
             context_window=model.max_context_window or 16384,  # Default if not set
             handle=model.handle,
             provider_name=provider.name,

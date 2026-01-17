@@ -355,7 +355,6 @@ class ChatGPTOAuthClient(LLMClientBase):
         Returns:
             Response data in OpenAI ChatCompletion format.
         """
-        logger.info("ChatGPT OAuth request_async called (non-streaming path)")
         _, creds = await self._get_provider_and_credentials_async(llm_config)
         headers = self._build_headers(creds)
 
