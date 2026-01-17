@@ -243,6 +243,10 @@ async def export_agent(
         description="If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
         deprecated=True,
     ),
+    conversation_id: Optional[str] = Query(
+        None,
+        description="Conversation ID to export. If provided, uses messages from this conversation instead of the agent's global message history.",
+    ),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentFileSchema
     spec: AgentFileSchema | None = None,
@@ -254,7 +258,7 @@ async def export_agent(
     if use_legacy_format:
         raise HTTPException(status_code=400, detail="Legacy format is not supported")
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+    agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor, conversation_id=conversation_id)
     return agent_file_schema.model_dump()
 
 

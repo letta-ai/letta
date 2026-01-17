@@ -4615,6 +4615,24 @@
             },
             "description": "If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
             "deprecated": true
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Conversation ID to export. If provided, uses messages from this conversation instead of the agent's global message history.",
+              "title": "Conversation Id"
+            },
+            "description": "Conversation ID to export. If provided, uses messages from this conversation instead of the agent's global message history."
           }
         ],
         "requestBody": {
@@ -8907,6 +8925,70 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Cancel Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/compact": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Compact Conversation",
+        "description": "Compact (summarize) a conversation's message history.\n\nThis endpoint summarizes the in-context messages for a specific conversation,\nreducing the message count while preserving important context.",
+        "operationId": "compact_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CompactionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompactionResponse"
                 }
               }
             }
