@@ -129,6 +129,19 @@ class ToolCreate(LettaBase):
         False, description="If set to True, then this tool will potentially be executed concurrently with other tools. Default False."
     )
 
+    @model_validator(mode="after")
+    def validate_typescript_requires_schema(self):
+        """
+        TypeScript tools require an explicit json_schema since we don't support
+        docstring parsing for TypeScript.
+        """
+        if self.source_type == "typescript" and not self.json_schema:
+            raise ValueError(
+                "TypeScript tools require an explicit json_schema parameter. "
+                "Unlike Python tools, schema cannot be auto-generated from TypeScript source code."
+            )
+        return self
+
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
         from letta.functions.helpers import generate_mcp_tool_wrapper
