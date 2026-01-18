@@ -116,6 +116,42 @@ for message in response.messages:
     print(message)
 ```
 
+## Using Letta as a proxy for Claude Code CLI
+
+You can use a self-hosted Letta server as a proxy for [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), enabling memory persistence across sessions.
+
+### 1. Start the Letta server
+
+```bash
+docker compose -f dev-compose.yaml up --build -d
+```
+
+### 2. Configure Claude Code CLI
+
+Set the `ANTHROPIC_BASE_URL` environment variable to point to the Letta proxy endpoint:
+
+```bash
+export ANTHROPIC_BASE_URL=http://localhost:8283/v1/anthropic
+```
+
+Or add it to your Claude Code settings (`~/.claude/settings.json`):
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:8283/v1/anthropic"
+  }
+}
+```
+
+### 3. Run Claude Code CLI
+
+```bash
+claude
+```
+
+Your requests will now be proxied through Letta, enabling memory features.
+
 ## Contributing
 
 Letta is an open source project built by over a hundred contributors from around the world. There are many ways to get involved in the Letta OSS project!
