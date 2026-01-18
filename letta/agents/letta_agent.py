@@ -36,6 +36,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState, UpdateAgent
 from letta.schemas.enums import JobStatus, ProviderType, StepStatus, ToolType
+from letta.schemas.run import RunStatus
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -65,6 +66,7 @@ from letta.services.helpers.tool_parser_helper import runtime_override_tool_json
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.run_manager import RunManager
 from letta.services.step_manager import NoopStepManager, StepManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
@@ -90,6 +92,7 @@ class LettaAgent(BaseAgent):
         job_manager: JobManager,
         passage_manager: PassageManager,
         actor: User,
+        run_manager: RunManager | None = None,
         step_manager: StepManager = NoopStepManager(),
         telemetry_manager: TelemetryManager = NoopTelemetryManager(),
         current_run_id: str | None = None,
@@ -114,6 +117,7 @@ class LettaAgent(BaseAgent):
         self.step_manager = step_manager
         self.telemetry_manager = telemetry_manager
         self.job_manager = job_manager
+        self.run_manager = run_manager
         self.current_run_id = current_run_id
         self.response_messages: list[Message] = []
 
@@ -160,15 +164,15 @@ class LettaAgent(BaseAgent):
         Returns:
             True if the run is cancelled, False otherwise (or if no run is associated)
         """
-        if not self.job_manager or not self.current_run_id:
+        if not self.run_manager or not self.current_run_id:
             return False
 
         try:
-            job = await self.job_manager.get_job_by_id_async(job_id=self.current_run_id, actor=self.actor)
-            return job.status == JobStatus.cancelled
+            run = await self.run_manager.get_run_by_id(run_id=self.current_run_id, actor=self.actor)
+            return run.status == RunStatus.cancelled
         except Exception as e:
             # Log the error but don't fail the execution
-            logger.warning(f"Failed to check job cancellation status for job {self.current_run_id}: {e}")
+            logger.warning(f"Failed to check run cancellation status for run {self.current_run_id}: {e}")
             return False
 
     @trace_method
@@ -1033,6 +1037,7 @@ class LettaAgent(BaseAgent):
                             use_assistant_message=use_assistant_message,
                             put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                             requires_approval_tools=tool_rules_solver.get_requires_approval_tools(valid_tool_names),
+                            cancellation_checker=self._check_run_cancellation,
                         )
                     elif agent_state.llm_config.model_endpoint_type == ProviderType.openai:
                         interface = OpenAIStreamingInterface(
@@ -1042,6 +1047,7 @@ class LettaAgent(BaseAgent):
                             tools=request_data.get("tools", []),
                             put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                             requires_approval_tools=tool_rules_solver.get_requires_approval_tools(valid_tool_names),
+                            cancellation_checker=self._check_run_cancellation,
                         )
                     else:
                         raise ValueError(f"Streaming not supported for {agent_state.llm_config}")

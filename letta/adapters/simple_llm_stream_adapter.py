@@ -99,6 +99,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                     model=self.llm_config.model,
                     run_id=self.run_id,
                     step_id=step_id,
+                    cancellation_checker=self._cancellation_checker,
                 )
         elif self.llm_config.model_endpoint_type in [ProviderType.google_ai, ProviderType.google_vertex]:
             self.interface = SimpleGeminiStreamingInterface(

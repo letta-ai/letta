@@ -1,6 +1,7 @@
 import asyncio
 import json
-from collections.abc import AsyncGenerator
+import time
+from collections.abc import AsyncGenerator, Callable, Awaitable
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
@@ -67,11 +68,18 @@ class AnthropicStreamingInterface:
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_checker: Optional[Callable[[], Awaitable[bool]]] = None,
+        cancellation_check_interval: float = 0.5,
     ):
         self.json_parser: JSONParser = PydanticJSONParser()
         self.use_assistant_message = use_assistant_message
         self.run_id = run_id
         self.step_id = step_id
+
+        # Cancellation support
+        self._cancellation_checker = cancellation_checker
+        self._cancellation_check_interval = cancellation_check_interval
+        self._last_cancellation_check: float = 0.0
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -102,6 +110,10 @@ class AnthropicStreamingInterface:
         self.partial_tag_buffer = ""
 
         self.requires_approval_tools = requires_approval_tools
+
+        # Diagnostic: track events for debugging
+        self.total_events_received: int = 0
+        self.stream_was_cancelled: bool = False
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
@@ -210,6 +222,24 @@ class AnthropicStreamingInterface:
         try:
             async with stream:
                 async for event in stream:
+                    # Check for run cancellation periodically (not on every event for performance)
+                    if self._cancellation_checker is not None:
+                        current_time = time.monotonic()
+                        if current_time - self._last_cancellation_check >= self._cancellation_check_interval:
+                            self._last_cancellation_check = current_time
+                            try:
+                                if await self._cancellation_checker():
+                                    logger.info(
+                                        f"Run cancelled during streaming. Closing Anthropic stream. "
+                                        f"Events received: {self.total_events_received}, last event type: {type(event).__name__ if event else 'None'}"
+                                    )
+                                    self.stream_was_cancelled = True
+                                    yield LettaStopReason(stop_reason=StopReasonType.cancelled)
+                                    break
+                            except Exception as cancel_check_error:
+                                logger.warning(f"Error checking cancellation status: {cancel_check_error}")
+
+                    self.total_events_received += 1
                     try:
                         async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type

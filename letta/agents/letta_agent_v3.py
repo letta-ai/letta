@@ -287,10 +287,13 @@ class LettaAgentV3(LettaAgentV2):
         first_chunk = True
 
         if stream_tokens:
+            # Create cancellation checker callback for streaming to detect mid-stream cancellation
+            cancellation_checker = (lambda rid: lambda: self._check_run_cancellation(rid))(run_id) if run_id else None
             llm_adapter = SimpleLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
                 run_id=run_id,
+                cancellation_checker=cancellation_checker,
             )
         else:
             llm_adapter = SimpleLLMRequestAdapter(

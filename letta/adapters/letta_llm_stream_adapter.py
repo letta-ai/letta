@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Awaitable, Callable, Optional
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
@@ -26,10 +26,17 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     specific streaming formats.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig, run_id: str | None = None) -> None:
+    def __init__(
+        self,
+        llm_client: LLMClientBase,
+        llm_config: LLMConfig,
+        run_id: str | None = None,
+        cancellation_checker: Optional[Callable[[], Awaitable[bool]]] = None,
+    ) -> None:
         super().__init__(llm_client, llm_config)
         self.run_id = run_id
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
+        self._cancellation_checker = cancellation_checker
 
     async def invoke_llm(
         self,
@@ -61,6 +68,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
                 step_id=step_id,
+                cancellation_checker=self._cancellation_checker,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             # For non-v1 agents, always use Chat Completions streaming interface
@@ -73,6 +81,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
                 step_id=step_id,
+                cancellation_checker=self._cancellation_checker,
             )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
