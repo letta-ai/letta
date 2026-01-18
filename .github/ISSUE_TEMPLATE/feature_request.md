@@ -7,6 +7,15 @@ assignees: ''
 
 ---
 
+> [!IMPORTANT]
+> **🚨 Reporting a bug with Letta Code?** 
+> 
+> Please file your issue at **[letta-ai/letta-code](https://github.com/letta-ai/letta-code/issues)** instead!
+> 
+> This repository is for the core Letta Docker server only. Issues related to the Letta Code CLI tool or agentic coding features should be reported in the Letta Code repository.
+
+---
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
