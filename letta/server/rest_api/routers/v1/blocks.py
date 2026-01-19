@@ -5,6 +5,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentRelationships, AgentState
 from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate, CreateBlock
+from letta.schemas.block_edit_proposal import BlockEditProposal, BlockProposalStatus
+from letta.schemas.block_history import BlockHistoryEntry
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.utils import is_1_0_sdk_version
@@ -16,6 +18,7 @@ from letta.validators import (
     BlockNameQuery,
     BlockValueSearchQuery,
     IdentityIdQuery,
+    BlockProposalId,
 )
 
 if TYPE_CHECKING:
@@ -247,3 +250,118 @@ async def detach_identity_from_block(
         actor=actor,
     )
     return await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
+
+
+@router.get("/{block_id}/history", response_model=List[BlockHistoryEntry], operation_id="list_block_history")
+async def list_block_history(
+    block_id: BlockId,
+    limit: Optional[int] = Query(50, description="Maximum number of history entries to return"),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for history by sequence number. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.block_manager.list_block_history_async(
+        block_id=block_id,
+        actor=actor,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
+
+
+@router.post("/{block_id}/history/checkpoint", response_model=BlockResponse, operation_id="checkpoint_block")
+async def checkpoint_block(
+    block_id: BlockId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.block_manager.checkpoint_block_async(block_id=block_id, actor=actor)
+
+
+@router.post("/{block_id}/history/undo", response_model=BlockResponse, operation_id="undo_block_checkpoint")
+async def undo_block_checkpoint(
+    block_id: BlockId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.block_manager.undo_checkpoint_block(block_id=block_id, actor=actor)
+
+
+@router.post("/{block_id}/history/redo", response_model=BlockResponse, operation_id="redo_block_checkpoint")
+async def redo_block_checkpoint(
+    block_id: BlockId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.block_manager.redo_checkpoint_block(block_id=block_id, actor=actor)
+
+
+@router.get("/{block_id}/proposals", response_model=List[BlockEditProposal], operation_id="list_block_edit_proposals")
+async def list_block_edit_proposals(
+    block_id: BlockId,
+    status: Optional[BlockProposalStatus] = Query(None, description="Filter proposals by status"),
+    limit: Optional[int] = Query(50, description="Maximum number of proposals to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for proposals by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.block_edit_proposal_manager.list_proposals_async(
+        block_id=block_id,
+        actor=actor,
+        status=status,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
+
+
+@router.get("/{block_id}/proposals/{proposal_id}", response_model=BlockEditProposal, operation_id="retrieve_block_edit_proposal")
+async def retrieve_block_edit_proposal(
+    block_id: BlockId,
+    proposal_id: BlockProposalId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    proposal = await server.block_edit_proposal_manager.retrieve_proposal_async(proposal_id=proposal_id, actor=actor)
+    if proposal.block_id != block_id:
+        raise HTTPException(status_code=404, detail=f"Proposal '{proposal_id}' not found for block '{block_id}'")
+    return proposal
+
+
+@router.post("/{block_id}/proposals/{proposal_id}/approve", response_model=BlockEditProposal, operation_id="approve_block_edit_proposal")
+async def approve_block_edit_proposal(
+    block_id: BlockId,
+    proposal_id: BlockProposalId,
+    force: bool = Query(False, description="Apply the proposal even if the block changed since it was created."),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.block_edit_proposal_manager.approve_proposal_async(
+        proposal_id=proposal_id,
+        block_id=block_id,
+        actor=actor,
+        force=force,
+    )
+
+
+@router.post("/{block_id}/proposals/{proposal_id}/reject", response_model=BlockEditProposal, operation_id="reject_block_edit_proposal")
+async def reject_block_edit_proposal(
+    block_id: BlockId,
+    proposal_id: BlockProposalId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    proposal = await server.block_edit_proposal_manager.retrieve_proposal_async(proposal_id=proposal_id, actor=actor)
+    if proposal.block_id != block_id:
+        raise HTTPException(status_code=404, detail=f"Proposal '{proposal_id}' not found for block '{block_id}'")
+    return await server.block_edit_proposal_manager.reject_proposal_async(proposal_id=proposal_id, actor=actor)

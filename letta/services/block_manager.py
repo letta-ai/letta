@@ -15,6 +15,7 @@ from letta.orm.errors import NoResultFound
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate
+from letta.schemas.block_history import BlockHistoryEntry as PydanticBlockHistoryEntry
 from letta.schemas.enums import ActorType, PrimitiveType
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -521,6 +522,28 @@ class BlockManager:
         """
         async with db_registry.async_session() as session:
             return await BlockModel.size_async(db_session=session, actor=actor)
+
+    @enforce_types
+    @trace_method
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    async def list_block_history_async(
+        self,
+        block_id: str,
+        actor: PydanticUser,
+        limit: Optional[int] = 50,
+        ascending: bool = True,
+    ) -> List[PydanticBlockHistoryEntry]:
+        async with db_registry.async_session() as session:
+            stmt = (
+                select(BlockHistory)
+                .where(BlockHistory.block_id == block_id, BlockHistory.organization_id == actor.organization_id)
+                .order_by(BlockHistory.sequence_number.asc() if ascending else BlockHistory.sequence_number.desc())
+            )
+            if limit:
+                stmt = stmt.limit(limit)
+            result = await session.execute(stmt)
+            history_entries = result.scalars().all()
+            return [entry.to_pydantic() for entry in history_entries]
 
     # Block History Functions
 

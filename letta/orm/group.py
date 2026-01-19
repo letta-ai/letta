@@ -20,6 +20,7 @@ class Group(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateMixin):
     termination_token: Mapped[Optional[str]] = mapped_column(nullable=True, doc="")
     max_turns: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     sleeptime_agent_frequency: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
+    sleeptime_propose_only: Mapped[Optional[bool]] = mapped_column(nullable=True, doc="")
     max_message_buffer_length: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     min_message_buffer_length: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     turns_counter: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
