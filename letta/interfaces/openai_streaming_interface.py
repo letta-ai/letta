@@ -1,5 +1,6 @@
 import asyncio
-from collections.abc import AsyncGenerator
+import time
+from collections.abc import AsyncGenerator, Callable, Awaitable
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -82,6 +83,8 @@ class OpenAIStreamingInterface:
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_checker: Optional[Callable[[], Awaitable[bool]]] = None,
+        cancellation_check_interval: float = 0.5,
     ):
         self.use_assistant_message = use_assistant_message
 
@@ -140,6 +143,11 @@ class OpenAIStreamingInterface:
         self.last_event_type: str | None = None
         self.total_events_received: int = 0
         self.stream_was_cancelled: bool = False
+
+        # Cancellation support: check periodically during streaming
+        self._cancellation_checker = cancellation_checker
+        self._cancellation_check_interval = cancellation_check_interval
+        self._last_cancellation_check: float = 0.0
 
     def get_reasoning_content(self) -> list[TextContent | OmittedReasoningContent]:
         content = "".join(self.reasoning_messages).strip()
@@ -218,6 +226,24 @@ class OpenAIStreamingInterface:
         try:
             async with stream:
                 async for chunk in stream:
+                    # Check for run cancellation periodically (not on every chunk for performance)
+                    if self._cancellation_checker is not None:
+                        current_time = time.monotonic()
+                        if current_time - self._last_cancellation_check >= self._cancellation_check_interval:
+                            self._last_cancellation_check = current_time
+                            try:
+                                if await self._cancellation_checker():
+                                    logger.info(
+                                        f"Run cancelled during streaming. Closing LLM stream. "
+                                        f"Events received: {self.total_events_received}, last event: {self.last_event_type}"
+                                    )
+                                    self.stream_was_cancelled = True
+                                    yield LettaStopReason(stop_reason=StopReasonType.cancelled)
+                                    # Breaking here will exit the async with block, which closes the stream
+                                    break
+                            except Exception as cancel_check_error:
+                                logger.warning(f"Error checking cancellation status: {cancel_check_error}")
+
                     try:
                         async for message in self._process_chunk(chunk, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type
@@ -561,6 +587,8 @@ class SimpleOpenAIStreamingInterface:
         model: str = None,
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_checker: Optional[Callable[[], Awaitable[bool]]] = None,
+        cancellation_check_interval: float = 0.5,
     ):
         self.run_id = run_id
         self.step_id = step_id
@@ -569,6 +597,11 @@ class SimpleOpenAIStreamingInterface:
 
         self.message_id = None
         self.model = model
+
+        # Cancellation support
+        self._cancellation_checker = cancellation_checker
+        self._cancellation_check_interval = cancellation_check_interval
+        self._last_cancellation_check = 0.0
 
         # Token counters (from OpenAI usage)
         self.input_tokens = 0
@@ -707,6 +740,23 @@ class SimpleOpenAIStreamingInterface:
                     yield hidden_message
 
                 async for chunk in stream:
+                    # Check for cancellation periodically
+                    if self._cancellation_checker is not None:
+                        current_time = time.monotonic()
+                        if current_time - self._last_cancellation_check >= self._cancellation_check_interval:
+                            self._last_cancellation_check = current_time
+                            try:
+                                if await self._cancellation_checker():
+                                    logger.info(
+                                        f"Run cancelled during streaming (SimpleOpenAI). Closing LLM stream. "
+                                        f"Events received: {self.total_events_received}, last event: {self.last_event_type}"
+                                    )
+                                    self.stream_was_cancelled = True
+                                    yield LettaStopReason(stop_reason=StopReasonType.cancelled)
+                                    break
+                            except Exception as cancel_check_error:
+                                logger.warning(f"Error checking cancellation status: {cancel_check_error}")
+
                     try:
                         async for message in self._process_chunk(chunk, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type

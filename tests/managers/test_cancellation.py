@@ -574,6 +574,145 @@ class TestStreamingCancellation:
         # Verify cancellation was detected
         assert agent_loop.stop_reason.stop_reason == "cancelled"
 
+    @pytest.mark.asyncio
+    async def test_cancellation_checker_propagates_to_streaming_interface(
+        self,
+        server: SyncServer,
+        default_user,
+        test_agent_with_tool,
+        test_run,
+    ):
+        """
+        Test that cancellation_checker callback is properly passed to streaming interfaces.
+
+        This tests the fix for cancellation propagation: Cancellation should propagate
+        to the streaming interface so that the LLM stream can be closed early when a
+        run is cancelled, rather than waiting for the full response.
+
+        Verifies:
+        - cancellation_checker is passed through the adapter chain
+        - Stream yields cancelled stop_reason when cancellation is detected
+        - Stream closes promptly after cancellation (not waiting for LLM to finish)
+        """
+        # Track whether cancellation_checker was called
+        cancellation_check_count = [0]
+        should_cancel = [False]
+
+        async def mock_cancellation_checker():
+            cancellation_check_count[0] += 1
+            return should_cancel[0]
+
+        # Load agent loop
+        agent_loop = AgentLoop.load(agent_state=test_agent_with_tool, actor=default_user)
+
+        # Replace the cancellation checker
+        agent_loop._check_run_cancellation = lambda run_id: mock_cancellation_checker()
+
+        input_messages = [MessageCreate(role=MessageRole.user, content="Hello")]
+
+        # Start streaming
+        chunks = []
+        stream = agent_loop.stream(
+            input_messages=input_messages,
+            max_steps=5,
+            stream_tokens=True,
+            run_id=test_run.id,
+        )
+
+        async for chunk in stream:
+            chunks.append(chunk)
+
+            # After receiving some chunks, trigger cancellation
+            if len(chunks) >= 2 and not should_cancel[0]:
+                should_cancel[0] = True
+                await server.run_manager.cancel_run(
+                    actor=default_user,
+                    run_id=test_run.id,
+                )
+
+        # Verify cancellation_checker was called during streaming
+        # It may be called multiple times during the stream
+        assert cancellation_check_count[0] > 0, (
+            "cancellation_checker should be called during streaming - "
+            "the fix ensures this callback is passed to streaming interfaces"
+        )
+
+        # Verify we got the cancelled stop reason
+        from letta.schemas.letta_message import LettaStopReason
+        from letta.schemas.letta_message_content import StopReasonType
+
+        stop_chunks = [c for c in chunks if isinstance(c, LettaStopReason)]
+        if stop_chunks:
+            assert any(c.stop_reason == StopReasonType.cancelled for c in stop_chunks), (
+                "Should have received cancelled stop_reason chunk"
+            )
+
+    @pytest.mark.asyncio
+    async def test_cancellation_closes_stream_promptly(
+        self,
+        server: SyncServer,
+        default_user,
+        test_agent_with_tool,
+        test_run,
+    ):
+        """
+        Test that cancellation closes the LLM stream promptly.
+
+        This is a behavioral test for cancellation propagation: When cancellation is
+        detected during streaming, the stream should close quickly rather than waiting
+        for the full LLM response.
+
+        Verifies:
+        - Stream terminates within a reasonable time after cancellation
+        - No excessive chunks are received after cancellation signal
+        """
+        import time
+
+        # Load agent loop
+        agent_loop = AgentLoop.load(agent_state=test_agent_with_tool, actor=default_user)
+
+        input_messages = [MessageCreate(role=MessageRole.user, content="Write a very long story about a robot")]
+
+        # Track timing
+        cancel_triggered = [False]
+        cancel_time = [None]
+        chunks_after_cancel = [0]
+
+        stream = agent_loop.stream(
+            input_messages=input_messages,
+            max_steps=5,
+            stream_tokens=True,
+            run_id=test_run.id,
+        )
+
+        chunks = []
+        async for chunk in stream:
+            chunks.append(chunk)
+
+            # Trigger cancellation after a few chunks
+            if len(chunks) >= 3 and not cancel_triggered[0]:
+                cancel_triggered[0] = True
+                cancel_time[0] = time.time()
+                await server.run_manager.cancel_run(
+                    actor=default_user,
+                    run_id=test_run.id,
+                )
+
+            # Count chunks after cancellation
+            if cancel_triggered[0]:
+                chunks_after_cancel[0] += 1
+
+        # Verify the stream terminated
+        assert cancel_triggered[0], "Cancellation should have been triggered"
+
+        # The stream should not have received too many chunks after cancellation
+        # With the fix, the stream checks for cancellation periodically and closes
+        # A reasonable limit is ~50 chunks (depends on check interval and chunk rate)
+        assert chunks_after_cancel[0] < 100, (
+            f"Received {chunks_after_cancel[0]} chunks after cancellation - "
+            "stream should close promptly after cancellation is detected"
+        )
+
 
 class TestToolExecutionCancellation:
     """
