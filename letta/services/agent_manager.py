@@ -3050,13 +3050,20 @@ class AgentManager:
                 select(BlockModel)
                 .join(BlocksAgents, BlockModel.id == BlocksAgents.block_id)
                 .where(BlocksAgents.agent_id == agent_id, BlockModel.organization_id == actor.organization_id)
+                .distinct(BlockModel.id)  # Ensure we don't get duplicate blocks by ID
             )
 
             # Apply cursor-based pagination
             if before:
-                query = query.where(BlockModel.id < before)
+                if ascending:
+                    query = query.where(BlockModel.id < before)
+                else:
+                    query = query.where(BlockModel.id > before)
             if after:
-                query = query.where(BlockModel.id > after)
+                if ascending:
+                    query = query.where(BlockModel.id > after)
+                else:
+                    query = query.where(BlockModel.id < after)
 
             # Apply sorting - use id instead of created_at for core memory blocks
             if ascending:
