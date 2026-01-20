@@ -307,8 +307,9 @@ async def _prepare_in_context_messages_no_persist_async(
 
                     run_manager = RunManager()
                     approval_run = await run_manager.get_run_by_id(run_id=approval_run_id, actor=actor)
-                    # If the run is no longer pending/running, the approval is orphaned
-                    if approval_run.status in [RunStatus.cancelled, RunStatus.failed, RunStatus.completed]:
+                    # If the run was cancelled or failed, the approval is orphaned
+                    # Note: completed runs may still have valid approvals (stop_reason=requires_approval)
+                    if approval_run.status in [RunStatus.cancelled, RunStatus.failed]:
                         logger.info(
                             f"Skipping orphaned approval request {approval_msg.id} - associated run {approval_run_id} "
                             f"has status {approval_run.status.value}"
