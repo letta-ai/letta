@@ -1358,9 +1358,11 @@ class TestApprovalFlowCancellation:
         Test that orphaned approval requests are skipped when the associated run is cancelled.
 
         This tests the fix for orphaned approvals: When an approval request exists in
-        message history but its run has been cancelled/failed/completed, subsequent
-        messages should NOT raise PendingApprovalError - the orphaned approval should
-        be skipped.
+        message history but its run has been cancelled or failed, subsequent messages
+        should NOT raise PendingApprovalError - the orphaned approval should be skipped.
+
+        Note: Completed runs are NOT considered orphaned because they may have valid
+        approvals with stop_reason=requires_approval.
 
         Scenario:
         1. Create agent with approval-requiring tool
