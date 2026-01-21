@@ -13,6 +13,7 @@ from letta.schemas.providers import (
     GroqProvider,
     OllamaProvider,
     OpenAIProvider,
+    OpenRouterProvider,
     TogetherProvider,
     VLLMProvider,
     ZAIProvider,
@@ -167,6 +168,40 @@ async def test_together():
     # embedding_models = provider.list_embedding_models()
     # assert len(embedding_models) > 0
     # assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+@pytest.mark.skipif(model_settings.openrouter_api_key is None, reason="Only run if OPENROUTER_API_KEY is set.")
+@pytest.mark.asyncio
+async def test_openrouter():
+    provider = OpenRouterProvider(
+        name="openrouter",
+        api_key=model_settings.openrouter_api_key,
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle.startswith(f"{provider.name}/")
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) == 2
+    assert embedding_models[0].embedding_model == "openai/text-embedding-3-small"
+    assert embedding_models[0].embedding_dim == 1536
+    assert embedding_models[1].embedding_model == "openai/text-embedding-3-large"
+    assert embedding_models[1].embedding_dim == 3072
+
+
+@pytest.mark.asyncio
+async def test_openrouter_embedding_models_without_api_key():
+    """Test that OpenRouter embedding models can be listed without making API calls."""
+    provider = OpenRouterProvider(
+        name="openrouter",
+        api_key="fake_key",
+    )
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) == 2
+    assert embedding_models[0].handle == f"{provider.name}/openai/text-embedding-3-small"
+    assert embedding_models[0].embedding_endpoint == "https://openrouter.ai/api/v1"
+    assert embedding_models[0].embedding_endpoint_type == "openai"
+    assert embedding_models[1].handle == f"{provider.name}/openai/text-embedding-3-large"
 
 
 # ===== Local Models =====
