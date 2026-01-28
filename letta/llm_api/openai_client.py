@@ -377,7 +377,7 @@ class OpenAIClient(LLMClientBase):
 
             data.model = "memgpt-openai"
 
-        request_data = data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True, exclude_none=True)
         # print("responses request data", request_data)
         return request_data
 
@@ -545,10 +545,16 @@ class OpenAIClient(LLMClientBase):
         # We only need to ensure strict is False for providers that don't support structured output
         if data.tools is not None and len(data.tools) > 0:
             for tool in data.tools:
-                if not supports_structured_output(llm_config):
+                if supports_structured_output(llm_config):
+                    try:
+                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
+                        tool.function = FunctionSchema(**structured_output_version)
+                    except ValueError as e:
+                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+                else:
                     # Provider doesn't support structured output - ensure strict is False
                     tool.function.strict = False
-        request_data = data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True, exclude_none=True)
 
         # If Ollama
         # if llm_config.handle.startswith("ollama/") and llm_config.enable_reasoner:
