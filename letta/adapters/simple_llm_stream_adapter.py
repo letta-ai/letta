@@ -2,6 +2,9 @@ import json
 from typing import AsyncGenerator, List
 
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_parallel_tool_call_streaming_interface import SimpleAnthropicStreamingInterface
 from letta.interfaces.gemini_streaming_interface import SimpleGeminiStreamingInterface
@@ -10,7 +13,7 @@ from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import LettaMessageContentUnion
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.settings import settings
@@ -75,11 +78,21 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 run_id=self.run_id,
                 step_id=step_id,
             )
-        elif self.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.deepseek, ProviderType.zai]:
+        elif self.llm_config.model_endpoint_type in [
+            ProviderType.openai,
+            ProviderType.deepseek,
+            ProviderType.zai,
+            ProviderType.chatgpt_oauth,
+        ]:
             # Decide interface based on payload shape
             use_responses = "input" in request_data and "messages" not in request_data
             # No support for Responses API proxy
             is_proxy = self.llm_config.provider_name == "lmstudio_openai"
+
+            # ChatGPT OAuth always uses Responses API format
+            if self.llm_config.model_endpoint_type == ProviderType.chatgpt_oauth:
+                use_responses = True
+                is_proxy = False
 
             if use_responses and not is_proxy:
                 self.interface = SimpleOpenAIResponsesStreamingInterface(
@@ -108,9 +121,6 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
-
-        # Extract optional parameters
-        # ttft_span = kwargs.get('ttft_span', None)
 
         # Start the streaming request (map provider errors to common LLMError types)
         try:
@@ -266,11 +276,13 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             safe_create_task(
                 self.telemetry_manager.create_provider_trace_async(
                     actor=actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=self.request_data,
                         response_json=response_json,
-                        step_id=step_id,  # Use original step_id for telemetry
-                        organization_id=actor.organization_id,
+                        step_id=step_id,
+                        agent_id=self.agent_id,
+                        agent_tags=self.agent_tags,
+                        run_id=self.run_id,
                     ),
                 ),
                 label="create_provider_trace",

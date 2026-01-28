@@ -1,0 +1,9 @@
+{
+  "handle": "bedrock/us.anthropic.claude-opus-4-5-20251101-v1:0",
+  "model_settings": {
+    "provider_type": "bedrock",
+    "temperature": 1.0,
+    "max_output_tokens": 16000,
+    "parallel_tool_calls": false
+  }
+}

@@ -65,6 +65,13 @@ class LettaRequest(BaseModel):
         "execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn.",
     )
 
+    # Model override
+    override_model: Optional[str] = Field(
+        None,
+        description="Model handle to use for this request instead of the agent's default model. "
+        "This allows sending a message to a different model without changing the agent's configuration.",
+    )
+
     @field_validator("messages", mode="before")
     @classmethod
     def add_default_type_to_messages(cls, v):

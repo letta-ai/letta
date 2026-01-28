@@ -1,13 +1,11 @@
 from typing import Generator, List, Optional, Union
 
 import httpx
-import requests
 from openai import OpenAI
 
 from letta.constants import LETTA_MODEL_ENDPOINT
-from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import timestamp_to_datetime
-from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
+from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output
 from letta.llm_api.openai_client import (
     accepts_developer_role,
     requires_auto_tool_choice,
@@ -38,94 +36,11 @@ from letta.schemas.openai.chat_completion_response import (
     ToolCall,
     UsageStatistics,
 )
-from letta.schemas.openai.embedding_response import EmbeddingResponse
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.utils import get_tool_call_id, smart_urljoin
 
 logger = get_logger(__name__)
-
-
-# TODO: MOVE THIS TO OPENAI_CLIENT
-def openai_check_valid_api_key(base_url: str, api_key: Union[str, None]) -> None:
-    if api_key:
-        try:
-            # just get model list to check if the api key is valid until we find a cheaper / quicker endpoint
-            openai_get_model_list(url=base_url, api_key=api_key)
-        except requests.HTTPError as e:
-            if e.response.status_code == 401:
-                raise LLMAuthenticationError(message=f"Failed to authenticate with OpenAI: {e}", code=ErrorCode.UNAUTHENTICATED)
-            raise e
-        except Exception as e:
-            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
-    else:
-        raise ValueError("No API key provided")
-
-
-def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool = False, extra_params: Optional[dict] = None) -> dict:
-    """https://platform.openai.com/docs/api-reference/models/list"""
-
-    # In some cases we may want to double-check the URL and do basic correction, eg:
-    # In Letta config the address for vLLM is w/o a /v1 suffix for simplicity
-    # However if we're treating the server as an OpenAI proxy we want the /v1 suffix on our model hit
-
-    logger.warning(
-        "The synchronous version of openai_get_model_list function is deprecated. Use the async one instead.",
-        stacklevel=2,
-    )
-
-    if fix_url:
-        if not url.endswith("/v1"):
-            url = smart_urljoin(url, "v1")
-
-    url = smart_urljoin(url, "models")
-
-    headers = {"Content-Type": "application/json"}
-    if api_key is not None:
-        headers["Authorization"] = f"Bearer {api_key}"
-    # Add optional OpenRouter headers if hitting OpenRouter
-    if "openrouter.ai" in url:
-        if model_settings.openrouter_referer:
-            headers["HTTP-Referer"] = model_settings.openrouter_referer
-        if model_settings.openrouter_title:
-            headers["X-Title"] = model_settings.openrouter_title
-
-    logger.debug(f"Sending request to {url}")
-    response = None
-    try:
-        # TODO add query param "tool" to be true
-        response = requests.get(url, headers=headers, params=extra_params)
-        response.raise_for_status()  # Raises HTTPError for 4XX/5XX status
-        response = response.json()  # convert to dict from string
-        logger.debug(f"response = {response}")
-        return response
-    except requests.exceptions.HTTPError as http_err:
-        # Handle HTTP errors (e.g., response 4XX, 5XX)
-        try:
-            if response:
-                response = response.json()
-        except:
-            pass
-        logger.debug(f"Got HTTPError, exception={http_err}, response={response}")
-        raise http_err
-    except requests.exceptions.RequestException as req_err:
-        # Handle other requests-related errors (e.g., connection error)
-        try:
-            if response:
-                response = response.json()
-        except:
-            pass
-        logger.debug(f"Got RequestException, exception={req_err}, response={response}")
-        raise req_err
-    except Exception as e:
-        # Handle other potential errors
-        try:
-            if response:
-                response = response.json()
-        except:
-            pass
-        logger.debug(f"Got unknown Exception, exception={e}, response={response}")
-        raise e
 
 
 async def openai_get_model_list_async(
@@ -157,7 +72,8 @@ async def openai_get_model_list_async(
     # Use provided client or create a new one
     close_client = False
     if client is None:
-        client = httpx.AsyncClient()
+        # Use explicit timeout to prevent httpx.ReadTimeout errors
+        client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0))
         close_client = True
 
     try:
@@ -609,15 +525,6 @@ def openai_chat_completions_request(
     chat_completion = client.chat.completions.create(**data)
     log_event(name="llm_response_received", attributes=chat_completion.model_dump())
     return ChatCompletionResponse(**chat_completion.model_dump())
-
-
-def openai_embeddings_request(url: str, api_key: str, data: dict) -> EmbeddingResponse:
-    """https://platform.openai.com/docs/api-reference/embeddings/create"""
-
-    url = smart_urljoin(url, "embeddings")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    response_json = make_post_request(url, headers, data)
-    return EmbeddingResponse(**response_json)
 
 
 def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):

@@ -1766,6 +1766,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "hidden",
         "created_by_id",
         "last_updated_by_id",
+        "tags",
     }
     actual_block_fields = set(block_fields.keys())
     if actual_block_fields != expected_block_fields:
@@ -1850,6 +1851,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "verbosity",
         "tier",
         "parallel_tool_calls",
+        "strict",
     }
     actual_llm_config_fields = set(llm_config_fields.keys())
     if actual_llm_config_fields != expected_llm_config_fields:

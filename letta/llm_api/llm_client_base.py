@@ -14,7 +14,7 @@ from letta.schemas.enums import AgentType, ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import settings
 
@@ -37,6 +37,110 @@ class LLMClientBase:
         self.actor = actor
         self.put_inner_thoughts_first = put_inner_thoughts_first
         self.use_tool_naming = use_tool_naming
+        self._telemetry_manager: Optional["TelemetryManager"] = None
+        self._telemetry_agent_id: Optional[str] = None
+        self._telemetry_agent_tags: Optional[List[str]] = None
+        self._telemetry_run_id: Optional[str] = None
+        self._telemetry_step_id: Optional[str] = None
+        self._telemetry_call_type: Optional[str] = None
+
+    def set_telemetry_context(
+        self,
+        telemetry_manager: Optional["TelemetryManager"] = None,
+        agent_id: Optional[str] = None,
+        agent_tags: Optional[List[str]] = None,
+        run_id: Optional[str] = None,
+        step_id: Optional[str] = None,
+        call_type: Optional[str] = None,
+    ) -> None:
+        """Set telemetry context for provider trace logging."""
+        self._telemetry_manager = telemetry_manager
+        self._telemetry_agent_id = agent_id
+        self._telemetry_agent_tags = agent_tags
+        self._telemetry_run_id = run_id
+        self._telemetry_step_id = step_id
+        self._telemetry_call_type = call_type
+
+    async def request_async_with_telemetry(self, request_data: dict, llm_config: LLMConfig) -> dict:
+        """Wrapper around request_async that logs telemetry for all requests including errors.
+
+        Call set_telemetry_context() first to set agent_id, run_id, etc.
+        """
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+        response_data = None
+        error_msg = None
+        error_type = None
+        try:
+            response_data = await self.request_async(request_data, llm_config)
+            return response_data
+        except Exception as e:
+            error_msg = str(e)
+            error_type = type(e).__name__
+            raise
+        finally:
+            if self._telemetry_manager and settings.track_provider_trace:
+                if self.actor is None:
+                    logger.warning(f"Skipping telemetry: actor is None (call_type={self._telemetry_call_type})")
+                else:
+                    try:
+                        pydantic_actor = self.actor.to_pydantic() if hasattr(self.actor, "to_pydantic") else self.actor
+                        await self._telemetry_manager.create_provider_trace_async(
+                            actor=pydantic_actor,
+                            provider_trace=ProviderTrace(
+                                request_json=request_data,
+                                response_json=response_data if response_data else {"error": error_msg, "error_type": error_type},
+                                step_id=self._telemetry_step_id,
+                                agent_id=self._telemetry_agent_id,
+                                agent_tags=self._telemetry_agent_tags,
+                                run_id=self._telemetry_run_id,
+                                call_type=self._telemetry_call_type,
+                            ),
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to log telemetry: {e}")
+
+    async def stream_async_with_telemetry(self, request_data: dict, llm_config: LLMConfig):
+        """Returns raw stream. Caller should log telemetry after processing via log_provider_trace_async().
+
+        Call set_telemetry_context() first to set agent_id, run_id, etc.
+        After consuming the stream, call log_provider_trace_async() with the response data.
+        """
+        return await self.stream_async(request_data, llm_config)
+
+    async def log_provider_trace_async(self, request_data: dict, response_json: dict) -> None:
+        """Log provider trace telemetry. Call after processing LLM response.
+
+        Uses telemetry context set via set_telemetry_context().
+        """
+        from letta.log import get_logger
+
+        logger = get_logger(__name__)
+
+        if not self._telemetry_manager or not settings.track_provider_trace:
+            return
+
+        if self.actor is None:
+            logger.warning(f"Skipping telemetry: actor is None (call_type={self._telemetry_call_type})")
+            return
+
+        try:
+            pydantic_actor = self.actor.to_pydantic() if hasattr(self.actor, "to_pydantic") else self.actor
+            await self._telemetry_manager.create_provider_trace_async(
+                actor=pydantic_actor,
+                provider_trace=ProviderTrace(
+                    request_json=request_data,
+                    response_json=response_json,
+                    step_id=self._telemetry_step_id,
+                    agent_id=self._telemetry_agent_id,
+                    agent_tags=self._telemetry_agent_tags,
+                    run_id=self._telemetry_run_id,
+                    call_type=self._telemetry_call_type,
+                ),
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log telemetry: {e}")
 
     @trace_method
     async def send_llm_request(
@@ -67,11 +171,11 @@ class LLMClientBase:
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
-            response_data = self.request(request_data, llm_config)
+            response_data = await self.request_async(request_data, llm_config)
             if step_id and telemetry_manager:
                 telemetry_manager.create_provider_trace(
                     actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=request_data,
                         response_json=response_data,
                         step_id=step_id,
@@ -104,7 +208,7 @@ class LLMClientBase:
             if settings.track_provider_trace and telemetry_manager:
                 await telemetry_manager.create_provider_trace_async(
                     actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=request_data,
                         response_json=response_data,
                         step_id=step_id,

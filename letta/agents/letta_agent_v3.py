@@ -130,6 +130,15 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
+
+        # Apply conversation-specific block overrides if conversation_id is provided
+        if conversation_id:
+            self.agent_state = await ConversationManager().apply_isolated_blocks_to_agent_state(
+                agent_state=self.agent_state,
+                conversation_id=conversation_id,
+                actor=self.actor,
+            )
+
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
 
@@ -158,7 +167,9 @@ class LettaAgentV3(LettaAgentV2):
                 messages=list(self.in_context_messages + input_messages_to_persist),
                 input_messages_to_persist=input_messages_to_persist,
                 # TODO need to support non-streaming adapter too
-                llm_adapter=SimpleLLMRequestAdapter(llm_client=self.llm_client, llm_config=self.agent_state.llm_config),
+                llm_adapter=SimpleLLMRequestAdapter(
+                    llm_client=self.llm_client, llm_config=self.agent_state.llm_config, agent_id=self.agent_state.id, run_id=run_id
+                ),
                 run_id=run_id,
                 # use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
@@ -286,16 +297,27 @@ class LettaAgentV3(LettaAgentV2):
         response_letta_messages = []
         first_chunk = True
 
+        # Apply conversation-specific block overrides if conversation_id is provided
+        if conversation_id:
+            self.agent_state = await ConversationManager().apply_isolated_blocks_to_agent_state(
+                agent_state=self.agent_state,
+                conversation_id=conversation_id,
+                actor=self.actor,
+            )
+
         if stream_tokens:
             llm_adapter = SimpleLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                agent_id=self.agent_state.id,
                 run_id=run_id,
             )
         else:
             llm_adapter = SimpleLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                agent_id=self.agent_state.id,
+                run_id=run_id,
             )
 
         try:
@@ -491,6 +513,7 @@ class LettaAgentV3(LettaAgentV2):
                 )
 
             # Update which messages are in context
+            # Note: update_in_context_messages also updates positions to preserve order
             await ConversationManager().update_in_context_messages(
                 conversation_id=self.conversation_id,
                 in_context_message_ids=[m.id for m in in_context_messages],
@@ -1396,7 +1419,9 @@ class LettaAgentV3(LettaAgentV2):
 
         # Build allowed tools from server tools, excluding those overridden by client tools
         allowed_tools = [
-            enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names) and t.name not in client_tool_names
+            enable_strict_mode(t.json_schema, strict=self.agent_state.llm_config.strict)
+            for t in tools
+            if t.name in set(valid_tool_names) and t.name not in client_tool_names
         ]
 
         # Merge client-side tools (use flat format matching enable_strict_mode output)

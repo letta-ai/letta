@@ -12,8 +12,8 @@ def memory(
     path: Optional[str] = None,
     file_text: Optional[str] = None,
     description: Optional[str] = None,
-    old_str: Optional[str] = None,
-    new_str: Optional[str] = None,
+    old_string: Optional[str] = None,
+    new_string: Optional[str] = None,
     insert_line: Optional[int] = None,
     insert_text: Optional[str] = None,
     old_path: Optional[str] = None,
@@ -32,8 +32,8 @@ def memory(
         path (Optional[str]): Path to the memory block (for str_replace, insert, delete)
         file_text (Optional[str]): The value to set in the memory block (for create)
         description (Optional[str]): The description to set in the memory block (for create, rename)
-        old_str (Optional[str]): Old text to replace (for str_replace)
-        new_str (Optional[str]): New text to replace with (for str_replace)
+        old_string (Optional[str]): Old text to replace (for str_replace)
+        new_string (Optional[str]): New text to replace with (for str_replace)
         insert_line (Optional[int]): Line number to insert at (for insert)
         insert_text (Optional[str]): Text to insert (for insert)
         old_path (Optional[str]): Old path for rename operation
@@ -44,7 +44,7 @@ def memory(
 
     Examples:
         # Replace text in a memory block
-        memory(agent_state, "str_replace", path="/memories/user_preferences", old_str="theme: dark", new_str="theme: light")
+        memory(agent_state, "str_replace", path="/memories/user_preferences", old_string="theme: dark", new_string="theme: light")
 
         # Insert text at line 5
         memory(agent_state, "insert", path="/memories/notes", insert_line=5, insert_text="New note here")
@@ -85,7 +85,7 @@ def send_message(self: "Agent", message: str) -> Optional[str]:
 
 def conversation_search(
     self: "Agent",
-    query: str,
+    query: Optional[str] = None,
     roles: Optional[List[Literal["assistant", "user", "tool"]]] = None,
     limit: Optional[int] = None,
     start_date: Optional[str] = None,
@@ -95,7 +95,7 @@ def conversation_search(
     Search prior conversation history using hybrid search (text + semantic similarity).
 
     Args:
-        query (str): String to search for using both text matching and semantic similarity.
+        query (Optional[str]): String to search for using both text matching and semantic similarity. If not provided, returns messages based on other filters (time range, roles).
         roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
         limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
         start_date (Optional[str]): Filter results to messages created on or after this date (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes messages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
@@ -122,6 +122,10 @@ def conversation_search(
 
         # Search with limit
         conversation_search(query="debugging", limit=10)
+
+        # Time-range only search (no query)
+        conversation_search(start_date="2024-01-15", end_date="2024-01-20")
+        # Returns all messages from Jan 15 through Jan 20
 
     Returns:
         str: Query result string containing matching messages with timestamps and content.
@@ -464,51 +468,35 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
 
 def memory_apply_patch(agent_state: "AgentState", label: str, patch: str) -> str:  # type: ignore
     """
-    Apply a unified-diff style patch to a memory block by anchoring on content and context (not line numbers).
+    Apply a simplified unified-diff style patch to one or more memory blocks.
 
-    The patch format is a simplified unified diff that supports one or more hunks. Each hunk may optionally
-    start with a line beginning with `@@` and then contains lines that begin with one of:
-    - " " (space): context lines that must match the current memory content
-    - "-": lines to remove (must match exactly in the current content)
-    - "+": lines to add
+    Backwards compatible behavior:
+    - If `patch` contains no "***" headers, it applies the patch to the single memory block
+      identified by `label`.
 
-    Notes:
-    - Do not include line number prefixes like "Line 12:" anywhere in the patch. Line numbers are for display only.
+    Extended, codex-style behavior (multi-block):
+    - `*** Add Block: <label>`
+        - Optional next line: `Description: <text>`
+        - File contents are given by subsequent lines starting with `+`
+    - `*** Delete Block: <label>`
+    - `*** Update Block: <label>`
+        - Patch body is the same simplified unified diff format (lines start with " ", "-", "+")
+        - Optional "@@" lines can be used to delimit hunks
+    - `*** Move to: <new_label>`
+        - Renames the most recent block referenced by an Add/Update/Delete header
+
+    - Do not include line number prefixes like "12→" anywhere in the patch. Line numbers are for display only.
     - Do not include the line-number warning banner. Provide only the text to edit.
     - Tabs are normalized to spaces for matching consistency.
 
     Args:
-        label (str): The memory block to edit, identified by its label.
-        patch (str): The simplified unified-diff patch text composed of context (" "), deletion ("-"), and addition ("+") lines. Optional
-            lines beginning with "@@" can be used to delimit hunks. Do not include visual line numbers or warning banners.
-
-    Examples:
-        Simple replacement:
-            label="human",
-            patch:
-                @@
-                -Their name is Alice
-                +Their name is Bob
-
-        Replacement with surrounding context for disambiguation:
-            label="persona",
-            patch:
-                @@
-                 Persona:
-                -Friendly and curious
-                +Friendly, curious, and precise
-                 Likes: Hiking
-
-        Insertion (no deletions) between two context lines:
-            label="todos",
-            patch:
-                @@
-                 - [ ] Step 1: Gather requirements
-                 + [ ] Step 1.5: Clarify stakeholders
-                 - [ ] Step 2: Draft design
+        label (str): The label of the memory block to patch. Required for single-block mode (when patch contains no "***" headers). Set to empty string "" when using multi-block mode with "*** Add Block:", "*** Delete Block:", or "*** Update Block:" headers.
+        patch (str): The unified diff-style patch to apply. Can be either: (1) a simple unified diff for single-block mode, or (2) a multi-block patch with "***" headers for creating, deleting, updating, or renaming multiple blocks.
 
     Returns:
         str: A success message if the patch applied cleanly; raises ValueError otherwise.
+
+
     """
     raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 

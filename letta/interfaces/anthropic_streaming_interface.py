@@ -415,6 +415,7 @@ class AnthropicStreamingInterface:
                                 arguments=tool_call_args,
                             ),
                             run_id=self.run_id,
+                            step_id=self.step_id,
                         )
                         prev_message_type = approval_msg.message_type
                         yield approval_msg
@@ -474,6 +475,7 @@ class AnthropicStreamingInterface:
                             tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
                             date=datetime.now(timezone.utc).isoformat(),
                             run_id=self.run_id,
+                            step_id=self.step_id,
                         )
                     else:
                         tool_call_delta = ToolCallDelta(

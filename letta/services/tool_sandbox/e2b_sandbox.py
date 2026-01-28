@@ -14,6 +14,7 @@ from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.helpers.tool_parser_helper import parse_stdout_best_effort
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
+from letta.services.tool_sandbox.typescript_generator import parse_typescript_result
 from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
@@ -80,15 +81,25 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         envs = await self._gather_env_vars(agent_state, additional_env_vars, sbx_config.id, is_local=False)
         code = await self.generate_execution_script(agent_state=agent_state)
 
+        # Determine language based on tool source_type
+        is_typescript = self.is_typescript_tool()
+        language = "ts" if is_typescript else None
+
         try:
-            logger.info(f"E2B execution started for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
+            logger.info(f"E2B execution started for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (language={language or 'python'})")
             log_event(
                 "e2b_execution_started",
-                {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": envs},
+                {
+                    "tool": self.tool_name,
+                    "sandbox_id": e2b_sandbox.sandbox_id,
+                    "code": code,
+                    "env_vars": envs,
+                    "language": language or "python",
+                },
             )
             start_time = time.perf_counter()
             try:
-                execution = await e2b_sandbox.run_code(code, envs=envs)
+                execution = await e2b_sandbox.run_code(code, envs=envs, language=language)
             except asyncio.CancelledError:
                 execution_time = time.perf_counter() - start_time
                 logger.info(f"E2B execution cancelled for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (took {execution_time:.2f}s)")
@@ -102,7 +113,11 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
             logger.info(f"E2B execution completed in {execution_time:.2f}s for sandbox {e2b_sandbox.sandbox_id}, tool: {self.tool_name}")
 
             if execution.results:
-                func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
+                # Use appropriate result parser based on language
+                if is_typescript:
+                    func_return, agent_state = parse_typescript_result(execution.results[0].text)
+                else:
+                    func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
                 logger.info(f"E2B execution succeeded for ID {e2b_sandbox.sandbox_id}: {self.tool_name} (took {execution_time:.2f}s)")
                 log_event(
                     "e2b_execution_succeeded",
@@ -257,7 +272,81 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                             "error": str(e),
                         },
                     )
+                    # Kill sandbox to prevent resource leak
+                    await sbx.kill()
                     raise RuntimeError(error_msg) from e
+
+        # Install tool-specific npm requirements (for TypeScript tools)
+        if self.tool and self.tool.npm_requirements:
+            for npm_requirement in self.tool.npm_requirements:
+                package_str = str(npm_requirement)
+                log_event(
+                    "tool_npm_install_started",
+                    {
+                        "sandbox_id": sbx.sandbox_id,
+                        "package": package_str,
+                        "tool_name": self.tool.name,
+                    },
+                )
+                try:
+                    await sbx.commands.run(f"npm install {package_str}")
+                    log_event(
+                        "tool_npm_install_finished",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package_str,
+                            "tool_name": self.tool.name,
+                        },
+                    )
+                except CommandExitException as e:
+                    error_msg = f"Failed to install tool npm requirement '{package_str}' for tool '{self.tool.name}' in E2B sandbox. This may be due to package version incompatibility. Error: {e}"
+                    logger.error(error_msg)
+                    log_event(
+                        "tool_npm_install_failed",
+                        {
+                            "sandbox_id": sbx.sandbox_id,
+                            "package": package_str,
+                            "tool_name": self.tool.name,
+                            "error": str(e),
+                        },
+                    )
+                    # Kill sandbox to prevent resource leak
+                    await sbx.kill()
+                    raise RuntimeError(error_msg) from e
+
+        # Auto-install @letta-ai/letta-client for TypeScript tools (similar to letta_client for Python)
+        if self.is_typescript_tool():
+            letta_client_package = "@letta-ai/letta-client"
+            log_event(
+                "letta_client_npm_install_started",
+                {
+                    "sandbox_id": sbx.sandbox_id,
+                    "package": letta_client_package,
+                    "tool_name": self.tool.name if self.tool else None,
+                },
+            )
+            try:
+                await sbx.commands.run(f"npm install {letta_client_package}")
+                log_event(
+                    "letta_client_npm_install_finished",
+                    {
+                        "sandbox_id": sbx.sandbox_id,
+                        "package": letta_client_package,
+                        "tool_name": self.tool.name if self.tool else None,
+                    },
+                )
+            except CommandExitException as e:
+                # Log warning but don't fail - the client is optional for tools that don't need it
+                logger.warning(f"Failed to install {letta_client_package} in E2B sandbox: {e}")
+                log_event(
+                    "letta_client_npm_install_failed",
+                    {
+                        "sandbox_id": sbx.sandbox_id,
+                        "package": letta_client_package,
+                        "tool_name": self.tool.name if self.tool else None,
+                        "error": str(e),
+                    },
+                )
 
         return sbx
 

@@ -7,12 +7,14 @@ import time
 from functools import partial
 
 import pytest
+import requests
 from pydantic import BaseModel
 
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.schema_generator import validate_google_style_docstring
-from letta.llm_api.helpers import convert_to_structured_output, make_post_request
-from letta.schemas.tool import Tool, ToolCreate
+from letta.helpers.tool_execution_helper import enable_strict_mode
+from letta.llm_api.helpers import convert_to_structured_output
+from letta.schemas.tool import MCP_TOOL_METADATA_SCHEMA_STATUS, Tool, ToolCreate
 
 
 def _clean_diff(d1, d2):
@@ -185,7 +187,8 @@ def _openai_payload(test_config):
             "parallel_tool_calls": False,
         }
 
-        make_post_request(url, headers, data)
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
         success = True
 
     except Exception as e:
@@ -306,7 +309,8 @@ def _run_pydantic_args_test(filename, openai_model, structured_output):
             "parallel_tool_calls": False,
         }
 
-        make_post_request(url, headers, data)
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
         return (filename, True, None)  # Success
     except Exception as e:
         return (filename, False, str(e))  # Failure with error message
@@ -671,3 +675,253 @@ def test_complex_nested_anyof_schema_to_structured_output():
 
     except Exception as e:
         pytest.fail(f"Failed to convert complex nested anyOf schema to structured output: {str(e)}")
+
+
+# ========== enable_strict_mode tests ==========
+
+
+def test_enable_strict_mode_adds_all_properties_to_required():
+    """Test that enable_strict_mode adds all properties to required array."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "required_field": {"type": "string"},
+                "optional_field": {"type": "integer"},
+            },
+            "required": ["required_field"],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    assert result["strict"] is True
+    assert set(result["parameters"]["required"]) == {"required_field", "optional_field"}
+
+
+def test_enable_strict_mode_makes_optional_fields_nullable():
+    """Test that optional fields are made nullable."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "required_field": {"type": "string"},
+                "optional_field": {"type": "integer"},
+            },
+            "required": ["required_field"],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    # Required field should NOT be made nullable
+    assert result["parameters"]["properties"]["required_field"]["type"] == "string"
+    # Optional field should be made nullable
+    assert result["parameters"]["properties"]["optional_field"]["type"] == ["integer", "null"]
+
+
+def test_enable_strict_mode_recursive_nested_objects():
+    """Test recursive handling of nested objects."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "nested_field": {"type": "string"},
+                        "another_nested": {"type": "integer"},
+                    },
+                },
+            },
+            "required": ["config"],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    nested = result["parameters"]["properties"]["config"]
+    assert nested["additionalProperties"] is False
+    assert set(nested["required"]) == {"nested_field", "another_nested"}
+
+
+def test_enable_strict_mode_recursive_arrays():
+    """Test recursive handling of arrays with object items."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "item_field": {"type": "string"},
+                        },
+                    },
+                },
+            },
+            "required": ["items"],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    array_items = result["parameters"]["properties"]["items"]["items"]
+    assert array_items["additionalProperties"] is False
+    assert array_items["required"] == ["item_field"]
+
+
+def test_enable_strict_mode_strict_false_no_modification():
+    """Test that strict=False doesn't modify schema structure."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "field": {"type": "string"},
+            },
+            "required": [],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=False)
+
+    assert "strict" not in result
+    assert result["parameters"]["required"] == []
+    # Verify the field type is unchanged
+    assert result["parameters"]["properties"]["field"]["type"] == "string"
+
+
+def test_enable_strict_mode_non_strict_only_tool():
+    """Test that NON_STRICT_ONLY tools are not modified."""
+    schema = {
+        "name": "test_tool",
+        MCP_TOOL_METADATA_SCHEMA_STATUS: "NON_STRICT_ONLY",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "field": {"type": "string"},
+            },
+            "required": [],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    # Strict mode should not be applied
+    assert "strict" not in result
+    # Metadata should be removed
+    assert MCP_TOOL_METADATA_SCHEMA_STATUS not in result
+    # Required should be unchanged
+    assert result["parameters"]["required"] == []
+
+
+def test_enable_strict_mode_preserves_existing_required():
+    """Test that fields already in required are not made nullable."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "already_required": {"type": "string"},
+                "optional_field": {"type": "integer"},
+            },
+            "required": ["already_required"],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    # already_required should NOT be made nullable (it was already required)
+    assert result["parameters"]["properties"]["already_required"]["type"] == "string"
+    # optional_field should be made nullable
+    assert result["parameters"]["properties"]["optional_field"]["type"] == ["integer", "null"]
+    # Both should now be in required
+    assert set(result["parameters"]["required"]) == {"already_required", "optional_field"}
+
+
+def test_enable_strict_mode_handles_anyof():
+    """Test that anyOf structures are recursively processed."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "nested_field": {"type": "string"},
+                            },
+                        },
+                        {"type": "null"},
+                    ],
+                },
+            },
+            "required": ["config"],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    # The object inside anyOf should have additionalProperties and required set
+    anyof_options = result["parameters"]["properties"]["config"]["anyOf"]
+    object_option = next(opt for opt in anyof_options if opt.get("type") == "object")
+    assert object_option["additionalProperties"] is False
+    assert object_option["required"] == ["nested_field"]
+
+
+def test_enable_strict_mode_handles_type_array_nullable():
+    """Test that fields with type array (already nullable) are handled correctly."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "already_nullable": {"type": ["string", "null"]},
+                "not_nullable": {"type": "integer"},
+            },
+            "required": [],
+        },
+    }
+
+    result = enable_strict_mode(schema, strict=True)
+
+    # Already nullable field should not get duplicate null
+    already_nullable_type = result["parameters"]["properties"]["already_nullable"]["type"]
+    assert already_nullable_type.count("null") == 1
+    # Not nullable should become nullable
+    assert result["parameters"]["properties"]["not_nullable"]["type"] == ["integer", "null"]
+
+
+def test_enable_strict_mode_does_not_mutate_original():
+    """Test that the original schema is not mutated."""
+    schema = {
+        "name": "test_tool",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "field": {"type": "string"},
+            },
+            "required": [],
+        },
+    }
+
+    original_required = schema["parameters"]["required"].copy()
+    original_field_type = schema["parameters"]["properties"]["field"]["type"]
+
+    result = enable_strict_mode(schema, strict=True)
+
+    # Original should be unchanged
+    assert schema["parameters"]["required"] == original_required
+    assert schema["parameters"]["properties"]["field"]["type"] == original_field_type
+    assert "strict" not in schema
+    # Result should be different
+    assert result["strict"] is True
+    assert len(result["parameters"]["required"]) == 1

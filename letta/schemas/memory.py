@@ -318,14 +318,6 @@ class Memory(BaseModel, validate_assignment=True):
             llm_config=llm_config,
         )
 
-    @trace_method
-    async def compile_in_thread_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
-        """Deprecated: use compile() instead."""
-        import warnings
-
-        logger.warning("compile_in_thread_async is deprecated; use compile()", stacklevel=2)
-        return self.compile(tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open, llm_config=llm_config)
-
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""
         return [block.label for block in self.blocks]

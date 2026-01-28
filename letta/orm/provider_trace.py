@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,7 +21,16 @@ class ProviderTrace(SqlalchemyBase, OrganizationMixin):
     )
     request_json: Mapped[dict] = mapped_column(JSON, doc="JSON content of the provider request")
     response_json: Mapped[dict] = mapped_column(JSON, doc="JSON content of the provider response")
-    step_id: Mapped[str] = mapped_column(String, nullable=True, doc="ID of the step that this trace is associated with")
+    step_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the step that this trace is associated with")
+
+    # Telemetry context fields
+    agent_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the agent that generated this trace")
+    agent_tags: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, doc="Tags associated with the agent for filtering")
+    call_type: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Type of call (agent_step, summarization, etc.)")
+    run_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the run this trace is associated with")
+    source: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, doc="Source service that generated this trace (memgpt-server, lettuce-py)"
+    )
 
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", lazy="selectin")

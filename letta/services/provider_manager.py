@@ -482,6 +482,7 @@ class ProviderManager:
 
         try:
             # Get the provider class and create an instance
+            from letta.schemas.enums import ProviderType
             from letta.schemas.providers.anthropic import AnthropicProvider
             from letta.schemas.providers.azure import AzureProvider
             from letta.schemas.providers.bedrock import BedrockProvider
@@ -491,42 +492,47 @@ class ProviderManager:
             from letta.schemas.providers.openai import OpenAIProvider
             from letta.schemas.providers.zai import ZAIProvider
 
-            provider_type_to_class = {
-                "openai": OpenAIProvider,
-                "anthropic": AnthropicProvider,
-                "groq": GroqProvider,
-                "google": GoogleAIProvider,
-                "ollama": OllamaProvider,
-                "bedrock": BedrockProvider,
-                "azure": AzureProvider,
-                "zai": ZAIProvider,
-            }
+            # ChatGPT OAuth requires cast_to_subtype to preserve api_key_enc and id
+            # (needed for OAuth token refresh and database persistence)
+            if provider.provider_type == ProviderType.chatgpt_oauth:
+                provider_instance = provider.cast_to_subtype()
+            else:
+                provider_type_to_class = {
+                    "openai": OpenAIProvider,
+                    "anthropic": AnthropicProvider,
+                    "groq": GroqProvider,
+                    "google": GoogleAIProvider,
+                    "ollama": OllamaProvider,
+                    "bedrock": BedrockProvider,
+                    "azure": AzureProvider,
+                    "zai": ZAIProvider,
+                }
 
-            provider_type = provider.provider_type.value if hasattr(provider.provider_type, "value") else str(provider.provider_type)
-            provider_class = provider_type_to_class.get(provider_type)
+                provider_type = provider.provider_type.value if hasattr(provider.provider_type, "value") else str(provider.provider_type)
+                provider_class = provider_type_to_class.get(provider_type)
 
-            if not provider_class:
-                logger.warning(f"No provider class found for type '{provider_type}'")
-                return
+                if not provider_class:
+                    logger.warning(f"No provider class found for type '{provider_type}'")
+                    return
 
-            # Create provider instance with necessary parameters
-            api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
-            access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
-            kwargs = {
-                "name": provider.name,
-                "api_key": api_key,
-                "provider_category": provider.provider_category,
-            }
-            if provider.base_url:
-                kwargs["base_url"] = provider.base_url
-            if access_key:
-                kwargs["access_key"] = access_key
-            if provider.region:
-                kwargs["region"] = provider.region
-            if provider.api_version:
-                kwargs["api_version"] = provider.api_version
+                # Create provider instance with necessary parameters
+                api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
+                access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
+                kwargs = {
+                    "name": provider.name,
+                    "api_key": api_key,
+                    "provider_category": provider.provider_category,
+                }
+                if provider.base_url:
+                    kwargs["base_url"] = provider.base_url
+                if access_key:
+                    kwargs["access_key"] = access_key
+                if provider.region:
+                    kwargs["region"] = provider.region
+                if provider.api_version:
+                    kwargs["api_version"] = provider.api_version
 
-            provider_instance = provider_class(**kwargs)
+                provider_instance = provider_class(**kwargs)
 
             # Query the provider's API for available models
             llm_models = await provider_instance.list_llm_models_async()
@@ -731,7 +737,17 @@ class ProviderManager:
                         # Roll back the session to clear the failed transaction
                         await session.rollback()
                 else:
-                    logger.info(f"    LLM model {llm_config.handle} already exists (ID: {existing[0].id}), skipping")
+                    # Check if max_context_window needs to be updated
+                    existing_model = existing[0]
+                    if existing_model.max_context_window != llm_config.context_window:
+                        logger.info(
+                            f"    Updating LLM model {llm_config.handle} max_context_window: "
+                            f"{existing_model.max_context_window} -> {llm_config.context_window}"
+                        )
+                        existing_model.max_context_window = llm_config.context_window
+                        await existing_model.update_async(session)
+                    else:
+                        logger.info(f"    LLM model {llm_config.handle} already exists (ID: {existing[0].id}), skipping")
 
             # Process embedding models - add new ones
             logger.info(f"Processing {len(embedding_models)} embedding models for provider {provider.name}")
@@ -953,11 +969,24 @@ class ProviderManager:
         # Get the default max_output_tokens from the provider (provider-specific logic)
         max_tokens = typed_provider.get_default_max_output_tokens(model.name)
 
+        # Determine the model endpoint - use provider's base_url if set,
+        # otherwise use provider-specific defaults
+
+        if provider.base_url:
+            model_endpoint = provider.base_url
+        elif provider.provider_type == ProviderType.chatgpt_oauth:
+            # ChatGPT OAuth uses the ChatGPT backend API, not a generic endpoint pattern
+            from letta.schemas.providers.chatgpt_oauth import CHATGPT_CODEX_ENDPOINT
+
+            model_endpoint = CHATGPT_CODEX_ENDPOINT
+        else:
+            model_endpoint = f"https://api.{provider.provider_type.value}.com/v1"
+
         # Construct the LLMConfig from the model and provider data
         llm_config = LLMConfig(
             model=model.name,
             model_endpoint_type=model.model_endpoint_type,
-            model_endpoint=provider.base_url or f"https://api.{provider.provider_type.value}.com/v1",
+            model_endpoint=model_endpoint,
             context_window=model.max_context_window or 16384,  # Default if not set
             handle=model.handle,
             provider_name=provider.name,

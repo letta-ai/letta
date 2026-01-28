@@ -30,21 +30,19 @@ Write the summary from the perspective of the AI (use the first person from the 
 Only output the summary, do NOT include anything else in your output.
 """
 
-WORD_LIMIT = 100
-SHORTER_SUMMARY_PROMPT = f"""You have been interacting with a human user, and are in the middle of a conversation or a task. Write a summary that will allow you (or another instance of yourself) to resume without distruption, even after the conversation history is replaced with this summary. Your summary should be structured, concise, and actionable (if you are in the middle of a task). Include:
+WORD_LIMIT = 250
+SHORTER_SUMMARY_PROMPT = f"""The following messages are being evicted from your context window. Write a detailed summary that captures what happened in these messages.
 
-1. Task or conversational overview
-The user's core request and success criteria you are currently working on.
-Any clarifications or constraints they specified.
-Any details about the topic of messages that originated the current conversation or task.
+This summary will appear BEFORE the remaining recent messages in context, providing background for what comes after. Include:
 
-2. Current State
-What has been completed or discussed so far
-Files created, modified, or analyzed (with paths if relevant)
-Resources explored or referenced (with URLs if relevant)
-What has been discussed or explored so far with the user
+1. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress?
 
-3. Next Steps
-The next actions or steps you would have taken, if you were to continue the conversation or task.
+2. **High level goals**: If there is an existing summary in the transcript, make sure to take it into consideration to continue tracking the higher level goals and long-term progress. Make sure to not lose track of higher level goals or the ongoing task.
 
-Keep your summary less than {WORD_LIMIT} words, do NOT exceed this word limit. Only output the summary, do NOT include anything else in your output."""
+3. **Important details**: Specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.
+
+4. **Lookup hints**: For any detailed content (long lists, extensive data, specific conversations) that couldn't fit in the summary, note the topic and key terms that could be used to find it in message history later.
+
+Write in first person as a factual record of what occurred. Be thorough and detailed - the goal is to preserve enough context that the recent messages make sense and important information isn't lost.
+
+Keep your summary under {WORD_LIMIT} words. Only output the summary."""

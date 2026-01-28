@@ -71,8 +71,24 @@ def serialize_llm_config(config: Union[Optional[LLMConfig], Dict]) -> Optional[D
 
 
 def deserialize_llm_config(data: Optional[Dict]) -> Optional[LLMConfig]:
-    """Convert a dictionary back into an LLMConfig object."""
-    return LLMConfig(**data) if data else None
+    """Convert a dictionary back into an LLMConfig object.
+
+    Handles default value for 'strict' based on provider:
+    - OpenAI: defaults to True
+    - Others (Anthropic, etc.): defaults to False
+    """
+    if not data:
+        return None
+
+    # Handle strict mode default based on provider.
+    # OpenAI supports strict mode well, so default to True.
+    # Anthropic and others default to False for compatibility.
+    # This handles both legacy data without strict field and explicit None values.
+    if "strict" not in data or data.get("strict") is None:
+        model_endpoint_type = data.get("model_endpoint_type")
+        data["strict"] = model_endpoint_type == "openai"
+
+    return LLMConfig(**data)
 
 
 # --------------------------

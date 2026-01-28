@@ -33,8 +33,22 @@ async def summarize_all(
     )
     if in_context_messages[-1].role == MessageRole.approval:
         # cannot evict a pending approval request (will cause client-side errors)
-        messages_to_summarize = in_context_messages[1:-1]
+        # Also protect the assistant message before it if they share the same step_id
+        # (both are part of the same LLM response - assistant has thinking/tool_calls, approval has approval-required subset)
         protected_messages = [in_context_messages[-1]]
+
+        # Check if the message before approval is also from the same step (has reasoning/tool_calls)
+        if len(in_context_messages) >= 2:
+            potential_assistant = in_context_messages[-2]
+            approval_request = in_context_messages[-1]
+            if potential_assistant.role == MessageRole.assistant and potential_assistant.step_id == approval_request.step_id:
+                # They're part of the same LLM response - protect both
+                protected_messages = [potential_assistant, approval_request]
+                messages_to_summarize = in_context_messages[1:-2]
+            else:
+                messages_to_summarize = in_context_messages[1:-1]
+        else:
+            messages_to_summarize = in_context_messages[1:-1]
     else:
         messages_to_summarize = in_context_messages[1:]
         protected_messages = []

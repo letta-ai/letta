@@ -10,6 +10,7 @@ from letta.schemas.conversation import Conversation as PydanticConversation
 
 if TYPE_CHECKING:
     from letta.orm.agent import Agent
+    from letta.orm.block import Block
     from letta.orm.conversation_messages import ConversationMessage
 
 
@@ -35,6 +36,13 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    isolated_blocks: Mapped[List["Block"]] = relationship(
+        "Block",
+        secondary="blocks_conversations",
+        lazy="selectin",
+        passive_deletes=True,
+        doc="Conversation-specific blocks that override agent defaults for isolated memory.",
+    )
 
     def to_pydantic(self) -> PydanticConversation:
         """Converts the SQLAlchemy model to its Pydantic counterpart."""
@@ -46,4 +54,5 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
             updated_at=self.updated_at,
             created_by_id=self.created_by_id,
             last_updated_by_id=self.last_updated_by_id,
+            isolated_block_ids=[b.id for b in self.isolated_blocks] if self.isolated_blocks else [],
         )

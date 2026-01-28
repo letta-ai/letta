@@ -9,7 +9,7 @@ from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.settings import settings
@@ -26,9 +26,15 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     specific streaming formats.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig, run_id: str | None = None) -> None:
-        super().__init__(llm_client, llm_config)
-        self.run_id = run_id
+    def __init__(
+        self,
+        llm_client: LLMClientBase,
+        llm_config: LLMConfig,
+        agent_id: str | None = None,
+        agent_tags: list[str] | None = None,
+        run_id: str | None = None,
+    ) -> None:
+        super().__init__(llm_client, llm_config, agent_id=agent_id, agent_tags=agent_tags, run_id=run_id)
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
 
     async def invoke_llm(
@@ -223,10 +229,13 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             safe_create_task(
                 self.telemetry_manager.create_provider_trace_async(
                     actor=actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=self.request_data,
                         response_json=response_json,
-                        step_id=step_id,  # Use original step_id for telemetry
+                        step_id=step_id,
+                        agent_id=self.agent_id,
+                        agent_tags=self.agent_tags,
+                        run_id=self.run_id,
                     ),
                 ),
                 label="create_provider_trace",

@@ -300,7 +300,7 @@ def test_agent_tags(client: Letta, clear_tables):
 
     # Test getting all tags
     all_tags = client.tags.list()
-    expected_tags = ["agent1", "agent2", "agent3", "development", "production", "test"]
+    expected_tags = ["agent1", "agent2", "agent3", "development", "origin:letta-chat", "production", "test", "view:letta-chat"]
     print("ALL TAGS", all_tags)
     print("EXPECTED TAGS", expected_tags)
     assert sorted(all_tags) == expected_tags

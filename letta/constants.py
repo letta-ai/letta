@@ -274,6 +274,7 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gpt-5.2-2025-12-11": 272000,
     "gpt-5.2-pro": 272000,
     "gpt-5.2-pro-2025-12-11": 272000,
+    "gpt-5.2-codex": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only

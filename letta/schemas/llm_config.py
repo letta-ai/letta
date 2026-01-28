@@ -49,6 +49,7 @@ class LLMConfig(BaseModel):
         "deepseek",
         "xai",
         "zai",
+        "chatgpt_oauth",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
     provider_name: Optional[str] = Field(None, description="The provider name for the model.")
@@ -61,7 +62,7 @@ class LLMConfig(BaseModel):
     )
     handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
     temperature: float = Field(
-        0.7,
+        1.0,
         description="The temperature to use when generating text with the model. A higher temperature will result in more random text.",
     )
     max_tokens: Optional[int] = Field(
@@ -104,6 +105,10 @@ class LLMConfig(BaseModel):
     response_format: Optional[ResponseFormatUnion] = Field(
         None,
         description="The response format for the model's output. Supports text, json_object, and json_schema (structured outputs). Can be set via model_settings.",
+    )
+    strict: bool = Field(
+        False,
+        description="Enable strict mode for tool calling. When true, tool schemas include strict: true and additionalProperties: false, guaranteeing tool outputs match JSON schemas.",
     )
 
     @model_validator(mode="before")
@@ -177,7 +182,7 @@ class LLMConfig(BaseModel):
         if is_openai_reasoning_model(model):
             values["put_inner_thoughts_in_kwargs"] = False
 
-        if values.get("model_endpoint_type") == "anthropic" and (
+        if values.get("model_endpoint_type") in ("anthropic", "bedrock") and (
             model.startswith("claude-3-7-sonnet")
             or model.startswith("claude-sonnet-4")
             or model.startswith("claude-opus-4")
@@ -308,6 +313,8 @@ class LLMConfig(BaseModel):
             AnthropicThinking,
             AzureModelSettings,
             BedrockModelSettings,
+            ChatGPTOAuthModelSettings,
+            ChatGPTOAuthReasoning,
             DeepseekModelSettings,
             GeminiThinkingConfig,
             GoogleAIModelSettings,
@@ -326,6 +333,7 @@ class LLMConfig(BaseModel):
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
                 reasoning=OpenAIReasoning(reasoning_effort=self.reasoning_effort or "minimal"),
+                strict=self.strict,
             )
         elif self.model_endpoint_type == "anthropic":
             thinking_type = "enabled" if self.enable_reasoner else "disabled"
@@ -334,6 +342,7 @@ class LLMConfig(BaseModel):
                 temperature=self.temperature,
                 thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
                 verbosity=self.verbosity,
+                strict=self.strict,
             )
         elif self.model_endpoint_type == "google_ai":
             return GoogleAIModelSettings(
@@ -382,7 +391,16 @@ class LLMConfig(BaseModel):
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "bedrock":
-            return Model(max_output_tokens=self.max_tokens or 4096)
+            return BedrockModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
+        elif self.model_endpoint_type == "chatgpt_oauth":
+            return ChatGPTOAuthModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+                reasoning=ChatGPTOAuthReasoning(reasoning_effort=self.reasoning_effort or "medium"),
+            )
         else:
             # If we don't know the model type, use the default Model schema
             return Model(max_output_tokens=self.max_tokens or 4096)
@@ -395,7 +413,7 @@ class LLMConfig(BaseModel):
 
     @classmethod
     def is_anthropic_reasoning_model(cls, config: "LLMConfig") -> bool:
-        return config.model_endpoint_type == "anthropic" and (
+        return config.model_endpoint_type in ("anthropic", "bedrock") and (
             config.model.startswith("claude-opus-4")
             or config.model.startswith("claude-sonnet-4")
             or config.model.startswith("claude-3-7-sonnet")

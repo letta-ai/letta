@@ -1,12 +1,22 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from sqlalchemy import func, select
+if TYPE_CHECKING:
+    pass
 
+# Import AgentState outside TYPE_CHECKING for @enforce_types decorator
+from sqlalchemy import delete, func, select
+
+from letta.errors import LettaInvalidArgumentError
+from letta.orm.agent import Agent as AgentModel
+from letta.orm.block import Block as BlockModel
+from letta.orm.blocks_conversations import BlocksConversations
 from letta.orm.conversation import Conversation as ConversationModel
 from letta.orm.conversation_messages import ConversationMessage as ConversationMessageModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentState
+from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.conversation import Conversation as PydanticConversation, CreateConversation, UpdateConversation
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
@@ -26,7 +36,17 @@ class ConversationManager:
         conversation_create: CreateConversation,
         actor: PydanticUser,
     ) -> PydanticConversation:
-        """Create a new conversation for an agent."""
+        """Create a new conversation for an agent.
+
+        Args:
+            agent_id: The ID of the agent this conversation belongs to
+            conversation_create: The conversation creation request, optionally including
+                isolated_block_labels for conversation-specific memory blocks
+            actor: The user performing the action
+
+        Returns:
+            The created conversation with isolated_block_ids if any were created
+        """
         async with db_registry.async_session() as session:
             conversation = ConversationModel(
                 agent_id=agent_id,
@@ -34,7 +54,21 @@ class ConversationManager:
                 organization_id=actor.organization_id,
             )
             await conversation.create_async(session, actor=actor)
-            return conversation.to_pydantic()
+
+            # Handle isolated blocks if requested
+            isolated_block_ids = []
+            if conversation_create.isolated_block_labels:
+                isolated_block_ids = await self._create_isolated_blocks(
+                    session=session,
+                    conversation=conversation,
+                    agent_id=agent_id,
+                    isolated_block_labels=conversation_create.isolated_block_labels,
+                    actor=actor,
+                )
+
+            pydantic_conversation = conversation.to_pydantic()
+            pydantic_conversation.isolated_block_ids = isolated_block_ids
+            return pydantic_conversation
 
     @enforce_types
     @trace_method
@@ -119,16 +153,29 @@ class ConversationManager:
         conversation_id: str,
         actor: PydanticUser,
     ) -> None:
-        """Soft delete a conversation."""
+        """Soft delete a conversation and hard-delete its isolated blocks."""
         async with db_registry.async_session() as session:
             conversation = await ConversationModel.read_async(
                 db_session=session,
                 identifier=conversation_id,
                 actor=actor,
             )
-            # Soft delete by setting is_deleted flag
+
+            # Get isolated blocks before modifying conversation
+            isolated_blocks = list(conversation.isolated_blocks)
+
+            # Soft delete the conversation first
             conversation.is_deleted = True
             await conversation.update_async(db_session=session, actor=actor)
+
+            # Hard-delete isolated blocks (Block model doesn't support soft-delete)
+            # Following same pattern as block_manager.delete_block_async
+            for block in isolated_blocks:
+                # Delete junction table entry first
+                await session.execute(delete(BlocksConversations).where(BlocksConversations.block_id == block.id))
+                await session.flush()
+                # Then hard-delete the block
+                await block.hard_delete_async(db_session=session, actor=actor)
 
     # ==================== Message Management Methods ====================
 
@@ -255,10 +302,15 @@ class ConversationManager:
         Update which messages are in context for a conversation.
 
         Sets in_context=True for messages in the list, False for others.
+        Also updates positions to preserve the order specified in in_context_message_ids.
+
+        This is critical for correctness: when summarization inserts a summary message
+        that needs to appear before an approval request, the positions must reflect
+        the intended order, not the insertion order.
 
         Args:
             conversation_id: The conversation to update
-            in_context_message_ids: List of message IDs that should be in context
+            in_context_message_ids: List of message IDs in the desired order
             actor: The user performing the action
         """
         async with db_registry.async_session() as session:
@@ -271,10 +323,19 @@ class ConversationManager:
             result = await session.execute(query)
             conv_messages = result.scalars().all()
 
-            # Update in_context status
+            # Build lookup dict
+            conv_msg_dict = {cm.message_id: cm for cm in conv_messages}
+
+            # Update in_context status AND positions
             in_context_set = set(in_context_message_ids)
             for conv_msg in conv_messages:
                 conv_msg.in_context = conv_msg.message_id in in_context_set
+
+            # Update positions to match the order in in_context_message_ids
+            # This ensures ORDER BY position returns messages in the correct order
+            for position, message_id in enumerate(in_context_message_ids):
+                if message_id in conv_msg_dict:
+                    conv_msg_dict[message_id].position = position
 
             await session.commit()
 
@@ -287,13 +348,15 @@ class ConversationManager:
         limit: Optional[int] = 100,
         before: Optional[str] = None,
         after: Optional[str] = None,
+        reverse: bool = False,
+        group_id: Optional[str] = None,
+        include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         """
         List all messages in a conversation with pagination support.
 
         Unlike get_messages_for_conversation, this returns ALL messages
         (not just in_context) and supports cursor-based pagination.
-        Messages are always ordered by position (oldest first).
 
         Args:
             conversation_id: The conversation to list messages for
@@ -301,6 +364,9 @@ class ConversationManager:
             limit: Maximum number of messages to return
             before: Return messages before this message ID
             after: Return messages after this message ID
+            reverse: If True, return messages in descending order (newest first)
+            group_id: Optional group ID to filter messages by
+            include_err: Optional boolean to include error messages and error statuses
 
         Returns:
             List of LettaMessage objects
@@ -319,6 +385,10 @@ class ConversationManager:
                     ConversationMessageModel.is_deleted == False,
                 )
             )
+
+            # Filter by group_id if provided
+            if group_id:
+                query = query.where(MessageModel.group_id == group_id)
 
             # Handle cursor-based pagination
             if before:
@@ -343,8 +413,11 @@ class ConversationManager:
                 if cursor_position is not None:
                     query = query.where(ConversationMessageModel.position > cursor_position)
 
-            # Order by position (oldest first)
-            query = query.order_by(ConversationMessageModel.position.asc())
+            # Order by position
+            if reverse:
+                query = query.order_by(ConversationMessageModel.position.desc())
+            else:
+                query = query.order_by(ConversationMessageModel.position.asc())
 
             # Apply limit
             if limit is not None:
@@ -353,5 +426,148 @@ class ConversationManager:
             result = await session.execute(query)
             messages = [msg.to_pydantic() for msg in result.scalars().all()]
 
-            # Convert to LettaMessages
-            return PydanticMessage.to_letta_messages_from_list(messages, reverse=False, text_is_assistant_message=True)
+            # Convert to LettaMessages (reverse=False keeps sub-messages in natural order)
+            return PydanticMessage.to_letta_messages_from_list(
+                messages, reverse=False, include_err=include_err, text_is_assistant_message=True
+            )
+
+    # ==================== Isolated Blocks Methods ====================
+
+    async def _create_isolated_blocks(
+        self,
+        session,
+        conversation: ConversationModel,
+        agent_id: str,
+        isolated_block_labels: List[str],
+        actor: PydanticUser,
+    ) -> List[str]:
+        """Create conversation-specific copies of blocks for isolated labels.
+
+        Args:
+            session: The database session
+            conversation: The conversation model (must be created but not yet committed)
+            agent_id: The agent ID to get source blocks from
+            isolated_block_labels: List of block labels to isolate
+            actor: The user performing the action
+
+        Returns:
+            List of created block IDs
+
+        Raises:
+            LettaInvalidArgumentError: If a block label is not found on the agent
+        """
+        # Get the agent with its blocks
+        agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+
+        # Map of label -> agent block
+        agent_blocks_by_label = {block.label: block for block in agent.core_memory}
+
+        created_block_ids = []
+        for label in isolated_block_labels:
+            if label not in agent_blocks_by_label:
+                raise LettaInvalidArgumentError(
+                    f"Block with label '{label}' not found on agent '{agent_id}'",
+                    argument_name="isolated_block_labels",
+                )
+
+            source_block = agent_blocks_by_label[label]
+
+            # Create a copy of the block with a new ID using Pydantic schema (which auto-generates ID)
+            new_block_pydantic = PydanticBlock(
+                label=source_block.label,
+                description=source_block.description,
+                value=source_block.value,
+                limit=source_block.limit,
+                metadata=source_block.metadata_,
+                read_only=source_block.read_only,
+            )
+
+            # Convert to ORM model
+            block_data = new_block_pydantic.model_dump(to_orm=True, exclude_none=True)
+            new_block = BlockModel(**block_data, organization_id=actor.organization_id)
+            await new_block.create_async(session, actor=actor)
+
+            # Create the junction table entry
+            blocks_conv = BlocksConversations(
+                conversation_id=conversation.id,
+                block_id=new_block.id,
+                block_label=label,
+            )
+            session.add(blocks_conv)
+            created_block_ids.append(new_block.id)
+
+        return created_block_ids
+
+    @enforce_types
+    @trace_method
+    async def get_isolated_blocks_for_conversation(
+        self,
+        conversation_id: str,
+        actor: PydanticUser,
+    ) -> Dict[str, PydanticBlock]:
+        """Get isolated blocks for a conversation, keyed by label.
+
+        Args:
+            conversation_id: The conversation ID
+            actor: The user performing the action
+
+        Returns:
+            Dictionary mapping block labels to their conversation-specific blocks
+        """
+        async with db_registry.async_session() as session:
+            conversation = await ConversationModel.read_async(
+                db_session=session,
+                identifier=conversation_id,
+                actor=actor,
+                check_is_deleted=True,
+            )
+            return {block.label: block.to_pydantic() for block in conversation.isolated_blocks}
+
+    @enforce_types
+    @trace_method
+    async def apply_isolated_blocks_to_agent_state(
+        self,
+        agent_state: "AgentState",
+        conversation_id: str,
+        actor: PydanticUser,
+    ) -> "AgentState":
+        """Apply conversation-specific block overrides to an agent state.
+
+        This method modifies the agent_state.memory to replace blocks that have
+        conversation-specific isolated versions.
+
+        Args:
+            agent_state: The agent state to modify (will be modified in place)
+            conversation_id: The conversation ID to get isolated blocks from
+            actor: The user performing the action
+
+        Returns:
+            The modified agent state (same object, modified in place)
+        """
+        from letta.schemas.memory import Memory
+
+        # Get conversation's isolated blocks
+        isolated_blocks = await self.get_isolated_blocks_for_conversation(
+            conversation_id=conversation_id,
+            actor=actor,
+        )
+
+        if not isolated_blocks:
+            return agent_state
+
+        # Override agent's blocks with conversation-specific blocks
+        memory_blocks = []
+        for block in agent_state.memory.blocks:
+            if block.label in isolated_blocks:
+                memory_blocks.append(isolated_blocks[block.label])
+            else:
+                memory_blocks.append(block)
+
+        # Create new Memory with overridden blocks
+        agent_state.memory = Memory(
+            blocks=memory_blocks,
+            file_blocks=agent_state.memory.file_blocks,
+            agent_type=agent_state.memory.agent_type,
+        )
+
+        return agent_state

@@ -98,6 +98,15 @@ class StreamingService:
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
 
+        # Handle model override if specified in the request
+        if request.override_model:
+            override_llm_config = await self.server.get_llm_config_from_handle_async(
+                actor=actor,
+                handle=request.override_model,
+            )
+            # Create a copy of agent state with the overridden llm_config
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
         agent_eligible = self._is_agent_eligible(agent)
         model_compatible = self._is_model_compatible(agent)
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
@@ -211,7 +220,13 @@ class StreamingService:
 
             # update run status to running before returning
             if settings.track_agent_run and run:
-                run_status = RunStatus.running
+                # refetch run since it may have been updated by another service
+                run = await self.server.run_manager.get_run_by_id(run_id=run.id, actor=actor)
+                if run.status == RunStatus.created:
+                    run_status = RunStatus.running
+                else:
+                    # don't override run status if it has already been updated
+                    run_status = None
 
             return run, result
 
@@ -226,7 +241,7 @@ class StreamingService:
                 run_status = RunStatus.failed
             raise
         finally:
-            if settings.track_agent_run and run:
+            if settings.track_agent_run and run and run_status:
                 await self.server.run_manager.update_run_by_id_async(
                     run_id=run.id,
                     conversation_id=conversation_id,
@@ -484,11 +499,12 @@ class StreamingService:
             "zai",
             "groq",
             "deepseek",
+            "chatgpt_oauth",
         ]
 
     def _is_token_streaming_compatible(self, agent: AgentState) -> bool:
         """Check if agent's model supports token-level streaming."""
-        base_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek", "zai"]
+        base_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek", "zai", "chatgpt_oauth"]
         google_letta_v1 = agent.agent_type == AgentType.letta_v1_agent and agent.llm_config.model_endpoint_type in [
             "google_ai",
             "google_vertex",

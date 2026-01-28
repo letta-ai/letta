@@ -33,7 +33,7 @@ class CompactionSettings(BaseModel):
         default=False, description="Whether to include an acknowledgement post-prompt (helps prevent non-summary outputs)."
     )
     clip_chars: int | None = Field(
-        default=2000, description="The maximum length of the summary in characters. If none, no clipping is performed."
+        default=50000, description="The maximum length of the summary in characters. If none, no clipping is performed."
     )
 
     mode: Literal["all", "sliding_window"] = Field(default="sliding_window", description="The type of summarization technique use.")

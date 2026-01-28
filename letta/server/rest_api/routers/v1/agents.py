@@ -243,6 +243,10 @@ async def export_agent(
         description="If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
         deprecated=True,
     ),
+    conversation_id: Optional[str] = Query(
+        None,
+        description="Conversation ID to export. If provided, uses messages from this conversation instead of the agent's global message history.",
+    ),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentFileSchema
     spec: AgentFileSchema | None = None,
@@ -254,7 +258,7 @@ async def export_agent(
     if use_legacy_format:
         raise HTTPException(status_code=400, detail="Legacy format is not supported")
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+    agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor, conversation_id=conversation_id)
     return agent_file_schema.model_dump()
 
 
@@ -452,12 +456,15 @@ async def retrieve_agent_context_window(
     agent_id: AgentId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    conversation_id: Optional[str] = Query(
+        None, description="Conversation ID to get context window for. If provided, uses messages from this conversation."
+    ),
 ):
     """
     Retrieve the context window of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor, conversation_id=conversation_id)
 
 
 class CreateAgentRequest(CreateAgent):
@@ -1515,6 +1522,16 @@ async def send_message(
     agent = await server.agent_manager.get_agent_by_id_async(
         agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
     )
+
+    # Handle model override if specified in the request
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=request.override_model,
+        )
+        # Create a copy of agent state with the overridden llm_config
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
         "anthropic",
@@ -1529,6 +1546,7 @@ async def send_message(
         "zai",
         "groq",
         "deepseek",
+        "chatgpt_oauth",
     ]
 
     # Create a new run for execution tracking
@@ -1772,6 +1790,7 @@ async def _process_message_background(
     assistant_message_tool_kwarg: str,
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
+    override_model: str | None = None,
 ) -> None:
     """Background task to process the message and update run status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
@@ -1782,6 +1801,16 @@ async def _process_message_background(
         agent = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
+
+        # Handle model override if specified
+        if override_model:
+            override_llm_config = await server.get_llm_config_from_handle_async(
+                actor=actor,
+                handle=override_model,
+            )
+            # Create a copy of agent state with the overridden llm_config
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
         agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
         model_compatible = agent.llm_config.model_endpoint_type in [
             "anthropic",
@@ -1970,6 +1999,7 @@ async def send_message_async(
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
             max_steps=request.max_steps,
             include_return_message_types=request.include_return_message_types,
+            override_model=request.override_model,
         ),
         label=f"process_message_background_{run.id}",
     )
@@ -2101,6 +2131,7 @@ async def preview_model_request(
         "zai",
         "groq",
         "deepseek",
+        "chatgpt_oauth",
     ]
 
     if agent_eligible and model_compatible:
@@ -2155,6 +2186,7 @@ async def summarize_messages(
         "zai",
         "groq",
         "deepseek",
+        "chatgpt_oauth",
     ]
 
     if agent_eligible and model_compatible:
@@ -2216,7 +2248,7 @@ async def capture_messages(
             messages_to_persist.append(
                 Message(
                     role=MessageRole.user,
-                    content=[(TextContent(text=message["content"]))],
+                    content=[TextContent(text=message["content"])],
                     agent_id=agent_id,
                     tool_calls=None,
                     tool_call_id=None,
@@ -2228,7 +2260,7 @@ async def capture_messages(
     messages_to_persist.append(
         Message(
             role=MessageRole.assistant,
-            content=[(TextContent(text=request.response_dict["content"]))],
+            content=[TextContent(text=request.response_dict["content"])],
             agent_id=agent_id,
             model=request.model,
             tool_calls=None,

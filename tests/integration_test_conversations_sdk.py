@@ -396,3 +396,172 @@ class TestConversationsSDK:
             )
         )
         assert len(messages) > 0, "Should be able to send message after concurrent requests complete"
+
+    def test_list_conversation_messages_order_asc(self, client: Letta, agent):
+        """Test listing messages in ascending order (oldest first)."""
+        conversation = client.conversations.create(agent_id=agent.id)
+
+        # Send messages to create history
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "First message"}],
+            )
+        )
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "Second message"}],
+            )
+        )
+
+        # List messages in ascending order (oldest first)
+        messages_asc = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="asc",
+        )
+
+        # First message should be system message (oldest)
+        assert messages_asc[0].message_type == "system_message"
+
+        # Get user messages and verify order
+        user_messages = [m for m in messages_asc if m.message_type == "user_message"]
+        assert len(user_messages) >= 2
+        # First user message should contain "First message"
+        assert "First" in user_messages[0].content
+
+    def test_list_conversation_messages_order_desc(self, client: Letta, agent):
+        """Test listing messages in descending order (newest first)."""
+        conversation = client.conversations.create(agent_id=agent.id)
+
+        # Send messages to create history
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "First message"}],
+            )
+        )
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "Second message"}],
+            )
+        )
+
+        # List messages in descending order (newest first) - this is the default
+        messages_desc = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="desc",
+        )
+
+        # Get user messages and verify order
+        user_messages = [m for m in messages_desc if m.message_type == "user_message"]
+        assert len(user_messages) >= 2
+        # First user message in desc order should contain "Second message" (newest)
+        assert "Second" in user_messages[0].content
+
+    def test_list_conversation_messages_order_affects_pagination(self, client: Letta, agent):
+        """Test that order parameter affects pagination correctly."""
+        conversation = client.conversations.create(agent_id=agent.id)
+
+        # Send multiple messages
+        for i in range(3):
+            list(
+                client.conversations.messages.create(
+                    conversation_id=conversation.id,
+                    messages=[{"role": "user", "content": f"Message {i}"}],
+                )
+            )
+
+        # Get all messages in descending order with limit
+        messages_desc = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="desc",
+            limit=5,
+        )
+
+        # Get all messages in ascending order with limit
+        messages_asc = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="asc",
+            limit=5,
+        )
+
+        # The first messages should be different based on order
+        assert messages_desc[0].id != messages_asc[0].id
+
+    def test_list_conversation_messages_with_before_cursor(self, client: Letta, agent):
+        """Test pagination with before cursor."""
+        conversation = client.conversations.create(agent_id=agent.id)
+
+        # Send messages to create history
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "First message"}],
+            )
+        )
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "Second message"}],
+            )
+        )
+
+        # Get all messages first
+        all_messages = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="asc",
+        )
+        assert len(all_messages) >= 4  # system + user + assistant + user + assistant
+
+        # Use the last message ID as cursor
+        last_message_id = all_messages[-1].id
+        messages_before = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="asc",
+            before=last_message_id,
+        )
+
+        # Should have fewer messages (all except the last one)
+        assert len(messages_before) < len(all_messages)
+        # Should not contain the cursor message
+        assert last_message_id not in [m.id for m in messages_before]
+
+    def test_list_conversation_messages_with_after_cursor(self, client: Letta, agent):
+        """Test pagination with after cursor."""
+        conversation = client.conversations.create(agent_id=agent.id)
+
+        # Send messages to create history
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "First message"}],
+            )
+        )
+        list(
+            client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=[{"role": "user", "content": "Second message"}],
+            )
+        )
+
+        # Get all messages first
+        all_messages = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="asc",
+        )
+        assert len(all_messages) >= 4
+
+        # Use the first message ID as cursor
+        first_message_id = all_messages[0].id
+        messages_after = client.conversations.messages.list(
+            conversation_id=conversation.id,
+            order="asc",
+            after=first_message_id,
+        )
+
+        # Should have fewer messages (all except the first one)
+        assert len(messages_after) < len(all_messages)
+        # Should not contain the cursor message
+        assert first_message_id not in [m.id for m in messages_after]

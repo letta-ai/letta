@@ -16,6 +16,18 @@ logger = get_logger(__name__)
 
 
 class BedrockClient(AnthropicClient):
+    @staticmethod
+    def get_inference_profile_id_from_handle(handle: str) -> str:
+        """
+        Extract the Bedrock inference profile ID from the LLMConfig handle.
+
+        The handle format is: bedrock/us.anthropic.claude-opus-4-5-20250918-v1:0
+        Returns: us.anthropic.claude-opus-4-5-20250918-v1:0
+        """
+        if "/" in handle:
+            return handle.split("/", 1)[1]
+        return handle
+
     async def get_byok_overrides_async(self, llm_config: LLMConfig) -> tuple[str, str, str]:
         override_access_key_id, override_secret_access_key, override_default_region = None, None, None
         if llm_config.provider_category == ProviderCategory.byok:
@@ -74,6 +86,13 @@ class BedrockClient(AnthropicClient):
         tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+
+        # Swap the model name back to the Bedrock inference profile ID for the API call
+        # The LLMConfig.model contains the Anthropic-style name (e.g., "claude-opus-4-5-20250918")
+        # but Bedrock API needs the inference profile ID (e.g., "us.anthropic.claude-opus-4-5-20250918-v1:0")
+        if llm_config.handle:
+            data["model"] = self.get_inference_profile_id_from_handle(llm_config.handle)
+
         # remove disallowed fields
         if "tool_choice" in data:
             del data["tool_choice"]["disable_parallel_tool_use"]

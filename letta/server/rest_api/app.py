@@ -60,7 +60,7 @@ from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.otel.tracing import get_trace_id
-from letta.schemas.letta_message import create_letta_error_message_schema, create_letta_message_union_schema, create_letta_ping_schema
+from letta.schemas.letta_message import create_letta_error_message_schema, create_letta_message_union_schema
 from letta.schemas.letta_message_content import (
     create_letta_assistant_message_content_union_schema,
     create_letta_message_content_union_schema,
@@ -106,7 +106,6 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
-    letta_docs["components"]["schemas"]["LettaPing"] = create_letta_ping_schema()
     letta_docs["components"]["schemas"]["LettaErrorMessage"] = create_letta_error_message_schema()
 
     # Update the app's schema with our modified version

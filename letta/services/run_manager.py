@@ -138,6 +138,7 @@ class RunManager:
     async def list_runs(
         self,
         actor: PydanticUser,
+        run_id: Optional[str] = None,
         agent_id: Optional[str] = None,
         agent_ids: Optional[List[str]] = None,
         statuses: Optional[List[RunStatus]] = None,
@@ -173,6 +174,9 @@ class RunManager:
             # Filter by project_id if provided
             if project_id:
                 query = query.filter(RunModel.project_id == project_id)
+
+            if run_id:
+                query = query.filter(RunModel.id == run_id)
 
             # Handle agent filtering
             if agent_id:
@@ -665,8 +669,26 @@ class RunManager:
             logger.debug(f"Agent was waiting for approval, adding denial messages for run {run_id}")
             approval_request_message = current_in_context_messages[-1]
 
-            # Ensure the approval request has tool calls to deny
+            # Find ALL pending tool calls (both requiring approval and not requiring approval)
+            # The assistant message may have tool calls that didn't require approval
+            all_pending_tool_calls = []
             if approval_request_message.tool_calls:
+                all_pending_tool_calls.extend(approval_request_message.tool_calls)
+
+            # Check if there's an assistant message before the approval request with additional tool calls
+            if len(current_in_context_messages) >= 2:
+                potential_assistant_msg = current_in_context_messages[-2]
+                if potential_assistant_msg.role == MessageRole.assistant and potential_assistant_msg.tool_calls:
+                    # Add any tool calls from the assistant message that aren't already in the approval request
+                    approval_tool_call_ids = (
+                        {tc.id for tc in approval_request_message.tool_calls} if approval_request_message.tool_calls else set()
+                    )
+                    for tool_call in potential_assistant_msg.tool_calls:
+                        if tool_call.id not in approval_tool_call_ids:
+                            all_pending_tool_calls.append(tool_call)
+
+            # Ensure we have tool calls to deny
+            if all_pending_tool_calls:
                 from letta.constants import TOOL_CALL_DENIAL_ON_CANCEL
                 from letta.schemas.letta_message import ApprovalReturn
                 from letta.schemas.message import ApprovalCreate
@@ -676,15 +698,19 @@ class RunManager:
                     create_tool_returns_for_denials,
                 )
 
-                # Create denials for ALL pending tool calls
-                denials = [
-                    ApprovalReturn(
-                        tool_call_id=tool_call.id,
-                        approve=False,
-                        reason=TOOL_CALL_DENIAL_ON_CANCEL,
-                    )
-                    for tool_call in approval_request_message.tool_calls
-                ]
+                # Create denials for ALL pending tool calls (including those that didn't require approval)
+                denials = (
+                    [
+                        ApprovalReturn(
+                            tool_call_id=tool_call.id,
+                            approve=False,
+                            reason=TOOL_CALL_DENIAL_ON_CANCEL,
+                        )
+                        for tool_call in approval_request_message.tool_calls
+                    ]
+                    if approval_request_message.tool_calls
+                    else []
+                )
 
                 # Create an ApprovalCreate input with the denials
                 approval_input = ApprovalCreate(
@@ -700,9 +726,9 @@ class RunManager:
                 )
 
                 # Create tool returns for ALL denied tool calls using shared helper
-                # This handles all pending tool calls at once since they all have the same denial reason
+                # This includes both tool calls requiring approval AND those that didn't
                 tool_returns = create_tool_returns_for_denials(
-                    tool_calls=approval_request_message.tool_calls,  # ALL pending tool calls
+                    tool_calls=all_pending_tool_calls,
                     denial_reason=TOOL_CALL_DENIAL_ON_CANCEL,
                     timezone=agent_state.timezone,
                 )

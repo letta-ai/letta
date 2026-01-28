@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Annotated, List, Literal, Optional
+from typing import Annotated, Any, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import Field
@@ -23,6 +23,7 @@ from letta.server.rest_api.streaming_response import (
     cancellation_aware_stream_wrapper,
 )
 from letta.server.server import SyncServer
+from letta.services.clickhouse_otel_traces import ClickhouseOtelTracesReader
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 
@@ -214,6 +215,23 @@ async def retrieve_metrics_for_run(
     return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
 
 
+@router.get("/{run_id}/metrics", response_model=RunMetrics, operation_id="retrieve_metrics_for_run")
+async def retrieve_metrics_for_run(
+    run_id: str,
+    headers: HeaderParams = Depends(get_headers),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    """
+    Get run metrics by run ID.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        runs_manager = RunManager()
+        return await runs_manager.get_run_metrics_async(run_id=run_id, actor=actor)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Run metrics not found")
+
+
 @router.get(
     "/{run_id}/steps",
     response_model=List[Step],
@@ -245,6 +263,49 @@ async def list_steps_for_run(
         after=after,
         ascending=(order == "asc"),
     )
+
+
+@router.get(
+    "/{run_id}/trace",
+    response_model=List[dict[str, Any]],
+    operation_id="retrieve_trace_for_run",
+)
+async def retrieve_trace_for_run(
+    run_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+    limit: int = Query(1000, description="Maximum number of spans to return", ge=1, le=5000),
+):
+    """
+    Retrieve OTEL trace spans for a run.
+
+    Returns a filtered set of spans relevant for observability:
+    - agent_step: Individual agent reasoning steps
+    - tool executions: Tool call spans
+    - Root span: The top-level request span
+    - time_to_first_token: TTFT measurement span
+
+    Requires ClickHouse to be configured for trace storage.
+    """
+    # OTEL traces are only available when ClickHouse is configured
+    if not settings.clickhouse_endpoint:
+        raise HTTPException(
+            status_code=501,
+            detail="OTEL traces require ClickHouse. Set LETTA_CLICKHOUSE_ENDPOINT and configure ClickHouse connection.",
+        )
+
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    runs_manager = RunManager()
+
+    # We assume trace_id is stable across all steps in a run, but individual step rows may
+    # lack trace_id (e.g. older data). Grab a few and pick the first populated value.
+    steps = await runs_manager.get_run_steps(run_id=run_id, actor=actor, limit=25)
+    trace_id = next((s.trace_id for s in steps if s.trace_id), None)
+    if not trace_id:
+        return []
+
+    # Only return spans relevant to the trace viewer UI (agent_step, tool executions, root span, TTFT)
+    return await ClickhouseOtelTracesReader().get_traces_by_trace_id_async(trace_id=trace_id, limit=limit, filter_ui_spans=True)
 
 
 @router.delete("/{run_id}", response_model=None, operation_id="delete_run")

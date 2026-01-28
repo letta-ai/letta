@@ -5,7 +5,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.otel.tracing import log_attributes, log_event, safe_json_dumps, trace_method
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.usage import normalize_cache_tokens, normalize_reasoning_tokens
 from letta.schemas.user import User
 from letta.settings import settings
@@ -120,10 +120,13 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
             safe_create_task(
                 self.telemetry_manager.create_provider_trace_async(
                     actor=actor,
-                    provider_trace_create=ProviderTraceCreate(
+                    provider_trace=ProviderTrace(
                         request_json=self.request_data,
                         response_json=self.response_data,
-                        step_id=step_id,  # Use original step_id for telemetry
+                        step_id=step_id,
+                        agent_id=self.agent_id,
+                        agent_tags=self.agent_tags,
+                        run_id=self.run_id,
                     ),
                 ),
                 label="create_provider_trace",

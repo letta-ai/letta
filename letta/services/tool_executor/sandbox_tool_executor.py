@@ -149,8 +149,12 @@ class SandboxToolExecutor(ToolExecutor):
     @staticmethod
     def _prepare_function_args(function_args: JsonDict, tool: Tool, function_name: str) -> dict:
         """Prepare function arguments with proper type coercion."""
+        # Skip Python AST parsing for TypeScript tools - they use json_schema for type info
+        if tool.source_type == "typescript":
+            return function_args
+
         try:
-            # Parse the source code to extract function annotations
+            # Parse the source code to extract function annotations (Python only)
             annotations = get_function_annotations_from_source(tool.source_code, function_name)
             # Coerce the function arguments to the correct types based on the annotations
             return coerce_dict_args_by_annotations(function_args, annotations)

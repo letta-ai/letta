@@ -6,6 +6,8 @@ from letta.orm.base import Base
 from letta.orm.block import Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
+from letta.orm.blocks_conversations import BlocksConversations
+from letta.orm.blocks_tags import BlocksTags
 from letta.orm.conversation import Conversation
 from letta.orm.conversation_messages import ConversationMessage
 from letta.orm.file import FileMetadata

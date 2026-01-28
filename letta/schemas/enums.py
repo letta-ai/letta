@@ -55,6 +55,7 @@ class ProviderType(str, Enum):
     azure = "azure"
     bedrock = "bedrock"
     cerebras = "cerebras"
+    chatgpt_oauth = "chatgpt_oauth"
     deepseek = "deepseek"
     google_ai = "google_ai"
     google_vertex = "google_vertex"

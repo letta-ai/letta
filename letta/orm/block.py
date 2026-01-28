@@ -12,6 +12,7 @@ from letta.schemas.block import Block as PydanticBlock, Human, Persona
 
 if TYPE_CHECKING:
     from letta.orm import Organization
+    from letta.orm.blocks_tags import BlocksTags
     from letta.orm.identity import Identity
 
 
@@ -81,6 +82,12 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
         lazy="raise",
         back_populates="shared_blocks",
         passive_deletes=True,
+    )
+    tags: Mapped[List["BlocksTags"]] = relationship(
+        "BlocksTags",
+        back_populates="block",
+        cascade="all, delete-orphan",
+        lazy="raise",
     )
 
     def to_pydantic(self) -> Type:

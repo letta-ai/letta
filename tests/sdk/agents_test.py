@@ -7,11 +7,14 @@ AGENTS_CREATE_PARAMS = [
         {
             # Verify model_settings is populated with config values
             # Note: The 'model' field itself is separate from model_settings
+            # strict defaults to False when no model_settings is explicitly provided
+            # (OpenAIModelSettings defaults to True only when explicitly instantiated)
             "model_settings": {
                 "max_output_tokens": 16384,
                 "parallel_tool_calls": False,
+                "strict": False,
                 "provider_type": "openai",
-                "temperature": 0.7,
+                "temperature": 1.0,
                 "reasoning": {"reasoning_effort": "minimal"},
                 "response_format": None,
             }
@@ -29,8 +32,9 @@ AGENTS_UPDATE_PARAMS = [
             "model_settings": {
                 "max_output_tokens": 16384,
                 "parallel_tool_calls": False,
+                "strict": False,
                 "provider_type": "openai",
-                "temperature": 0.7,
+                "temperature": 1.0,
                 "reasoning": {"reasoning_effort": "minimal"},
                 "response_format": None,
             }

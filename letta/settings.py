@@ -144,7 +144,7 @@ class ModelSettings(BaseSettings):
     # Bedrock
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
-    aws_default_region: Optional[str] = None
+    aws_default_region: str = "us-east-1"
     bedrock_anthropic_version: Optional[str] = "bedrock-2023-05-31"
 
     # anthropic
@@ -282,6 +282,28 @@ class Settings(BaseSettings):
 
     # telemetry logging
     otel_exporter_otlp_endpoint: str | None = None  # otel default: "http://localhost:4317"
+
+    # clickhouse (for OTEL traces reader)
+    clickhouse_endpoint: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CLICKHOUSE_ENDPOINT", "letta_clickhouse_endpoint"),
+        description="ClickHouse endpoint URL",
+    )
+    clickhouse_database: str | None = Field(
+        default="otel",
+        validation_alias=AliasChoices("CLICKHOUSE_DATABASE", "letta_clickhouse_database"),
+        description="ClickHouse database name",
+    )
+    clickhouse_username: str | None = Field(
+        default="default",
+        validation_alias=AliasChoices("CLICKHOUSE_USERNAME", "letta_clickhouse_username"),
+        description="ClickHouse username",
+    )
+    clickhouse_password: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CLICKHOUSE_PASSWORD", "letta_clickhouse_password"),
+        description="ClickHouse password",
+    )
     otel_preferred_temporality: int | None = Field(
         default=1, ge=0, le=2, description="Exported metric temporality. {0: UNSPECIFIED, 1: DELTA, 2: CUMULATIVE}"
     )
@@ -401,6 +423,15 @@ class Settings(BaseSettings):
                 plugins[name] = {"target": target}
         return plugins
 
+    @property
+    def use_clickhouse_for_provider_traces(self) -> bool:
+        """Check if ClickHouse backend is configured for provider traces."""
+        # Access global telemetry_settings (defined at module level after this class)
+        import sys
+
+        module = sys.modules[__name__]
+        return "clickhouse" in getattr(module, "telemetry_settings").provider_trace_backends
+
 
 class TestSettings(Settings):
     model_config = SettingsConfigDict(env_prefix="letta_test_", extra="ignore")
@@ -457,6 +488,31 @@ class TelemetrySettings(BaseSettings):
         validation_alias=AliasChoices("DD_MAIN_PACKAGE", "datadog_main_package"),
         description="Primary Python package name for source code linking. Datadog uses this setting to determine which code is 'yours' vs. third-party dependencies.",
     )
+
+    # Provider trace backend selection (comma-separated for multi-backend support)
+    provider_trace_backend: str = Field(
+        default="postgres",
+        description="Provider trace storage backends (comma-separated): 'postgres', 'clickhouse', 'socket'. Example: 'postgres,socket' for dual-write.",
+    )
+    socket_path: str = Field(
+        default="/var/run/telemetry/telemetry.sock",
+        validation_alias=AliasChoices("TELEMETRY_SOCKET", "socket_path"),
+        description="Unix socket path for socket backend.",
+    )
+    source: str | None = Field(
+        default=None,
+        description="Source identifier for telemetry (memgpt-server, lettuce-py, etc.).",
+    )
+
+    @property
+    def provider_trace_backends(self) -> list[str]:
+        """Parse comma-separated backend list."""
+        return [b.strip() for b in self.provider_trace_backend.split(",") if b.strip()]
+
+    @property
+    def socket_backend_enabled(self) -> bool:
+        """Check if socket backend is enabled."""
+        return "socket" in self.provider_trace_backends
 
 
 # singleton

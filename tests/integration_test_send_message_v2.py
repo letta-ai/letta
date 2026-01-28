@@ -484,8 +484,22 @@ def is_reasoner_model(model_handle: str, model_settings: dict) -> bool:
     )
     # Z.ai models output reasoning by default
     is_zai_reasoning = model_settings.get("provider_type") == "zai"
+    # Bedrock Anthropic reasoning models
+    is_bedrock_reasoning = model_settings.get("provider_type") == "bedrock" and (
+        "claude-3-7-sonnet" in model_handle
+        or "claude-sonnet-4" in model_handle
+        or "claude-opus-4" in model_handle
+        or "claude-haiku-4-5" in model_handle
+    )
 
-    return is_openai_reasoning or is_anthropic_reasoning or is_google_vertex_reasoning or is_google_ai_reasoning or is_zai_reasoning
+    return (
+        is_openai_reasoning
+        or is_anthropic_reasoning
+        or is_google_vertex_reasoning
+        or is_google_ai_reasoning
+        or is_zai_reasoning
+        or is_bedrock_reasoning
+    )
 
 
 # ------------------------------
@@ -653,8 +667,8 @@ async def test_parallel_tool_calls(
     model_handle, model_settings = model_config
     provider_type = model_settings.get("provider_type", "")
 
-    if provider_type not in ["anthropic", "openai", "google_ai", "google_vertex"]:
-        pytest.skip("Parallel tool calling test only applies to Anthropic, OpenAI, and Gemini models.")
+    if provider_type not in ["anthropic", "openai", "google_ai", "google_vertex", "bedrock"]:
+        pytest.skip("Parallel tool calling test only applies to Anthropic, OpenAI, Gemini, and Bedrock models.")
 
     if "gpt-5" in model_handle or "o3" in model_handle:
         pytest.skip("GPT-5 takes too long to test, o3 is bad at this task.")

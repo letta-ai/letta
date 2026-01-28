@@ -296,6 +296,8 @@ class SyncServer(object):
             self._enabled_providers.append(
                 BedrockProvider(
                     name="bedrock",
+                    access_key=model_settings.aws_access_key_id,
+                    api_key=model_settings.aws_secret_access_key,
                     region=model_settings.aws_default_region,
                 )
             )
@@ -1693,7 +1695,7 @@ class SyncServer(object):
             # TODO: cleanup this logic
             llm_config = letta_agent.agent_state.llm_config
             # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
-            supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
+            supports_token_streaming = ["openai", "anthropic", "deepseek", "chatgpt_oauth"]  # TODO re-enable xAI once streaming is patched
             if stream_tokens and (llm_config.model_endpoint_type not in supports_token_streaming):
                 logger.warning(
                     f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
@@ -1825,7 +1827,7 @@ class SyncServer(object):
         letta_multi_agent = load_multi_agent(group=group, agent_state=agent_state, actor=actor)
 
         llm_config = letta_multi_agent.agent_state.llm_config
-        supports_token_streaming = ["openai", "anthropic", "deepseek"]
+        supports_token_streaming = ["openai", "anthropic", "deepseek", "chatgpt_oauth"]
         if stream_tokens and (llm_config.model_endpoint_type not in supports_token_streaming):
             logger.warning(
                 f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."

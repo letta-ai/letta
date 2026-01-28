@@ -358,12 +358,14 @@ class AgentSerializationManager:
             logger.error(f"Failed to convert group {group.id}: {e}")
             raise
 
-    async def export(self, agent_ids: List[str], actor: User) -> AgentFileSchema:
+    async def export(self, agent_ids: List[str], actor: User, conversation_id: Optional[str] = None) -> AgentFileSchema:
         """
         Export agents and their related entities to AgentFileSchema format.
 
         Args:
             agent_ids: List of agent UUIDs to export
+            conversation_id: Optional conversation ID. If provided, uses the conversation's
+                           in-context message_ids instead of the agent's global message_ids.
 
         Returns:
             AgentFileSchema with all related entities
@@ -375,6 +377,19 @@ class AgentSerializationManager:
             self._reset_state()
 
             agent_states = await self.agent_manager.get_agents_by_ids_async(agent_ids=agent_ids, actor=actor)
+
+            # If conversation_id is provided, override the agent's message_ids with conversation's
+            if conversation_id:
+                from letta.services.conversation_manager import ConversationManager
+
+                conversation_manager = ConversationManager()
+                conversation_message_ids = await conversation_manager.get_message_ids_for_conversation(
+                    conversation_id=conversation_id,
+                    actor=actor,
+                )
+                # Override message_ids for the first agent (conversation export is single-agent)
+                if agent_states:
+                    agent_states[0].message_ids = conversation_message_ids
 
             # Validate that all requested agents were found
             if len(agent_states) != len(agent_ids):

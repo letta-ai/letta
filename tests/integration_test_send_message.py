@@ -229,7 +229,8 @@ def is_reasoner_model(model_handle: str, model_settings: dict) -> bool:
         return model.startswith("o1") or model.startswith("o3") or model.startswith("o4") or model.startswith("gpt-5")
 
     # Anthropic reasoning models (from anthropic_client.py:608-616)
-    elif provider_type == "anthropic":
+    # Also applies to Bedrock with Anthropic models
+    elif provider_type in ("anthropic", "bedrock"):
         return (
             model.startswith("claude-3-7-sonnet")
             or model.startswith("claude-sonnet-4")
