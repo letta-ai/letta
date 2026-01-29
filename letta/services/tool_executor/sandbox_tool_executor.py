@@ -70,6 +70,7 @@ class SandboxToolExecutor(ToolExecutor):
             # Try Modal if: (1) Modal credentials configured AND (2) tool requests Modal via metadata
             tool_requests_modal = tool.metadata_ and tool.metadata_.get("sandbox") == "modal"
             modal_configured = tool_settings.modal_sandbox_enabled
+            tool_requests_local = tool.metadata_ and tool.metadata_.get("sandbox") == "local"
 
             tool_execution_result = None
 
@@ -100,7 +101,11 @@ class SandboxToolExecutor(ToolExecutor):
 
             # Fallback to E2B or LOCAL if Modal wasn't tried or failed
             if tool_execution_result is None:
-                if tool_settings.sandbox_type == SandboxType.E2B:
+                use_e2b = (
+                    tool_settings.sandbox_type == SandboxType.E2B
+                    and not tool_requests_local
+                )
+                if use_e2b:
                     from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 
                     sandbox = AsyncToolSandboxE2B(
