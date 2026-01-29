@@ -1,0 +1,219 @@
+# Default values for letta
+replicaCount: 1
+
+# Database configuration
+database:
+  enabled: true
+  image:
+    repository: ankane/pgvector
+    tag: v0.5.1
+    pullPolicy: IfNotPresent
+  
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    size: 10Gi
+    accessMode: ReadWriteOnce
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  # Database credentials
+  postgres:
+    user: letta
+    password: letta  # Only used if secrets.create=true and secrets.databasePassword not set
+    database: letta
+    port: 5432
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 5432
+
+# External database configuration
+# Use this when you have an external PostgreSQL database (e.g., managed database service)
+# When enabled, the internal database will be disabled
+externalDatabase:
+  enabled: false
+  host: ""  # External database hostname or IP (or use secrets)
+  port: 5432
+  user: letta  # Only used if secrets.create=true and secrets.externalDatabaseUser not set
+  password: ""  # Only used if secrets.create=true and secrets.externalDatabasePassword not set
+  database: letta  # Only used if secrets.create=true and secrets.externalDatabaseName not set
+  # Optional: Full connection URI (if provided, takes precedence over individual fields)
+  # Should be stored in secrets.externalDatabaseUri for production
+  uri: ""
+
+# Server configuration
+server:
+  enabled: true
+  image:
+    repository: letta/letta
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  ports:
+    http: 8083
+    api: 8283
+
+  # Health checks
+  healthChecks:
+    enabled: false  # Enable/disable liveness and readiness probes
+    livenessProbe:
+      path: /health
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+  
+  # Environment variables (non-sensitive)
+  env:
+    LETTA_DEBUG: "True"
+    OLLAMA_BASE_URL: ""
+    AZURE_BASE_URL: ""
+    AZURE_API_VERSION: ""
+    VLLM_API_BASE: ""
+    OPENLLM_AUTH_TYPE: ""
+    LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    CLICKHOUSE_ENDPOINT: ""
+    CLICKHOUSE_DATABASE: ""
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      http:
+        port: 8083
+        targetPort: 8083
+      api:
+        port: 8283
+        targetPort: 8283
+
+# Nginx configuration
+nginx:
+  enabled: true
+  image:
+    repository: nginx
+    tag: stable-alpine3.17-slim
+    pullPolicy: IfNotPresent
+
+  # Health checks
+  healthChecks:
+    enabled: false  # Enable/disable liveness and readiness probes
+    livenessProbe:
+      path: /
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      path: /
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  
+  service:
+    type: LoadBalancer  # Change to ClusterIP and use Ingress if preferred
+    port: 80
+    targetPort: 80
+
+# Ingress configuration (optional)
+# Works with any ingress controller (nginx, traefik, etc.)
+ingress:
+  enabled: false
+  className: ""  # Ingress class name (e.g., "nginx", "traefik")
+  annotations: {}
+  hosts:
+    - host: letta.localhost
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # Service to route to (nginx or server)
+  serviceName: nginx  # Options: "nginx" or "server"
+  servicePort: 80     # Port of the selected service
+
+# Global settings
+global:
+  # Service account
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  
+  # Image pull secrets
+  imagePullSecrets: []
+  
+  # Node selector
+  nodeSelector: {}
+  
+  # Tolerations
+  tolerations: []
+  
+  # Affinity
+  affinity: {}
+
+# Secrets configuration
+# All sensitive values should be stored in Kubernetes Secrets
+secrets:
+  # Create a new secret (set to false to use existingSecret)
+  create: true
+  
+  # Name of existing secret to use (if create=false)
+  existingSecret: ""
+  
+  # Secret name (only used if create=true)
+  name: ""  # Auto-generated if empty
+  
+  # Database credentials (internal database)
+  databasePassword: ""  # If empty and create=true, uses database.postgres.password
+  
+  # External database credentials
+  externalDatabaseHost: ""
+  externalDatabaseUser: ""
+  externalDatabasePassword: ""
+  externalDatabaseName: ""
+  externalDatabaseUri: ""  # Full connection URI
+  
+  # API Keys
+  openaiApiKey: ""
+  groqApiKey: ""
+  anthropicApiKey: ""
+  azureApiKey: ""
+  geminiApiKey: ""
+  openllmApiKey: ""
+  
+  # ClickHouse credentials
+  clickhouseUsername: ""
+  clickhousePassword: ""
+

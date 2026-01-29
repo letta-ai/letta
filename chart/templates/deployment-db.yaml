@@ -1,0 +1,100 @@
+{{- if .Values.database.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "letta.fullname" . }}-db
+  labels:
+    {{- include "letta.db.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "letta.db.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "letta.db.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: postgres
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+        ports:
+        - name: postgres
+          containerPort: {{ .Values.database.postgres.port }}
+          protocol: TCP
+        env:
+        - name: POSTGRES_USER
+          value: {{ .Values.database.postgres.user | quote }}
+        {{- $secretName := include "letta.secretName" . }}
+        {{- if and $secretName (or .Values.secrets.databasePassword .Values.database.postgres.password) }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $secretName }}
+              key: database-password
+        {{- else }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.database.postgres.password | quote }}
+        {{- end }}
+        - name: POSTGRES_DB
+          value: {{ .Values.database.postgres.database | quote }}
+        volumeMounts:
+        - name: init-sql
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+        {{- if .Values.database.persistence.enabled }}
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        {{- end }}
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - {{ .Values.database.postgres.user }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - {{ .Values.database.postgres.user }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        resources:
+          {{- toYaml .Values.database.resources | nindent 10 }}
+      volumes:
+      - name: init-sql
+        configMap:
+          name: {{ include "letta.fullname" . }}-init-sql
+      {{- if .Values.database.persistence.enabled }}
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ include "letta.fullname" . }}-db-pvc
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+

@@ -1,0 +1,71 @@
+{{- if .Values.nginx.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "letta.fullname" . }}-nginx
+  labels:
+    {{- include "letta.nginx.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "letta.nginx.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "letta.nginx.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: nginx
+        image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+        imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.nginx.service.port }}
+          protocol: TCP
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        {{- if .Values.nginx.healthChecks.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.nginx.healthChecks.livenessProbe.path }}
+            port: http
+          initialDelaySeconds: {{ .Values.nginx.healthChecks.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.nginx.healthChecks.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.nginx.healthChecks.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.nginx.healthChecks.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.nginx.healthChecks.readinessProbe.path }}
+            port: http
+          initialDelaySeconds: {{ .Values.nginx.healthChecks.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.nginx.healthChecks.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.nginx.healthChecks.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.nginx.healthChecks.readinessProbe.failureThreshold }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.nginx.resources | nindent 10 }}
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ include "letta.fullname" . }}-nginx-config
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+
