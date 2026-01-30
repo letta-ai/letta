@@ -32,6 +32,7 @@ from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
     unpack_all_inner_thoughts_from_kwargs,
+    convert_to_structured_output
 )
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
@@ -384,7 +385,7 @@ class OpenAIClient(LLMClientBase):
 
             data.model = "memgpt-openai"
 
-        request_data = data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True, exclude_none=True)
         # print("responses request data", request_data)
         return request_data
 
@@ -552,10 +553,16 @@ class OpenAIClient(LLMClientBase):
         # We only need to ensure strict is False for providers that don't support structured output
         if data.tools is not None and len(data.tools) > 0:
             for tool in data.tools:
-                if not supports_structured_output(llm_config):
+                if supports_structured_output(llm_config):
+                    try:
+                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
+                        tool.function = FunctionSchema(**structured_output_version)
+                    except ValueError as e:
+                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+                else:
                     # Provider doesn't support structured output - ensure strict is False
                     tool.function.strict = False
-        request_data = data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True, exclude_none=True)
 
         # If Ollama
         # if llm_config.handle.startswith("ollama/") and llm_config.enable_reasoner:
