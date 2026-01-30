@@ -139,6 +139,48 @@ def get_letta_user_message_content_union_str_json_schema():
 
 
 # -------------------------------
+# Tool Return Content Types
+# -------------------------------
+
+
+LettaToolReturnContentUnion = Annotated[
+    Union[TextContent, ImageContent],
+    Field(discriminator="type"),
+]
+
+
+def create_letta_tool_return_content_union_schema():
+    return {
+        "oneOf": [
+            {"$ref": "#/components/schemas/TextContent"},
+            {"$ref": "#/components/schemas/ImageContent"},
+        ],
+        "discriminator": {
+            "propertyName": "type",
+            "mapping": {
+                "text": "#/components/schemas/TextContent",
+                "image": "#/components/schemas/ImageContent",
+            },
+        },
+    }
+
+
+def get_letta_tool_return_content_union_str_json_schema():
+    """Schema that accepts either string or list of content parts for tool returns."""
+    return {
+        "anyOf": [
+            {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/LettaToolReturnContentUnion",
+                },
+            },
+            {"type": "string"},
+        ],
+    }
+
+
+# -------------------------------
 # Assistant Content Types
 # -------------------------------
 

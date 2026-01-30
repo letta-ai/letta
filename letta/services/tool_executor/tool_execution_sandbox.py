@@ -533,6 +533,24 @@ class ToolExecutionSandbox:
 
         code += "\n" + self.tool.source_code + "\n"
 
+        if self.args:
+            raw_args = ", ".join([f"{name!r}: {name}" for name in self.args])
+            code += f"__letta_raw_args = {{{raw_args}}}\n"
+            code += "try:\n"
+            code += "    from letta.functions.ast_parsers import coerce_dict_args_by_annotations\n"
+            code += f"    __letta_func = {self.tool.name}\n"
+            code += "    __letta_annotations = getattr(__letta_func, '__annotations__', {})\n"
+            code += "    __letta_coerced_args = coerce_dict_args_by_annotations(\n"
+            code += "        __letta_raw_args,\n"
+            code += "        __letta_annotations,\n"
+            code += "        allow_unsafe_eval=True,\n"
+            code += "        extra_globals=__letta_func.__globals__,\n"
+            code += "    )\n"
+            for name in self.args:
+                code += f"    {name} = __letta_coerced_args.get({name!r}, {name})\n"
+            code += "except Exception:\n"
+            code += "    pass\n"
+
         # TODO: handle wrapped print
 
         code += (

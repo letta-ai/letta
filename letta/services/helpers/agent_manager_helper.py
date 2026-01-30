@@ -1194,9 +1194,9 @@ async def build_agent_passage_query(
     """
 
     # Handle embedding for vector search
+    # If embed_query is True but no embedding_config, fall through to text search
     embedded_text = None
-    if embed_query:
-        assert embedding_config is not None, "embedding_config must be specified for vector search"
+    if embed_query and embedding_config is not None:
         assert query_text is not None, "query_text must be specified for vector search"
 
         # Use the new LLMClient for embeddings

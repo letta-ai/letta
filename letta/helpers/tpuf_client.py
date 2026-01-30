@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, List, Optional, Tuple
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
+from letta.errors import LettaInvalidArgumentError
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, TagMatchMode
@@ -321,6 +322,7 @@ class TurbopufferClient:
         actor: "PydanticUser",
         tags: Optional[List[str]] = None,
         created_at: Optional[datetime] = None,
+        embeddings: Optional[List[List[float]]] = None,
     ) -> List[PydanticPassage]:
         """Insert passages into Turbopuffer.
 
@@ -332,6 +334,7 @@ class TurbopufferClient:
             actor: User actor for embedding generation
             tags: Optional list of tags to attach to all passages
             created_at: Optional timestamp for retroactive entries (defaults to current UTC time)
+            embeddings: Optional pre-computed embeddings (must match 1:1 with text_chunks). If provided, skips embedding generation.
 
         Returns:
             List of PydanticPassage objects that were inserted
@@ -345,9 +348,30 @@ class TurbopufferClient:
             logger.warning("All text chunks were empty, skipping insertion")
             return []
 
-        # generate embeddings using the default config
         filtered_texts = [text for _, text in filtered_chunks]
-        embeddings = await self._generate_embeddings(filtered_texts, actor)
+
+        # use provided embeddings only if dimensions match TPUF's expected dimension
+        use_provided_embeddings = False
+        if embeddings is not None:
+            if len(embeddings) != len(text_chunks):
+                raise LettaInvalidArgumentError(
+                    f"embeddings length ({len(embeddings)}) must match text_chunks length ({len(text_chunks)})",
+                    argument_name="embeddings",
+                )
+            # check if first non-empty embedding has correct dimensions
+            filtered_indices = [i for i, _ in filtered_chunks]
+            sample_embedding = embeddings[filtered_indices[0]] if filtered_indices else None
+            if sample_embedding is not None and len(sample_embedding) == self.default_embedding_config.embedding_dim:
+                use_provided_embeddings = True
+                filtered_embeddings = [embeddings[i] for i, _ in filtered_chunks]
+            else:
+                logger.debug(
+                    f"Embedding dimension mismatch (got {len(sample_embedding) if sample_embedding else 'None'}, "
+                    f"expected {self.default_embedding_config.embedding_dim}), regenerating embeddings"
+                )
+
+        if not use_provided_embeddings:
+            filtered_embeddings = await self._generate_embeddings(filtered_texts, actor)
 
         namespace_name = await self._get_archive_namespace_name(archive_id)
 
@@ -379,7 +403,7 @@ class TurbopufferClient:
         tags_arrays = []  # Store tags as arrays
         passages = []
 
-        for (original_idx, text), embedding in zip(filtered_chunks, embeddings):
+        for (original_idx, text), embedding in zip(filtered_chunks, filtered_embeddings):
             passage_id = passage_ids[original_idx]
 
             # append to columns

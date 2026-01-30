@@ -115,7 +115,8 @@ def server_url(empty_mcp_config):
     if not os.getenv("LETTA_SERVER_URL"):
         thread = threading.Thread(target=_run_server, daemon=True)
         thread.start()
-        wait_for_server(url)
+        # Use 60s timeout to allow for provider model syncing during server startup
+        wait_for_server(url, timeout=60)
 
     return url
 

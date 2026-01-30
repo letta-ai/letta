@@ -485,7 +485,7 @@ async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: 
 
 
 async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, actor: User, clear_history: bool = False):
-    source = await server.source_manager.get_source_by_id(source_id=source_id)
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:

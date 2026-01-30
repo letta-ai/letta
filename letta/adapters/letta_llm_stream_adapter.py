@@ -33,8 +33,10 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         agent_id: str | None = None,
         agent_tags: list[str] | None = None,
         run_id: str | None = None,
+        org_id: str | None = None,
+        user_id: str | None = None,
     ) -> None:
-        super().__init__(llm_client, llm_config, agent_id=agent_id, agent_tags=agent_tags, run_id=run_id)
+        super().__init__(llm_client, llm_config, agent_id=agent_id, agent_tags=agent_tags, run_id=run_id, org_id=org_id, user_id=user_id)
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
 
     async def invoke_llm(
@@ -60,7 +62,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         self.request_data = request_data
 
         # Instantiate streaming interface
-        if self.llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
+        if self.llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock, ProviderType.minimax]:
             self.interface = AnthropicStreamingInterface(
                 use_assistant_message=use_assistant_message,
                 put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
@@ -68,7 +70,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 run_id=self.run_id,
                 step_id=step_id,
             )
-        elif self.llm_config.model_endpoint_type == ProviderType.openai:
+        elif self.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.openrouter]:
             # For non-v1 agents, always use Chat Completions streaming interface
             self.interface = OpenAIStreamingInterface(
                 use_assistant_message=use_assistant_message,
@@ -114,64 +116,9 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         # Extract reasoning content from the interface
         self.reasoning_content = self.interface.get_reasoning_content()
 
-        # Extract usage statistics
-        # Some providers don't provide usage in streaming, use fallback if needed
-        if hasattr(self.interface, "input_tokens") and hasattr(self.interface, "output_tokens"):
-            # Handle cases where tokens might not be set (e.g., LMStudio)
-            input_tokens = self.interface.input_tokens
-            output_tokens = self.interface.output_tokens
-
-            # Fallback to estimated values if not provided
-            if not input_tokens and hasattr(self.interface, "fallback_input_tokens"):
-                input_tokens = self.interface.fallback_input_tokens
-            if not output_tokens and hasattr(self.interface, "fallback_output_tokens"):
-                output_tokens = self.interface.fallback_output_tokens
-
-            # Extract cache token data (OpenAI/Gemini use cached_tokens, Anthropic uses cache_read_tokens)
-            # None means provider didn't report, 0 means provider reported 0
-            cached_input_tokens = None
-            if hasattr(self.interface, "cached_tokens") and self.interface.cached_tokens is not None:
-                cached_input_tokens = self.interface.cached_tokens
-            elif hasattr(self.interface, "cache_read_tokens") and self.interface.cache_read_tokens is not None:
-                cached_input_tokens = self.interface.cache_read_tokens
-
-            # Extract cache write tokens (Anthropic only)
-            cache_write_tokens = None
-            if hasattr(self.interface, "cache_creation_tokens") and self.interface.cache_creation_tokens is not None:
-                cache_write_tokens = self.interface.cache_creation_tokens
-
-            # Extract reasoning tokens (OpenAI o1/o3 models use reasoning_tokens, Gemini uses thinking_tokens)
-            reasoning_tokens = None
-            if hasattr(self.interface, "reasoning_tokens") and self.interface.reasoning_tokens is not None:
-                reasoning_tokens = self.interface.reasoning_tokens
-            elif hasattr(self.interface, "thinking_tokens") and self.interface.thinking_tokens is not None:
-                reasoning_tokens = self.interface.thinking_tokens
-
-            # Calculate actual total input tokens
-            #
-            # ANTHROPIC: input_tokens is NON-cached only, must add cache tokens
-            #   Total = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
-            #
-            # OPENAI/GEMINI: input_tokens is already TOTAL
-            #   cached_tokens is a subset, NOT additive
-            is_anthropic = hasattr(self.interface, "cache_read_tokens") or hasattr(self.interface, "cache_creation_tokens")
-            if is_anthropic:
-                actual_input_tokens = (input_tokens or 0) + (cached_input_tokens or 0) + (cache_write_tokens or 0)
-            else:
-                actual_input_tokens = input_tokens or 0
-
-            self.usage = LettaUsageStatistics(
-                step_count=1,
-                completion_tokens=output_tokens or 0,
-                prompt_tokens=actual_input_tokens,
-                total_tokens=actual_input_tokens + (output_tokens or 0),
-                cached_input_tokens=cached_input_tokens,
-                cache_write_tokens=cache_write_tokens,
-                reasoning_tokens=reasoning_tokens,
-            )
-        else:
-            # Default usage statistics if not available
-            self.usage = LettaUsageStatistics(step_count=1, completion_tokens=0, prompt_tokens=0, total_tokens=0)
+        # Extract usage statistics from the streaming interface
+        self.usage = self.interface.get_usage_statistics()
+        self.usage.step_count = 1
 
         # Store any additional data from the interface
         self.message_id = self.interface.letta_message_id
@@ -236,6 +183,9 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                         agent_id=self.agent_id,
                         agent_tags=self.agent_tags,
                         run_id=self.run_id,
+                        org_id=self.org_id,
+                        user_id=self.user_id,
+                        llm_config=self.llm_config.model_dump() if self.llm_config else None,
                     ),
                 ),
                 label="create_provider_trace",

@@ -43,12 +43,14 @@ class LLMConfig(BaseModel):
         "koboldcpp",
         "vllm",
         "hugging-face",
+        "minimax",
         "mistral",
         "together",  # completions endpoint
         "bedrock",
         "deepseek",
         "xai",
         "zai",
+        "openrouter",
         "chatgpt_oauth",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
@@ -320,9 +322,10 @@ class LLMConfig(BaseModel):
             GoogleAIModelSettings,
             GoogleVertexModelSettings,
             GroqModelSettings,
-            Model,
+            ModelSettings,
             OpenAIModelSettings,
             OpenAIReasoning,
+            OpenRouterModelSettings,
             TogetherModelSettings,
             XAIModelSettings,
             ZAIModelSettings,
@@ -395,15 +398,30 @@ class LLMConfig(BaseModel):
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
+        elif self.model_endpoint_type == "openrouter":
+            return OpenRouterModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
         elif self.model_endpoint_type == "chatgpt_oauth":
             return ChatGPTOAuthModelSettings(
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
                 reasoning=ChatGPTOAuthReasoning(reasoning_effort=self.reasoning_effort or "medium"),
             )
+        elif self.model_endpoint_type == "minimax":
+            # MiniMax uses Anthropic-compatible API
+            thinking_type = "enabled" if self.enable_reasoner else "disabled"
+            return AnthropicModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+                thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
+                verbosity=self.verbosity,
+                strict=self.strict,
+            )
         else:
-            # If we don't know the model type, use the default Model schema
-            return Model(max_output_tokens=self.max_tokens or 4096)
+            # If we don't know the model type, use the base ModelSettings schema
+            return ModelSettings(max_output_tokens=self.max_tokens or 4096)
 
     @classmethod
     def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:

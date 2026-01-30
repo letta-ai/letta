@@ -39,6 +39,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
+from letta.schemas.usage import LettaUsageStatistics
 from letta.settings import model_settings, settings
 from letta.utils import get_tool_call_id
 
@@ -415,6 +416,34 @@ class GoogleVertexClient(LLMClientBase):
 
         return request_data
 
+    def extract_usage_statistics(self, response_data: dict | None, llm_config: LLMConfig) -> LettaUsageStatistics:
+        """Extract usage statistics from Gemini response and return as LettaUsageStatistics."""
+        if not response_data:
+            return LettaUsageStatistics()
+
+        response = GenerateContentResponse(**response_data)
+        if not response.usage_metadata:
+            return LettaUsageStatistics()
+
+        cached_tokens = None
+        if (
+            hasattr(response.usage_metadata, "cached_content_token_count")
+            and response.usage_metadata.cached_content_token_count is not None
+        ):
+            cached_tokens = response.usage_metadata.cached_content_token_count
+
+        reasoning_tokens = None
+        if hasattr(response.usage_metadata, "thoughts_token_count") and response.usage_metadata.thoughts_token_count is not None:
+            reasoning_tokens = response.usage_metadata.thoughts_token_count
+
+        return LettaUsageStatistics(
+            prompt_tokens=response.usage_metadata.prompt_token_count or 0,
+            completion_tokens=response.usage_metadata.candidates_token_count or 0,
+            total_tokens=response.usage_metadata.total_token_count or 0,
+            cached_input_tokens=cached_tokens,
+            reasoning_tokens=reasoning_tokens,
+        )
+
     @trace_method
     async def convert_response_to_chat_completion(
         self,
@@ -642,36 +671,10 @@ class GoogleVertexClient(LLMClientBase):
             #     "totalTokenCount": 36
             #   }
             if response.usage_metadata:
-                # Extract cache token data if available (Gemini uses cached_content_token_count)
-                # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
-                prompt_tokens_details = None
-                if (
-                    hasattr(response.usage_metadata, "cached_content_token_count")
-                    and response.usage_metadata.cached_content_token_count is not None
-                ):
-                    from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
+                # Extract usage via centralized method
+                from letta.schemas.enums import ProviderType
 
-                    prompt_tokens_details = UsageStatisticsPromptTokenDetails(
-                        cached_tokens=response.usage_metadata.cached_content_token_count,
-                    )
-
-                # Extract thinking/reasoning token data if available (Gemini uses thoughts_token_count)
-                # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
-                completion_tokens_details = None
-                if hasattr(response.usage_metadata, "thoughts_token_count") and response.usage_metadata.thoughts_token_count is not None:
-                    from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
-
-                    completion_tokens_details = UsageStatisticsCompletionTokenDetails(
-                        reasoning_tokens=response.usage_metadata.thoughts_token_count,
-                    )
-
-                usage = UsageStatistics(
-                    prompt_tokens=response.usage_metadata.prompt_token_count,
-                    completion_tokens=response.usage_metadata.candidates_token_count,
-                    total_tokens=response.usage_metadata.total_token_count,
-                    prompt_tokens_details=prompt_tokens_details,
-                    completion_tokens_details=completion_tokens_details,
-                )
+                usage = self.extract_usage_statistics(response_data, llm_config).to_usage(ProviderType.google_ai)
             else:
                 # Count it ourselves using the Gemini token counting API
                 assert input_messages is not None, "Didn't get UsageMetadata from the API response, so input_messages is required"

@@ -113,13 +113,10 @@ async def test_count_tokens_with_empty_messages(anthropic_client, llm_config):
     Test that count_tokens properly handles empty messages by replacing them with placeholders,
     while preserving the exemption for the final assistant message.
     """
-    import anthropic
-
     with patch("anthropic.AsyncAnthropic") as mock_anthropic_class:
         mock_client = AsyncMock()
         mock_count_tokens = AsyncMock()
 
-        # Create a mock return value with input_tokens attribute
         mock_response = AsyncMock()
         mock_response.input_tokens = 100
         mock_count_tokens.return_value = mock_response
@@ -198,3 +195,65 @@ async def test_count_tokens_with_empty_messages(anthropic_client, llm_config):
         call_args = mock_count_tokens.call_args[1]
         assert call_args["messages"][0]["content"] == "."
         assert call_args["messages"][1]["content"] == "response"
+
+
+@pytest.mark.asyncio
+async def test_count_tokens_strips_trailing_whitespace_from_final_assistant(anthropic_client, llm_config):
+    """
+    Test that count_tokens strips trailing whitespace from the final assistant message.
+    Anthropic API rejects: "messages: final assistant content cannot end with trailing whitespace"
+    """
+    with patch("anthropic.AsyncAnthropic") as mock_anthropic_class:
+        mock_client = AsyncMock()
+        mock_count_tokens = AsyncMock()
+
+        mock_response = AsyncMock()
+        mock_response.input_tokens = 100
+        mock_count_tokens.return_value = mock_response
+
+        mock_client.beta.messages.count_tokens = mock_count_tokens
+        mock_anthropic_class.return_value = mock_client
+
+        # Test case 1: String content with trailing whitespace
+        messages_with_trailing_space = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": "response "},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_trailing_space, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][1]["content"] == "response"  # trailing space stripped
+
+        # Test case 2: String content with trailing newline
+        mock_count_tokens.reset_mock()
+        messages_with_trailing_newline = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": "response\n"},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_trailing_newline, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][1]["content"] == "response"  # trailing newline stripped
+
+        # Test case 3: List content with trailing whitespace in last text block
+        mock_count_tokens.reset_mock()
+        messages_with_trailing_space_in_block = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": [{"type": "text", "text": "response "}]},
+        ]
+        await anthropic_client.count_tokens(messages=messages_with_trailing_space_in_block, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][1]["content"][0]["text"] == "response"  # trailing space stripped
+
+        # Test case 4: Non-final assistant message should NOT have trailing whitespace stripped
+        mock_count_tokens.reset_mock()
+        messages_non_final = [
+            {"role": "user", "content": "hello"},
+            {"role": "assistant", "content": "first response "},
+            {"role": "user", "content": "followup"},
+        ]
+        await anthropic_client.count_tokens(messages=messages_non_final, model=llm_config.model)
+
+        call_args = mock_count_tokens.call_args[1]
+        assert call_args["messages"][1]["content"] == "first response "  # preserved for non-final

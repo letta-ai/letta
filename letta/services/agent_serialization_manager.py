@@ -33,6 +33,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import FileProcessingStatus, VectorDBProvider
 from letta.schemas.file import FileMetadata
 from letta.schemas.group import Group, GroupCreate
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message
 from letta.schemas.source import Source
@@ -472,6 +473,7 @@ class AgentSerializationManager:
         dry_run: bool = False,
         env_vars: Optional[Dict[str, Any]] = None,
         override_embedding_config: Optional[EmbeddingConfig] = None,
+        override_llm_config: Optional[LLMConfig] = None,
         project_id: Optional[str] = None,
     ) -> ImportResult:
         """
@@ -671,6 +673,11 @@ class AgentSerializationManager:
                 if override_embedding_config:
                     agent_schema.embedding_config = override_embedding_config
                     agent_schema.embedding = override_embedding_config.handle
+
+                # Override llm_config if provided (keeps other defaults like context size)
+                if override_llm_config:
+                    agent_schema.llm_config = override_llm_config
+                    agent_schema.model = override_llm_config.handle
 
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
                 agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})

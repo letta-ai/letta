@@ -419,6 +419,9 @@ class MCPManager:
         """
         # Create base MCPServer object
         if isinstance(server_config, StdioServerConfig):
+            # Check if stdio MCP servers are disabled (not suitable for multi-tenant deployments)
+            if tool_settings.mcp_disable_stdio:
+                raise ValueError("MCP stdio servers are disabled. Set MCP_DISABLE_STDIO=false to enable them.")
             mcp_server = MCPServer(server_name=server_config.server_name, server_type=server_config.type, stdio_config=server_config)
         elif isinstance(server_config, SSEServerConfig):
             mcp_server = MCPServer(
@@ -832,6 +835,9 @@ class MCPManager:
             server_config = SSEServerConfig(**server_config.model_dump())
             return AsyncFastMCPSSEClient(server_config=server_config, oauth=oauth, agent_id=agent_id)
         elif server_config.type == MCPServerType.STDIO:
+            # Check if stdio MCP servers are disabled (not suitable for multi-tenant deployments)
+            if tool_settings.mcp_disable_stdio:
+                raise ValueError("MCP stdio servers are disabled. Set MCP_DISABLE_STDIO=false to enable them.")
             server_config = StdioServerConfig(**server_config.model_dump())
             return AsyncStdioMCPClient(server_config=server_config, oauth_provider=None, agent_id=agent_id)
         elif server_config.type == MCPServerType.STREAMABLE_HTTP:

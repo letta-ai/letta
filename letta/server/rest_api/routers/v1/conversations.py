@@ -5,16 +5,20 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
+from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v3 import LettaAgentV3
+from letta.constants import REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import LettaExpiredError, LettaInvalidArgumentError, NoActiveRunsToCancelError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.conversation import Conversation, CreateConversation, UpdateConversation
 from letta.schemas.enums import RunStatus
+from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion
-from letta.schemas.letta_request import LettaStreamingRequest, RetrieveStreamRequest
+from letta.schemas.letta_request import ConversationMessageRequest, LettaStreamingRequest, RetrieveStreamRequest
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.run import Run as PydanticRun
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import redis_sse_stream_generator
 from letta.server.rest_api.streaming_response import (
@@ -60,6 +64,7 @@ async def list_conversations(
     agent_id: str = Query(..., description="The agent ID to list conversations for"),
     limit: int = Query(50, description="Maximum number of conversations to return"),
     after: Optional[str] = Query(None, description="Cursor for pagination (conversation ID)"),
+    summary_search: Optional[str] = Query(None, description="Search for text within conversation summaries"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -70,6 +75,7 @@ async def list_conversations(
         actor=actor,
         limit=limit,
         after=after,
+        summary_search=summary_search,
     )
 
 
@@ -154,51 +160,112 @@ async def list_conversation_messages(
 
 @router.post(
     "/{conversation_id}/messages",
-    response_model=LettaStreamingResponse,
+    response_model=LettaResponse,
     operation_id="send_conversation_message",
     responses={
         200: {
             "description": "Successful response",
             "content": {
-                "text/event-stream": {"description": "Server-Sent Events stream"},
+                "text/event-stream": {"description": "Server-Sent Events stream (default, when streaming=true)"},
+                "application/json": {"description": "JSON response (when streaming=false)"},
             },
         }
     },
 )
 async def send_conversation_message(
     conversation_id: ConversationId,
-    request: LettaStreamingRequest = Body(...),
+    request: ConversationMessageRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ) -> StreamingResponse | LettaResponse:
     """
-    Send a message to a conversation and get a streaming response.
+    Send a message to a conversation and get a response.
 
-    This endpoint sends a message to an existing conversation and streams
-    the agent's response back.
+    This endpoint sends a message to an existing conversation.
+    By default (streaming=true), returns a streaming response (Server-Sent Events).
+    Set streaming=false to get a complete JSON response.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    # Get the conversation to find the agent_id
+    if not request.messages or len(request.messages) == 0:
+        raise HTTPException(status_code=422, detail="Messages must not be empty")
+
     conversation = await conversation_manager.get_conversation_by_id(
         conversation_id=conversation_id,
         actor=actor,
     )
 
-    # Force streaming mode for this endpoint
-    request.streaming = True
+    # Streaming mode (default)
+    if request.streaming:
+        # Convert to LettaStreamingRequest for StreamingService compatibility
+        streaming_request = LettaStreamingRequest(
+            messages=request.messages,
+            streaming=True,
+            stream_tokens=request.stream_tokens,
+            include_pings=request.include_pings,
+            background=request.background,
+            max_steps=request.max_steps,
+            use_assistant_message=request.use_assistant_message,
+            assistant_message_tool_name=request.assistant_message_tool_name,
+            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+            include_return_message_types=request.include_return_message_types,
+            override_model=request.override_model,
+            client_tools=request.client_tools,
+        )
+        streaming_service = StreamingService(server)
+        run, result = await streaming_service.create_agent_stream(
+            agent_id=conversation.agent_id,
+            actor=actor,
+            request=streaming_request,
+            run_type="send_conversation_message",
+            conversation_id=conversation_id,
+        )
+        return result
 
-    # Use streaming service
-    streaming_service = StreamingService(server)
-    run, result = await streaming_service.create_agent_stream(
-        agent_id=conversation.agent_id,
-        actor=actor,
-        request=request,
-        run_type="send_conversation_message",
-        conversation_id=conversation_id,
+    # Non-streaming mode
+    agent = await server.agent_manager.get_agent_by_id_async(
+        conversation.agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
     )
 
-    return result
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=request.override_model,
+        )
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+    # Create a run for execution tracking
+    run = None
+    if settings.track_agent_run:
+        runs_manager = RunManager()
+        run = await runs_manager.create_run(
+            pydantic_run=PydanticRun(
+                agent_id=conversation.agent_id,
+                background=False,
+                metadata={
+                    "run_type": "send_conversation_message",
+                },
+                request_config=LettaRequestConfig.from_letta_request(request),
+            ),
+            actor=actor,
+        )
+
+    # Set run_id in Redis for cancellation support
+    redis_client = await get_redis_client()
+    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{conversation.agent_id}", run.id if run else None)
+
+    agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+    return await agent_loop.step(
+        request.messages,
+        max_steps=request.max_steps,
+        run_id=run.id if run else None,
+        use_assistant_message=request.use_assistant_message,
+        include_return_message_types=request.include_return_message_types,
+        client_tools=request.client_tools,
+        conversation_id=conversation_id,
+    )
 
 
 @router.post(
@@ -289,11 +356,14 @@ async def retrieve_conversation_stream(
     )
 
     if settings.enable_cancellation_aware_streaming:
+        from letta.server.rest_api.streaming_response import cancellation_aware_stream_wrapper, get_cancellation_event_for_run
+
         stream = cancellation_aware_stream_wrapper(
             stream_generator=stream,
             run_manager=server.run_manager,
             run_id=run.id,
             actor=actor,
+            cancellation_event=get_cancellation_event_for_run(run.id),
         )
 
     if request and request.include_pings and settings.enable_keepalive:

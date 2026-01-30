@@ -26,6 +26,7 @@ from letta.schemas.letta_message_content import (
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
+from letta.server.rest_api.streaming_response import RunCancelledException
 from letta.server.rest_api.utils import decrement_message_uuid
 from letta.utils import get_tool_call_id
 
@@ -43,9 +44,11 @@ class SimpleGeminiStreamingInterface:
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_event: Optional["asyncio.Event"] = None,
     ):
         self.run_id = run_id
         self.step_id = step_id
+        self.cancellation_event = cancellation_event
 
         # self.messages = messages
         # self.tools = tools
@@ -89,6 +92,9 @@ class SimpleGeminiStreamingInterface:
         # Raw usage from provider (for transparent logging in provider trace)
         self.raw_usage: dict | None = None
 
+        # Track cancellation status
+        self.stream_was_cancelled: bool = False
+
     def get_content(self) -> List[ReasoningContent | TextContent | ToolCallContent]:
         """This is (unusually) in chunked format, instead of merged"""
         for content in self.content_parts:
@@ -116,6 +122,27 @@ class SimpleGeminiStreamingInterface:
         """Return all finalized tool calls collected during this message (parallel supported)."""
         return list(self.collected_tool_calls)
 
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+
+        Note:
+            Gemini uses `thinking_tokens` instead of `reasoning_tokens` (OpenAI o1/o3).
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        return LettaUsageStatistics(
+            prompt_tokens=self.input_tokens or 0,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=(self.input_tokens or 0) + (self.output_tokens or 0),
+            # Gemini: input_tokens is already total, cached_tokens is a subset (not additive)
+            cached_input_tokens=self.cached_tokens,
+            cache_write_tokens=None,  # Gemini doesn't report cache write tokens
+            reasoning_tokens=self.thinking_tokens,  # Gemini uses thinking_tokens
+        )
+
     async def process(
         self,
         stream: AsyncIterator[GenerateContentResponse],
@@ -137,10 +164,10 @@ class SimpleGeminiStreamingInterface:
                                 message_index += 1
                             prev_message_type = new_message_type
                         yield message
-                except asyncio.CancelledError as e:
+                except (asyncio.CancelledError, RunCancelledException) as e:
                     import traceback
 
-                    logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                    logger.info("Cancelled stream attempt but overriding (%s) %s: %s", type(e).__name__, e, traceback.format_exc())
                     async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                         new_message_type = message.message_type
                         if new_message_type != prev_message_type:
@@ -164,7 +191,11 @@ class SimpleGeminiStreamingInterface:
             yield LettaStopReason(stop_reason=StopReasonType.error)
             raise e
         finally:
-            logger.info("GeminiStreamingInterface: Stream processing complete.")
+            # Check if cancellation was signaled via shared event
+            if self.cancellation_event and self.cancellation_event.is_set():
+                self.stream_was_cancelled = True
+
+            logger.info(f"GeminiStreamingInterface: Stream processing complete. stream was cancelled: {self.stream_was_cancelled}")
 
     async def _process_event(
         self,

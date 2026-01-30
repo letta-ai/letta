@@ -48,6 +48,13 @@ class PassageCreateRequest(BaseModel):
     text: str = Field(..., description="The text content of the passage")
     metadata: Optional[Dict] = Field(default=None, description="Optional metadata for the passage")
     tags: Optional[List[str]] = Field(default=None, description="Optional tags for categorizing the passage")
+    created_at: Optional[str] = Field(default=None, description="Optional creation datetime for the passage (ISO 8601 format)")
+
+
+class PassageBatchCreateRequest(BaseModel):
+    """Request model for creating multiple passages in an archive."""
+
+    passages: List[PassageCreateRequest] = Field(..., description="Passages to create in the archive")
 
 
 @router.post("/", response_model=PydanticArchive, operation_id="create_archive")
@@ -65,16 +72,14 @@ async def create_archive(
     if embedding_config is None:
         embedding_handle = archive.embedding
         if embedding_handle is None:
-            if settings.default_embedding_handle is None:
-                raise LettaInvalidArgumentError(
-                    "Must specify either embedding or embedding_config in request", argument_name="default_embedding_handle"
-                )
-            else:
-                embedding_handle = settings.default_embedding_handle
-        embedding_config = await server.get_embedding_config_from_handle_async(
-            handle=embedding_handle,
-            actor=actor,
-        )
+            embedding_handle = settings.default_embedding_handle
+        # Only resolve embedding config if we have an embedding handle
+        if embedding_handle is not None:
+            embedding_config = await server.get_embedding_config_from_handle_async(
+                handle=embedding_handle,
+                actor=actor,
+            )
+        # Otherwise, embedding_config remains None (text search only)
 
     return await server.archive_manager.create_archive_async(
         name=archive.name,
@@ -227,6 +232,27 @@ async def create_passage_in_archive(
         text=passage.text,
         metadata=passage.metadata,
         tags=passage.tags,
+        created_at=passage.created_at,
+        actor=actor,
+    )
+
+
+@router.post("/{archive_id}/passages/batch", response_model=List[Passage], operation_id="create_passages_in_archive")
+async def create_passages_in_archive(
+    archive_id: ArchiveId,
+    payload: PassageBatchCreateRequest = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Create multiple passages in an archive.
+
+    This adds passages to the archive and creates embeddings for vector storage.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.archive_manager.create_passages_in_archive_async(
+        archive_id=archive_id,
+        passages=[passage.model_dump() for passage in payload.passages],
         actor=actor,
     )
 

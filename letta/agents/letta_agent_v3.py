@@ -41,6 +41,7 @@ from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.user import User
 from letta.server.rest_api.utils import (
     create_approval_request_message_from_llm_response,
     create_letta_messages_from_llm_response,
@@ -71,6 +72,16 @@ class LettaAgentV3(LettaAgentV2):
     * Support tool rules
     * Support Gemini / OpenAI client
     """
+
+    def __init__(
+        self,
+        agent_state: AgentState,
+        actor: User,
+        conversation_id: str | None = None,
+    ):
+        super().__init__(agent_state, actor)
+        # Set conversation_id after parent init (which calls _initialize_state)
+        self.conversation_id = conversation_id
 
     def _initialize_state(self):
         super()._initialize_state()
@@ -168,7 +179,13 @@ class LettaAgentV3(LettaAgentV2):
                 input_messages_to_persist=input_messages_to_persist,
                 # TODO need to support non-streaming adapter too
                 llm_adapter=SimpleLLMRequestAdapter(
-                    llm_client=self.llm_client, llm_config=self.agent_state.llm_config, agent_id=self.agent_state.id, run_id=run_id
+                    llm_client=self.llm_client,
+                    llm_config=self.agent_state.llm_config,
+                    agent_id=self.agent_state.id,
+                    agent_tags=self.agent_state.tags,
+                    run_id=run_id,
+                    org_id=self.actor.organization_id,
+                    user_id=self.actor.id,
                 ),
                 run_id=run_id,
                 # use_assistant_message=use_assistant_message,
@@ -310,14 +327,20 @@ class LettaAgentV3(LettaAgentV2):
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
                 agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
                 run_id=run_id,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
             )
         else:
             llm_adapter = SimpleLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
                 agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
                 run_id=run_id,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
             )
 
         try:
@@ -390,7 +413,9 @@ class LettaAgentV3(LettaAgentV2):
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
 
         except Exception as e:
-            self.logger.warning(f"Error during agent stream: {e}", exc_info=True)
+            # Use repr() if str() is empty (happens with Exception() with no args)
+            error_detail = str(e) or repr(e)
+            self.logger.warning(f"Error during agent stream: {error_detail}", exc_info=True)
 
             # Set stop_reason if not already set
             if self.stop_reason is None:
@@ -411,7 +436,7 @@ class LettaAgentV3(LettaAgentV2):
                     run_id=run_id,
                     error_type="internal_error",
                     message="An error occurred during agent execution.",
-                    detail=str(e),
+                    detail=error_detail,
                 )
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
 
@@ -486,10 +511,11 @@ class LettaAgentV3(LettaAgentV2):
             new_messages: The new messages to persist
             in_context_messages: The current in-context messages
         """
-        # make sure all the new messages have the correct run_id and step_id
+        # make sure all the new messages have the correct run_id, step_id, and conversation_id
         for message in new_messages:
             message.step_id = step_id
             message.run_id = run_id
+            message.conversation_id = self.conversation_id
 
         # persist the new message objects - ONLY place where messages are persisted
         persisted_messages = await self.message_manager.create_many_messages_async(
@@ -653,7 +679,15 @@ class LettaAgentV3(LettaAgentV2):
                     return
 
                 step_id = approval_request.step_id
-                step_metrics = await self.step_manager.get_step_metrics_async(step_id=step_id, actor=self.actor)
+                if step_id is None:
+                    # Old approval messages may not have step_id set - generate a new one
+                    self.logger.warning(f"Approval request message {approval_request.id} has no step_id, generating new step_id")
+                    step_id = generate_step_id()
+                    step_progression, logged_step, step_metrics, agent_step_span = await self._step_checkpoint_start(
+                        step_id=step_id, run_id=run_id
+                    )
+                else:
+                    step_metrics = await self.step_manager.get_step_metrics_async(step_id=step_id, actor=self.actor)
             else:
                 # Check for job cancellation at the start of each step
                 if run_id and await self._check_run_cancellation(run_id):
@@ -760,7 +794,10 @@ class LettaAgentV3(LettaAgentV2):
                             # TODO: might want to delay this checkpoint in case of corrupated state
                             try:
                                 summary_message, messages, _ = await self.compact(
-                                    messages, trigger_threshold=self.agent_state.llm_config.context_window
+                                    messages,
+                                    trigger_threshold=self.agent_state.llm_config.context_window,
+                                    run_id=run_id,
+                                    step_id=step_id,
                                 )
                                 self.logger.info("Summarization succeeded, continuing to retry LLM request")
                                 continue
@@ -776,7 +813,10 @@ class LettaAgentV3(LettaAgentV2):
 
                             # update the messages
                             await self._checkpoint_messages(
-                                run_id=run_id, step_id=step_id, new_messages=[summary_message], in_context_messages=messages
+                                run_id=run_id,
+                                step_id=step_id,
+                                new_messages=[summary_message],
+                                in_context_messages=messages,
                             )
 
                         else:
@@ -879,20 +919,30 @@ class LettaAgentV3(LettaAgentV2):
                 self.logger.info(
                     f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
                 )
-                summary_message, messages, _ = await self.compact(messages, trigger_threshold=self.agent_state.llm_config.context_window)
+                summary_message, messages, _ = await self.compact(
+                    messages,
+                    trigger_threshold=self.agent_state.llm_config.context_window,
+                    run_id=run_id,
+                    step_id=step_id,
+                )
                 # TODO: persist + return the summary message
                 # TODO: convert this to a SummaryMessage
                 self.response_messages.append(summary_message)
                 for message in Message.to_letta_messages(summary_message):
                     yield message
                 await self._checkpoint_messages(
-                    run_id=run_id, step_id=step_id, new_messages=[summary_message], in_context_messages=messages
+                    run_id=run_id,
+                    step_id=step_id,
+                    new_messages=[summary_message],
+                    in_context_messages=messages,
                 )
 
         except Exception as e:
             # NOTE: message persistence does not happen in the case of an exception (rollback to previous state)
-            self.logger.warning(f"Error during step processing: {e}")
-            self.job_update_metadata = {"error": str(e)}
+            # Use repr() if str() is empty (happens with Exception() with no args)
+            error_detail = str(e) or repr(e)
+            self.logger.warning(f"Error during step processing: {error_detail}")
+            self.job_update_metadata = {"error": error_detail}
 
             # This indicates we failed after we decided to stop stepping, which indicates a bug with our flow.
             if not self.stop_reason:
@@ -1445,7 +1495,12 @@ class LettaAgentV3(LettaAgentV2):
 
     @trace_method
     async def compact(
-        self, messages, trigger_threshold: Optional[int] = None, compaction_settings: Optional["CompactionSettings"] = None
+        self,
+        messages,
+        trigger_threshold: Optional[int] = None,
+        compaction_settings: Optional["CompactionSettings"] = None,
+        run_id: Optional[str] = None,
+        step_id: Optional[str] = None,
     ) -> tuple[Message, list[Message], str]:
         """Compact the current in-context messages for this agent.
 
@@ -1472,7 +1527,7 @@ class LettaAgentV3(LettaAgentV2):
             summarizer_config = CompactionSettings(model=handle)
 
         # Build the LLMConfig used for summarization
-        summarizer_llm_config = self._build_summarizer_llm_config(
+        summarizer_llm_config = await self._build_summarizer_llm_config(
             agent_llm_config=self.agent_state.llm_config,
             summarizer_config=summarizer_config,
         )
@@ -1484,6 +1539,10 @@ class LettaAgentV3(LettaAgentV2):
                 llm_config=summarizer_llm_config,
                 summarizer_config=summarizer_config,
                 in_context_messages=messages,
+                agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
+                run_id=run_id,
+                step_id=step_id,
             )
         elif summarizer_config.mode == "sliding_window":
             try:
@@ -1492,6 +1551,10 @@ class LettaAgentV3(LettaAgentV2):
                     llm_config=summarizer_llm_config,
                     summarizer_config=summarizer_config,
                     in_context_messages=messages,
+                    agent_id=self.agent_state.id,
+                    agent_tags=self.agent_state.tags,
+                    run_id=run_id,
+                    step_id=step_id,
                 )
             except Exception as e:
                 self.logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
@@ -1500,6 +1563,10 @@ class LettaAgentV3(LettaAgentV2):
                     llm_config=summarizer_llm_config,
                     summarizer_config=summarizer_config,
                     in_context_messages=messages,
+                    agent_id=self.agent_state.id,
+                    agent_tags=self.agent_state.tags,
+                    run_id=run_id,
+                    step_id=step_id,
                 )
                 summarization_mode_used = "all"
         else:
@@ -1533,6 +1600,10 @@ class LettaAgentV3(LettaAgentV2):
                     llm_config=self.agent_state.llm_config,
                     summarizer_config=summarizer_config,
                     in_context_messages=compacted_messages,
+                    agent_id=self.agent_state.id,
+                    agent_tags=self.agent_state.tags,
+                    run_id=run_id,
+                    step_id=step_id,
                 )
                 summarization_mode_used = "all"
 
@@ -1584,8 +1655,8 @@ class LettaAgentV3(LettaAgentV2):
 
         return summary_message_obj, final_messages, summary
 
-    @staticmethod
-    def _build_summarizer_llm_config(
+    async def _build_summarizer_llm_config(
+        self,
         agent_llm_config: LLMConfig,
         summarizer_config: CompactionSettings,
     ) -> LLMConfig:
@@ -1611,12 +1682,41 @@ class LettaAgentV3(LettaAgentV2):
                 model_name = summarizer_config.model
 
             # Start from the agent's config and override model + provider_name + handle
-            # Note: model_endpoint_type is NOT overridden - the parsed provider_name
-            # is a custom label (e.g. "claude-pro-max"), not the endpoint type (e.g. "anthropic")
-            base = agent_llm_config.model_copy()
-            base.provider_name = provider_name
-            base.model = model_name
-            base.handle = summarizer_config.model
+            # Check if the summarizer's provider matches the agent's provider
+            # If they match, we can safely use the agent's config as a base
+            # If they don't match, we need to load the default config for the new provider
+            from letta.schemas.enums import ProviderType
+
+            provider_matches = False
+            try:
+                # Check if provider_name is a valid ProviderType that matches agent's endpoint type
+                provider_type = ProviderType(provider_name)
+                provider_matches = provider_type.value == agent_llm_config.model_endpoint_type
+            except ValueError:
+                # provider_name is a custom label - check if it matches agent's provider_name
+                provider_matches = provider_name == agent_llm_config.provider_name
+
+            if provider_matches:
+                # Same provider - use agent's config as base and override model/handle
+                base = agent_llm_config.model_copy()
+                base.model = model_name
+                base.handle = summarizer_config.model
+            else:
+                # Different provider - load default config for this handle
+                from letta.services.provider_manager import ProviderManager
+
+                provider_manager = ProviderManager()
+                try:
+                    base = await provider_manager.get_llm_config_from_handle(
+                        handle=summarizer_config.model,
+                        actor=self.actor,
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to load LLM config for summarizer handle '{summarizer_config.model}': {e}. "
+                        f"Falling back to agent's LLM config."
+                    )
+                    return agent_llm_config
 
             # If explicit model_settings are provided for the summarizer, apply
             # them just like server.create_agent_async does for agents.

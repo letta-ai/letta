@@ -189,6 +189,7 @@ all_configs = [
     "openai-gpt-5.json",  # TODO: GPT-5 disabled for now, it sends HiddenReasoningMessages which break the tests.
     "claude-4-5-sonnet.json",
     "gemini-2.5-pro.json",
+    "minimax-m2.1-lightning.json",
 ]
 
 reasoning_configs = [
@@ -242,6 +243,10 @@ def is_reasoner_model(model_handle: str, model_settings: dict) -> bool:
     # Google Vertex/AI reasoning models (from google_vertex_client.py:691-696)
     elif provider_type in ["google_vertex", "google_ai"]:
         return model.startswith("gemini-2.5-flash") or model.startswith("gemini-2.5-pro") or model.startswith("gemini-3")
+
+    # MiniMax reasoning models (all M2.x models support native interleaved thinking)
+    elif provider_type == "minimax":
+        return model.startswith("MiniMax-M2")
 
     return False
 

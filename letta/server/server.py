@@ -19,7 +19,6 @@ from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import (
-    EmbeddingConfigRequiredError,
     HandleNotFoundError,
     LettaInvalidArgumentError,
     LettaMCPConnectionError,
@@ -68,10 +67,12 @@ from letta.schemas.providers import (
     GroqProvider,
     LettaProvider,
     LMStudioOpenAIProvider,
+    MiniMaxProvider,
     OllamaProvider,
     OpenAIProvider,
     OpenRouterProvider,
     Provider,
+    SGLangProvider,
     TogetherProvider,
     VLLMProvider,
     XAIProvider,
@@ -283,12 +284,30 @@ class SyncServer(object):
             # NOTE: to use the /chat/completions endpoint, you need to specify extra flags on vLLM startup
             # see: https://docs.vllm.ai/en/stable/features/tool_calling.html
             # e.g. "... --enable-auto-tool-choice --tool-call-parser hermes"
+            # Auto-append /v1 to the base URL
+            vllm_url = (
+                model_settings.vllm_api_base if model_settings.vllm_api_base.endswith("/v1") else model_settings.vllm_api_base + "/v1"
+            )
             self._enabled_providers.append(
                 VLLMProvider(
                     name="vllm",
-                    base_url=model_settings.vllm_api_base,
+                    base_url=vllm_url,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                     handle_base=model_settings.vllm_handle_base,
+                )
+            )
+
+        if model_settings.sglang_api_base:
+            # Auto-append /v1 to the base URL
+            sglang_url = (
+                model_settings.sglang_api_base if model_settings.sglang_api_base.endswith("/v1") else model_settings.sglang_api_base + "/v1"
+            )
+            self._enabled_providers.append(
+                SGLangProvider(
+                    name="sglang",
+                    base_url=sglang_url,
+                    default_prompt_formatter=model_settings.default_prompt_formatter,
+                    handle_base=model_settings.sglang_handle_base,
                 )
             )
 
@@ -322,6 +341,13 @@ class SyncServer(object):
                 XAIProvider(
                     name="xai",
                     api_key_enc=Secret.from_plaintext(model_settings.xai_api_key),
+                )
+            )
+        if model_settings.minimax_api_key:
+            self._enabled_providers.append(
+                MiniMaxProvider(
+                    name="minimax",
+                    api_key_enc=Secret.from_plaintext(model_settings.minimax_api_key),
                 )
             )
         if model_settings.zai_api_key:
@@ -443,6 +469,8 @@ class SyncServer(object):
                     embedding_models=embedding_models,
                     organization_id=None,  # Global models
                 )
+                # Update last_synced timestamp
+                await self.provider_manager.update_provider_last_synced_async(persisted_provider.id)
                 logger.info(
                     f"Synced {len(llm_models)} LLM models and {len(embedding_models)} embedding models for provider {persisted_provider.name}"
                 )
@@ -628,9 +656,10 @@ class SyncServer(object):
             actor=actor,
         )
 
-    async def create_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+    async def create_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> Optional[AgentState]:
         if main_agent.embedding_config is None:
-            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_sleeptime_agent")
+            logger.warning(f"Skipping sleeptime agent creation for agent {main_agent.id}: no embedding config provided")
+            return None
         request = CreateAgent(
             name=main_agent.name + "-sleeptime",
             agent_type=AgentType.sleeptime_agent,
@@ -662,9 +691,10 @@ class SyncServer(object):
         )
         return await self.agent_manager.get_agent_by_id_async(agent_id=main_agent.id, actor=actor)
 
-    async def create_voice_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> AgentState:
+    async def create_voice_sleeptime_agent_async(self, main_agent: AgentState, actor: User) -> Optional[AgentState]:
         if main_agent.embedding_config is None:
-            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_voice_sleeptime_agent")
+            logger.warning(f"Skipping voice sleeptime agent creation for agent {main_agent.id}: no embedding config provided")
+            return None
         # TODO: Inject system
         request = CreateAgent(
             name=main_agent.name + "-sleeptime",
@@ -956,7 +986,7 @@ class SyncServer(object):
         from letta.data_sources.connectors import DirectoryConnector
 
         # TODO: move this into a thread
-        source = await self.source_manager.get_source_by_id(source_id=source_id)
+        source = await self.source_manager.get_source_by_id(source_id=source_id, actor=actor)
         connector = DirectoryConnector(input_files=[file_path])
         num_passages, num_documents = await self.load_data(user_id=source.created_by_id, source_name=source.name, connector=connector)
 
@@ -1041,9 +1071,10 @@ class SyncServer(object):
 
     async def create_document_sleeptime_agent_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
-    ) -> AgentState:
+    ) -> Optional[AgentState]:
         if main_agent.embedding_config is None:
-            raise EmbeddingConfigRequiredError(agent_id=main_agent.id, operation="create_document_sleeptime_agent")
+            logger.warning(f"Skipping document sleeptime agent creation for agent {main_agent.id}: no embedding config provided")
+            return None
         try:
             block = await self.agent_manager.get_block_with_label_async(agent_id=main_agent.id, block_label=source.name, actor=actor)
         except:
@@ -1151,10 +1182,18 @@ class SyncServer(object):
                 if provider_type and provider.provider_type != provider_type:
                     continue
 
+                # For bedrock, use schema default for base_url since DB may have NULL
+                # TODO: can maybe do this for all models but want to isolate change so we don't break any other providers
+                if provider.provider_type == ProviderType.bedrock:
+                    typed_provider = provider.cast_to_subtype()
+                    model_endpoint = typed_provider.base_url
+                else:
+                    model_endpoint = provider.base_url
+
                 llm_config = LLMConfig(
                     model=model.name,
                     model_endpoint_type=model.model_endpoint_type,
-                    model_endpoint=provider.base_url or model.model_endpoint_type,
+                    model_endpoint=model_endpoint,
                     context_window=model.max_context_window or 16384,
                     handle=model.handle,
                     provider_name=provider.name,
@@ -1162,7 +1201,7 @@ class SyncServer(object):
                 )
                 llm_models.append(llm_config)
 
-        # Get BYOK provider models by hitting provider endpoints directly
+        # Get BYOK provider models - sync if not synced yet, then read from DB
         if include_byok:
             byok_providers = await self.provider_manager.list_providers_async(
                 actor=actor,
@@ -1173,9 +1212,39 @@ class SyncServer(object):
 
             for provider in byok_providers:
                 try:
+                    # Get typed provider to access schema defaults (e.g., base_url)
                     typed_provider = provider.cast_to_subtype()
-                    models = await typed_provider.list_llm_models_async()
-                    llm_models.extend(models)
+
+                    # Sync models if not synced yet
+                    if provider.last_synced is None:
+                        models = await typed_provider.list_llm_models_async()
+                        embedding_models = await typed_provider.list_embedding_models_async()
+                        await self.provider_manager.sync_provider_models_async(
+                            provider=provider,
+                            llm_models=models,
+                            embedding_models=embedding_models,
+                            organization_id=provider.organization_id,
+                        )
+                        await self.provider_manager.update_provider_last_synced_async(provider.id, actor=actor)
+
+                    # Read from database
+                    provider_llm_models = await self.provider_manager.list_models_async(
+                        actor=actor,
+                        model_type="llm",
+                        provider_id=provider.id,
+                        enabled=True,
+                    )
+                    for model in provider_llm_models:
+                        llm_config = LLMConfig(
+                            model=model.name,
+                            model_endpoint_type=model.model_endpoint_type,
+                            model_endpoint=typed_provider.base_url,
+                            context_window=model.max_context_window or constants.DEFAULT_CONTEXT_WINDOW,
+                            handle=model.handle,
+                            provider_name=provider.name,
+                            provider_category=ProviderCategory.byok,
+                        )
+                        llm_models.append(llm_config)
                 except Exception as e:
                     logger.warning(f"Failed to fetch models from BYOK provider {provider.name}: {e}")
 
@@ -1217,7 +1286,7 @@ class SyncServer(object):
             )
             embedding_models.append(embedding_config)
 
-        # Get BYOK provider models by hitting provider endpoints directly
+        # Get BYOK provider models - sync if not synced yet, then read from DB
         byok_providers = await self.provider_manager.list_providers_async(
             actor=actor,
             provider_category=[ProviderCategory.byok],
@@ -1225,9 +1294,38 @@ class SyncServer(object):
 
         for provider in byok_providers:
             try:
+                # Get typed provider to access schema defaults (e.g., base_url)
                 typed_provider = provider.cast_to_subtype()
-                models = await typed_provider.list_embedding_models_async()
-                embedding_models.extend(models)
+
+                # Sync models if not synced yet
+                if provider.last_synced is None:
+                    llm_models = await typed_provider.list_llm_models_async()
+                    emb_models = await typed_provider.list_embedding_models_async()
+                    await self.provider_manager.sync_provider_models_async(
+                        provider=provider,
+                        llm_models=llm_models,
+                        embedding_models=emb_models,
+                        organization_id=provider.organization_id,
+                    )
+                    await self.provider_manager.update_provider_last_synced_async(provider.id, actor=actor)
+
+                # Read from database
+                provider_embedding_models = await self.provider_manager.list_models_async(
+                    actor=actor,
+                    model_type="embedding",
+                    provider_id=provider.id,
+                    enabled=True,
+                )
+                for model in provider_embedding_models:
+                    embedding_config = EmbeddingConfig(
+                        embedding_model=model.name,
+                        embedding_endpoint_type=model.model_endpoint_type,
+                        embedding_endpoint=typed_provider.base_url,
+                        embedding_dim=model.embedding_dim or 1536,
+                        embedding_chunk_size=constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+                        handle=model.handle,
+                    )
+                    embedding_models.append(embedding_config)
             except Exception as e:
                 logger.warning(f"Failed to fetch embedding models from BYOK provider {provider.name}: {e}")
 

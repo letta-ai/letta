@@ -32,5 +32,15 @@ class ProviderTrace(SqlalchemyBase, OrganizationMixin):
         String, nullable=True, doc="Source service that generated this trace (memgpt-server, lettuce-py)"
     )
 
+    # v2 protocol fields
+    org_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the organization")
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the user who initiated the request")
+    compaction_settings: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, doc="Compaction/summarization settings (summarization calls only)"
+    )
+    llm_config: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, doc="LLM configuration used for this call (non-summarization calls only)"
+    )
+
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", lazy="selectin")

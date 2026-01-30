@@ -448,11 +448,10 @@ class SourceManager:
 
             return list(agent_ids)
 
-    # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
     @raise_on_invalid_id(param_name="source_id", expected_prefix=PrimitiveType.SOURCE)
     @trace_method
-    async def get_source_by_id(self, source_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticSource]:
+    async def get_source_by_id(self, source_id: str, actor: PydanticUser) -> Optional[PydanticSource]:
         """Retrieve a source by its ID."""
         async with db_registry.async_session() as session:
             source = await SourceModel.read_async(db_session=session, identifier=source_id, actor=actor)

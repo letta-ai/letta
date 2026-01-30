@@ -2510,13 +2510,15 @@ wheels = [
 
 [[package]]
 name = "letta"
-version = "0.16.2"
+version = "0.16.4"
 source = { editable = "." }
 dependencies = [
+    { name = "aiofiles" },
     { name = "aiomultiprocess" },
     { name = "alembic" },
     { name = "anthropic" },
     { name = "apscheduler" },
+    { name = "async-lru" },
     { name = "black", extra = ["jupyter"] },
     { name = "brotli" },
     { name = "certifi" },
@@ -2661,12 +2663,14 @@ sqlite = [
 [package.metadata]
 requires-dist = [
     { name = "aioboto3", marker = "extra == 'bedrock'", specifier = ">=14.3.0" },
+    { name = "aiofiles", specifier = ">=24.1.0" },
     { name = "aiomultiprocess", specifier = ">=0.9.1" },
     { name = "aiosqlite", marker = "extra == 'desktop'", specifier = ">=0.21.0" },
     { name = "aiosqlite", marker = "extra == 'sqlite'", specifier = ">=0.21.0" },
     { name = "alembic", specifier = ">=1.13.3" },
     { name = "anthropic", specifier = ">=0.75.0" },
     { name = "apscheduler", specifier = ">=3.11.0" },
+    { name = "async-lru", specifier = ">=2.0.5" },
     { name = "async-lru", marker = "extra == 'desktop'", specifier = ">=2.0.5" },
     { name = "asyncpg", marker = "extra == 'postgres'", specifier = ">=0.30.0" },
     { name = "black", extras = ["jupyter"], specifier = ">=24.2.0" },

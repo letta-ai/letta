@@ -37,7 +37,16 @@ class ToolSettings(BaseSettings):
     mcp_list_tools_timeout: float = 30.0
     mcp_execute_tool_timeout: float = 60.0
     mcp_read_from_config: bool = False  # if False, will throw if attempting to read/write from file
-    mcp_disable_stdio: bool = False
+    mcp_disable_stdio: bool = Field(
+        default=True,
+        description=(
+            "Disable MCP stdio server type. When True (default), creating or connecting to "
+            "MCP servers using stdio transport will fail. Stdio MCP servers spawn local "
+            "processes, which is not suitable for multi-tenant or shared server deployments. "
+            "Set to False for local or single-user deployments where stdio-based MCP servers "
+            "are needed (e.g., running local tools via npx or uvx)."
+        ),
+    )
 
     @property
     def modal_sandbox_enabled(self) -> bool:
@@ -141,6 +150,9 @@ class ModelSettings(BaseSettings):
     # groq
     groq_api_key: Optional[str] = None
 
+    # minimax
+    minimax_api_key: Optional[str] = None
+
     # Bedrock
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
@@ -188,6 +200,10 @@ class ModelSettings(BaseSettings):
     # vLLM
     vllm_api_base: Optional[str] = None
     vllm_handle_base: Optional[str] = None
+
+    # SGLang
+    sglang_api_base: Optional[str] = None
+    sglang_handle_base: Optional[str] = None
 
     # lmstudio
     lmstudio_base_url: Optional[str] = None
@@ -502,6 +518,10 @@ class TelemetrySettings(BaseSettings):
     source: str | None = Field(
         default=None,
         description="Source identifier for telemetry (memgpt-server, lettuce-py, etc.).",
+    )
+    provider_trace_pg_metadata_only: bool = Field(
+        default=False,
+        description="Write only metadata to Postgres (no request/response JSON). Requires provider_trace_metadata table to exist.",
     )
 
     @property

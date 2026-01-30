@@ -43,6 +43,14 @@ class GroqClient(OpenAIClient):
         data["logprobs"] = False
         data["n"] = 1
 
+        # for openai.BadRequestError: Error code: 400 - {'error': {'message': "'messages.2' : for 'role:assistant' the following must be satisfied[('messages.2' : property 'reasoning_content' is unsupported)]", 'type': 'invalid_request_error'}}
+        if "messages" in data:
+            for message in data["messages"]:
+                if "reasoning_content" in message:
+                    del message["reasoning_content"]
+                if "reasoning_content_signature" in message:
+                    del message["reasoning_content_signature"]
+
         return data
 
     @trace_method

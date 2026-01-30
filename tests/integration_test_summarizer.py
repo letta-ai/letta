@@ -816,7 +816,7 @@ async def test_v3_compact_uses_compaction_settings_model_and_model_settings(serv
 
     captured_llm_config: dict = {}
 
-    async def fake_simple_summary(messages, llm_config, actor, include_ack=True, prompt=None):  # type: ignore[override]
+    async def fake_simple_summary(messages, llm_config, actor, include_ack=True, prompt=None, **kwargs):  # type: ignore[override]
         captured_llm_config["value"] = llm_config
         return "summary text"
 

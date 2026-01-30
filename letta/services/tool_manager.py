@@ -167,6 +167,19 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
                 if "agent_state" in tool_func.__code__.co_varnames:
                     kwargs["agent_state"] = reconstructed_agent_state
 
+                try:
+                    from letta.functions.ast_parsers import coerce_dict_args_by_annotations
+
+                    annotations = getattr(tool_func, "__annotations__", {})
+                    kwargs = coerce_dict_args_by_annotations(
+                        kwargs,
+                        annotations,
+                        allow_unsafe_eval=True,
+                        extra_globals=tool_func.__globals__,
+                    )
+                except Exception:
+                    pass
+
                 # Execute the tool function (async or sync)
                 if is_async:
                     result = asyncio.run(tool_func(**kwargs))
@@ -931,13 +944,28 @@ class ToolManager:
         # Track if we need to check name uniqueness (check is done inside session with lock)
         needs_name_conflict_check = new_name != current_tool.name
 
-        # NOTE: EXTREMELEY HACKY, we need to stop making assumptions about the source_code
-        if "source_code" in update_data and f"def {new_name}" not in update_data.get("source_code", ""):
-            raise LettaToolNameSchemaMismatchError(
-                tool_name=new_name,
-                json_schema_name=new_schema.get("name") if new_schema else None,
-                source_code=update_data.get("source_code"),
-            )
+        # Definitive checker for source code type
+        if "source_code" in update_data:
+            source_code = update_data.get("source_code", "")
+            source_type = update_data.get("source_type", current_tool.source_type)
+
+            # Check for function name based on source type
+            if source_type == "typescript":
+                # TypeScript: check for "function name" or "export function name"
+                if f"function {new_name}" not in source_code:
+                    raise LettaToolNameSchemaMismatchError(
+                        tool_name=new_name,
+                        json_schema_name=new_schema.get("name") if new_schema else None,
+                        source_code=source_code,
+                    )
+            else:
+                # Python: check for "def name"
+                if f"def {new_name}" not in source_code:
+                    raise LettaToolNameSchemaMismatchError(
+                        tool_name=new_name,
+                        json_schema_name=new_schema.get("name") if new_schema else None,
+                        source_code=source_code,
+                    )
 
         # Create a preview of the updated tool by merging current tool with updates
         # This allows us to compute the hash before the database session

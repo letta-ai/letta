@@ -120,16 +120,19 @@ class UserManager:
             NoResultFound: If actor_id is None and no_default_actor setting is True.
         """
         # Security check: if no_default_actor is enabled and actor_id is None, raise error
-        if settings.no_default_actor and actor_id is None:
-            raise NoResultFound("Actor ID is required when no_default_actor is enabled")
+        if settings.no_default_actor and (actor_id is None or actor_id == self.DEFAULT_USER_ID):
+            raise NoResultFound("Non-default Actor ID is required when no_default_actor is enabled")
 
         target_id = actor_id or self.DEFAULT_USER_ID
 
         try:
             return await self.get_actor_by_id_async(target_id)
         except NoResultFound:
-            user = await self.create_default_actor_async(org_id=DEFAULT_ORG_ID)
-            return user
+            if not settings.no_default_actor:
+                user = await self.create_default_actor_async(org_id=DEFAULT_ORG_ID)
+                return user
+            else:
+                raise
 
     @enforce_types
     @trace_method

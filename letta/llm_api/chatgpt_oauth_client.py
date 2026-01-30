@@ -54,6 +54,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatistics,
 )
 from letta.schemas.providers.chatgpt_oauth import ChatGPTOAuthCredentials, ChatGPTOAuthProvider
+from letta.schemas.usage import LettaUsageStatistics
 
 logger = get_logger(__name__)
 
@@ -510,6 +511,25 @@ class ChatGPTOAuthClient(LLMClientBase):
         """
         # Response should already be in ChatCompletion format after transformation
         return ChatCompletionResponse(**response_data)
+
+    def extract_usage_statistics(self, response_data: dict | None, llm_config: LLMConfig) -> LettaUsageStatistics:
+        """Extract usage statistics from ChatGPT OAuth response and return as LettaUsageStatistics."""
+        if not response_data:
+            return LettaUsageStatistics()
+
+        usage = response_data.get("usage")
+        if not usage:
+            return LettaUsageStatistics()
+
+        prompt_tokens = usage.get("prompt_tokens") or 0
+        completion_tokens = usage.get("completion_tokens") or 0
+        total_tokens = usage.get("total_tokens") or (prompt_tokens + completion_tokens)
+
+        return LettaUsageStatistics(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+        )
 
     @trace_method
     async def stream_async(

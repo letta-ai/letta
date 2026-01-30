@@ -46,6 +46,9 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
             agent_tags=self.agent_tags,
             run_id=self.run_id,
             call_type="agent_step",
+            org_id=self.org_id,
+            user_id=self.user_id,
+            llm_config=self.llm_config.model_dump() if self.llm_config else None,
         )
         try:
             self.response_data = await self.llm_client.request_async_with_telemetry(request_data, self.llm_config)

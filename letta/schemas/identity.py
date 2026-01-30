@@ -5,6 +5,7 @@ from pydantic import Field
 
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
+from letta.validators import AgentId, BlockId
 
 
 class IdentityType(str, Enum):
@@ -57,8 +58,8 @@ class IdentityCreate(LettaBase):
     name: str = Field(..., description="The name of the identity.")
     identity_type: IdentityType = Field(..., description="The type of the identity.")
     project_id: Optional[str] = Field(None, description="The project id of the identity, if applicable.")
-    agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
-    block_ids: Optional[List[str]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
+    agent_ids: Optional[List[AgentId]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
+    block_ids: Optional[List[BlockId]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
     properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
 
 
@@ -67,8 +68,8 @@ class IdentityUpsert(LettaBase):
     name: str = Field(..., description="The name of the identity.")
     identity_type: IdentityType = Field(..., description="The type of the identity.")
     project_id: Optional[str] = Field(None, description="The project id of the identity, if applicable.")
-    agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
-    block_ids: Optional[List[str]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
+    agent_ids: Optional[List[AgentId]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
+    block_ids: Optional[List[BlockId]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
     properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
 
 
@@ -76,8 +77,8 @@ class IdentityUpdate(LettaBase):
     identifier_key: Optional[str] = Field(None, description="External, user-generated identifier key of the identity.")
     name: Optional[str] = Field(None, description="The name of the identity.")
     identity_type: Optional[IdentityType] = Field(None, description="The type of the identity.")
-    agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
-    block_ids: Optional[List[str]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
+    agent_ids: Optional[List[AgentId]] = Field(None, description="The agent ids that are associated with the identity.", deprecated=True)
+    block_ids: Optional[List[BlockId]] = Field(None, description="The IDs of the blocks associated with the identity.", deprecated=True)
     properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
 
 

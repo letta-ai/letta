@@ -1018,6 +1018,65 @@ async def test_conversation_streaming_raw_http(
 
 
 @pytest.mark.parametrize(
+    "model_config",
+    TESTED_MODEL_CONFIGS,
+    ids=[handle for handle, _ in TESTED_MODEL_CONFIGS],
+)
+@pytest.mark.asyncio(loop_scope="function")
+async def test_conversation_non_streaming_raw_http(
+    disable_e2b_api_key: Any,
+    client: AsyncLetta,
+    server_url: str,
+    agent_state: AgentState,
+    model_config: Tuple[str, dict],
+) -> None:
+    """
+    Test conversation-based non-streaming functionality using raw HTTP requests.
+
+    This test verifies that:
+    1. A conversation can be created for an agent
+    2. Messages can be sent to the conversation without streaming (streaming=False)
+    3. The JSON response contains the expected message types
+    """
+    import httpx
+
+    model_handle, model_settings = model_config
+    agent_state = await client.agents.update(agent_id=agent_state.id, model=model_handle, model_settings=model_settings)
+
+    async with httpx.AsyncClient(base_url=server_url, timeout=60.0) as http_client:
+        # Create a conversation for the agent
+        create_response = await http_client.post(
+            "/v1/conversations/",
+            params={"agent_id": agent_state.id},
+            json={},
+        )
+        assert create_response.status_code == 200, f"Failed to create conversation: {create_response.text}"
+        conversation = create_response.json()
+        assert conversation["id"] is not None
+        assert conversation["agent_id"] == agent_state.id
+
+        # Send a message to the conversation using NON-streaming mode
+        response = await http_client.post(
+            f"/v1/conversations/{conversation['id']}/messages",
+            json={
+                "messages": [{"role": "user", "content": f"Reply with the message '{USER_MESSAGE_RESPONSE}'."}],
+                "streaming": False,  # Non-streaming mode
+            },
+        )
+        assert response.status_code == 200, f"Failed to send message: {response.text}"
+
+        # Parse JSON response (LettaResponse)
+        result = response.json()
+        assert "messages" in result, f"Expected 'messages' in response: {result}"
+        messages = result["messages"]
+
+        # Verify the response contains expected message types
+        assert len(messages) > 0, "Expected at least one message in response"
+        message_types = [msg.get("message_type") for msg in messages]
+        assert "assistant_message" in message_types, f"Expected assistant_message in {message_types}"
+
+
+@pytest.mark.parametrize(
     "model_handle,provider_type",
     [
         ("openai/gpt-4o", "openai"),

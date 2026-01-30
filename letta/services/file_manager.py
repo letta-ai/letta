@@ -91,18 +91,17 @@ class FileManager:
                 await session.rollback()
                 return await self.get_file_by_id(file_metadata.id, actor=actor)
 
-    # TODO: We make actor optional for now, but should most likely be enforced due to security reasons
     @enforce_types
     @raise_on_invalid_id(param_name="file_id", expected_prefix=PrimitiveType.FILE)
     @trace_method
     # @async_redis_cache(
-    #     key_func=lambda self, file_id, actor=None, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id if actor else 'none'}:{include_content}:{strip_directory_prefix}",
+    #     key_func=lambda self, file_id, actor, include_content=False, strip_directory_prefix=False: f"{file_id}:{actor.organization_id}:{include_content}:{strip_directory_prefix}",
     #     prefix="file_content",
     #     ttl_s=3600,
     #     model_class=PydanticFileMetadata,
     # )
     async def get_file_by_id(
-        self, file_id: str, actor: Optional[PydanticUser] = None, *, include_content: bool = False, strip_directory_prefix: bool = False
+        self, file_id: str, actor: PydanticUser, *, include_content: bool = False, strip_directory_prefix: bool = False
     ) -> Optional[PydanticFileMetadata]:
         """Retrieve a file by its ID.
 
@@ -479,7 +478,7 @@ class FileManager:
     async def delete_file(self, file_id: str, actor: PydanticUser) -> PydanticFileMetadata:
         """Delete a file by its ID."""
         async with db_registry.async_session() as session:
-            file = await FileMetadataModel.read_async(db_session=session, identifier=file_id)
+            file = await FileMetadataModel.read_async(db_session=session, identifier=file_id, actor=actor)
 
             # invalidate cache for this file before deletion
             await self._invalidate_file_caches(file_id, actor, file.original_file_name, file.source_id)

@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -40,6 +41,11 @@ class Provider(SqlalchemyBase, OrganizationMixin):
     # encrypted columns
     api_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted API key or secret key for the provider.")
     access_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted access key for the provider.")
+
+    # sync tracking
+    last_synced: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, doc="Last time models were synced for this provider."
+    )
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="providers")

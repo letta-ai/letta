@@ -218,6 +218,7 @@ class LettaAgent(BaseAgent):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        run_id: str | None = None,
     ):
         agent_state = await self.agent_manager.get_agent_by_id_async(
             agent_id=self.agent_id,
@@ -330,6 +331,7 @@ class LettaAgent(BaseAgent):
                         tool_rules_solver,
                         agent_step_span,
                         step_metrics,
+                        run_id=run_id,
                     )
                     in_context_messages = current_in_context_messages + new_in_context_messages
 
@@ -418,6 +420,9 @@ class LettaAgent(BaseAgent):
                                 agent_id=self.agent_id,
                                 agent_tags=agent_state.tags,
                                 run_id=self.current_run_id,
+                                org_id=self.actor.organization_id,
+                                user_id=self.actor.id,
+                                llm_config=self.agent_state.llm_config.model_dump() if self.agent_state.llm_config else None,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -549,6 +554,7 @@ class LettaAgent(BaseAgent):
                 llm_config=agent_state.llm_config,
                 total_tokens=usage.total_tokens,
                 force=False,
+                run_id=run_id,
             )
 
         await self._log_request(request_start_timestamp_ns, request_span, job_update_metadata, is_error=False)
@@ -677,6 +683,7 @@ class LettaAgent(BaseAgent):
                         tool_rules_solver,
                         agent_step_span,
                         step_metrics,
+                        run_id=run_id,
                     )
                     in_context_messages = current_in_context_messages + new_in_context_messages
 
@@ -766,6 +773,9 @@ class LettaAgent(BaseAgent):
                                 agent_id=self.agent_id,
                                 agent_tags=agent_state.tags,
                                 run_id=self.current_run_id,
+                                org_id=self.actor.organization_id,
+                                user_id=self.actor.id,
+                                llm_config=self.agent_state.llm_config.model_dump() if self.agent_state.llm_config else None,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -882,6 +892,7 @@ class LettaAgent(BaseAgent):
                 llm_config=agent_state.llm_config,
                 total_tokens=usage.total_tokens,
                 force=False,
+                run_id=run_id,
             )
 
         await self._log_request(request_start_timestamp_ns, request_span, job_update_metadata, is_error=False)
@@ -908,6 +919,7 @@ class LettaAgent(BaseAgent):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        run_id: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Carries out an invocation of the agent loop in a streaming fashion that yields partial tokens.
@@ -1027,6 +1039,8 @@ class LettaAgent(BaseAgent):
                         agent_state,
                         llm_client,
                         tool_rules_solver,
+                        run_id=run_id,
+                        step_id=step_id,
                     )
 
                     step_progression = StepProgression.STREAM_RECEIVED
@@ -1234,6 +1248,9 @@ class LettaAgent(BaseAgent):
                                 agent_id=self.agent_id,
                                 agent_tags=agent_state.tags,
                                 run_id=self.current_run_id,
+                                org_id=self.actor.organization_id,
+                                user_id=self.actor.id,
+                                llm_config=self.agent_state.llm_config.model_dump() if self.agent_state.llm_config else None,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -1378,6 +1395,7 @@ class LettaAgent(BaseAgent):
                 llm_config=agent_state.llm_config,
                 total_tokens=usage.total_tokens,
                 force=False,
+                run_id=run_id,
             )
 
         await self._log_request(request_start_timestamp_ns, request_span, job_update_metadata, is_error=False)
@@ -1441,6 +1459,7 @@ class LettaAgent(BaseAgent):
         tool_rules_solver: ToolRulesSolver,
         agent_step_span: "Span",
         step_metrics: StepMetrics,
+        run_id: str | None = None,
     ) -> tuple[dict, dict, list[Message], list[Message], list[str]] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
@@ -1461,6 +1480,7 @@ class LettaAgent(BaseAgent):
                         agent_id=self.agent_id,
                         agent_tags=agent_state.tags,
                         run_id=self.current_run_id,
+                        step_id=step_metrics.id,
                         call_type="agent_step",
                     )
                     response = await llm_client.request_async_with_telemetry(request_data, agent_state.llm_config)
@@ -1488,6 +1508,7 @@ class LettaAgent(BaseAgent):
                     new_letta_messages=new_in_context_messages,
                     llm_config=agent_state.llm_config,
                     force=True,
+                    run_id=run_id,
                 )
                 new_in_context_messages = []
                 log_event(f"agent.stream_no_tokens.retry_attempt.{attempt + 1}")
@@ -1503,6 +1524,8 @@ class LettaAgent(BaseAgent):
         agent_state: AgentState,
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
+        run_id: str | None = None,
+        step_id: str | None = None,
     ) -> tuple[dict, AsyncStream[ChatCompletionChunk], list[Message], list[Message], list[str], int] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
@@ -1530,6 +1553,7 @@ class LettaAgent(BaseAgent):
                     agent_id=self.agent_id,
                     agent_tags=agent_state.tags,
                     run_id=self.current_run_id,
+                    step_id=step_id,
                     call_type="agent_step",
                 )
 
@@ -1555,6 +1579,7 @@ class LettaAgent(BaseAgent):
                     new_letta_messages=new_in_context_messages,
                     llm_config=agent_state.llm_config,
                     force=True,
+                    run_id=run_id,
                 )
                 new_in_context_messages: list[Message] = []
                 log_event(f"agent.stream_no_tokens.retry_attempt.{attempt + 1}")
@@ -1568,10 +1593,17 @@ class LettaAgent(BaseAgent):
         new_letta_messages: list[Message],
         llm_config: LLMConfig,
         force: bool,
+        run_id: str | None = None,
+        step_id: str | None = None,
     ) -> list[Message]:
         if isinstance(e, ContextWindowExceededError):
             return await self._rebuild_context_window(
-                in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, llm_config=llm_config, force=force
+                in_context_messages=in_context_messages,
+                new_letta_messages=new_letta_messages,
+                llm_config=llm_config,
+                force=force,
+                run_id=run_id,
+                step_id=step_id,
             )
         else:
             raise llm_client.handle_llm_error(e)
@@ -1584,6 +1616,8 @@ class LettaAgent(BaseAgent):
         llm_config: LLMConfig,
         total_tokens: int | None = None,
         force: bool = False,
+        run_id: str | None = None,
+        step_id: str | None = None,
     ) -> list[Message]:
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
@@ -1597,6 +1631,8 @@ class LettaAgent(BaseAgent):
                 new_letta_messages=new_letta_messages,
                 force=True,
                 clear=True,
+                run_id=run_id,
+                step_id=step_id,
             )
         else:
             # NOTE (Sarah): Seems like this is doing nothing?
@@ -1606,6 +1642,8 @@ class LettaAgent(BaseAgent):
             new_in_context_messages, updated = await self.summarizer.summarize(
                 in_context_messages=in_context_messages,
                 new_letta_messages=new_letta_messages,
+                run_id=run_id,
+                step_id=step_id,
             )
         await self.agent_manager.update_message_ids_async(
             agent_id=self.agent_id,

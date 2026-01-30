@@ -42,22 +42,37 @@ class OpenAIProvider(Provider):
             raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
-        """Get the default max output tokens for OpenAI models."""
-        if model_name.startswith("gpt-5"):
-            return 16384
-        elif model_name.startswith("o1") or model_name.startswith("o3"):
-            return 100000
-        return 16384  # default for openai
+        """Get the default max output tokens for OpenAI models (sync fallback)."""
+        # Simple default for openai
+        return 16384
+
+    async def get_default_max_output_tokens_async(self, model_name: str) -> int:
+        """Get the default max output tokens for OpenAI models.
+
+        Uses litellm model specifications with a simple fallback.
+        """
+        from letta.model_specs.litellm_model_specs import get_max_output_tokens
+
+        # Try litellm specs
+        max_output = await get_max_output_tokens(model_name)
+        if max_output is not None:
+            return max_output
+
+        # Simple default for openai
+        return 16384
 
     async def _get_models_async(self) -> list[dict]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        # Some hardcoded support for OpenRouter (so that we only get models with tool calling support)...
-        # See: https://openrouter.ai/docs/requests
-        extra_params = {"supported_parameters": "tools"} if "openrouter.ai" in self.base_url else None
-
-        # Similar to Nebius
-        extra_params = {"verbose": True} if "nebius.com" in self.base_url else None
+        # Provider-specific extra parameters for model listing
+        extra_params = None
+        if "openrouter.ai" in self.base_url:
+            # OpenRouter: filter for models with tool calling support
+            # See: https://openrouter.ai/docs/requests
+            extra_params = {"supported_parameters": "tools"}
+        elif "nebius.com" in self.base_url:
+            # Nebius: use verbose mode for better model info
+            extra_params = {"verbose": True}
 
         # Decrypt API key before using
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
@@ -76,7 +91,7 @@ class OpenAIProvider(Provider):
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         data = await self._get_models_async()
-        return self._list_llm_models(data)
+        return await self._list_llm_models(data)
 
     async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
         """Return known OpenAI embedding models.
@@ -116,13 +131,13 @@ class OpenAIProvider(Provider):
             ),
         ]
 
-    def _list_llm_models(self, data: list[dict]) -> list[LLMConfig]:
+    async def _list_llm_models(self, data: list[dict]) -> list[LLMConfig]:
         """
         This handles filtering out LLM Models by provider that meet Letta's requirements.
         """
         configs = []
         for model in data:
-            check = self._do_model_checks_for_name_and_context_size(model)
+            check = await self._do_model_checks_for_name_and_context_size_async(model)
             if check is None:
                 continue
             model_name, context_window_size = check
@@ -174,7 +189,7 @@ class OpenAIProvider(Provider):
                 model_endpoint=self.base_url,
                 context_window=context_window_size,
                 handle=handle,
-                max_tokens=self.get_default_max_output_tokens(model_name),
+                max_tokens=await self.get_default_max_output_tokens_async(model_name),
                 provider_name=self.name,
                 provider_category=self.provider_category,
             )
@@ -188,12 +203,30 @@ class OpenAIProvider(Provider):
         return configs
 
     def _do_model_checks_for_name_and_context_size(self, model: dict, length_key: str = "context_length") -> tuple[str, int] | None:
+        """Sync version - uses sync get_model_context_window_size (for subclasses with hardcoded values)."""
         if "id" not in model:
             logger.warning("Model missing 'id' field for provider: %s and model: %s", self.provider_type, model)
             return None
 
         model_name = model["id"]
-        context_window_size = model.get(length_key) or self.get_model_context_window_size(model_name)
+        context_window_size = self.get_model_context_window_size(model_name)
+
+        if not context_window_size:
+            logger.info("No context window size found for model: %s", model_name)
+            return None
+
+        return model_name, context_window_size
+
+    async def _do_model_checks_for_name_and_context_size_async(
+        self, model: dict, length_key: str = "context_length"
+    ) -> tuple[str, int] | None:
+        """Async version - uses async get_model_context_window_size_async (for litellm lookup)."""
+        if "id" not in model:
+            logger.warning("Model missing 'id' field for provider: %s and model: %s", self.provider_type, model)
+            return None
+
+        model_name = model["id"]
+        context_window_size = await self.get_model_context_window_size_async(model_name)
 
         if not context_window_size:
             logger.info("No context window size found for model: %s", model_name)
@@ -211,19 +244,30 @@ class OpenAIProvider(Provider):
         return llm_config
 
     def get_model_context_window_size(self, model_name: str) -> int | None:
-        if model_name in LLM_MAX_CONTEXT_WINDOW:
-            return LLM_MAX_CONTEXT_WINDOW[model_name]
-        else:
-            logger.debug(
-                "Model %s on %s for provider %s not found in LLM_MAX_CONTEXT_WINDOW. Using default of {LLM_MAX_CONTEXT_WINDOW['DEFAULT']}",
-                model_name,
-                self.base_url,
-                self.__class__.__name__,
-            )
-            return LLM_MAX_CONTEXT_WINDOW["DEFAULT"]
+        """Get the context window size for a model (sync fallback)."""
+        return LLM_MAX_CONTEXT_WINDOW["DEFAULT"]
+
+    async def get_model_context_window_size_async(self, model_name: str) -> int | None:
+        """Get the context window size for a model.
+
+        Uses litellm model specifications which covers all OpenAI models.
+        """
+        from letta.model_specs.litellm_model_specs import get_context_window
+
+        context_window = await get_context_window(model_name)
+        if context_window is not None:
+            return context_window
+
+        # Simple fallback
+        logger.debug(
+            "Model %s not found in litellm specs. Using default of %s",
+            model_name,
+            LLM_MAX_CONTEXT_WINDOW["DEFAULT"],
+        )
+        return LLM_MAX_CONTEXT_WINDOW["DEFAULT"]
 
     def get_model_context_window(self, model_name: str) -> int | None:
         return self.get_model_context_window_size(model_name)
 
     async def get_model_context_window_async(self, model_name: str) -> int | None:
-        return self.get_model_context_window_size(model_name)
+        return await self.get_model_context_window_size_async(model_name)

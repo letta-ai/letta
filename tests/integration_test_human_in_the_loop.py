@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from typing import Any, List
@@ -1333,3 +1334,116 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     # Verify final agent state has the most recent stop reason
     final_agent = client.agents.retrieve(agent_id=agent.id)
     assert final_agent.last_stop_reason is not None
+
+
+def test_approve_with_cancellation(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    """
+    Test that when approval and cancellation happen simultaneously,
+    the stream returns stop_reason: cancelled and stream_was_cancelled is set.
+    """
+    import threading
+    import time
+
+    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
+
+    # Step 1: Send message that triggers approval request
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    tool_call_id = response.messages[-1].tool_call.tool_call_id
+
+    # Step 2: Start cancellation in background thread
+    def cancel_after_delay():
+        time.sleep(0.3)  # Wait for stream to start
+        client.agents.messages.cancel(agent_id=agent.id)
+
+    cancel_thread = threading.Thread(target=cancel_after_delay, daemon=True)
+    cancel_thread.start()
+
+    # Step 3: Start approval stream (will be cancelled during processing)
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+        ],
+        streaming=True,
+        stream_tokens=True,
+    )
+
+    # Step 4: Accumulate chunks
+    messages = accumulate_chunks(response)
+
+    # Step 5: Verify we got chunks AND a cancelled stop reason
+    assert len(messages) > 1, "Should receive at least some chunks before cancellation"
+
+    # Find stop_reason in messages
+    stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "cancelled", f"Expected stop_reason 'cancelled', got '{stop_reasons[0].stop_reason}'"
+
+    # Step 6: Verify run status is cancelled
+    runs = client.runs.list(agent_ids=[agent.id])
+    latest_run = runs.items[0]
+    assert latest_run.status == "cancelled", f"Expected run status 'cancelled', got '{latest_run.status}'"
+
+    # Wait for cancel thread to finish
+    cancel_thread.join(timeout=1.0)
+
+    logger.info(f"✅ Test passed: approval with cancellation handled correctly, received {len(messages)} chunks")
+
+    # Step 7: Verify that approval response message is persisted
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor).items
+    assert len(messages) > 0, "Should have persisted at least some messages before cancellation"
+    assert messages[-1].message_type == "tool_return_message", "Last message should be a tool return message"
+    last_message_cursor = messages[-1].id
+
+    # Step 8: Attempt retry with same response
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+        ],
+        streaming=True,
+        stream_tokens=True,
+    )
+
+    # Step 9: Accumulate chunks
+    messages = accumulate_chunks(response)
+
+    # Step 10: Verify we got chunks AND an end_turn stop reason
+    assert len(messages) > 1, "Should receive at least some chunks before cancellation"
+
+    # Find stop_reason in messages
+    stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "end_turn", f"Expected stop_reason 'end_turn', got '{stop_reasons[0].stop_reason}'"
+
+    # Step 11: Verify keep-alive message was sent
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor).items
+    assert len(messages) > 0, "Should have persisted new messages"
+    assert messages[0].message_type == "user_message", "First message should be a user message"
+    assert "keep-alive" in messages[0].content, f"Expected keep-alive message, got '{messages[0].content}'"

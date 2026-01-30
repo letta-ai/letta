@@ -49,6 +49,8 @@ class Summarizer:
         message_manager: Optional[MessageManager] = None,
         actor: Optional[User] = None,
         agent_id: Optional[str] = None,
+        run_id: Optional[str] = None,
+        step_id: Optional[str] = None,
     ):
         self.mode = mode
 
@@ -64,6 +66,8 @@ class Summarizer:
         self.message_manager = message_manager
         self.actor = actor
         self.agent_id = agent_id
+        self.run_id = run_id
+        self.step_id = step_id
 
     @trace_method
     async def summarize(
@@ -72,6 +76,8 @@ class Summarizer:
         new_letta_messages: List[Message],
         force: bool = False,
         clear: bool = False,
+        run_id: Optional[str] = None,
+        step_id: Optional[str] = None,
     ) -> Tuple[List[Message], bool]:
         """
         Summarizes or trims in_context_messages according to the chosen mode,
@@ -81,6 +87,8 @@ class Summarizer:
             in_context_messages: The existing messages in the conversation's context.
             new_letta_messages: The newly added Letta messages (just appended).
             force: Force summarize even if the criteria is not met
+            run_id: Optional run ID for telemetry (overrides instance default)
+            step_id: Optional step ID for telemetry (overrides instance default)
 
         Returns:
             (updated_messages, summary_message)
@@ -88,6 +96,9 @@ class Summarizer:
             summary_message: Optional summarization message that was created
                              (could be appended to the conversation if desired)
         """
+        effective_run_id = run_id if run_id is not None else self.run_id
+        effective_step_id = step_id if step_id is not None else self.step_id
+
         if self.mode == SummarizationMode.STATIC_MESSAGE_BUFFER:
             return self._static_buffer_summarization(
                 in_context_messages,
@@ -101,6 +112,8 @@ class Summarizer:
                 new_letta_messages,
                 force=force,
                 clear=clear,
+                run_id=effective_run_id,
+                step_id=effective_step_id,
             )
         else:
             # Fallback or future logic
@@ -124,6 +137,8 @@ class Summarizer:
         new_letta_messages: List[Message],
         force: bool = False,
         clear: bool = False,
+        run_id: Optional[str] = None,
+        step_id: Optional[str] = None,
     ) -> Tuple[List[Message], bool]:
         """Summarization as implemented in the original MemGPT loop, but using message count instead of token count.
         Evict a partial amount of messages, and replace message[1] with a recursive summary.
@@ -166,6 +181,8 @@ class Summarizer:
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
 
         # TODO if we do this via the "agent", then we can more easily allow toggling on the memory block version
+        from letta.settings import summarizer_settings
+
         summary_message_str = await simple_summary(
             messages=messages_to_summarize,
             llm_config=agent_state.llm_config,
@@ -173,6 +190,14 @@ class Summarizer:
             include_ack=True,
             agent_id=self.agent_id,
             agent_tags=agent_state.tags,
+            run_id=run_id if run_id is not None else self.run_id,
+            step_id=step_id if step_id is not None else self.step_id,
+            compaction_settings={
+                "mode": str(summarizer_settings.mode.value),
+                "message_buffer_limit": summarizer_settings.message_buffer_limit,
+                "message_buffer_min": summarizer_settings.message_buffer_min,
+                "partial_evict_summarizer_percentage": summarizer_settings.partial_evict_summarizer_percentage,
+            },
         )
 
         # TODO add counts back
@@ -432,6 +457,8 @@ async def simple_summary(
     agent_id: str | None = None,
     agent_tags: List[str] | None = None,
     run_id: str | None = None,
+    step_id: str | None = None,
+    compaction_settings: dict | None = None,
 ) -> str:
     """Generate a simple summary from a list of messages.
 
@@ -454,7 +481,11 @@ async def simple_summary(
         agent_id=agent_id,
         agent_tags=agent_tags,
         run_id=run_id,
+        step_id=step_id,
         call_type="summarization",
+        org_id=actor.organization_id if actor else None,
+        user_id=actor.id if actor else None,
+        compaction_settings=compaction_settings,
     )
 
     # Prepare the messages payload to send to the LLM

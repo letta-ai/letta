@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.16.3"
+version = "0.16.4"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
@@ -75,6 +75,8 @@ dependencies = [
     "fastmcp>=2.12.5",
     "ddtrace>=4.2.1",
     "clickhouse-connect>=0.10.0",
+    "aiofiles>=24.1.0",
+    "async-lru>=2.0.5",
 ]
 
 [project.scripts]

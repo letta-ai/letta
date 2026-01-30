@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
+from letta.validators import AgentId, BlockId
 
 
 class ManagerType(str, Enum):
@@ -93,43 +94,43 @@ class RoundRobinManagerUpdate(ManagerConfig):
 
 class SupervisorManager(ManagerConfig):
     manager_type: Literal[ManagerType.supervisor] = Field(ManagerType.supervisor, description="")
-    manager_agent_id: str = Field(..., description="")
+    manager_agent_id: AgentId = Field(..., description="")
 
 
 class SupervisorManagerUpdate(ManagerConfig):
     manager_type: Literal[ManagerType.supervisor] = Field(ManagerType.supervisor, description="")
-    manager_agent_id: Optional[str] = Field(..., description="")
+    manager_agent_id: Optional[AgentId] = Field(..., description="")
 
 
 class DynamicManager(ManagerConfig):
     manager_type: Literal[ManagerType.dynamic] = Field(ManagerType.dynamic, description="")
-    manager_agent_id: str = Field(..., description="")
+    manager_agent_id: AgentId = Field(..., description="")
     termination_token: Optional[str] = Field("DONE!", description="")
     max_turns: Optional[int] = Field(None, description="")
 
 
 class DynamicManagerUpdate(ManagerConfig):
     manager_type: Literal[ManagerType.dynamic] = Field(ManagerType.dynamic, description="")
-    manager_agent_id: Optional[str] = Field(None, description="")
+    manager_agent_id: Optional[AgentId] = Field(None, description="")
     termination_token: Optional[str] = Field(None, description="")
     max_turns: Optional[int] = Field(None, description="")
 
 
 class SleeptimeManager(ManagerConfig):
     manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
-    manager_agent_id: str = Field(..., description="")
+    manager_agent_id: AgentId = Field(..., description="")
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
 
 
 class SleeptimeManagerUpdate(ManagerConfig):
     manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
-    manager_agent_id: Optional[str] = Field(None, description="")
+    manager_agent_id: Optional[AgentId] = Field(None, description="")
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
 
 
 class VoiceSleeptimeManager(ManagerConfig):
     manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
-    manager_agent_id: str = Field(..., description="")
+    manager_agent_id: AgentId = Field(..., description="")
     max_message_buffer_length: Optional[int] = Field(
         None,
         description="The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.",
@@ -142,7 +143,7 @@ class VoiceSleeptimeManager(ManagerConfig):
 
 class VoiceSleeptimeManagerUpdate(ManagerConfig):
     manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
-    manager_agent_id: Optional[str] = Field(None, description="")
+    manager_agent_id: Optional[AgentId] = Field(None, description="")
     max_message_buffer_length: Optional[int] = Field(
         None,
         description="The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.",
@@ -170,11 +171,11 @@ ManagerConfigUpdateUnion = Annotated[
 
 
 class GroupCreate(BaseModel):
-    agent_ids: List[str] = Field(..., description="")
+    agent_ids: List[AgentId] = Field(..., description="")
     description: str = Field(..., description="")
     manager_config: ManagerConfigUnion = Field(RoundRobinManager(), description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
-    shared_block_ids: List[str] = Field([], description="", deprecated=True)
+    shared_block_ids: List[BlockId] = Field([], description="", deprecated=True)
     hidden: Optional[bool] = Field(
         None,
         description="If set to True, the group will be hidden.",
@@ -190,8 +191,8 @@ class InternalTemplateGroupCreate(GroupCreate):
 
 
 class GroupUpdate(BaseModel):
-    agent_ids: Optional[List[str]] = Field(None, description="")
+    agent_ids: Optional[List[AgentId]] = Field(None, description="")
     description: Optional[str] = Field(None, description="")
     manager_config: Optional[ManagerConfigUpdateUnion] = Field(None, description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
-    shared_block_ids: Optional[List[str]] = Field(None, description="", deprecated=True)
+    shared_block_ids: Optional[List[BlockId]] = Field(None, description="", deprecated=True)

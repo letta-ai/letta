@@ -98,9 +98,35 @@ class ProviderManager:
                     deleted_provider.access_key_enc = access_key_secret.get_encrypted()
 
                 await deleted_provider.update_async(session, actor=actor)
+
+                # Also restore any soft-deleted models associated with this provider
+                # This is needed because the unique constraint on provider_models doesn't include is_deleted,
+                # so soft-deleted models would block creation of new models with the same handle
+                from sqlalchemy import update
+
+                restore_models_stmt = (
+                    update(ProviderModelORM)
+                    .where(
+                        and_(
+                            ProviderModelORM.provider_id == deleted_provider.id,
+                            ProviderModelORM.is_deleted == True,
+                        )
+                    )
+                    .values(is_deleted=False)
+                )
+                result = await session.execute(restore_models_stmt)
+                if result.rowcount > 0:
+                    logger.info(f"Restored {result.rowcount} soft-deleted model(s) for provider '{request.name}'")
+
+                # Commit the provider and model restoration before syncing
+                # This is needed because _sync_default_models_for_provider opens a new session
+                # that can't see uncommitted changes from this session
+                await session.commit()
+
                 provider_pydantic = deleted_provider.to_pydantic()
 
                 # For BYOK providers, automatically sync available models
+                # This will add any new models and remove any that are no longer available
                 if is_byok:
                     await self._sync_default_models_for_provider(provider_pydantic, actor)
 
@@ -118,6 +144,14 @@ class ProviderManager:
 
             # if provider.name == provider.provider_type.value:
             #     raise ValueError("Provider name must be unique and different from provider type")
+
+            # Fill in schema-default base_url if not provided
+            # This ensures providers like ZAI get their default endpoint persisted to DB
+            # rather than relying on cast_to_subtype() at read time
+            if provider.base_url is None:
+                typed_provider = provider.cast_to_subtype()
+                if typed_provider.base_url is not None:
+                    provider.base_url = typed_provider.base_url
 
             # Only assign organization id for non-base providers
             # Base providers should be globally accessible (org_id = None)
@@ -200,6 +234,21 @@ class ProviderManager:
             # Commit the updated provider
             await existing_provider.update_async(session, actor=actor)
             return existing_provider.to_pydantic()
+
+    @enforce_types
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    async def update_provider_last_synced_async(self, provider_id: str, actor: Optional[PydanticUser] = None) -> None:
+        """Update the last_synced timestamp for a provider.
+
+        Note: actor is optional to support system-level operations (e.g., during server initialization
+        for global providers). When actor is provided, org-scoping is enforced.
+        """
+        from datetime import datetime, timezone
+
+        async with db_registry.async_session() as session:
+            provider = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
+            provider.last_synced = datetime.now(timezone.utc)
+            await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
@@ -476,81 +525,19 @@ class ProviderManager:
 
     async def _sync_default_models_for_provider(self, provider: PydanticProvider, actor: PydanticUser) -> None:
         """Sync models for a newly created BYOK provider by querying the provider's API."""
-        from letta.log import get_logger
-
-        logger = get_logger(__name__)
-
         try:
-            # Get the provider class and create an instance
-            from letta.schemas.enums import ProviderType
-            from letta.schemas.providers.anthropic import AnthropicProvider
-            from letta.schemas.providers.azure import AzureProvider
-            from letta.schemas.providers.bedrock import BedrockProvider
-            from letta.schemas.providers.google_gemini import GoogleAIProvider
-            from letta.schemas.providers.groq import GroqProvider
-            from letta.schemas.providers.ollama import OllamaProvider
-            from letta.schemas.providers.openai import OpenAIProvider
-            from letta.schemas.providers.zai import ZAIProvider
+            # Use cast_to_subtype() which properly handles all provider types and preserves api_key_enc
+            typed_provider = provider.cast_to_subtype()
+            llm_models = await typed_provider.list_llm_models_async()
+            embedding_models = await typed_provider.list_embedding_models_async()
 
-            # ChatGPT OAuth requires cast_to_subtype to preserve api_key_enc and id
-            # (needed for OAuth token refresh and database persistence)
-            if provider.provider_type == ProviderType.chatgpt_oauth:
-                provider_instance = provider.cast_to_subtype()
-            else:
-                provider_type_to_class = {
-                    "openai": OpenAIProvider,
-                    "anthropic": AnthropicProvider,
-                    "groq": GroqProvider,
-                    "google": GoogleAIProvider,
-                    "ollama": OllamaProvider,
-                    "bedrock": BedrockProvider,
-                    "azure": AzureProvider,
-                    "zai": ZAIProvider,
-                }
-
-                provider_type = provider.provider_type.value if hasattr(provider.provider_type, "value") else str(provider.provider_type)
-                provider_class = provider_type_to_class.get(provider_type)
-
-                if not provider_class:
-                    logger.warning(f"No provider class found for type '{provider_type}'")
-                    return
-
-                # Create provider instance with necessary parameters
-                api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
-                access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
-                kwargs = {
-                    "name": provider.name,
-                    "api_key": api_key,
-                    "provider_category": provider.provider_category,
-                }
-                if provider.base_url:
-                    kwargs["base_url"] = provider.base_url
-                if access_key:
-                    kwargs["access_key"] = access_key
-                if provider.region:
-                    kwargs["region"] = provider.region
-                if provider.api_version:
-                    kwargs["api_version"] = provider.api_version
-
-                provider_instance = provider_class(**kwargs)
-
-            # Query the provider's API for available models
-            llm_models = await provider_instance.list_llm_models_async()
-            embedding_models = await provider_instance.list_embedding_models_async()
-
-            # Update handles and provider_name for BYOK providers
-            for model in llm_models:
-                model.provider_name = provider.name
-                model.handle = f"{provider.name}/{model.model}"
-                model.provider_category = provider.provider_category
-
-            for model in embedding_models:
-                model.handle = f"{provider.name}/{model.embedding_model}"
-
-            # Use existing sync_provider_models_async to save to database
             await self.sync_provider_models_async(
-                provider=provider, llm_models=llm_models, embedding_models=embedding_models, organization_id=actor.organization_id
+                provider=provider,
+                llm_models=llm_models,
+                embedding_models=embedding_models,
+                organization_id=actor.organization_id,
             )
+            await self.update_provider_last_synced_async(provider.id, actor=actor)
 
         except Exception as e:
             logger.error(f"Failed to sync models for provider '{provider.name}': {e}")
@@ -713,7 +700,7 @@ class ProviderManager:
                         enabled=True,
                         model_endpoint_type=llm_config.model_endpoint_type,
                         max_context_window=llm_config.context_window,
-                        supports_token_streaming=llm_config.model_endpoint_type in ["openai", "anthropic", "deepseek"],
+                        supports_token_streaming=llm_config.model_endpoint_type in ["openai", "anthropic", "deepseek", "openrouter"],
                         supports_tool_calling=True,  # Assume true for LLMs for now
                     )
 
@@ -737,14 +724,27 @@ class ProviderManager:
                         # Roll back the session to clear the failed transaction
                         await session.rollback()
                 else:
-                    # Check if max_context_window needs to be updated
+                    # Check if max_context_window or model_endpoint_type needs to be updated
                     existing_model = existing[0]
+                    needs_update = False
+
                     if existing_model.max_context_window != llm_config.context_window:
                         logger.info(
                             f"    Updating LLM model {llm_config.handle} max_context_window: "
                             f"{existing_model.max_context_window} -> {llm_config.context_window}"
                         )
                         existing_model.max_context_window = llm_config.context_window
+                        needs_update = True
+
+                    if existing_model.model_endpoint_type != llm_config.model_endpoint_type:
+                        logger.info(
+                            f"    Updating LLM model {llm_config.handle} model_endpoint_type: "
+                            f"{existing_model.model_endpoint_type} -> {llm_config.model_endpoint_type}"
+                        )
+                        existing_model.model_endpoint_type = llm_config.model_endpoint_type
+                        needs_update = True
+
+                    if needs_update:
                         await existing_model.update_async(session)
                     else:
                         logger.info(f"    LLM model {llm_config.handle} already exists (ID: {existing[0].id}), skipping")
@@ -801,7 +801,17 @@ class ProviderManager:
                         # Roll back the session to clear the failed transaction
                         await session.rollback()
                 else:
-                    logger.info(f"    Embedding model {embedding_config.handle} already exists (ID: {existing[0].id}), skipping")
+                    # Check if model_endpoint_type needs to be updated
+                    existing_model = existing[0]
+                    if existing_model.model_endpoint_type != embedding_config.embedding_endpoint_type:
+                        logger.info(
+                            f"    Updating embedding model {embedding_config.handle} model_endpoint_type: "
+                            f"{existing_model.model_endpoint_type} -> {embedding_config.embedding_endpoint_type}"
+                        )
+                        existing_model.model_endpoint_type = embedding_config.embedding_endpoint_type
+                        await existing_model.update_async(session)
+                    else:
+                        logger.info(f"    Embedding model {embedding_config.handle} already exists (ID: {existing[0].id}), skipping")
 
     @enforce_types
     @trace_method
@@ -972,8 +982,8 @@ class ProviderManager:
         # Determine the model endpoint - use provider's base_url if set,
         # otherwise use provider-specific defaults
 
-        if provider.base_url:
-            model_endpoint = provider.base_url
+        if typed_provider.base_url:
+            model_endpoint = typed_provider.base_url
         elif provider.provider_type == ProviderType.chatgpt_oauth:
             # ChatGPT OAuth uses the ChatGPT backend API, not a generic endpoint pattern
             from letta.schemas.providers.chatgpt_oauth import CHATGPT_CODEX_ENDPOINT

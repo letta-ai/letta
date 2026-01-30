@@ -42,7 +42,9 @@ def handle_db_timeout(func):
                 logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
                 raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
             except QueryCanceledError as e:
-                logger.error(f"Query canceled (statement timeout) while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                logger.error(
+                    f"Query canceled (statement timeout) while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}"
+                )
                 raise DatabaseTimeoutError(message=f"Query canceled due to statement timeout in {func.__name__}.", original_exception=e)
 
         return wrapper
@@ -56,7 +58,9 @@ def handle_db_timeout(func):
                 logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
                 raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
             except QueryCanceledError as e:
-                logger.error(f"Query canceled (statement timeout) while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
+                logger.error(
+                    f"Query canceled (statement timeout) while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}"
+                )
                 raise DatabaseTimeoutError(message=f"Query canceled due to statement timeout in {func.__name__}.", original_exception=e)
 
         return async_wrapper
@@ -207,6 +211,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         """
         Constructs the query for listing records.
         """
+        # Security check: if the model has organization_id column, actor should be provided
+        if actor is None and hasattr(cls, "organization_id"):
+            logger.warning(f"SECURITY: Listing org-scoped model {cls.__name__} without actor. This bypasses organization filtering.")
+
         query = select(cls)
 
         if join_model and join_conditions:
@@ -446,6 +454,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     ):
         logger.debug(f"Reading {cls.__name__} with ID(s): {identifiers} with actor={actor}")
 
+        # Security check: if the model has organization_id column, actor should be provided
+        # to ensure proper org-scoping. Log a warning if actor is None.
+        if actor is None and hasattr(cls, "organization_id"):
+            logger.warning(
+                f"SECURITY: Reading org-scoped model {cls.__name__} without actor. "
+                f"IDs: {identifiers}. This bypasses organization filtering."
+            )
+
         # Start the query
         query = select(cls)
         # Collect query conditions for better error reporting
@@ -681,6 +697,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         **kwargs,
     ):
         logger.debug(f"Calculating size for {cls.__name__} with filters {kwargs}")
+
+        # Security check: if the model has organization_id column, actor should be provided
+        if actor is None and hasattr(cls, "organization_id"):
+            logger.warning(
+                f"SECURITY: Calculating size for org-scoped model {cls.__name__} without actor. This bypasses organization filtering."
+            )
         query = select(func.count(1)).select_from(cls)
 
         if actor:

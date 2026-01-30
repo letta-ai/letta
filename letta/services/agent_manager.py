@@ -357,7 +357,11 @@ class AgentManager:
             )
             agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(
                 agent_create.llm_config,
-                agent_create.reasoning if agent_create.reasoning is not None else default_reasoning,
+                agent_create.reasoning
+                if agent_create.reasoning is not None
+                else (
+                    agent_create.llm_config.enable_reasoner if agent_create.llm_config.enable_reasoner is not None else default_reasoning
+                ),
                 agent_create.agent_type,
             )
         else:
@@ -2042,10 +2046,12 @@ class AgentManager:
                     if other_agent_id != agent_id:
                         try:
                             other_agent = await AgentModel.read_async(db_session=session, identifier=other_agent_id, actor=actor)
-                            if other_agent.agent_type == AgentType.sleeptime_agent and block not in other_agent.core_memory:
-                                other_agent.core_memory.append(block)
-                                # await other_agent.update_async(session, actor=actor, no_commit=True)
-                                await other_agent.update_async(session, actor=actor)
+                            if other_agent.agent_type == AgentType.sleeptime_agent:
+                                # Check if block with same label already exists
+                                existing_block = next((b for b in other_agent.core_memory if b.label == block.label), None)
+                                if not existing_block:
+                                    other_agent.core_memory.append(block)
+                                    await other_agent.update_async(session, actor=actor)
                         except NoResultFound:
                             # Agent might not exist anymore, skip
                             continue
@@ -2321,15 +2327,6 @@ class AgentManager:
                 # Use Turbopuffer for vector search if archive is configured for TPUF
                 if archive.vector_db_provider == VectorDBProvider.TPUF:
                     from letta.helpers.tpuf_client import TurbopufferClient
-                    from letta.llm_api.llm_client import LLMClient
-
-                    # Generate embedding for query
-                    embedding_client = LLMClient.create(
-                        provider_type=embedding_config.embedding_endpoint_type,
-                        actor=actor,
-                    )
-                    embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
-                    query_embedding = embeddings[0]
 
                     # Query Turbopuffer - use hybrid search when text is available
                     tpuf_client = TurbopufferClient()
@@ -2488,13 +2485,15 @@ class AgentManager:
 
         # Get results using existing passage query method
         limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
+        # Only use embedding-based search if embedding config is available
+        use_embedding_search = agent_state.embedding_config is not None
         passages_with_metadata = await self.query_agent_passages_async(
             actor=actor,
             agent_id=agent_id,
             query_text=query,
             limit=limit,
             embedding_config=agent_state.embedding_config,
-            embed_query=True,
+            embed_query=use_embedding_search,
             tags=tags,
             tag_match_mode=tag_mode,
             start_date=start_date,
@@ -3053,10 +3052,19 @@ class AgentManager:
             )
 
             # Apply cursor-based pagination
-            if before:
-                query = query.where(BlockModel.id < before)
-            if after:
-                query = query.where(BlockModel.id > after)
+            # Note: cursor direction must account for sort order
+            # - ascending order: "after X" means id > X, "before X" means id < X
+            # - descending order: "after X" means id < X, "before X" means id > X
+            if ascending:
+                if before:
+                    query = query.where(BlockModel.id < before)
+                if after:
+                    query = query.where(BlockModel.id > after)
+            else:
+                if before:
+                    query = query.where(BlockModel.id > before)
+                if after:
+                    query = query.where(BlockModel.id < after)
 
             # Apply sorting - use id instead of created_at for core memory blocks
             if ascending:

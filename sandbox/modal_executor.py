@@ -122,6 +122,19 @@ class ModalFunctionExecutor:
             if inject_agent_state:
                 kwargs["agent_state"] = agent_state
 
+            try:
+                from letta.functions.ast_parsers import coerce_dict_args_by_annotations
+
+                annotations = getattr(func, "__annotations__", {})
+                kwargs = coerce_dict_args_by_annotations(
+                    kwargs,
+                    annotations,
+                    allow_unsafe_eval=True,
+                    extra_globals=func.__globals__,
+                )
+            except Exception:
+                pass
+
             if is_async:
                 result = asyncio.run(func(**kwargs))
             else:

@@ -50,6 +50,7 @@ from letta.schemas.letta_message_content import (
     ImageContent,
     ImageSourceType,
     LettaMessageContentUnion,
+    LettaToolReturnContentUnion,
     OmittedReasoningContent,
     ReasoningContent,
     RedactedReasoningContent,
@@ -69,6 +70,34 @@ def truncate_tool_return(content: Optional[str], limit: Optional[int]) -> Option
     if len(content) <= limit:
         return content
     return content[:limit] + f"... [truncated {len(content) - limit} chars]"
+
+
+def _get_text_from_part(part: Union[TextContent, ImageContent, dict]) -> Optional[str]:
+    """Extract text from a content part, returning None for images."""
+    if isinstance(part, TextContent):
+        return part.text
+    elif isinstance(part, dict) and part.get("type") == "text":
+        return part.get("text", "")
+    return None
+
+
+def tool_return_to_text(func_response: Optional[Union[str, List]]) -> Optional[str]:
+    """Convert tool return content to text, replacing images with placeholders."""
+    if func_response is None:
+        return None
+    if isinstance(func_response, str):
+        return func_response
+
+    text_parts = [text for part in func_response if (text := _get_text_from_part(part))]
+    image_count = sum(
+        1 for part in func_response if isinstance(part, ImageContent) or (isinstance(part, dict) and part.get("type") == "image")
+    )
+
+    result = "\n".join(text_parts)
+    if image_count > 0:
+        placeholder = "[Image omitted]" if image_count == 1 else f"[{image_count} images omitted]"
+        result = (result + " " + placeholder) if result else placeholder
+    return result if result else None
 
 
 def add_inner_thoughts_to_tool_call(
@@ -366,6 +395,7 @@ class Message(BaseMessage):
                             message_type=lm.message_type,
                             content=lm.content,
                             agent_id=message.agent_id,
+                            conversation_id=message.conversation_id,
                             created_at=message.created_at,
                         )
                     )
@@ -376,6 +406,7 @@ class Message(BaseMessage):
                             message_type=lm.message_type,
                             content=lm.content,
                             agent_id=message.agent_id,
+                            conversation_id=message.conversation_id,
                             created_at=message.created_at,
                         )
                     )
@@ -386,6 +417,7 @@ class Message(BaseMessage):
                             message_type=lm.message_type,
                             reasoning=lm.reasoning,
                             agent_id=message.agent_id,
+                            conversation_id=message.conversation_id,
                             created_at=message.created_at,
                         )
                     )
@@ -396,6 +428,7 @@ class Message(BaseMessage):
                             message_type=lm.message_type,
                             content=lm.content,
                             agent_id=message.agent_id,
+                            conversation_id=message.conversation_id,
                             created_at=message.created_at,
                         )
                     )
@@ -786,8 +819,14 @@ class Message(BaseMessage):
         for tool_return in self.tool_returns:
             parsed_data = self._parse_tool_response(tool_return.func_response)
 
+            # Preserve multi-modal content (ToolReturn supports Union[str, List])
+            if isinstance(tool_return.func_response, list):
+                tool_return_value = tool_return.func_response
+            else:
+                tool_return_value = parsed_data["message"]
+
             tool_return_obj = LettaToolReturn(
-                tool_return=parsed_data["message"],
+                tool_return=tool_return_value,
                 status=parsed_data["status"],
                 tool_call_id=tool_return.tool_call_id,
                 stdout=tool_return.stdout,
@@ -801,11 +840,18 @@ class Message(BaseMessage):
 
         first_tool_return = all_tool_returns[0]
 
+        # Convert deprecated string-only field to text (preserve images in tool_returns list)
+        deprecated_tool_return_text = (
+            tool_return_to_text(first_tool_return.tool_return)
+            if isinstance(first_tool_return.tool_return, list)
+            else first_tool_return.tool_return
+        )
+
         return ToolReturnMessage(
             id=self.id,
             date=self.created_at,
             # deprecated top-level fields populated from first tool return
-            tool_return=first_tool_return.tool_return,
+            tool_return=deprecated_tool_return_text,
             status=first_tool_return.status,
             tool_call_id=first_tool_return.tool_call_id,
             stdout=first_tool_return.stdout,
@@ -840,11 +886,11 @@ class Message(BaseMessage):
         """Check if message has exactly one text content item."""
         return self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent)
 
-    def _parse_tool_response(self, response_text: str) -> dict:
+    def _parse_tool_response(self, response_text: Union[str, List]) -> dict:
         """Parse tool response JSON and extract message and status.
 
         Args:
-            response_text: Raw JSON response text
+            response_text: Raw JSON response text OR list of content parts (for multi-modal)
 
         Returns:
             Dictionary with 'message' and 'status' keys
@@ -852,6 +898,14 @@ class Message(BaseMessage):
         Raises:
             ValueError: If JSON parsing fails
         """
+        # Handle multi-modal content (list with text/images)
+        if isinstance(response_text, list):
+            text_representation = tool_return_to_text(response_text) or "[Multi-modal content]"
+            return {
+                "message": text_representation,
+                "status": "success",
+            }
+
         try:
             function_return = parse_json(response_text)
             return {
@@ -1301,7 +1355,9 @@ class Message(BaseMessage):
                 tool_return = self.tool_returns[0]
                 if not tool_return.tool_call_id:
                     raise TypeError("OpenAI API requires tool_call_id to be set.")
-                func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                # Convert to text first (replaces images with placeholders), then truncate
+                func_response_text = tool_return_to_text(tool_return.func_response)
+                func_response = truncate_tool_return(func_response_text, tool_return_truncation_chars)
                 openai_message = {
                     "content": func_response,
                     "role": self.role,
@@ -1356,8 +1412,9 @@ class Message(BaseMessage):
                 for tr in m.tool_returns:
                     if not tr.tool_call_id:
                         raise TypeError("ToolReturn came back without a tool_call_id.")
-                    # Ensure explicit tool_returns are truncated for Chat Completions
-                    func_response = truncate_tool_return(tr.func_response, tool_return_truncation_chars)
+                    # Convert multi-modal to text (images → placeholders), then truncate
+                    func_response_text = tool_return_to_text(tr.func_response)
+                    func_response = truncate_tool_return(func_response_text, tool_return_truncation_chars)
                     result.append(
                         {
                             "content": func_response,
@@ -1418,7 +1475,10 @@ class Message(BaseMessage):
             message_dicts.append(user_dict)
 
         elif self.role == "assistant" or self.role == "approval":
-            assert self.tool_calls is not None or (self.content is not None and len(self.content) > 0)
+            # Validate that message has content OpenAI Responses API can process
+            if self.tool_calls is None and (self.content is None or len(self.content) == 0):
+                # Skip this message (similar to Anthropic handling at line 1308)
+                return message_dicts
 
             # A few things may be in here, firstly reasoning content, secondly assistant messages, thirdly tool calls
             # TODO check if OpenAI Responses is capable of R->A->T like Anthropic?
@@ -1456,17 +1516,17 @@ class Message(BaseMessage):
                     )
 
         elif self.role == "tool":
-            # Handle tool returns - similar pattern to Anthropic
+            # Handle tool returns - supports images via content arrays
             if self.tool_returns:
                 for tool_return in self.tool_returns:
                     if not tool_return.tool_call_id:
                         raise TypeError("OpenAI Responses API requires tool_call_id to be set.")
-                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                    output = self._tool_return_to_responses_output(tool_return.func_response, tool_return_truncation_chars)
                     message_dicts.append(
                         {
                             "type": "function_call_output",
                             "call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
-                            "output": func_response,
+                            "output": output,
                         }
                     )
             else:
@@ -1535,6 +1595,50 @@ class Message(BaseMessage):
         return None
 
     @staticmethod
+    def _image_dict_to_data_url(part: dict) -> Optional[str]:
+        """Convert image dict to data URL."""
+        source = part.get("source", {})
+        if source.get("type") == "base64" and source.get("data"):
+            media_type = source.get("media_type", "image/png")
+            return f"data:{media_type};base64,{source['data']}"
+        elif source.get("type") == "url":
+            return source.get("url")
+        return None
+
+    @staticmethod
+    def _tool_return_to_responses_output(
+        func_response: Optional[Union[str, List]],
+        tool_return_truncation_chars: Optional[int] = None,
+    ) -> Union[str, List[dict]]:
+        """Convert tool return to OpenAI Responses API format."""
+        if func_response is None:
+            return ""
+        if isinstance(func_response, str):
+            return truncate_tool_return(func_response, tool_return_truncation_chars) or ""
+
+        output_parts: List[dict] = []
+        for part in func_response:
+            if isinstance(part, TextContent):
+                text = truncate_tool_return(part.text, tool_return_truncation_chars) or ""
+                output_parts.append({"type": "input_text", "text": text})
+            elif isinstance(part, ImageContent):
+                image_url = Message._image_source_to_data_url(part)
+                if image_url:
+                    detail = getattr(part.source, "detail", None) or "auto"
+                    output_parts.append({"type": "input_image", "image_url": image_url, "detail": detail})
+            elif isinstance(part, dict):
+                if part.get("type") == "text":
+                    text = truncate_tool_return(part.get("text", ""), tool_return_truncation_chars) or ""
+                    output_parts.append({"type": "input_text", "text": text})
+                elif part.get("type") == "image":
+                    image_url = Message._image_dict_to_data_url(part)
+                    if image_url:
+                        detail = part.get("source", {}).get("detail", "auto")
+                        output_parts.append({"type": "input_image", "image_url": image_url, "detail": detail})
+
+        return output_parts if output_parts else ""
+
+    @staticmethod
     def to_openai_responses_dicts_from_list(
         messages: List[Message],
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
@@ -1549,6 +1653,68 @@ class Message(BaseMessage):
                 )
             )
         return result
+
+    @staticmethod
+    def _get_base64_image_data(part: Union[ImageContent, dict]) -> Optional[tuple[str, str]]:
+        """Extract base64 data and media type from ImageContent or dict."""
+        if isinstance(part, ImageContent):
+            source = part.source
+            if source.type == ImageSourceType.base64:
+                return source.data, source.media_type
+            elif source.type == ImageSourceType.letta and getattr(source, "data", None):
+                return source.data, getattr(source, "media_type", None) or "image/png"
+        elif isinstance(part, dict) and part.get("type") == "image":
+            source = part.get("source", {})
+            if source.get("type") == "base64" and source.get("data"):
+                return source["data"], source.get("media_type", "image/png")
+        return None
+
+    @staticmethod
+    def _tool_return_to_google_parts(
+        func_response: Optional[Union[str, List]],
+        tool_return_truncation_chars: Optional[int] = None,
+    ) -> tuple[str, List[dict]]:
+        """Extract text and image parts for Google API format."""
+        if isinstance(func_response, str):
+            return truncate_tool_return(func_response, tool_return_truncation_chars) or "", []
+
+        text_parts = []
+        image_parts = []
+        for part in func_response:
+            if text := _get_text_from_part(part):
+                text_parts.append(text)
+            elif image_data := Message._get_base64_image_data(part):
+                data, media_type = image_data
+                image_parts.append({"inlineData": {"data": data, "mimeType": media_type}})
+
+        text = truncate_tool_return("\n".join(text_parts), tool_return_truncation_chars) or ""
+        if image_parts:
+            suffix = f"[{len(image_parts)} image(s) attached]"
+            text = f"{text}\n{suffix}" if text else suffix
+
+        return text, image_parts
+
+    @staticmethod
+    def _tool_return_to_anthropic_content(
+        func_response: Optional[Union[str, List]],
+        tool_return_truncation_chars: Optional[int] = None,
+    ) -> Union[str, List[dict]]:
+        """Convert tool return to Anthropic tool_result content format."""
+        if func_response is None:
+            return ""
+        if isinstance(func_response, str):
+            return truncate_tool_return(func_response, tool_return_truncation_chars) or ""
+
+        content: List[dict] = []
+        for part in func_response:
+            if text := _get_text_from_part(part):
+                text = truncate_tool_return(text, tool_return_truncation_chars) or ""
+                content.append({"type": "text", "text": text})
+            elif image_data := Message._get_base64_image_data(part):
+                data, media_type = image_data
+                content.append({"type": "image", "source": {"type": "base64", "data": data, "media_type": media_type}})
+
+        return content if content else ""
 
     def to_anthropic_dict(
         self,
@@ -1628,8 +1794,11 @@ class Message(BaseMessage):
                 }
 
         elif self.role == "assistant" or self.role == "approval":
-            # assert self.tool_calls is not None or text_content is not None, vars(self)
-            assert self.tool_calls is not None or len(self.content) > 0
+            # Validate that message has content Anthropic API can process
+            if self.tool_calls is None and (self.content is None or len(self.content) == 0):
+                # Skip this message (consistent with OpenAI dict handling)
+                return None
+
             anthropic_message = {
                 "role": "assistant",
             }
@@ -1759,12 +1928,13 @@ class Message(BaseMessage):
                             f"Message ID: {self.id}, Tool: {self.name or 'unknown'}, "
                             f"Tool return index: {idx}/{len(self.tool_returns)}"
                         )
-                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                    # Convert to Anthropic format (supports images)
+                    tool_result_content = self._tool_return_to_anthropic_content(tool_return.func_response, tool_return_truncation_chars)
                     content.append(
                         {
                             "type": "tool_result",
                             "tool_use_id": resolved_tool_call_id,
-                            "content": func_response,
+                            "content": tool_result_content,
                         }
                     )
             if content:
@@ -1884,7 +2054,16 @@ class Message(BaseMessage):
             }
 
         elif self.role == "assistant" or self.role == "approval":
-            assert self.tool_calls is not None or text_content is not None or len(self.content) > 1
+            # Validate that message has content Google API can process
+            if self.tool_calls is None and text_content is None and len(self.content) <= 1:
+                # Message has no tool calls, no extractable text, and not multi-part
+                logger.warning(
+                    f"Assistant/approval message {self.id} has no content Google API can convert: "
+                    f"tool_calls={self.tool_calls}, text_content={text_content}, content={self.content}"
+                )
+                # Return None to skip this message (similar to approval messages without tool_calls at line 1998)
+                return None
+
             google_ai_message = {
                 "role": "model",  # NOTE: different
             }
@@ -2003,7 +2182,7 @@ class Message(BaseMessage):
         elif self.role == "tool":
             # NOTE: Significantly different tool calling format, more similar to function calling format
 
-            # Handle tool returns - similar pattern to Anthropic
+            # Handle tool returns - Google supports images as sibling inlineData parts
             if self.tool_returns:
                 parts = []
                 for tool_return in self.tool_returns:
@@ -2013,26 +2192,24 @@ class Message(BaseMessage):
                     # Use the function name if available, otherwise use tool_call_id
                     function_name = self.name if self.name else tool_return.tool_call_id
 
-                    # Truncate the tool return if needed
-                    func_response = truncate_tool_return(tool_return.func_response, tool_return_truncation_chars)
+                    text_content, image_parts = Message._tool_return_to_google_parts(
+                        tool_return.func_response, tool_return_truncation_chars
+                    )
 
-                    # NOTE: Google AI API wants the function response as JSON only, no string
                     try:
-                        function_response = parse_json(func_response)
+                        function_response = parse_json(text_content)
                     except:
-                        function_response = {"function_response": func_response}
+                        function_response = {"function_response": text_content}
 
                     parts.append(
                         {
                             "functionResponse": {
                                 "name": function_name,
-                                "response": {
-                                    "name": function_name,  # NOTE: name twice... why?
-                                    "content": function_response,
-                                },
+                                "response": {"name": function_name, "content": function_response},
                             }
                         }
                     )
+                    parts.extend(image_parts)
 
                 google_ai_message = {
                     "role": "function",
@@ -2325,7 +2502,9 @@ class ToolReturn(BaseModel):
     status: Literal["success", "error"] = Field(..., description="The status of the tool call")
     stdout: Optional[List[str]] = Field(default=None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
     stderr: Optional[List[str]] = Field(default=None, description="Captured stderr from the tool invocation")
-    func_response: Optional[str] = Field(None, description="The function response string")
+    func_response: Optional[Union[str, List[LettaToolReturnContentUnion]]] = Field(
+        None, description="The function response - either a string or list of content parts (text/image)"
+    )
 
 
 class MessageSearchRequest(BaseModel):

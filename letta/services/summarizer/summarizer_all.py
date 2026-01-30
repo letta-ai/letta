@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -20,7 +20,11 @@ async def summarize_all(
     # Actual summarization configuration
     summarizer_config: CompactionSettings,
     in_context_messages: List[Message],
-    # new_messages: List[Message],
+    # Telemetry context
+    agent_id: Optional[str] = None,
+    agent_tags: Optional[List[str]] = None,
+    run_id: Optional[str] = None,
+    step_id: Optional[str] = None,
 ) -> str:
     """
     Summarize the entire conversation history into a single summary.
@@ -60,6 +64,14 @@ async def summarize_all(
         actor=actor,
         include_ack=bool(summarizer_config.prompt_acknowledgement),
         prompt=summarizer_config.prompt,
+        agent_id=agent_id,
+        agent_tags=agent_tags,
+        run_id=run_id,
+        step_id=step_id,
+        compaction_settings={
+            "mode": "summarize_all",
+            "clip_chars": summarizer_config.clip_chars,
+        },
     )
     logger.info(f"Summarized {len(messages_to_summarize)} messages")
 

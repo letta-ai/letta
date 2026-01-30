@@ -126,3 +126,53 @@ class LettaUsageStatistics(BaseModel):
     reasoning_tokens: Optional[int] = Field(
         None, description="The number of reasoning/thinking tokens generated. None if not reported by provider."
     )
+
+    def to_usage(self, provider_type: Optional["ProviderType"] = None) -> "UsageStatistics":
+        """Convert to UsageStatistics (OpenAI-compatible format).
+
+        Args:
+            provider_type: ProviderType enum indicating which provider format to use.
+                          Used to determine which cache field to populate.
+
+        Returns:
+            UsageStatistics object with nested prompt/completion token details.
+        """
+        from letta.schemas.enums import ProviderType
+        from letta.schemas.openai.chat_completion_response import (
+            UsageStatistics,
+            UsageStatisticsCompletionTokenDetails,
+            UsageStatisticsPromptTokenDetails,
+        )
+
+        # Providers that use Anthropic-style cache fields (cache_read_tokens, cache_creation_tokens)
+        anthropic_style_providers = {ProviderType.anthropic, ProviderType.bedrock}
+
+        # Build prompt_tokens_details if we have cache data
+        prompt_tokens_details = None
+        if self.cached_input_tokens is not None or self.cache_write_tokens is not None:
+            if provider_type in anthropic_style_providers:
+                # Anthropic uses cache_read_tokens and cache_creation_tokens
+                prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                    cache_read_tokens=self.cached_input_tokens,
+                    cache_creation_tokens=self.cache_write_tokens,
+                )
+            else:
+                # OpenAI/Gemini use cached_tokens
+                prompt_tokens_details = UsageStatisticsPromptTokenDetails(
+                    cached_tokens=self.cached_input_tokens,
+                )
+
+        # Build completion_tokens_details if we have reasoning tokens
+        completion_tokens_details = None
+        if self.reasoning_tokens is not None:
+            completion_tokens_details = UsageStatisticsCompletionTokenDetails(
+                reasoning_tokens=self.reasoning_tokens,
+            )
+
+        return UsageStatistics(
+            prompt_tokens=self.prompt_tokens,
+            completion_tokens=self.completion_tokens,
+            total_tokens=self.total_tokens,
+            prompt_tokens_details=prompt_tokens_details,
+            completion_tokens_details=completion_tokens_details,
+        )

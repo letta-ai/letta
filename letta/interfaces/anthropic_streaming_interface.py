@@ -41,6 +41,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import JSONParser, PydanticJSONParser
+from letta.server.rest_api.streaming_response import RunCancelledException
 
 logger = get_logger(__name__)
 
@@ -126,6 +127,25 @@ class AnthropicStreamingInterface:
         else:
             arguments = str(json.dumps(tool_input, indent=2))
         return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=arguments, name=self.tool_call_name))
+
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Anthropic: input_tokens is NON-cached only in streaming
+        # This interface doesn't track cache tokens, so we just use the raw values
+        return LettaUsageStatistics(
+            prompt_tokens=self.input_tokens or 0,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=(self.input_tokens or 0) + (self.output_tokens or 0),
+            cached_input_tokens=None,  # This interface doesn't track cache tokens
+            cache_write_tokens=None,
+            reasoning_tokens=None,
+        )
 
     def _check_inner_thoughts_complete(self, combined_args: str) -> bool:
         """
@@ -218,10 +238,10 @@ class AnthropicStreamingInterface:
                                     message_index += 1
                                 prev_message_type = new_message_type
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
-                        logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                        logger.info("Cancelled stream attempt but overriding (%s) %s: %s", type(e).__name__, e, traceback.format_exc())
                         async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type
                             if new_message_type != prev_message_type:
@@ -636,6 +656,25 @@ class SimpleAnthropicStreamingInterface:
             arguments = str(json.dumps(tool_input, indent=2))
         return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=arguments, name=self.tool_call_name))
 
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Anthropic: input_tokens is NON-cached only in streaming
+        # This interface doesn't track cache tokens, so we just use the raw values
+        return LettaUsageStatistics(
+            prompt_tokens=self.input_tokens or 0,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=(self.input_tokens or 0) + (self.output_tokens or 0),
+            cached_input_tokens=None,  # This interface doesn't track cache tokens
+            cache_write_tokens=None,
+            reasoning_tokens=None,
+        )
+
     def get_reasoning_content(self) -> list[TextContent | ReasoningContent | RedactedReasoningContent]:
         def _process_group(
             group: list[ReasoningMessage | HiddenReasoningMessage | AssistantMessage],
@@ -726,10 +765,10 @@ class SimpleAnthropicStreamingInterface:
                                 prev_message_type = new_message_type
                             # print(f"Yielding message: {message}")
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
-                        logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                        logger.info("Cancelled stream attempt but overriding (%s) %s: %s", type(e).__name__, e, traceback.format_exc())
                         async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type
                             if new_message_type != prev_message_type:

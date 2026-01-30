@@ -25,18 +25,18 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
 
     id: Mapped[str] = mapped_column(primary_key=True, doc="Unique passage identifier")
     text: Mapped[str] = mapped_column(doc="Passage text content")
-    embedding_config: Mapped[dict] = mapped_column(EmbeddingConfigColumn, doc="Embedding configuration")
+    embedding_config: Mapped[Optional[dict]] = mapped_column(EmbeddingConfigColumn, nullable=True, doc="Embedding configuration")
     metadata_: Mapped[dict] = mapped_column(JSON, doc="Additional metadata")
     # dual storage: json column for fast retrieval, junction table for efficient queries
     tags: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True, doc="Tags associated with this passage")
 
-    # Vector embedding field based on database type
+    # Vector embedding field based on database type - nullable for text-only search
     if settings.database_engine is DatabaseChoice.POSTGRES:
         from pgvector.sqlalchemy import Vector
 
-        embedding = mapped_column(Vector(MAX_EMBEDDING_DIM))
+        embedding = mapped_column(Vector(MAX_EMBEDDING_DIM), nullable=True)
     else:
-        embedding = Column(CommonVector)
+        embedding = Column(CommonVector, nullable=True)
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

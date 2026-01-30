@@ -48,6 +48,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatistics,
 )
 from letta.schemas.response_format import JsonSchemaResponseFormat
+from letta.schemas.usage import LettaUsageStatistics
 from letta.settings import model_settings
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -777,6 +778,18 @@ class AnthropicClient(LLMClientBase):
                                 if not block.get("text", "").strip():
                                     block["text"] = "."
 
+                # Strip trailing whitespace from final assistant message
+                # Anthropic API rejects messages where "final assistant content cannot end with trailing whitespace"
+                if is_final_assistant:
+                    if isinstance(content, str):
+                        msg["content"] = content.rstrip()
+                    elif isinstance(content, list) and len(content) > 0:
+                        # Find and strip trailing whitespace from the last text block
+                        for block in reversed(content):
+                            if isinstance(block, dict) and block.get("type") == "text":
+                                block["text"] = block.get("text", "").rstrip()
+                                break
+
         try:
             count_params = {
                 "model": model or "claude-3-7-sonnet-20250219",
@@ -976,6 +989,35 @@ class AnthropicClient(LLMClientBase):
 
         return super().handle_llm_error(e)
 
+    def extract_usage_statistics(self, response_data: dict | None, llm_config: LLMConfig) -> LettaUsageStatistics:
+        """Extract usage statistics from Anthropic response and return as LettaUsageStatistics."""
+        if not response_data:
+            return LettaUsageStatistics()
+
+        response = AnthropicMessage(**response_data)
+        prompt_tokens = response.usage.input_tokens
+        completion_tokens = response.usage.output_tokens
+
+        # Extract cache data if available (None means not reported, 0 means reported as 0)
+        cache_read_tokens = None
+        cache_creation_tokens = None
+        if hasattr(response.usage, "cache_read_input_tokens"):
+            cache_read_tokens = response.usage.cache_read_input_tokens
+        if hasattr(response.usage, "cache_creation_input_tokens"):
+            cache_creation_tokens = response.usage.cache_creation_input_tokens
+
+        # Per Anthropic docs: "Total input tokens in a request is the summation of
+        # input_tokens, cache_creation_input_tokens, and cache_read_input_tokens."
+        actual_input_tokens = prompt_tokens + (cache_read_tokens or 0) + (cache_creation_tokens or 0)
+
+        return LettaUsageStatistics(
+            prompt_tokens=actual_input_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=actual_input_tokens + completion_tokens,
+            cached_input_tokens=cache_read_tokens,
+            cache_write_tokens=cache_creation_tokens,
+        )
+
     # TODO: Input messages doesn't get used here
     # TODO: Clean up this interface
     @trace_method
@@ -1020,9 +1062,12 @@ class AnthropicClient(LLMClientBase):
         }
         """
         response = AnthropicMessage(**response_data)
-        prompt_tokens = response.usage.input_tokens
-        completion_tokens = response.usage.output_tokens
         finish_reason = remap_finish_reason(str(response.stop_reason))
+
+        # Extract usage via centralized method
+        from letta.schemas.enums import ProviderType
+
+        usage_stats = self.extract_usage_statistics(response_data, llm_config).to_usage(ProviderType.anthropic)
 
         content = None
         reasoning_content = None
@@ -1088,35 +1133,12 @@ class AnthropicClient(LLMClientBase):
             ),
         )
 
-        # Build prompt tokens details with cache data if available
-        prompt_tokens_details = None
-        cache_read_tokens = 0
-        cache_creation_tokens = 0
-        if hasattr(response.usage, "cache_read_input_tokens") or hasattr(response.usage, "cache_creation_input_tokens"):
-            from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
-
-            cache_read_tokens = getattr(response.usage, "cache_read_input_tokens", 0) or 0
-            cache_creation_tokens = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
-            prompt_tokens_details = UsageStatisticsPromptTokenDetails(
-                cache_read_tokens=cache_read_tokens,
-                cache_creation_tokens=cache_creation_tokens,
-            )
-
-        # Per Anthropic docs: "Total input tokens in a request is the summation of
-        # input_tokens, cache_creation_input_tokens, and cache_read_input_tokens."
-        actual_input_tokens = prompt_tokens + cache_read_tokens + cache_creation_tokens
-
         chat_completion_response = ChatCompletionResponse(
             id=response.id,
             choices=[choice],
             created=get_utc_time_int(),
             model=response.model,
-            usage=UsageStatistics(
-                prompt_tokens=actual_input_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=actual_input_tokens + completion_tokens,
-                prompt_tokens_details=prompt_tokens_details,
-            ),
+            usage=usage_stats,
         )
         if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(

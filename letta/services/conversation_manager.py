@@ -105,9 +105,53 @@ class ConversationManager:
         actor: PydanticUser,
         limit: int = 50,
         after: Optional[str] = None,
+        summary_search: Optional[str] = None,
     ) -> List[PydanticConversation]:
-        """List conversations for an agent with cursor-based pagination."""
+        """List conversations for an agent with cursor-based pagination.
+
+        Args:
+            agent_id: The agent ID to list conversations for
+            actor: The user performing the action
+            limit: Maximum number of conversations to return
+            after: Cursor for pagination (conversation ID)
+            summary_search: Optional text to search for within the summary field
+
+        Returns:
+            List of conversations matching the criteria
+        """
         async with db_registry.async_session() as session:
+            # If summary search is provided, use custom query
+            if summary_search:
+                from sqlalchemy import and_
+
+                stmt = (
+                    select(ConversationModel)
+                    .where(
+                        and_(
+                            ConversationModel.agent_id == agent_id,
+                            ConversationModel.organization_id == actor.organization_id,
+                            ConversationModel.summary.isnot(None),
+                            ConversationModel.summary.contains(summary_search),
+                        )
+                    )
+                    .order_by(ConversationModel.created_at.desc())
+                    .limit(limit)
+                )
+
+                if after:
+                    # Add cursor filtering
+                    after_conv = await ConversationModel.read_async(
+                        db_session=session,
+                        identifier=after,
+                        actor=actor,
+                    )
+                    stmt = stmt.where(ConversationModel.created_at < after_conv.created_at)
+
+                result = await session.execute(stmt)
+                conversations = result.scalars().all()
+                return [conv.to_pydantic() for conv in conversations]
+
+            # Use default list logic
             conversations = await ConversationModel.list_async(
                 db_session=session,
                 actor=actor,

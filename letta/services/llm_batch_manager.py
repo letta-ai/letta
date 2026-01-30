@@ -63,7 +63,7 @@ class LLMBatchManager:
         self,
         llm_batch_id: str,
         status: JobStatus,
-        actor: Optional[PydanticUser] = None,
+        actor: PydanticUser,
         latest_polling_response: Optional[BetaMessageBatch] = None,
     ) -> PydanticLLMBatchJob:
         """Update a batch job’s status and optionally its polling response."""
@@ -107,8 +107,8 @@ class LLMBatchManager:
     async def list_llm_batch_jobs_async(
         self,
         letta_batch_id: str,
+        actor: PydanticUser,
         limit: Optional[int] = None,
-        actor: Optional[PydanticUser] = None,
         after: Optional[str] = None,
     ) -> List[PydanticLLMBatchJob]:
         """
@@ -153,8 +153,8 @@ class LLMBatchManager:
     async def get_messages_for_letta_batch_async(
         self,
         letta_batch_job_id: str,
+        actor: PydanticUser,
         limit: int = 100,
-        actor: Optional[PydanticUser] = None,
         agent_id: Optional[str] = None,
         sort_descending: bool = True,
         cursor: Optional[str] = None,  # Message ID as cursor

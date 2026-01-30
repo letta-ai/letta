@@ -38,6 +38,7 @@ from letta.errors import (
     HandleNotFoundError,
     LettaAgentNotFoundError,
     LettaExpiredError,
+    LettaImageFetchError,
     LettaInvalidArgumentError,
     LettaInvalidMCPSchemaError,
     LettaMCPConnectionError,
@@ -64,6 +65,7 @@ from letta.schemas.letta_message import create_letta_error_message_schema, creat
 from letta.schemas.letta_message_content import (
     create_letta_assistant_message_content_union_schema,
     create_letta_message_content_union_schema,
+    create_letta_tool_return_content_union_schema,
     create_letta_user_message_content_union_schema,
 )
 from letta.server.constants import REST_DEFAULT_PORT
@@ -105,6 +107,7 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["components"]["schemas"]["LettaMessageUnion"] = create_letta_message_union_schema()
     letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaToolReturnContentUnion"] = create_letta_tool_return_content_union_schema()
     letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
     letta_docs["components"]["schemas"]["LettaErrorMessage"] = create_letta_error_message_schema()
 
@@ -163,10 +166,18 @@ async def lifespan(app_: FastAPI):
     except Exception as e:
         logger.warning(f"[Worker {worker_id}] Failed to download NLTK data: {e}")
 
-    # logger.info(f"[Worker {worker_id}] Starting lifespan initialization")
-    # logger.info(f"[Worker {worker_id}] Initializing database connections")
-    # db_registry.initialize_async()
-    # logger.info(f"[Worker {worker_id}] Database connections initialized")
+    # Log effective database timeout settings for debugging
+    try:
+        from sqlalchemy import text
+
+        from letta.server.db import db_registry
+
+        async with db_registry.async_session() as session:
+            result = await session.execute(text("SHOW statement_timeout"))
+            statement_timeout = result.scalar()
+            logger.warning(f"[Worker {worker_id}] PostgreSQL statement_timeout: {statement_timeout}")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to query statement_timeout: {e}")
 
     if should_use_pinecone():
         if settings.upsert_pinecone_indices:
@@ -180,7 +191,7 @@ async def lifespan(app_: FastAPI):
 
     logger.info(f"[Worker {worker_id}] Starting scheduler with leader election")
     global server
-    await server.init_async()
+    await server.init_async(init_with_default_org_and_user=not settings.no_default_actor)
     try:
         await start_scheduler_with_leader_election(server)
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
@@ -475,6 +486,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(LettaToolNameConflictError, _error_handler_400)
     app.add_exception_handler(AgentFileImportError, _error_handler_400)
     app.add_exception_handler(EmbeddingConfigRequiredError, _error_handler_400)
+    app.add_exception_handler(LettaImageFetchError, _error_handler_400)
     app.add_exception_handler(ValueError, _error_handler_400)
 
     # 404 Not Found errors

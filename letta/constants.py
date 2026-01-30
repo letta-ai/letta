@@ -25,7 +25,7 @@ PROVIDER_ORDER = {
     "xai": 12,
     "lmstudio": 13,
     "zai": 14,
-    "openrouter": 15,  # Note: OpenRouter uses OpenRouterProvider, not a ProviderType enum
+    "openrouter": 15,
 }
 
 ADMIN_PREFIX = "/v1/admin"

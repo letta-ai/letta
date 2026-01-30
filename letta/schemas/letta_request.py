@@ -7,6 +7,7 @@ from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MES
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import LettaMessageContentUnion
 from letta.schemas.message import MessageCreate, MessageCreateUnion, MessageRole
+from letta.validators import AgentId
 
 
 class ClientToolSchema(BaseModel):
@@ -125,12 +126,33 @@ class LettaStreamingRequest(LettaRequest):
     )
 
 
+class ConversationMessageRequest(LettaRequest):
+    """Request for sending messages to a conversation. Streams by default."""
+
+    streaming: bool = Field(
+        default=True,
+        description="If True (default), returns a streaming response (Server-Sent Events). If False, returns a complete JSON response.",
+    )
+    stream_tokens: bool = Field(
+        default=False,
+        description="Flag to determine if individual tokens should be streamed, rather than streaming per step (only used when streaming=true).",
+    )
+    include_pings: bool = Field(
+        default=True,
+        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts (only used when streaming=true).",
+    )
+    background: bool = Field(
+        default=False,
+        description="Whether to process the request in the background (only used when streaming=true).",
+    )
+
+
 class LettaAsyncRequest(LettaRequest):
     callback_url: Optional[str] = Field(None, description="Optional callback URL to POST to when the job completes")
 
 
 class LettaBatchRequest(LettaRequest):
-    agent_id: str = Field(..., description="The ID of the agent to send this batch request for")
+    agent_id: AgentId = Field(..., description="The ID of the agent to send this batch request for")
 
 
 class CreateBatch(BaseModel):

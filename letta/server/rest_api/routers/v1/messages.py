@@ -231,7 +231,7 @@ async def list_messages_for_batch(
 
     # Get messages directly using our efficient method
     messages = await server.batch_manager.get_messages_for_letta_batch_async(
-        letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, ascending=(order == "asc"), before=before, after=after
+        letta_batch_job_id=batch_id, actor=actor, limit=limit, agent_id=agent_id, sort_descending=(order == "desc"), cursor=after
     )
 
     return LettaBatchMessages(messages=messages)

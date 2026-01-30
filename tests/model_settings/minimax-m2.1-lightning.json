@@ -1,0 +1,9 @@
+{
+  "handle": "minimax/MiniMax-M2.1-lightning",
+  "model_settings": {
+    "provider_type": "minimax",
+    "temperature": 1.0,
+    "max_output_tokens": 4096,
+    "parallel_tool_calls": false
+  }
+}

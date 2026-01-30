@@ -406,8 +406,14 @@ async def test_compaction_settings_model_uses_separate_llm_config_for_summarizat
         tool_rules=None,
     )
 
-    # Use the static helper on LettaAgentV3 to derive summarizer llm_config
-    summarizer_llm_config = LettaAgentV3._build_summarizer_llm_config(
+    # Create a mock agent instance to call the instance method
+    mock_agent = Mock(spec=LettaAgentV3)
+    mock_agent.actor = default_user
+    mock_agent.logger = Mock()
+
+    # Use the instance method to derive summarizer llm_config
+    summarizer_llm_config = await LettaAgentV3._build_summarizer_llm_config(
+        mock_agent,
         agent_llm_config=agent_state.llm_config,
         summarizer_config=agent_state.compaction_settings,
     )

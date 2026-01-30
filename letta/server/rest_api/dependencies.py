@@ -3,7 +3,10 @@ from typing import TYPE_CHECKING, Optional
 from fastapi import Header
 from pydantic import BaseModel
 
+from letta.errors import LettaInvalidArgumentError
 from letta.otel.tracing import tracer
+from letta.schemas.enums import PrimitiveType
+from letta.validators import PRIMITIVE_ID_PATTERNS
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -42,6 +45,12 @@ def get_headers(
 ) -> HeaderParams:
     """Dependency injection function to extract common headers from requests."""
     with tracer.start_as_current_span("dependency.get_headers"):
+        if actor_id is not None and PRIMITIVE_ID_PATTERNS[PrimitiveType.USER.value].match(actor_id) is None:
+            raise LettaInvalidArgumentError(
+                message=(f"Invalid user ID format: {actor_id}. Expected format: '{PrimitiveType.USER.value}-<uuid4>'"),
+                argument_name="user_id",
+            )
+
         return HeaderParams(
             actor_id=actor_id,
             user_agent=user_agent,

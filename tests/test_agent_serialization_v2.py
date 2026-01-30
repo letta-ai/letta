@@ -236,6 +236,15 @@ def embedding_handle_override():
 
 
 @pytest.fixture(scope="function")
+def model_handle_override():
+    # Use a different OpenAI model handle for override tests.
+    # The default in tests is usually gpt-4o-mini, so we use gpt-4o.
+    current_handle = LLMConfig.default_config("gpt-4o-mini").handle or "openai/gpt-4o-mini"
+    assert current_handle != "openai/gpt-4o"  # make sure it's different
+    return "openai/gpt-4o"
+
+
+@pytest.fixture(scope="function")
 async def test_source(server: SyncServer, default_user):
     """Fixture to create and return a test source."""
     source_data = Source(
@@ -1165,6 +1174,52 @@ class TestAgentFileImport:
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
         imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
         assert imported_agent.embedding_config.handle == embedding_handle_override
+
+    async def test_basic_import_with_model_override(
+        self, server, agent_serialization_manager, test_agent, default_user, other_user, model_handle_override
+    ):
+        """Test basic agent import functionality with LLM model override."""
+        # Verify original agent has gpt-4o-mini (handle may be None for legacy configs)
+        assert "gpt-4o-mini" in (test_agent.llm_config.handle or "") or "gpt-4o-mini" in (test_agent.llm_config.model or "")
+
+        agent_file = await agent_serialization_manager.export([test_agent.id], default_user)
+
+        llm_config_override = await server.get_llm_config_from_handle_async(actor=other_user, handle=model_handle_override)
+        result = await agent_serialization_manager.import_file(agent_file, other_user, override_llm_config=llm_config_override)
+
+        assert result.success
+        assert result.imported_count > 0
+        assert len(result.id_mappings) > 0
+
+        for file_id, db_id in result.id_mappings.items():
+            if file_id.startswith("agent-"):
+                assert db_id != test_agent.id  # New agent should have different ID
+
+        # check model handle was overridden
+        imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
+        imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
+        assert imported_agent.llm_config.handle == model_handle_override
+
+    async def test_basic_import_with_both_overrides(
+        self, server, agent_serialization_manager, test_agent, default_user, other_user, embedding_handle_override, model_handle_override
+    ):
+        """Test agent import with both embedding and model overrides."""
+        agent_file = await agent_serialization_manager.export([test_agent.id], default_user)
+
+        embedding_config_override = await server.get_embedding_config_from_handle_async(actor=other_user, handle=embedding_handle_override)
+        llm_config_override = await server.get_llm_config_from_handle_async(actor=other_user, handle=model_handle_override)
+        result = await agent_serialization_manager.import_file(
+            agent_file, other_user, override_embedding_config=embedding_config_override, override_llm_config=llm_config_override
+        )
+
+        assert result.success
+        assert result.imported_count > 0
+
+        # Verify both overrides were applied
+        imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
+        imported_agent = await server.agent_manager.get_agent_by_id_async(imported_agent_id, other_user)
+        assert imported_agent.embedding_config.handle == embedding_handle_override
+        assert imported_agent.llm_config.handle == model_handle_override
 
     async def test_import_preserves_data(self, server, agent_serialization_manager, test_agent, default_user, other_user):
         """Test that import preserves all important data."""

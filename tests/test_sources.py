@@ -68,7 +68,8 @@ def client() -> LettaSDKClient:
         print("Starting server thread")
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
-        wait_for_server(server_url)
+        # Use 60s timeout to allow for provider model syncing during server startup
+        wait_for_server(server_url, timeout=60)
     print("Running client tests with server:", server_url)
     client = LettaSDKClient(base_url=server_url)
     yield client

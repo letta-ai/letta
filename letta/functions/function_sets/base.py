@@ -383,12 +383,12 @@ def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str:
     # snippet = "\n".join(new_value.split("\n")[start_line : end_line + 1])
 
     # Prepare the success message
-    success_msg = f"The core memory block with label `{label}` has been edited. "
-    # success_msg += self._make_output(
-    #     snippet, f"a snippet of {path}", start_line + 1
-    # )
-    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
-    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
+    success_msg = (
+        f"The core memory block with label `{label}` has been successfully edited. "
+        f"Your system prompt has been recompiled with the updated memory contents and is now active in your context. "
+        f"Review the changes and make sure they are as expected (correct indentation, "
+        f"no duplicate lines, etc). Edit the memory block again if necessary."
+    )
 
     # return None
     return success_msg
@@ -454,14 +454,12 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
     agent_state.memory.update_block_value(label=label, value=new_value)
 
     # Prepare the success message
-    success_msg = f"The core memory block with label `{label}` has been edited. "
-    # success_msg += self._make_output(
-    #     snippet,
-    #     "a snippet of the edited file",
-    #     max(1, insert_line - SNIPPET_LINES + 1),
-    # )
-    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
-    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
+    success_msg = (
+        f"The core memory block with label `{label}` has been successfully edited. "
+        f"Your system prompt has been recompiled with the updated memory contents and is now active in your context. "
+        f"Review the changes and make sure they are as expected (correct indentation, "
+        f"no duplicate lines, etc). Edit the memory block again if necessary."
+    )
 
     return success_msg
 
@@ -532,12 +530,12 @@ def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> No
     agent_state.memory.update_block_value(label=label, value=new_memory)
 
     # Prepare the success message
-    success_msg = f"The core memory block with label `{label}` has been edited. "
-    # success_msg += self._make_output(
-    #     snippet, f"a snippet of {path}", start_line + 1
-    # )
-    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
-    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
+    success_msg = (
+        f"The core memory block with label `{label}` has been successfully edited. "
+        f"Your system prompt has been recompiled with the updated memory contents and is now active in your context. "
+        f"Review the changes and make sure they are as expected (correct indentation, "
+        f"no duplicate lines, etc). Edit the memory block again if necessary."
+    )
 
     # return None
     return success_msg

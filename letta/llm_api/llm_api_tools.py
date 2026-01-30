@@ -167,8 +167,8 @@ def create(
         printd("unsetting function_call because functions is None")
         function_call = None
 
-    # openai
-    if llm_config.model_endpoint_type == "openai":
+    # openai and openrouter (OpenAI-compatible)
+    if llm_config.model_endpoint_type in ["openai", "openrouter"]:
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])

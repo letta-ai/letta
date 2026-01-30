@@ -1,15 +1,62 @@
 import pytest
 
 from letta.constants import MAX_FILENAME_LENGTH
+from letta.errors import LettaInvalidArgumentError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.schemas.file import FileMetadata
-from letta.server.rest_api.dependencies import HeaderParams
+from letta.server.rest_api.dependencies import HeaderParams, get_headers
 from letta.services.file_processor.chunker.line_chunker import LineChunker
 from letta.services.helpers.agent_manager_helper import safe_format
 from letta.utils import is_1_0_sdk_version, sanitize_filename, validate_function_response
 
 CORE_MEMORY_VAR = "My core memory is that I like to eat bananas"
 VARS_DICT = {"CORE_MEMORY": CORE_MEMORY_VAR}
+
+
+def test_get_headers_user_id_allows_none():
+    headers = get_headers(
+        actor_id=None,
+        user_agent=None,
+        project_id=None,
+        letta_source=None,
+        sdk_version=None,
+        message_async=None,
+        letta_v1_agent=None,
+        letta_v1_agent_message_async=None,
+        modal_sandbox=None,
+    )
+    assert isinstance(headers, HeaderParams)
+
+
+def test_get_headers_user_id_rejects_invalid_format():
+    with pytest.raises(LettaInvalidArgumentError, match="Invalid user ID format"):
+        get_headers(
+            actor_id="not-a-user-id",
+            user_agent=None,
+            project_id=None,
+            letta_source=None,
+            sdk_version=None,
+            message_async=None,
+            letta_v1_agent=None,
+            letta_v1_agent_message_async=None,
+            modal_sandbox=None,
+        )
+
+
+def test_get_headers_user_id_accepts_valid_format():
+    headers = get_headers(
+        actor_id="user-123e4567-e89b-42d3-8456-426614174000",
+        user_agent=None,
+        project_id=None,
+        letta_source=None,
+        sdk_version=None,
+        message_async=None,
+        letta_v1_agent=None,
+        letta_v1_agent_message_async=None,
+        modal_sandbox=None,
+    )
+    assert headers.actor_id == "user-123e4567-e89b-42d3-8456-426614174000"
+
 
 # -----------------------------------------------------------------------
 # Example source code for testing multiple scenarios, including:
@@ -711,11 +758,13 @@ def test_sanitize_null_bytes_dict():
     from letta.helpers.json_helpers import sanitize_null_bytes
 
     # Test nested dict with null bytes
-    result = sanitize_null_bytes({
-        "key1": "value\x00with\x00nulls",
-        "key2": {"nested": "also\x00null"},
-        "key3": 123,  # non-string should be unchanged
-    })
+    result = sanitize_null_bytes(
+        {
+            "key1": "value\x00with\x00nulls",
+            "key2": {"nested": "also\x00null"},
+            "key3": 123,  # non-string should be unchanged
+        }
+    )
     assert result == {
         "key1": "valuewithnulls",
         "key2": {"nested": "alsonull"},

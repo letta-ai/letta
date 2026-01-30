@@ -198,3 +198,8 @@ async def test_background_streaming_cancellation(
     response = await client.runs.messages.stream(run_id=run_id, starting_after=0)
     messages_from_stream = await accumulate_chunks(response)
     assert len(messages_from_stream) > 0
+
+    # Verify the stream contains stop_reason: cancelled (from our new cancellation logic)
+    stop_reasons = [msg for msg in messages_from_stream if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason in stream, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "cancelled", f"Expected stop_reason 'cancelled', got '{stop_reasons[0].stop_reason}'"

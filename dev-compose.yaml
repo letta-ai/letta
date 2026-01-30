@@ -14,7 +14,7 @@ services:
       - ./.persist/pgdata-test:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - '5432:5432'
   letta_server:
     image: letta/letta:latest
     hostname: letta
@@ -25,8 +25,8 @@ services:
     depends_on:
       - letta_db
     ports:
-      - "8083:8083"
-      - "8283:8283"
+      - '8083:8083'
+      - '8283:8283'
     environment:
       - LETTA_PG_DB=${LETTA_PG_DB:-letta}
       - LETTA_PG_USER=${LETTA_PG_USER:-letta}

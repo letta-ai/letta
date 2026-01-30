@@ -7,8 +7,10 @@ from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from letta.schemas.letta_message_content import (
     LettaAssistantMessageContentUnion,
+    LettaToolReturnContentUnion,
     LettaUserMessageContentUnion,
     get_letta_assistant_message_content_union_str_json_schema,
+    get_letta_tool_return_content_union_str_json_schema,
     get_letta_user_message_content_union_str_json_schema,
 )
 
@@ -35,7 +37,11 @@ class ApprovalReturn(MessageReturn):
 
 class ToolReturn(MessageReturn):
     type: Literal[MessageReturnType.tool] = Field(default=MessageReturnType.tool, description="The message type to be created.")
-    tool_return: str
+    tool_return: Union[str, List[LettaToolReturnContentUnion]] = Field(
+        ...,
+        description="The tool return value - either a string or list of content parts (text/image)",
+        json_schema_extra=get_letta_tool_return_content_union_str_json_schema(),
+    )
     status: Literal["success", "error"]
     tool_call_id: str
     stdout: Optional[List[str]] = None
@@ -563,6 +569,10 @@ class SystemMessageListResult(UpdateSystemMessage):
         default=None,
         description="The unique identifier of the agent that owns the message.",
     )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
+    )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")
 
@@ -580,6 +590,10 @@ class UserMessageListResult(UpdateUserMessage):
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
     )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")
@@ -599,6 +613,10 @@ class ReasoningMessageListResult(UpdateReasoningMessage):
         default=None,
         description="The unique identifier of the agent that owns the message.",
     )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
+    )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")
 
@@ -616,6 +634,10 @@ class AssistantMessageListResult(UpdateAssistantMessage):
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
     )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")

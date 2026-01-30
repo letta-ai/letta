@@ -98,6 +98,25 @@ async def _prepare_in_context_messages_async(
 
 
 @trace_method
+def validate_persisted_tool_call_ids(tool_return_message: Message, approval_response_message: ApprovalCreate) -> bool:
+    persisted_tool_returns = tool_return_message.tool_returns
+    if not persisted_tool_returns:
+        return False
+    persisted_tool_call_ids = [tool_return.tool_call_id for tool_return in persisted_tool_returns]
+
+    approval_responses = approval_response_message.approvals
+    if not approval_responses:
+        return False
+    approval_response_tool_call_ids = [approval_response.tool_call_id for approval_response in approval_responses]
+
+    request_response_diff = set(persisted_tool_call_ids).symmetric_difference(set(approval_response_tool_call_ids))
+    if request_response_diff:
+        return False
+
+    return True
+
+
+@trace_method
 def validate_approval_tool_call_ids(approval_request_message: Message, approval_response_message: ApprovalCreate):
     approval_requests = approval_request_message.tool_calls
     if approval_requests:
@@ -227,6 +246,36 @@ async def _prepare_in_context_messages_no_persist_async(
     if input_messages[0].type == "approval":
         # User is trying to send an approval response
         if current_in_context_messages and current_in_context_messages[-1].role != "approval":
+            # No pending approval request - check if this is an idempotent retry
+            # Check last few messages for a tool return matching the approval's tool_call_ids
+            # (approved tool return should be recent, but server-side tool calls may come after it)
+            approval_already_processed = False
+            recent_messages = current_in_context_messages[-10:]  # Only check last 10 messages
+            for msg in reversed(recent_messages):
+                if msg.role == "tool" and validate_persisted_tool_call_ids(msg, input_messages[0]):
+                    logger.info(
+                        f"Idempotency check: Found matching tool return in recent history. "
+                        f"tool_returns={msg.tool_returns}, approval_response.approvals={input_messages[0].approvals}"
+                    )
+                    approval_already_processed = True
+                    break
+
+            if approval_already_processed:
+                # Approval already handled, just process follow-up messages if any or manually inject keep-alive message
+                keep_alive_messages = input_messages[1:] or [
+                    MessageCreate(
+                        role="user",
+                        content=[
+                            TextContent(
+                                text="<system-alert>Automated keep-alive ping. Ignore this message and continue from where you stopped.</system-alert>"
+                            )
+                        ],
+                    )
+                ]
+                new_in_context_messages = await create_input_messages(
+                    input_messages=keep_alive_messages, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+                )
+                return current_in_context_messages, new_in_context_messages
             logger.warn(
                 f"Cannot process approval response: No tool call is currently awaiting approval. Last message: {current_in_context_messages[-1]}"
             )
@@ -235,7 +284,7 @@ async def _prepare_in_context_messages_no_persist_async(
                 "Please send a regular message to interact with the agent."
             )
         validate_approval_tool_call_ids(current_in_context_messages[-1], input_messages[0])
-        new_in_context_messages = create_approval_response_message_from_input(
+        new_in_context_messages = await create_approval_response_message_from_input(
             agent_state=agent_state, input_message=input_messages[0], run_id=run_id
         )
         if len(input_messages) > 1:

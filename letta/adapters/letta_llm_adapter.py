@@ -27,12 +27,16 @@ class LettaLLMAdapter(ABC):
         agent_id: str | None = None,
         agent_tags: list[str] | None = None,
         run_id: str | None = None,
+        org_id: str | None = None,
+        user_id: str | None = None,
     ) -> None:
         self.llm_client: LLMClientBase = llm_client
         self.llm_config: LLMConfig = llm_config
         self.agent_id: str | None = agent_id
         self.agent_tags: list[str] | None = agent_tags
         self.run_id: str | None = run_id
+        self.org_id: str | None = org_id
+        self.user_id: str | None = user_id
         self.message_id: str | None = None
         self.request_data: dict | None = None
         self.response_data: dict | None = None

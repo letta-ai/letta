@@ -455,9 +455,11 @@ class RunManager:
         # Dispatch callback outside of database session if needed
         if needs_callback:
             if refresh_result_messages:
+                # Defensive: ensure stop_reason is never None
+                stop_reason_value = pydantic_run.stop_reason if pydantic_run.stop_reason else StopReasonType.completed
                 result = LettaResponse(
                     messages=await self.get_run_messages(run_id=run_id, actor=actor),
-                    stop_reason=LettaStopReason(stop_reason=pydantic_run.stop_reason),
+                    stop_reason=LettaStopReason(stop_reason=stop_reason_value),
                     usage=await self.get_run_usage(run_id=run_id, actor=actor),
                 )
                 final_metadata["result"] = result.model_dump()
@@ -719,7 +721,7 @@ class RunManager:
                 )
 
                 # Use the standard function to create properly formatted approval response messages
-                approval_response_messages = create_approval_response_message_from_input(
+                approval_response_messages = await create_approval_response_message_from_input(
                     agent_state=agent_state,
                     input_message=approval_input,
                     run_id=run_id,

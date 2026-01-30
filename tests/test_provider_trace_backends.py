@@ -92,6 +92,48 @@ class TestProviderTrace:
         assert trace.call_type == "summarization"
         assert trace.run_id == "run-789"
 
+    def test_v2_protocol_fields(self):
+        """Test v2 protocol fields (org_id, user_id, compaction_settings, llm_config)."""
+        trace = ProviderTrace(
+            request_json={},
+            response_json={},
+            step_id="step-123",
+            org_id="org-123",
+            user_id="user-123",
+            compaction_settings={"mode": "sliding_window", "target_message_count": 50},
+            llm_config={"model": "gpt-4", "temperature": 0.7},
+        )
+        assert trace.org_id == "org-123"
+        assert trace.user_id == "user-123"
+        assert trace.compaction_settings == {"mode": "sliding_window", "target_message_count": 50}
+        assert trace.llm_config == {"model": "gpt-4", "temperature": 0.7}
+
+    def test_v2_fields_mutually_exclusive_by_convention(self):
+        """Test that compaction_settings is set for summarization, llm_config for non-summarization."""
+        summarization_trace = ProviderTrace(
+            request_json={},
+            response_json={},
+            step_id="step-123",
+            call_type="summarization",
+            compaction_settings={"mode": "partial_evict"},
+            llm_config=None,
+        )
+        assert summarization_trace.call_type == "summarization"
+        assert summarization_trace.compaction_settings is not None
+        assert summarization_trace.llm_config is None
+
+        agent_step_trace = ProviderTrace(
+            request_json={},
+            response_json={},
+            step_id="step-456",
+            call_type="agent_step",
+            compaction_settings=None,
+            llm_config={"model": "claude-3"},
+        )
+        assert agent_step_trace.call_type == "agent_step"
+        assert agent_step_trace.compaction_settings is None
+        assert agent_step_trace.llm_config is not None
+
 
 class TestSocketProviderTraceBackend:
     """Tests for SocketProviderTraceBackend."""
@@ -171,12 +213,11 @@ class TestSocketProviderTraceBackend:
             assert len(received_data) == 1
             record = json.loads(received_data[0].strip())
             assert record["provider_trace_id"] == sample_provider_trace.id
-            assert record["model"] == "gpt-4o-mini"
-            assert record["provider"] == "openai"
-            assert record["input_tokens"] == 10
-            assert record["output_tokens"] == 5
-            assert record["context"]["step_id"] == "step-test-789"
-            assert record["context"]["run_id"] == "run-test-abc"
+            assert record["step_id"] == "step-test-789"
+            assert record["run_id"] == "run-test-abc"
+            assert record["request"]["model"] == "gpt-4o-mini"
+            assert record["response"]["usage"]["prompt_tokens"] == 10
+            assert record["response"]["usage"]["completion_tokens"] == 5
 
     def test_send_to_nonexistent_socket_does_not_raise(self, sample_provider_trace):
         """Test that sending to nonexistent socket fails silently."""
@@ -246,6 +287,36 @@ class TestSocketProviderTraceBackend:
         assert len(captured_records) == 1
         assert captured_records[0]["error"] == "Rate limit exceeded"
         assert captured_records[0]["response"] is None
+
+    def test_record_includes_v2_protocol_fields(self):
+        """Test that v2 protocol fields are included in the socket record."""
+        trace = ProviderTrace(
+            request_json={"model": "gpt-4"},
+            response_json={"id": "test"},
+            step_id="step-123",
+            org_id="org-456",
+            user_id="user-456",
+            compaction_settings={"mode": "sliding_window"},
+            llm_config={"model": "gpt-4", "temperature": 0.5},
+        )
+
+        backend = SocketProviderTraceBackend(socket_path="/fake/path")
+
+        captured_records = []
+
+        def capture_record(record):
+            captured_records.append(record)
+
+        with patch.object(backend, "_send_async", side_effect=capture_record):
+            backend._send_to_crouton(trace)
+
+        assert len(captured_records) == 1
+        record = captured_records[0]
+        assert record["protocol_version"] == 2
+        assert record["org_id"] == "org-456"
+        assert record["user_id"] == "user-456"
+        assert record["compaction_settings"] == {"mode": "sliding_window"}
+        assert record["llm_config"] == {"model": "gpt-4", "temperature": 0.5}
 
 
 class TestBackendFactory:

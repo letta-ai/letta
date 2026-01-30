@@ -17,7 +17,8 @@ logger = get_logger(__name__)
 # Protocol version for crouton communication.
 # Bump this when making breaking changes to the record schema.
 # Must match ProtocolVersion in apps/crouton/main.go.
-PROTOCOL_VERSION = 1
+# v2: Added user_id, compaction_settings (summarization), llm_config (non-summarization)
+PROTOCOL_VERSION = 2
 
 
 class SocketProviderTraceBackend(ProviderTraceBackendClient):
@@ -94,6 +95,11 @@ class SocketProviderTraceBackend(ProviderTraceBackendClient):
             "error": error,
             "error_type": error_type,
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            # v2 protocol fields
+            "org_id": provider_trace.org_id,
+            "user_id": provider_trace.user_id,
+            "compaction_settings": provider_trace.compaction_settings,
+            "llm_config": provider_trace.llm_config,
         }
 
         # Fire-and-forget in background thread

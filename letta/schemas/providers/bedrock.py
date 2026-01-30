@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 class BedrockProvider(Provider):
     provider_type: Literal[ProviderType.bedrock] = Field(ProviderType.bedrock, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
+    base_url: str = Field("bedrock", description="Identifier for Bedrock endpoint (used for model_endpoint)")
     access_key: str | None = Field(None, description="AWS access key ID for Bedrock")
     api_key: str | None = Field(None, description="AWS secret access key for Bedrock")
     region: str = Field(..., description="AWS region for Bedrock")
@@ -99,7 +100,7 @@ class BedrockProvider(Provider):
                 LLMConfig(
                     model=model_name,
                     model_endpoint_type=self.provider_type.value,
-                    model_endpoint=None,
+                    model_endpoint="bedrock",
                     context_window=self.get_model_context_window(inference_profile_id),
                     # Store the full inference profile ID in the handle for API calls
                     handle=self.get_handle(inference_profile_id),

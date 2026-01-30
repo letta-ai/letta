@@ -15,6 +15,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.provider_trace import ProviderTrace
+from letta.schemas.usage import LettaUsageStatistics
 from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import settings
 
@@ -43,6 +44,10 @@ class LLMClientBase:
         self._telemetry_run_id: Optional[str] = None
         self._telemetry_step_id: Optional[str] = None
         self._telemetry_call_type: Optional[str] = None
+        self._telemetry_org_id: Optional[str] = None
+        self._telemetry_user_id: Optional[str] = None
+        self._telemetry_compaction_settings: Optional[Dict] = None
+        self._telemetry_llm_config: Optional[Dict] = None
 
     def set_telemetry_context(
         self,
@@ -52,6 +57,10 @@ class LLMClientBase:
         run_id: Optional[str] = None,
         step_id: Optional[str] = None,
         call_type: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        compaction_settings: Optional[Dict] = None,
+        llm_config: Optional[Dict] = None,
     ) -> None:
         """Set telemetry context for provider trace logging."""
         self._telemetry_manager = telemetry_manager
@@ -60,6 +69,14 @@ class LLMClientBase:
         self._telemetry_run_id = run_id
         self._telemetry_step_id = step_id
         self._telemetry_call_type = call_type
+        self._telemetry_org_id = org_id
+        self._telemetry_user_id = user_id
+        self._telemetry_compaction_settings = compaction_settings
+        self._telemetry_llm_config = llm_config
+
+    def extract_usage_statistics(self, response_data: Optional[dict], llm_config: LLMConfig) -> LettaUsageStatistics:
+        """Provider-specific usage parsing hook (override in subclasses). Returns LettaUsageStatistics."""
+        return LettaUsageStatistics()
 
     async def request_async_with_telemetry(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """Wrapper around request_async that logs telemetry for all requests including errors.
@@ -96,6 +113,10 @@ class LLMClientBase:
                                 agent_tags=self._telemetry_agent_tags,
                                 run_id=self._telemetry_run_id,
                                 call_type=self._telemetry_call_type,
+                                org_id=self._telemetry_org_id,
+                                user_id=self._telemetry_user_id,
+                                compaction_settings=self._telemetry_compaction_settings,
+                                llm_config=self._telemetry_llm_config,
                             ),
                         )
                     except Exception as e:
@@ -137,6 +158,10 @@ class LLMClientBase:
                     agent_tags=self._telemetry_agent_tags,
                     run_id=self._telemetry_run_id,
                     call_type=self._telemetry_call_type,
+                    org_id=self._telemetry_org_id,
+                    user_id=self._telemetry_user_id,
+                    compaction_settings=self._telemetry_compaction_settings,
+                    llm_config=self._telemetry_llm_config,
                 ),
             )
         except Exception as e:

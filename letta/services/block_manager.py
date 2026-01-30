@@ -508,7 +508,7 @@ class BlockManager:
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
     @trace_method
-    async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
+    async def get_block_by_id_async(self, block_id: str, actor: PydanticUser) -> Optional[PydanticBlock]:
         """Retrieve a block by its ID, including tags."""
         async with db_registry.async_session() as session:
             try:
@@ -523,7 +523,7 @@ class BlockManager:
 
     @enforce_types
     @trace_method
-    async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
+    async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: PydanticUser) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
         if not block_ids:
             return []
@@ -540,9 +540,8 @@ class BlockManager:
                 noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups), noload(BlockModel.tags)
             )
 
-            # Apply access control if actor is provided
-            if actor:
-                query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+            # Apply access control - actor is required for org-scoping
+            query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # TODO: Add soft delete filter if applicable
             # if hasattr(BlockModel, "is_deleted"):

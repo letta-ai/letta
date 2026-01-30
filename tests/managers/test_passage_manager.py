@@ -222,6 +222,52 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
     assert len(date_filtered) == 5
 
 
+@pytest.mark.asyncio
+async def test_agent_query_passages_time_only(server, default_user, default_archive, disable_turbopuffer):
+    """Test querying passages with date filters and no query text."""
+    now = datetime.now(timezone.utc)
+    older_date = now - timedelta(days=2)
+    newer_date = now - timedelta(hours=2)
+
+    older_passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            organization_id=default_user.organization_id,
+            archive_id=default_archive.id,
+            text="Older passage",
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            created_at=older_date,
+        ),
+        actor=default_user,
+    )
+
+    newer_passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            organization_id=default_user.organization_id,
+            archive_id=default_archive.id,
+            text="Newer passage",
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            created_at=newer_date,
+        ),
+        actor=default_user,
+    )
+
+    results = await server.agent_manager.query_agent_passages_async(
+        actor=default_user,
+        archive_id=default_archive.id,
+        start_date=now - timedelta(days=1),
+        end_date=now + timedelta(minutes=1),
+    )
+
+    assert len(results) == 1
+    passage, _, _ = results[0]
+    assert passage.id == newer_passage.id
+    assert passage.id != older_passage.id
+    assert passage.created_at >= now - timedelta(days=1)
+    assert passage.created_at <= now + timedelta(minutes=1)
+
+
 @pytest.fixture
 def mock_embeddings():
     """Load mock embeddings from JSON file"""

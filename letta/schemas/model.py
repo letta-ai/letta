@@ -42,12 +42,14 @@ class Model(LLMConfig, ModelBase):
         "koboldcpp",
         "vllm",
         "hugging-face",
+        "minimax",
         "mistral",
         "together",
         "bedrock",
         "deepseek",
         "xai",
         "zai",
+        "openrouter",
         "chatgpt_oauth",
     ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the model.", deprecated=True)
     context_window: int = Field(
@@ -138,6 +140,7 @@ class Model(LLMConfig, ModelBase):
             ProviderType.deepseek: DeepseekModelSettings,
             ProviderType.together: TogetherModelSettings,
             ProviderType.bedrock: BedrockModelSettings,
+            ProviderType.openrouter: OpenRouterModelSettings,
         }
 
         settings_class = PROVIDER_SETTINGS_MAP.get(self.provider_type)
@@ -456,6 +459,23 @@ class BedrockModelSettings(ModelSettings):
         }
 
 
+class OpenRouterModelSettings(ModelSettings):
+    """OpenRouter model configuration (OpenAI-compatible)."""
+
+    provider_type: Literal[ProviderType.openrouter] = Field(ProviderType.openrouter, description="The type of the provider.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
+    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
+
+    def _to_legacy_config_params(self) -> dict:
+        return {
+            "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
+            "response_format": self.response_format,
+            "parallel_tool_calls": self.parallel_tool_calls,
+            "strict": False,  # OpenRouter does not support strict mode
+        }
+
+
 class ChatGPTOAuthReasoning(BaseModel):
     """Reasoning configuration for ChatGPT OAuth models (GPT-5.x, o-series)."""
 
@@ -495,6 +515,7 @@ ModelSettingsUnion = Annotated[
         DeepseekModelSettings,
         TogetherModelSettings,
         BedrockModelSettings,
+        OpenRouterModelSettings,
         ChatGPTOAuthModelSettings,
     ],
     Field(discriminator="provider_type"),
