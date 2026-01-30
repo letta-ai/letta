@@ -32,6 +32,7 @@ from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
     unpack_all_inner_thoughts_from_kwargs,
+    convert_to_structured_output
 )
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
