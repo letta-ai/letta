@@ -10,7 +10,7 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, RunStatus
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -295,7 +295,32 @@ async def _prepare_in_context_messages_no_persist_async(
     else:
         # User is trying to send a regular message
         if current_in_context_messages and current_in_context_messages[-1].is_approval_request():
-            raise PendingApprovalError(pending_request_id=current_in_context_messages[-1].id)
+            # Check if the run associated with this approval request is still active
+            # If the run was cancelled/failed/completed, the approval is orphaned and should be skipped
+            approval_msg = current_in_context_messages[-1]
+            approval_run_id = approval_msg.run_id
+            is_orphaned_approval = False
+
+            if approval_run_id:
+                try:
+                    from letta.services.run_manager import RunManager
+
+                    run_manager = RunManager()
+                    approval_run = await run_manager.get_run_by_id(run_id=approval_run_id, actor=actor)
+                    # If the run was cancelled or failed, the approval is orphaned
+                    # Note: completed runs may still have valid approvals (stop_reason=requires_approval)
+                    if approval_run.status in [RunStatus.cancelled, RunStatus.failed]:
+                        logger.info(
+                            f"Skipping orphaned approval request {approval_msg.id} - associated run {approval_run_id} "
+                            f"has status {approval_run.status.value}"
+                        )
+                        is_orphaned_approval = True
+                except Exception as e:
+                    # If we can't check the run status, be conservative and raise the error
+                    logger.warning(f"Failed to check run status for approval request {approval_msg.id}: {e}")
+
+            if not is_orphaned_approval:
+                raise PendingApprovalError(pending_request_id=approval_msg.id)
 
         # Create a new user message from the input but dont store it yet
         new_in_context_messages = await create_input_messages(

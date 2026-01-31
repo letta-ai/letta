@@ -1347,6 +1347,153 @@ class TestApprovalFlowCancellation:
         )
         assert len(db_messages_run2) > 0, "Second run should have messages"
 
+    @pytest.mark.asyncio
+    async def test_orphaned_approval_skipped_after_run_cancelled(
+        self,
+        server: SyncServer,
+        default_user,
+        bash_tool,
+    ):
+        """
+        Test that orphaned approval requests are skipped when the associated run is cancelled.
+
+        This tests the fix for orphaned approvals: When an approval request exists in
+        message history but its run has been cancelled or failed, subsequent messages
+        should NOT raise PendingApprovalError - the orphaned approval should be skipped.
+
+        Note: Completed runs are NOT considered orphaned because they may have valid
+        approvals with stop_reason=requires_approval.
+
+        Scenario:
+        1. Create agent with approval-requiring tool
+        2. Send message that triggers approval request
+        3. Cancel the run (orphaning the approval)
+        4. Send new message in new run - should NOT raise PendingApprovalError
+
+        Verifies:
+        - Orphaned approvals don't block new messages
+        - PendingApprovalError is only raised for active approval requests
+        - Agent can continue normally after cancelled approval
+        """
+        from letta.errors import PendingApprovalError
+
+        # Create agent with approval-requiring tool
+        agent_state = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name="test_orphaned_approval_agent",
+                agent_type="letta_v1_agent",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                tool_ids=[bash_tool.id],
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+
+        # Create first run
+        test_run = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(
+                agent_id=agent_state.id,
+                status=RunStatus.created,
+            ),
+            actor=default_user,
+        )
+
+        # Load agent loop and trigger approval request
+        agent_loop = AgentLoop.load(agent_state=agent_state, actor=default_user)
+
+        input_messages = [MessageCreate(role=MessageRole.user, content="Call bash_tool with operation 'test'")]
+
+        result = await agent_loop.step(
+            input_messages=input_messages,
+            max_steps=5,
+            run_id=test_run.id,
+        )
+
+        # Verify we got approval request
+        assert result.stop_reason.stop_reason == "requires_approval", f"Should stop for approval, got {result.stop_reason.stop_reason}"
+
+        # Get messages to confirm approval request is in history
+        db_messages = await server.message_manager.list_messages(
+            actor=default_user,
+            agent_id=agent_state.id,
+            run_id=test_run.id,
+            limit=1000,
+        )
+        approval_messages = [m for m in db_messages if m.role == "approval_request"]
+        assert len(approval_messages) > 0, "Should have approval request message in history"
+
+        # Before cancelling, verify that a new message WOULD raise PendingApprovalError
+        test_run_before_cancel = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(
+                agent_id=agent_state.id,
+                status=RunStatus.created,
+            ),
+            actor=default_user,
+        )
+
+        with pytest.raises(PendingApprovalError):
+            agent_loop_before = AgentLoop.load(
+                agent_state=await server.agent_manager.get_agent_by_id_async(
+                    agent_id=agent_state.id,
+                    actor=default_user,
+                    include_relationships=["memory", "tools", "sources"],
+                ),
+                actor=default_user,
+            )
+            await agent_loop_before.step(
+                input_messages=[MessageCreate(role=MessageRole.user, content="Hello")],
+                max_steps=5,
+                run_id=test_run_before_cancel.id,
+            )
+
+        # NOW cancel the original run (this orphans the approval)
+        await server.run_manager.cancel_run(
+            actor=default_user,
+            run_id=test_run.id,
+        )
+
+        # Verify run is cancelled
+        cancelled_run = await server.run_manager.get_run_by_id(run_id=test_run.id, actor=default_user)
+        assert cancelled_run.status == RunStatus.cancelled, f"Run should be cancelled, got {cancelled_run.status}"
+
+        # Create a NEW run and send a message
+        # This should NOT raise PendingApprovalError because the approval is orphaned
+        test_run_2 = await server.run_manager.create_run(
+            pydantic_run=PydanticRun(
+                agent_id=agent_state.id,
+                status=RunStatus.created,
+            ),
+            actor=default_user,
+        )
+
+        agent_loop_2 = AgentLoop.load(
+            agent_state=await server.agent_manager.get_agent_by_id_async(
+                agent_id=agent_state.id,
+                actor=default_user,
+                include_relationships=["memory", "tools", "sources"],
+            ),
+            actor=default_user,
+        )
+
+        # This should NOT raise PendingApprovalError - the orphaned approval should be skipped
+        try:
+            result_2 = await agent_loop_2.step(
+                input_messages=[MessageCreate(role=MessageRole.user, content="Hello, just a simple greeting")],
+                max_steps=5,
+                run_id=test_run_2.id,
+            )
+            # If we get here, the test passed - orphaned approval was skipped
+            assert result_2.stop_reason.stop_reason != "requires_approval", (
+                "New message should not require approval for orphaned request"
+            )
+        except PendingApprovalError:
+            pytest.fail(
+                "PendingApprovalError was raised for orphaned approval - "
+                "the fix should skip approvals from cancelled/failed/completed runs"
+            )
+
 
 class TestEdgeCases:
     """
