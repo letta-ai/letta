@@ -371,17 +371,10 @@ class OpenAIClient(LLMClientBase):
         if tools and supports_parallel_tool_calling(model):
             data.parallel_tool_calls = llm_config.parallel_tool_calls
 
-        # always set user id for openai requests
-        if self.actor:
-            data.user = self.actor.id
+        # Note: Don't set 'user' param for Responses API - it's not supported
+        # (see build_request_data for Chat Completions which does support it)
 
         if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
-            if not self.actor:
-                # override user id for inference.letta.com
-                import uuid
-
-                data.user = str(uuid.UUID(int=0))
-
             data.model = "memgpt-openai"
 
         request_data = data.model_dump(exclude_unset=True)
