@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional, Tuple
 
-from openai import AsyncAzureOpenAI, AzureOpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 
 from letta.llm_api.openai_client import OpenAIClient
@@ -53,8 +53,19 @@ class AzureClient(OpenAIClient):
 
         base_url = self._sanitize_base_url(base_url)
 
-        client = AzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
-        response: ChatCompletion = client.chat.completions.create(**request_data)
+        # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
+        if "input" in request_data and "messages" not in request_data:
+            # Azure Responses API requires standard OpenAI client with /openai/v1/ URL
+            responses_base_url = f"{base_url}/openai/v1"
+            client = OpenAI(
+                api_key=api_key,
+                base_url=responses_base_url,
+                default_query={"api-version": api_version} if api_version else None,
+            )
+            response = client.responses.create(**request_data)
+        else:
+            client = AzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
+            response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
     @trace_method
@@ -69,8 +80,19 @@ class AzureClient(OpenAIClient):
             api_version = model_settings.azure_api_version or os.environ.get("AZURE_API_VERSION")
         try:
             base_url = self._sanitize_base_url(base_url)
-            client = AsyncAzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
-            response: ChatCompletion = await client.chat.completions.create(**request_data)
+            # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
+            if "input" in request_data and "messages" not in request_data:
+                # Azure Responses API requires standard OpenAI client with /openai/v1/ URL
+                responses_base_url = f"{base_url}/openai/v1"
+                client = AsyncOpenAI(
+                    api_key=api_key,
+                    base_url=responses_base_url,
+                    default_query={"api-version": api_version} if api_version else None,
+                )
+                response = await client.responses.create(**request_data)
+            else:
+                client = AsyncAzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
+                response: ChatCompletion = await client.chat.completions.create(**request_data)
         except Exception as e:
             raise self.handle_llm_error(e)
 
