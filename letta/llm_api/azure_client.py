@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional, Tuple
 
-from openai import AsyncAzureOpenAI, AzureOpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 
 from letta.llm_api.openai_client import OpenAIClient
@@ -13,6 +13,15 @@ from letta.settings import model_settings
 
 
 class AzureClient(OpenAIClient):
+    def _sanitize_base_url(self, base_url: Optional[str]) -> Optional[str]:
+        if not base_url:
+            return base_url
+        base_url = base_url.rstrip("/")
+        for suffix in ["/embeddings", "/chat/completions", "/completions"]:
+            if base_url.endswith(suffix):
+                base_url = base_url[: -len(suffix)]
+        return base_url
+
     def get_byok_overrides(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         if llm_config.provider_category == ProviderCategory.byok:
             from letta.services.provider_manager import ProviderManager
@@ -40,8 +49,23 @@ class AzureClient(OpenAIClient):
             base_url = model_settings.azure_base_url or os.environ.get("AZURE_BASE_URL")
             api_version = model_settings.azure_api_version or os.environ.get("AZURE_API_VERSION")
 
-        client = AzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
-        response: ChatCompletion = client.chat.completions.create(**request_data)
+            api_version = model_settings.azure_api_version or os.environ.get("AZURE_API_VERSION")
+
+        base_url = self._sanitize_base_url(base_url)
+
+        # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
+        if "input" in request_data and "messages" not in request_data:
+            # Azure Responses API requires standard OpenAI client with /openai/v1/ URL
+            responses_base_url = f"{base_url}/openai/v1"
+            client = OpenAI(
+                api_key=api_key,
+                base_url=responses_base_url,
+                default_query={"api-version": api_version} if api_version else None,
+            )
+            response = client.responses.create(**request_data)
+        else:
+            client = AzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
+            response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
     @trace_method
@@ -55,8 +79,20 @@ class AzureClient(OpenAIClient):
             base_url = model_settings.azure_base_url or os.environ.get("AZURE_BASE_URL")
             api_version = model_settings.azure_api_version or os.environ.get("AZURE_API_VERSION")
         try:
-            client = AsyncAzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
-            response: ChatCompletion = await client.chat.completions.create(**request_data)
+            base_url = self._sanitize_base_url(base_url)
+            # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
+            if "input" in request_data and "messages" not in request_data:
+                # Azure Responses API requires standard OpenAI client with /openai/v1/ URL
+                responses_base_url = f"{base_url}/openai/v1"
+                client = AsyncOpenAI(
+                    api_key=api_key,
+                    base_url=responses_base_url,
+                    default_query={"api-version": api_version} if api_version else None,
+                )
+                response = await client.responses.create(**request_data)
+            else:
+                client = AsyncAzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
+                response: ChatCompletion = await client.chat.completions.create(**request_data)
         except Exception as e:
             raise self.handle_llm_error(e)
 
@@ -68,6 +104,7 @@ class AzureClient(OpenAIClient):
         api_key = model_settings.azure_api_key or os.environ.get("AZURE_API_KEY")
         base_url = model_settings.azure_base_url or os.environ.get("AZURE_BASE_URL")
         api_version = model_settings.azure_api_version or os.environ.get("AZURE_API_VERSION")
+        base_url = self._sanitize_base_url(base_url)
         client = AsyncAzureOpenAI(api_key=api_key, api_version=api_version, azure_endpoint=base_url)
         response = await client.embeddings.create(model=embedding_config.embedding_model, input=inputs)
 
