@@ -808,7 +808,7 @@ class LettaAgentV3(LettaAgentV2):
                                 raise e
                             except Exception as e:
                                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-                                self.logger.error(f"Unknown error occured for summarization run {run_id}: {e}")
+                                self.logger.error(f"Unknown error occurred for summarization run {run_id}: {e}")
                                 raise e
 
                             # update the messages
@@ -821,7 +821,7 @@ class LettaAgentV3(LettaAgentV2):
 
                         else:
                             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-                            self.logger.error(f"Unknown error occured for run {run_id}: {e}")
+                            self.logger.error(f"Unknown error occurred for run {run_id}: {e}")
                             raise e
 
                 step_progression, step_metrics = self._step_checkpoint_llm_request_finish(

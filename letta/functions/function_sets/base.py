@@ -359,10 +359,10 @@ def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str:
     current_value = str(agent_state.memory.get_block(label).value).expandtabs()
 
     # Check if old_str is unique in the block
-    occurences = current_value.count(old_str)
-    if occurences == 0:
+    occurrences = current_value.count(old_str)
+    if occurrences == 0:
         raise ValueError(f"No replacement was performed, old_str `{old_str}` did not appear verbatim in memory block with label `{label}`.")
-    elif occurences > 1:
+    elif occurrences > 1:
         content_value_lines = current_value.split("\n")
         lines = [idx + 1 for idx, line in enumerate(content_value_lines) if old_str in line]
         raise ValueError(
