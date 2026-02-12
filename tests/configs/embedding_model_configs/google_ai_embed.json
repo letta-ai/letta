@@ -1,0 +1,8 @@
+{
+    "embedding_model": "gemini-embedding-001",
+    "embedding_endpoint_type": "google_ai",
+    "embedding_endpoint": "https://generativelanguage.googleapis.com",
+    "embedding_dim": 3072,
+    "embedding_chunk_size": 300,
+    "batch_size": 100
+}

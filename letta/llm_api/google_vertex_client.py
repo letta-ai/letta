@@ -1,5 +1,7 @@
+import asyncio
 import base64
 import json
+import time
 import uuid
 from typing import AsyncIterator, List, Optional
 
@@ -35,6 +37,7 @@ from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool
@@ -947,3 +950,104 @@ class GoogleVertexClient(LLMClientBase):
             raise self.handle_llm_error(e)
 
         return total_tokens
+
+    @trace_method
+    async def request_embeddings(self, inputs: List[str], embedding_config: EmbeddingConfig) -> List[List[float]]:
+        """Request embeddings given texts and embedding config with batching and retry logic
+
+        Args:
+            inputs: List of text strings to embed
+            embedding_config: Configuration containing embedding model and parameters
+
+        Returns:
+            List of embedding vectors (each vector is a list of floats)
+
+        Retry strategy:
+        1. Start with batch_size=100 (Google AI has lower limits than OpenAI)
+        2. On failure, halve batch_size until it reaches 1
+        3. Individual text failures are logged but don't stop the batch
+        """
+        if not inputs:
+            return []
+
+        request_start = time.time()
+        logger.info(
+            f"{self._provider_prefix()} request_embeddings called with {len(inputs)} inputs, model={embedding_config.embedding_model}"
+        )
+
+        # Validate inputs - Google AI rejects empty strings
+        valid_inputs = []
+        input_index_map = []  # Map valid input index back to original index
+
+        for idx, inp in enumerate(inputs):
+            if not isinstance(inp, str):
+                logger.error(f"Invalid input at index {idx}: type={type(inp)}, value={inp}")
+                raise ValueError(f"Input at index {idx} is not a string: {type(inp)}")
+            if not inp or not inp.strip():
+                logger.warning(f"Empty or whitespace-only input at index {idx}, replacing with placeholder")
+                # Replace empty strings with placeholder to avoid API rejection
+                valid_inputs.append(" ")
+                input_index_map.append(idx)
+            else:
+                valid_inputs.append(inp)
+                input_index_map.append(idx)
+
+        if not valid_inputs:
+            logger.error("All inputs are empty after validation")
+            raise ValueError("Cannot request embeddings for empty inputs")
+
+        # Use valid_inputs instead of inputs for processing
+        inputs = valid_inputs
+
+        client = self._get_client()
+
+        # Track results by original index to maintain order
+        results = [None] * len(inputs)
+        initial_batch_size = 100  # Google AI has lower batch limits than OpenAI
+        chunks_to_process = [(i, inputs[i : i + initial_batch_size], initial_batch_size) for i in range(0, len(inputs), initial_batch_size)]
+
+        while chunks_to_process:
+            tasks = []
+            task_metadata = []
+
+            for start_idx, chunk_inputs, current_batch_size in chunks_to_process:
+                if not chunk_inputs:
+                    logger.warning(f"Skipping empty chunk at start_idx={start_idx}")
+                    continue
+
+                logger.info(
+                    f"{self._provider_prefix()} Creating embedding task: start_idx={start_idx}, "
+                    f"batch_size={len(chunk_inputs)}, model={embedding_config.embedding_model}"
+                )
+
+                task = client.aio.models.embed_content(model=embedding_config.embedding_model, contents=chunk_inputs)
+                tasks.append(task)
+                task_metadata.append((start_idx, chunk_inputs, current_batch_size))
+
+            if not tasks:
+                logger.warning("All chunks were empty, skipping embedding request")
+                break
+
+            gather_start = time.time()
+            logger.info(f"{self._provider_prefix()} Awaiting {len(tasks)} embedding API calls...")
+            task_results = await asyncio.gather(*tasks, return_exceptions=True)
+            gather_duration = time.time() - gather_start
+
+            logger.info(f"{self._provider_prefix()} Embedding API gather completed in {gather_duration:.2f}s")
+
+            # Process results
+            for (start_idx, chunk_inputs, current_batch_size), result in zip(task_metadata, task_results):
+                if isinstance(result, Exception):
+                    logger.error(f"{self._provider_prefix()} Embedding request failed: {result}")
+                    raise result
+
+                # Extract embeddings from response
+                for i, embedding in enumerate(result.embeddings):
+                    results[start_idx + i] = embedding.values
+
+            break  # All chunks processed successfully
+
+        total_duration = time.time() - request_start
+        logger.info(f"{self._provider_prefix()} request_embeddings completed in {total_duration:.2f}s, returned {len(results)} embeddings")
+
+        return results
