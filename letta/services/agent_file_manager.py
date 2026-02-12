@@ -334,6 +334,38 @@ class AgentFileManager:
             else:
                 logger.info("Starting agent file import")
 
+            # Sanitize groups: Remove groups with invalid/short agent IDs to prevent validation errors
+            # This handles legacy .af files that may have placeholder IDs like "agent-1" instead of full UUIDs
+            original_group_count = len(schema.groups)
+            if schema.groups:
+                valid_groups = []
+                for group in schema.groups:
+                    # Check if all agent_ids in the group are valid (not too short)
+                    # Agent IDs should be at least 8 characters (format: "agent-X" minimum)
+                    invalid_agent_ids = [aid for aid in group.agent_ids if len(aid) < 8]
+                    
+                    # Check if manager_agent_id is valid (if it exists)
+                    invalid_manager_id = False
+                    if hasattr(group.manager_config, 'manager_agent_id'):
+                        manager_agent_id = getattr(group.manager_config, 'manager_agent_id', None)
+                        if manager_agent_id and len(manager_agent_id) < 8:
+                            invalid_manager_id = True
+                    
+                    if invalid_agent_ids or invalid_manager_id:
+                        logger.warning(
+                            f"Skipping group {group.id} due to invalid agent IDs. "
+                            f"Invalid agent_ids: {invalid_agent_ids}, Invalid manager_id: {invalid_manager_id}"
+                        )
+                    else:
+                        valid_groups.append(group)
+                
+                schema.groups = valid_groups
+                if len(valid_groups) < original_group_count:
+                    logger.info(
+                        f"Filtered out {original_group_count - len(valid_groups)} groups with invalid agent IDs. "
+                        f"Continuing with {len(valid_groups)} valid groups."
+                    )
+
             # Validate schema first
             self._validate_schema(schema)
 
