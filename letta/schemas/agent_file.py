@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from pydantic import BaseModel, Field
@@ -9,7 +9,18 @@ from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
-from letta.schemas.group import Group, GroupCreate
+from letta.schemas.group import (
+    DynamicManager,
+    Group,
+    GroupCreate,
+    ManagerConfig,
+    ManagerConfigUnion,
+    ManagerType,
+    RoundRobinManager,
+    SleeptimeManager,
+    SupervisorManager,
+    VoiceSleeptimeManager,
+)
 from letta.schemas.letta_message import ApprovalReturn
 from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message, MessageCreate, ToolReturn
@@ -195,26 +206,115 @@ class AgentSchema(CreateAgent):
         )
 
 
-class GroupSchema(GroupCreate):
-    """Group with human-readable ID for agent file"""
+# File-specific manager configs that accept string IDs instead of validated AgentId
+# These are used during import/export where we have file IDs like "agent-1" not full UUIDs
+
+
+class FileRoundRobinManager(ManagerConfig):
+    """RoundRobinManager for agent files (no AgentId validation)"""
+
+    manager_type: Literal[ManagerType.round_robin] = Field(ManagerType.round_robin, description="")
+    max_turns: Optional[int] = Field(None, description="")
+
+
+class FileSupervisorManager(ManagerConfig):
+    """SupervisorManager for agent files (no AgentId validation)"""
+
+    manager_type: Literal[ManagerType.supervisor] = Field(ManagerType.supervisor, description="")
+    manager_agent_id: str = Field(..., description="")  # Changed from AgentId to str
+
+
+class FileDynamicManager(ManagerConfig):
+    """DynamicManager for agent files (no AgentId validation)"""
+
+    manager_type: Literal[ManagerType.dynamic] = Field(ManagerType.dynamic, description="")
+    manager_agent_id: str = Field(..., description="")  # Changed from AgentId to str
+    termination_token: Optional[str] = Field("DONE!", description="")
+    max_turns: Optional[int] = Field(None, description="")
+
+
+class FileSleeptimeManager(ManagerConfig):
+    """SleeptimeManager for agent files (no AgentId validation)"""
+
+    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_agent_id: str = Field(..., description="")  # Changed from AgentId to str
+    sleeptime_agent_frequency: Optional[int] = Field(None, description="")
+
+
+class FileVoiceSleeptimeManager(ManagerConfig):
+    """VoiceSleeptimeManager for agent files (no AgentId validation)"""
+
+    manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
+    manager_agent_id: str = Field(..., description="")  # Changed from AgentId to str
+    max_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.",
+    )
+    min_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
+    )
+
+
+FileManagerConfigUnion = Annotated[
+    Union[FileRoundRobinManager, FileSupervisorManager, FileDynamicManager, FileSleeptimeManager, FileVoiceSleeptimeManager],
+    Field(discriminator="manager_type"),
+]
+
+
+class GroupSchema(BaseModel):
+    """Group with human-readable ID for agent file - uses string IDs instead of validated AgentIds"""
 
     __id_prefix__ = PrimitiveType.GROUP.value
     id: str = Field(..., description="Human-readable identifier for this group in the file")
+    agent_ids: List[str] = Field(..., description="")  # Changed from List[AgentId] to List[str]
+    description: str = Field(..., description="")
+    manager_config: FileManagerConfigUnion = Field(FileRoundRobinManager(), description="")  # Use file-specific union
+    project_id: Optional[str] = Field(None, description="The associated project id.")
+    shared_block_ids: List[str] = Field([], description="", deprecated=True)  # Changed from List[BlockId] to List[str]
+    hidden: Optional[bool] = Field(None, description="If set to True, the group will be hidden.")
 
     @classmethod
     def from_group(cls, group: Group) -> "GroupSchema":
         """Convert Group to GroupSchema"""
 
-        create_group = GroupCreate(
-            agent_ids=group.agent_ids,
-            description=group.description,
-            manager_config=group.manager_config,
-            project_id=group.project_id,
-            shared_block_ids=group.shared_block_ids,
-        )
+        # Convert the database manager config to a file manager config
+        file_manager_config: FileManagerConfigUnion
+        match group.manager_type:
+            case ManagerType.round_robin:
+                file_manager_config = FileRoundRobinManager(max_turns=group.max_turns)
+            case ManagerType.supervisor:
+                file_manager_config = FileSupervisorManager(manager_agent_id=group.manager_agent_id or "")
+            case ManagerType.dynamic:
+                file_manager_config = FileDynamicManager(
+                    manager_agent_id=group.manager_agent_id or "",
+                    termination_token=group.termination_token,
+                    max_turns=group.max_turns,
+                )
+            case ManagerType.sleeptime:
+                file_manager_config = FileSleeptimeManager(
+                    manager_agent_id=group.manager_agent_id or "",
+                    sleeptime_agent_frequency=group.sleeptime_agent_frequency,
+                )
+            case ManagerType.voice_sleeptime:
+                file_manager_config = FileVoiceSleeptimeManager(
+                    manager_agent_id=group.manager_agent_id or "",
+                    max_message_buffer_length=group.max_message_buffer_length,
+                    min_message_buffer_length=group.min_message_buffer_length,
+                )
+            case _:
+                file_manager_config = FileRoundRobinManager()
 
         # Create GroupSchema with the group's ID (will be remapped later)
-        return cls(id=group.id, **create_group.model_dump())
+        return cls(
+            id=group.id,
+            agent_ids=group.agent_ids,
+            description=group.description,
+            manager_config=file_manager_config,
+            project_id=group.project_id,
+            shared_block_ids=group.shared_block_ids,
+            hidden=group.hidden,
+        )
 
 
 class BlockSchema(CreateBlock):
