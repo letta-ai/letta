@@ -29,6 +29,7 @@ from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
+from letta.services.file_processor.embedder.google_ai_embedder import GoogleAIEmbedder
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
@@ -515,6 +516,8 @@ async def load_file_to_source_cloud(
         embedder = TurbopufferEmbedder(embedding_config=embedding_config)
     elif should_use_pinecone():
         embedder = PineconeEmbedder(embedding_config=embedding_config)
+    elif embedding_config.embedding_endpoint_type == "google_ai":
+        embedder = GoogleAIEmbedder(embedding_config=embedding_config)
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
 

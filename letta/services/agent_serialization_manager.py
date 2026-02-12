@@ -42,6 +42,7 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
+from letta.services.file_processor.embedder.google_ai_embedder import GoogleAIEmbedder
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
 from letta.services.file_processor.file_processor import FileProcessor
@@ -635,6 +636,8 @@ class AgentSerializationManager:
                     embedder = TurbopufferEmbedder(embedding_config=embedder_config)
                 elif should_use_pinecone():
                     embedder = PineconeEmbedder(embedding_config=embedder_config)
+                elif embedder_config.embedding_endpoint_type == "google_ai":
+                    embedder = GoogleAIEmbedder(embedding_config=embedder_config)
                 else:
                     embedder = OpenAIEmbedder(embedding_config=embedder_config)
                 file_processor = FileProcessor(

@@ -1,7 +1,7 @@
 import glob
 import json
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -203,3 +203,506 @@ async def test_openai_embedding_minimum_chunk_failure(default_user):
 
         with pytest.raises(Exception, match="API error"):
             await client.request_embeddings(test_inputs, embedding_config)
+
+
+class TestGoogleVertexClientEmbeddings:
+    """Unit tests for GoogleVertexClient.request_embeddings() method.
+
+    GoogleVertexClient uses Vertex AI authentication (project + location) rather than
+    a Gemini API key, but the request_embeddings implementation is identical in structure.
+    These tests verify that the Vertex path works correctly with the same edge cases.
+    """
+
+    @pytest.fixture
+    def mock_user(self):
+        user = Mock()
+        user.organization_id = "test_org_id"
+        return user
+
+    @pytest.fixture
+    def embedding_config(self):
+        return EmbeddingConfig(
+            embedding_endpoint_type="google_vertex",
+            embedding_endpoint="https://us-central1-aiplatform.googleapis.com",
+            embedding_model="text-embedding-005",
+            embedding_dim=768,
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_basic(self, mock_user, embedding_config):
+        """Test GoogleVertexClient.request_embeddings returns correct structure."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 768
+        mock_response = Mock()
+        mock_response.embeddings = [mock_embedding]
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = AsyncMock(return_value=mock_response)
+            mock_get_client.return_value = mock_genai_client
+
+            embeddings = await client.request_embeddings(["test input"], embedding_config)
+
+        assert len(embeddings) == 1
+        assert len(embeddings[0]) == 768
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_batch_size_limit(self, mock_user, embedding_config):
+        """Test that inputs are batched at 100 (Google AI limit also applies to Vertex)."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        api_call_sizes = []
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 768
+
+        async def mock_embed_content(model, contents):
+            api_call_sizes.append(len(contents))
+            mock_response = Mock()
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = mock_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            embeddings = await client.request_embeddings([f"Input {i}" for i in range(250)], embedding_config)
+
+        assert len(embeddings) == 250
+        assert all(size <= 100 for size in api_call_sizes), f"Batch exceeded 100: {api_call_sizes}"
+        assert len(api_call_sizes) >= 3  # 100 + 100 + 50
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_empty_string_handling(self, mock_user, embedding_config):
+        """Test that empty strings are replaced with single space placeholder."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        contents_received = []
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 768
+
+        async def mock_embed_content(model, contents):
+            contents_received.extend(contents)
+            mock_response = Mock()
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = mock_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            await client.request_embeddings(["", "  ", "valid text"], embedding_config)
+
+        assert contents_received[0] == " "
+        assert contents_received[1] == " "
+        assert contents_received[2] == "valid text"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_empty_input_returns_empty(self, mock_user, embedding_config):
+        """Test that empty input list returns empty list without making API calls."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = AsyncMock()
+            mock_get_client.return_value = mock_genai_client
+
+            result = await client.request_embeddings([], embedding_config)
+
+        assert result == []
+        mock_genai_client.aio.models.embed_content.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_non_string_raises_value_error(self, mock_user, embedding_config):
+        """Test that non-string inputs raise ValueError."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_get_client.return_value = MagicMock()
+
+            with pytest.raises(ValueError, match="not a string"):
+                await client.request_embeddings([123], embedding_config)
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_error_propagation(self, mock_user, embedding_config):
+        """Test that API errors are propagated to the caller."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = AsyncMock(side_effect=Exception("Vertex AI quota exceeded"))
+            mock_get_client.return_value = mock_genai_client
+
+            with pytest.raises(Exception, match="Vertex AI quota exceeded"):
+                await client.request_embeddings(["text"], embedding_config)
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_correct_model_name(self, mock_user, embedding_config):
+        """Test that the correct model name from embedding_config is passed to the Vertex API."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        called_with_model = []
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 768
+
+        async def mock_embed_content(model, contents):
+            called_with_model.append(model)
+            mock_response = Mock()
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = mock_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            await client.request_embeddings(["hello"], embedding_config)
+
+        assert len(called_with_model) >= 1
+        assert called_with_model[0] == "text-embedding-005"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_order_preserved(self, mock_user, embedding_config):
+        """Test that embedding order matches input order despite batching."""
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        async def ordered_embed(model, contents):
+            mock_response = Mock()
+            mock_response.embeddings = []
+            for text in contents:
+                idx = int(text.split()[-1])
+                mock_emb = Mock()
+                mock_emb.values = [float(idx)] + [0.0] * 767
+                mock_response.embeddings.append(mock_emb)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = ordered_embed
+            mock_get_client.return_value = mock_genai_client
+
+            embeddings = await client.request_embeddings([f"Text {i}" for i in range(50)], embedding_config)
+
+        assert len(embeddings) == 50
+        for i in range(50):
+            assert embeddings[i][0] == float(i), f"Order mismatch at index {i}"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_vertex_request_embeddings_parallel_gather(self, mock_user, embedding_config):
+        """Test that multiple batches are dispatched concurrently via asyncio.gather."""
+        import asyncio
+
+        from letta.llm_api.google_vertex_client import GoogleVertexClient
+
+        client = GoogleVertexClient(actor=mock_user)
+
+        concurrent_calls = []
+
+        async def slow_embed_content(model, contents):
+            concurrent_calls.append(("start", len(contents)))
+            await asyncio.sleep(0)  # yield to event loop so other tasks can start
+            concurrent_calls.append(("end", len(contents)))
+            mock_response = Mock()
+            mock_embedding = Mock()
+            mock_embedding.values = [0.1] * 768
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = slow_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            # 250 inputs → 3 batches (100, 100, 50), should be gathered in parallel
+            embeddings = await client.request_embeddings([f"text {i}" for i in range(250)], embedding_config)
+
+        assert len(embeddings) == 250
+        # All batches started before any finished (interleaved = parallel)
+        starts = [e for e in concurrent_calls if e[0] == "start"]
+        assert len(starts) == 3
+
+
+class TestGoogleAIClientEmbeddings:
+    """Unit tests for GoogleAIClient.request_embeddings() method."""
+
+    @pytest.fixture
+    def mock_user(self):
+        """Create a mock user for testing - avoids server dependency."""
+        user = Mock()
+        user.organization_id = "test_org_id"
+        return user
+
+    @pytest.fixture
+    def embedding_config(self):
+        return EmbeddingConfig(
+            embedding_endpoint_type="google_ai",
+            embedding_endpoint="https://generativelanguage.googleapis.com",
+            embedding_model="gemini-embedding-001",
+            embedding_dim=3072,
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_basic(self, mock_user, embedding_config):
+        """Test GoogleAIClient.request_embeddings returns correct structure."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 3072
+        mock_response = Mock()
+        mock_response.embeddings = [mock_embedding]
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = AsyncMock(return_value=mock_response)
+            mock_get_client.return_value = mock_genai_client
+
+            embeddings = await client.request_embeddings(["test input"], embedding_config)
+
+        assert len(embeddings) == 1
+        assert len(embeddings[0]) == 3072
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_batch_size_limit(self, mock_user, embedding_config):
+        """Test that inputs are batched at 100 (Google AI limit)."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        api_call_sizes = []
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 3072
+
+        async def mock_embed_content(model, contents):
+            api_call_sizes.append(len(contents))
+            mock_response = Mock()
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = mock_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            embeddings = await client.request_embeddings([f"Input {i}" for i in range(250)], embedding_config)
+
+        assert len(embeddings) == 250
+        assert all(size <= 100 for size in api_call_sizes), f"Batch exceeded 100: {api_call_sizes}"
+        assert len(api_call_sizes) >= 3  # 100 + 100 + 50
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_empty_string_handling(self, mock_user, embedding_config):
+        """Test that empty strings are replaced with single space."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        contents_received = []
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 3072
+
+        async def mock_embed_content(model, contents):
+            contents_received.extend(contents)
+            mock_response = Mock()
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = mock_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            await client.request_embeddings(["", "  ", "valid text"], embedding_config)
+
+        assert contents_received[0] == " "
+        assert contents_received[1] == " "
+        assert contents_received[2] == "valid text"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_order_preserved(self, mock_user, embedding_config):
+        """Test that embedding order matches input order despite batching."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        async def ordered_embed(model, contents):
+            mock_response = Mock()
+            mock_response.embeddings = []
+            for text in contents:
+                idx = int(text.split()[-1])
+                mock_emb = Mock()
+                mock_emb.values = [float(idx)] + [0.0] * 3071
+                mock_response.embeddings.append(mock_emb)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = ordered_embed
+            mock_get_client.return_value = mock_genai_client
+
+            embeddings = await client.request_embeddings([f"Text {i}" for i in range(50)], embedding_config)
+
+        assert len(embeddings) == 50
+        for i in range(50):
+            assert embeddings[i][0] == float(i), f"Order mismatch at index {i}"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_error_propagation(self, mock_user, embedding_config):
+        """Test that API errors are propagated to the caller."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = AsyncMock(side_effect=Exception("Google AI API quota exceeded"))
+            mock_get_client.return_value = mock_genai_client
+
+            with pytest.raises(Exception, match="Google AI API quota exceeded"):
+                await client.request_embeddings(["text"], embedding_config)
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_correct_model_name(self, mock_user, embedding_config):
+        """Test that the correct model name from embedding_config is passed to the API."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        called_with_model = []
+        mock_embedding = Mock()
+        mock_embedding.values = [0.1] * 3072
+
+        async def mock_embed_content(model, contents):
+            called_with_model.append(model)
+            mock_response = Mock()
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = mock_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            await client.request_embeddings(["hello"], embedding_config)
+
+        assert len(called_with_model) >= 1
+        assert called_with_model[0] == "gemini-embedding-001"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_empty_input_returns_empty(self, mock_user, embedding_config):
+        """Test that empty input list returns empty list without making API calls."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = AsyncMock()
+            mock_get_client.return_value = mock_genai_client
+
+            result = await client.request_embeddings([], embedding_config)
+
+        assert result == []
+        mock_genai_client.aio.models.embed_content.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_non_string_raises_value_error(self, mock_user, embedding_config):
+        """Test that non-string inputs raise ValueError."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_get_client.return_value = MagicMock()
+
+            with pytest.raises(ValueError, match="not a string"):
+                await client.request_embeddings([123], embedding_config)
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @pytest.mark.google
+    async def test_google_ai_request_embeddings_parallel_gather(self, mock_user, embedding_config):
+        """Test that multiple batches are dispatched concurrently via asyncio.gather."""
+        from letta.llm_api.google_ai_client import GoogleAIClient
+
+        client = GoogleAIClient(actor=mock_user)
+
+        concurrent_calls = []
+        import asyncio
+
+        async def slow_embed_content(model, contents):
+            concurrent_calls.append(("start", len(contents)))
+            await asyncio.sleep(0)  # yield to event loop so other tasks can start
+            concurrent_calls.append(("end", len(contents)))
+            mock_response = Mock()
+            mock_embedding = Mock()
+            mock_embedding.values = [0.1] * 3072
+            mock_response.embeddings = [mock_embedding] * len(contents)
+            return mock_response
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_genai_client = MagicMock()
+            mock_genai_client.aio.models.embed_content = slow_embed_content
+            mock_get_client.return_value = mock_genai_client
+
+            # 250 inputs → 3 batches (100, 100, 50), should be gathered in parallel
+            embeddings = await client.request_embeddings([f"text {i}" for i in range(250)], embedding_config)
+
+        assert len(embeddings) == 250
+        # All batches started before any finished (interleaved = parallel)
+        starts = [e for e in concurrent_calls if e[0] == "start"]
+        assert len(starts) == 3
