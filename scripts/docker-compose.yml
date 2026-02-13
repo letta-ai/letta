@@ -14,7 +14,7 @@ services:
       - ./data/redis:/data
     command: redis-server --appendonly yes
   postgres:
-    image: ankane/pgvector
+    image: pgvector/pgvector:pg17
     container_name: postgres
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']

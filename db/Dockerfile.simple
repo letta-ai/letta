@@ -43,10 +43,10 @@
 # where user, password, and db are the values you set in the init-letta.sql file,
 # all defaulting to 'letta'.
 
-# Version tags can be found here: https://hub.docker.com/r/ankane/pgvector/tags
-ARG PGVECTOR=v0.5.1
+# Version tags can be found here: https://hub.docker.com/r/pgvector/pgvector/tags
+ARG PGVECTOR=pg17
 # Set up a minimal postgres image
-FROM ankane/pgvector:${PGVECTOR}
+FROM pgvector/pgvector:${PGVECTOR}
 RUN sed -e 's/^    //' >/docker-entrypoint-initdb.d/01-initletta.sql <<'EOF'
     -- Title: Init Letta Database
 

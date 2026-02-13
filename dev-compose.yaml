@@ -1,6 +1,6 @@
 services:
   letta_db:
-    image: pgvector/pgvector:0.8.1-pg15
+    image: pgvector/pgvector:pg17
     networks:
       default:
         aliases:
