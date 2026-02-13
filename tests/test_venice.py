@@ -802,3 +802,426 @@ class TestVeniceCompatibilityFlags:
 
     def test_openai_supports_content_none(self):
         assert supports_content_none(self._openai_config()) is True
+
+
+# ---------------------------------------------------------------------------
+# Multimodal / vision message handling tests
+# ---------------------------------------------------------------------------
+
+# Realistic OpenAI-format multimodal message fixtures
+MULTIMODAL_USER_MESSAGE = {
+    "role": "user",
+    "content": [
+        {"type": "text", "text": "What's in this image?"},
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                "detail": "auto",
+            },
+        },
+    ],
+}
+
+MULTIMODAL_USER_MESSAGE_MULTIPLE_IMAGES = {
+    "role": "user",
+    "content": [
+        {"type": "text", "text": "Compare these two images."},
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==",
+                "detail": "high",
+            },
+        },
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+                "detail": "low",
+            },
+        },
+    ],
+}
+
+MULTIMODAL_USER_MESSAGE_IMAGE_ONLY = {
+    "role": "user",
+    "content": [
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==",
+                "detail": "auto",
+            },
+        },
+    ],
+}
+
+PLAIN_TEXT_MESSAGE = {
+    "role": "user",
+    "content": "Hello, how are you?",
+}
+
+ASSISTANT_MESSAGE = {
+    "role": "assistant",
+    "content": "I'm doing well, thanks!",
+}
+
+SYSTEM_MESSAGE = {
+    "role": "system",
+    "content": "You are a helpful assistant.",
+}
+
+TOOL_RESULT_MESSAGE = {
+    "role": "tool",
+    "tool_call_id": "call_abc123",
+    "content": "Result: 42",
+}
+
+
+class TestVeniceMultimodalFiltering:
+    """Tests for Venice multimodal/vision message handling.
+
+    Covers:
+    - Image content stripping for non-vision models
+    - Image content passthrough for vision-capable models
+    - Mixed message histories (text + image + tool + assistant)
+    - Edge cases: image-only messages, multiple images, URL images
+    """
+
+    def _make_client_with_caps(self, model_caps: dict):
+        """Create an OpenAIClient with pre-populated capability cache."""
+        from letta.llm_api.openai_client import OpenAIClient
+
+        client = OpenAIClient.__new__(OpenAIClient)
+        client._venice_capabilities_cache = model_caps
+        return client
+
+    def _venice_config(self, model="llama-3.3-70b"):
+        from letta.schemas.llm_config import LLMConfig
+
+        return LLMConfig(
+            model=model,
+            model_endpoint_type="openai",
+            model_endpoint="https://api.venice.ai/api/v1",
+            context_window=131072,
+        )
+
+    # --- Non-vision model: images should be stripped ---
+
+    def test_non_vision_model_strips_images_from_mixed_message(self):
+        """Text+image message → only text parts remain for non-vision model."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            [MULTIMODAL_USER_MESSAGE], "llama-3.3-70b"
+        )
+        assert len(result) == 1
+        content = result[0]["content"]
+        assert isinstance(content, list)
+        assert len(content) == 1
+        assert content[0]["type"] == "text"
+        assert content[0]["text"] == "What's in this image?"
+
+    def test_non_vision_model_strips_multiple_images(self):
+        """Message with text + 2 images → only text part remains."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            [MULTIMODAL_USER_MESSAGE_MULTIPLE_IMAGES], "llama-3.3-70b"
+        )
+        content = result[0]["content"]
+        assert isinstance(content, list)
+        assert len(content) == 1
+        assert content[0]["text"] == "Compare these two images."
+
+    def test_non_vision_model_image_only_message_gets_placeholder(self):
+        """Message with ONLY image (no text) → replaced with placeholder string."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            [MULTIMODAL_USER_MESSAGE_IMAGE_ONLY], "llama-3.3-70b"
+        )
+        content = result[0]["content"]
+        assert isinstance(content, str)
+        assert "model does not support vision" in content.lower()
+
+    def test_non_vision_model_plain_text_unchanged(self):
+        """Plain text message (string content) passes through untouched."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            [PLAIN_TEXT_MESSAGE], "llama-3.3-70b"
+        )
+        assert result[0] == PLAIN_TEXT_MESSAGE
+
+    def test_non_vision_model_assistant_message_unchanged(self):
+        """Assistant messages are never filtered (they don't contain images)."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            [ASSISTANT_MESSAGE], "llama-3.3-70b"
+        )
+        assert result[0] == ASSISTANT_MESSAGE
+
+    def test_non_vision_model_system_message_unchanged(self):
+        """System messages pass through untouched."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            [SYSTEM_MESSAGE], "llama-3.3-70b"
+        )
+        assert result[0] == SYSTEM_MESSAGE
+
+    # --- Vision-capable model: images should pass through ---
+
+    def test_vision_model_preserves_images(self):
+        """Vision model gets images passed through unmodified."""
+        client = self._make_client_with_caps({
+            "google-gemma-3-27b-it": {"supports_tools": True, "supports_vision": True},
+        })
+        data = {
+            "model": "google-gemma-3-27b-it",
+            "messages": [SYSTEM_MESSAGE, MULTIMODAL_USER_MESSAGE],
+            "tools": [{"type": "function", "function": {"name": "test", "parameters": {}}}],
+            "tool_choice": "auto",
+        }
+        config = self._venice_config(model="google-gemma-3-27b-it")
+        result = client._venice_filter_request_data(data, config)
+        # Images should still be present
+        user_msg = result["messages"][1]
+        content_types = [p["type"] for p in user_msg["content"]]
+        assert "image_url" in content_types
+        assert "text" in content_types
+
+    def test_vision_model_preserves_multiple_images(self):
+        """Vision model preserves all image parts in multi-image message."""
+        client = self._make_client_with_caps({
+            "google-gemma-3-27b-it": {"supports_tools": True, "supports_vision": True},
+        })
+        data = {
+            "model": "google-gemma-3-27b-it",
+            "messages": [MULTIMODAL_USER_MESSAGE_MULTIPLE_IMAGES],
+        }
+        config = self._venice_config(model="google-gemma-3-27b-it")
+        result = client._venice_filter_request_data(data, config)
+        content = result["messages"][0]["content"]
+        image_parts = [p for p in content if p["type"] == "image_url"]
+        assert len(image_parts) == 2
+
+    def test_vision_model_preserves_image_only_message(self):
+        """Vision model preserves image-only messages without placeholder."""
+        client = self._make_client_with_caps({
+            "google-gemma-3-27b-it": {"supports_tools": True, "supports_vision": True},
+        })
+        data = {
+            "model": "google-gemma-3-27b-it",
+            "messages": [MULTIMODAL_USER_MESSAGE_IMAGE_ONLY],
+        }
+        config = self._venice_config(model="google-gemma-3-27b-it")
+        result = client._venice_filter_request_data(data, config)
+        content = result["messages"][0]["content"]
+        assert isinstance(content, list)
+        assert content[0]["type"] == "image_url"
+
+    # --- Full request pipeline with mixed history ---
+
+    def test_full_pipeline_non_vision_mixed_history(self):
+        """Full filter pipeline: non-vision model with realistic conversation history."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        messages = [
+            SYSTEM_MESSAGE,
+            MULTIMODAL_USER_MESSAGE,  # has image
+            ASSISTANT_MESSAGE,
+            {"role": "user", "content": "Now describe the second one."},
+            MULTIMODAL_USER_MESSAGE_MULTIPLE_IMAGES,  # has 2 images
+            ASSISTANT_MESSAGE,
+            PLAIN_TEXT_MESSAGE,
+        ]
+        data = {
+            "model": "llama-3.3-70b",
+            "messages": messages,
+            "tools": [{"type": "function", "function": {"name": "send_message", "parameters": {"type": "object", "properties": {}}}}],
+            "tool_choice": "auto",
+        }
+        config = self._venice_config(model="llama-3.3-70b")
+        result = client._venice_filter_request_data(data, config)
+
+        # System message untouched
+        assert result["messages"][0] == SYSTEM_MESSAGE
+        # First multimodal: images stripped, text kept
+        content_1 = result["messages"][1]["content"]
+        assert isinstance(content_1, list)
+        assert all(p["type"] == "text" for p in content_1)
+        # Assistant message untouched
+        assert result["messages"][2] == ASSISTANT_MESSAGE
+        # Plain text untouched
+        assert result["messages"][3]["content"] == "Now describe the second one."
+        # Second multimodal: images stripped
+        content_4 = result["messages"][4]["content"]
+        assert isinstance(content_4, list)
+        assert all(p["type"] == "text" for p in content_4)
+        # Last plain text untouched
+        assert result["messages"][6] == PLAIN_TEXT_MESSAGE
+
+    def test_full_pipeline_vision_model_mixed_history(self):
+        """Full filter pipeline: vision model preserves all images in history."""
+        client = self._make_client_with_caps({
+            "google-gemma-3-27b-it": {"supports_tools": True, "supports_vision": True},
+        })
+        messages = [
+            SYSTEM_MESSAGE,
+            MULTIMODAL_USER_MESSAGE,
+            ASSISTANT_MESSAGE,
+            MULTIMODAL_USER_MESSAGE_MULTIPLE_IMAGES,
+        ]
+        data = {
+            "model": "google-gemma-3-27b-it",
+            "messages": messages,
+            "tools": [{"type": "function", "function": {"name": "send_message", "parameters": {}}}],
+            "tool_choice": "auto",
+        }
+        config = self._venice_config(model="google-gemma-3-27b-it")
+        result = client._venice_filter_request_data(data, config)
+
+        # All messages preserved as-is
+        assert len(result["messages"]) == 4
+        # Image content intact in first multimodal
+        types_1 = [p["type"] for p in result["messages"][1]["content"]]
+        assert "image_url" in types_1
+        # Both images intact in second multimodal
+        image_parts = [p for p in result["messages"][3]["content"] if p["type"] == "image_url"]
+        assert len(image_parts) == 2
+
+    # --- Non-vision model with tool messages in history ---
+
+    def test_non_vision_non_tool_model_full_conversion(self):
+        """Non-vision, non-tool model: images stripped AND tool messages converted."""
+        client = self._make_client_with_caps({
+            "venice-uncensored": {"supports_tools": False, "supports_vision": False},
+        })
+        messages = [
+            SYSTEM_MESSAGE,
+            MULTIMODAL_USER_MESSAGE,  # has image
+            {"role": "assistant", "content": None, "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "search", "arguments": "{}"}}]},
+            TOOL_RESULT_MESSAGE,
+            PLAIN_TEXT_MESSAGE,
+        ]
+        data = {
+            "model": "venice-uncensored",
+            "messages": messages,
+            "tools": [{"type": "function", "function": {"name": "search", "parameters": {}}}],
+            "tool_choice": "required",
+        }
+        config = self._venice_config(model="venice-uncensored")
+        result = client._venice_filter_request_data(data, config)
+
+        # Tools and tool_choice stripped
+        assert "tools" not in result
+        assert "tool_choice" not in result
+        # Images stripped from multimodal message
+        content_1 = result["messages"][1]["content"]
+        assert isinstance(content_1, list)
+        assert all(p["type"] == "text" for p in content_1)
+        # Tool result message converted to user message
+        tool_msg = result["messages"][3]
+        assert tool_msg["role"] == "user"
+        assert "Tool result" in tool_msg["content"]
+        assert "Result: 42" in tool_msg["content"]
+
+    # --- Unknown model defaults (permissive for vision) ---
+
+    def test_unknown_model_defaults_no_vision(self):
+        """Unknown model with no cached caps: supports_vision defaults to False → images stripped."""
+        client = self._make_client_with_caps({})  # empty cache
+        data = {
+            "model": "some-new-model",
+            "messages": [MULTIMODAL_USER_MESSAGE],
+        }
+        config = self._venice_config(model="some-new-model")
+        result = client._venice_filter_request_data(data, config)
+        content = result["messages"][0]["content"]
+        # Should be filtered since default supports_vision is False
+        assert isinstance(content, list)
+        assert all(p["type"] == "text" for p in content)
+
+    # --- Edge cases ---
+
+    def test_empty_content_list_unchanged(self):
+        """Message with empty content list passes through."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        msg = {"role": "user", "content": []}
+        result = client._venice_filter_image_content([msg], "llama-3.3-70b")
+        assert result[0]["content"] == []
+
+    def test_non_dict_message_unchanged(self):
+        """Non-dict messages (e.g. Pydantic objects that weren't serialized) pass through."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        result = client._venice_filter_image_content(
+            ["not a dict message"], "llama-3.3-70b"
+        )
+        assert result[0] == "not a dict message"
+
+    def test_url_image_stripped_for_non_vision(self):
+        """URL-based image (not base64) is also stripped for non-vision models."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        msg = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Look at this:"},
+                {"type": "image_url", "image_url": {"url": "https://example.com/photo.jpg"}},
+            ],
+        }
+        result = client._venice_filter_image_content([msg], "llama-3.3-70b")
+        content = result[0]["content"]
+        assert len(content) == 1
+        assert content[0]["type"] == "text"
+
+    def test_message_with_only_text_parts_in_list_unchanged(self):
+        """Content list with only text parts (no images) is preserved as-is."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        msg = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "First part."},
+                {"type": "text", "text": "Second part."},
+            ],
+        }
+        result = client._venice_filter_image_content([msg], "llama-3.3-70b")
+        content = result[0]["content"]
+        assert len(content) == 2
+        assert all(p["type"] == "text" for p in content)
+
+    def test_filter_preserves_message_role_and_other_fields(self):
+        """Filtering preserves role, name, and any other fields on the message dict."""
+        client = self._make_client_with_caps({
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        })
+        msg = {
+            "role": "user",
+            "name": "test_user",
+            "content": [
+                {"type": "text", "text": "Describe this."},
+                {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
+            ],
+        }
+        result = client._venice_filter_image_content([msg], "llama-3.3-70b")
+        assert result[0]["role"] == "user"
+        assert result[0]["name"] == "test_user"
+        assert len(result[0]["content"]) == 1
