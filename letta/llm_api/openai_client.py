@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import re
 import time
 from typing import Any, List, Optional
 
@@ -168,6 +169,114 @@ def supports_content_none(llm_config: LLMConfig) -> bool:
 
 
 class OpenAIClient(LLMClientBase):
+    # Venice: cache model capabilities (model_id -> {"supports_tools": bool, "supports_vision": bool})
+    _venice_capabilities_cache: dict = {}
+
+    def _is_venice_endpoint(self, llm_config: LLMConfig) -> bool:
+        """True when the request targets Venice (OpenAI-compatible proxy)."""
+        endpoint = (llm_config.model_endpoint or "") if llm_config else ""
+        return "venice.ai" in endpoint
+
+    def _venice_filter_none_values(self, data: dict) -> dict:
+        """Remove top-level keys with None values; Venice API rejects null."""
+        return {k: v for k, v in data.items() if v is not None}
+
+    async def _venice_ensure_capabilities_async(self, llm_config: LLMConfig) -> None:
+        """Fetch Venice model list and cache capabilities for tool/vision filtering."""
+        base_url = llm_config.model_endpoint
+        if not base_url or "venice.ai" not in base_url:
+            return
+        cache = self._venice_capabilities_cache
+        if cache:
+            return  # Already populated for this session
+        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
+        if not api_key:
+            api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        try:
+            from letta.llm_api.venice import venice_get_model_list_async
+
+            response = await venice_get_model_list_async(base_url, api_key=api_key)
+            data = response.get("data", response)
+            if not isinstance(data, list):
+                return
+            for model in data:
+                if not isinstance(model, dict):
+                    continue
+                model_id = model.get("id")
+                if not model_id:
+                    continue
+                model_spec = model.get("model_spec") or {}
+                caps = model_spec.get("capabilities") or {}
+                cache[model_id] = {
+                    "supports_tools": caps.get("supportsFunctionCalling", True),
+                    "supports_vision": caps.get("supportsVision", False),
+                }
+        except Exception as e:
+            logger.warning("Failed to fetch Venice model capabilities: %s", e)
+
+    def _venice_filter_request_data(self, request_data: dict, llm_config: LLMConfig) -> dict:
+        """Strip None and, when capabilities are cached, filter tools/vision for Venice."""
+        data = self._venice_filter_none_values(request_data)
+        # Chat Completions path only (not Responses API)
+        if "input" in data and "messages" not in data:
+            return data
+        model = data.get("model", "")
+        caps = self._venice_capabilities_cache.get(model, {}) if model else {}
+        supports_tools = caps.get("supports_tools", True)
+        supports_vision = caps.get("supports_vision", False)
+
+        messages = data.get("messages", [])
+        if not supports_vision and messages:
+            messages = self._venice_filter_image_content(messages, model)
+            data = {**data, "messages": messages}
+
+        if not supports_tools:
+            data = {k: v for k, v in data.items() if k not in ("tools", "tool_choice")}
+            messages = data.get("messages", [])
+            converted = []
+            for msg in messages:
+                if isinstance(msg, dict) and msg.get("role") == "tool":
+                    converted.append({
+                        "role": "user",
+                        "content": f"Tool result (ID: {msg.get('tool_call_id', '')}):\n{msg.get('content', '')}",
+                    })
+                else:
+                    converted.append(msg)
+            data["messages"] = converted
+        return data
+
+    def _venice_filter_image_content(self, messages: list, model: str) -> list:
+        """Remove image parts from messages when model does not support vision."""
+        filtered = []
+        for msg in messages:
+            if not isinstance(msg, dict):
+                filtered.append(msg)
+                continue
+            content = msg.get("content")
+            if not isinstance(content, list):
+                filtered.append(msg)
+                continue
+            text_parts = [p for p in content if isinstance(p, dict) and p.get("type") == "text"]
+            if text_parts:
+                filtered.append({**msg, "content": text_parts})
+            elif content:
+                filtered.append({**msg, "content": "[Image content removed - model does not support vision]"})
+            else:
+                filtered.append(msg)
+        return filtered
+
+    def _venice_extract_think_reasoning(self, content: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+        """Extract <think>...</think> from content; return (cleaned_content, reasoning_content)."""
+        if not content or not isinstance(content, str):
+            return content, None
+        pattern = r"<think>(.*?)</think>"
+        matches = re.findall(pattern, content, re.DOTALL)
+        if not matches:
+            return content, None
+        reasoning = "\n".join(m.strip() for m in matches)
+        cleaned = re.sub(pattern, "", content, flags=re.DOTALL).strip()
+        return (cleaned or None, reasoning)
+
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = self.get_byok_overrides(llm_config)
         has_byok_key = api_key is not None  # Track if we got a BYOK key
@@ -571,6 +680,8 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
+        if self._is_venice_endpoint(llm_config):
+            request_data = self._venice_filter_none_values(request_data)
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
         if "input" in request_data and "messages" not in request_data:
@@ -585,6 +696,9 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
+        if self._is_venice_endpoint(llm_config):
+            await self._venice_ensure_capabilities_async(llm_config)
+            request_data = self._venice_filter_request_data(request_data, llm_config)
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
@@ -772,6 +886,20 @@ class OpenAIClient(LLMClientBase):
 
                         chat_completion_response.choices[0].message.reasoning_content_signature = None
 
+        # Venice: extract <think>...</think> from content into reasoning_content
+        if (
+            self._is_venice_endpoint(llm_config)
+            and chat_completion_response.choices
+            and chat_completion_response.choices[0].message
+        ):
+            msg = chat_completion_response.choices[0].message
+            content = msg.content
+            if content and "<think>" in content:
+                cleaned, reasoning = self._venice_extract_think_reasoning(content)
+                if reasoning is not None:
+                    msg.reasoning_content = reasoning
+                    msg.content = cleaned
+
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
@@ -789,6 +917,9 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
+        if self._is_venice_endpoint(llm_config):
+            await self._venice_ensure_capabilities_async(llm_config)
+            request_data = self._venice_filter_request_data(request_data, llm_config)
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
 

@@ -1,9 +1,18 @@
+"""OpenAI and OpenAI-compatible provider.
+
+This provider is used for the official OpenAI API and for OpenAI-compatible proxies.
+There is no separate Venice provider type: to use Venice, add an OpenAI-compatible
+(BYOK) provider with base URL https://api.venice.ai/api/v1 and your Venice API key.
+Model discovery, request filtering (e.g. strip null, tools/vision by capability),
+and <think>→reasoning extraction are applied automatically when the base URL
+contains venice.ai.
+"""
 from typing import Literal
 
 from openai import AsyncOpenAI, AuthenticationError
 from pydantic import Field
 
-from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW, MIN_CONTEXT_WINDOW
 from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -62,6 +71,10 @@ class OpenAIProvider(Provider):
         return 16384
 
     async def _get_models_async(self) -> list[dict]:
+        # Venice: use Venice API shape and normalize to OpenAIProvider list shape
+        if "venice.ai" in self.base_url:
+            return await self._get_venice_models_normalized_async()
+
         from letta.llm_api.openai import openai_get_model_list_async
 
         # Provider-specific extra parameters for model listing
@@ -88,6 +101,41 @@ class OpenAIProvider(Provider):
         data = response.get("data", response)
         assert isinstance(data, list)
         return data
+
+    async def _get_venice_models_normalized_async(self) -> list[dict]:
+        """Fetch Venice model list and normalize to list of dicts with id, context_length, type."""
+        from letta.llm_api.venice import venice_get_model_list_async
+
+        api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
+        response = await venice_get_model_list_async(self.base_url, api_key=api_key)
+        data = response.get("data", response)
+        if not isinstance(data, list):
+            logger.warning("Unexpected Venice models payload: %s", type(data).__name__)
+            return []
+
+        normalized = []
+        for model in data:
+            if not isinstance(model, dict):
+                continue
+            model_id = model.get("id")
+            if not model_id:
+                continue
+            model_spec = model.get("model_spec") or {}
+            raw_ctx = (
+                model_spec.get("availableContextTokens")
+                or model_spec.get("context_length")
+                or model.get("context_length")
+            )
+            try:
+                context_length = int(raw_ctx) if raw_ctx is not None else MIN_CONTEXT_WINDOW
+            except (TypeError, ValueError):
+                context_length = MIN_CONTEXT_WINDOW
+            normalized.append({
+                "id": model_id,
+                "type": model.get("type"),
+                "context_length": context_length,
+            })
+        return normalized
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         data = await self._get_models_async()
@@ -166,6 +214,11 @@ class OpenAIProvider(Provider):
                 if model_type not in ["text->text", "text+image->text"]:
                     continue
 
+            # Venice: only include text/chat/language models (exclude embedding etc.)
+            if "venice.ai" in self.base_url:
+                if model.get("type") not in ("text", "chat", "language"):
+                    continue
+
             # OpenAI
             # NOTE: o1-mini and o1-preview do not support tool calling
             # NOTE: o1-mini does not support system messages
@@ -220,12 +273,23 @@ class OpenAIProvider(Provider):
     async def _do_model_checks_for_name_and_context_size_async(
         self, model: dict, length_key: str = "context_length"
     ) -> tuple[str, int] | None:
-        """Async version - uses async get_model_context_window_size_async (for litellm lookup)."""
+        """Async version - uses async get_model_context_window_size_async (for litellm lookup).
+        If model dict already has length_key (e.g. Venice normalized list), use it and skip litellm.
+        """
         if "id" not in model:
             logger.warning("Model missing 'id' field for provider: %s and model: %s", self.provider_type, model)
             return None
 
         model_name = model["id"]
+        # Use provider-supplied context length when present (e.g. Venice normalized models)
+        if model.get(length_key) is not None:
+            try:
+                context_window_size = int(model[length_key])
+                if context_window_size > 0:
+                    return model_name, context_window_size
+            except (TypeError, ValueError):
+                pass
+
         context_window_size = await self.get_model_context_window_size_async(model_name)
 
         if not context_window_size:
