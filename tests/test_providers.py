@@ -23,6 +23,7 @@ from letta.schemas.secret import Secret
 from letta.settings import model_settings
 
 
+@pytest.mark.skipif(model_settings.openai_api_key is None, reason="Only run if OPENAI_API_KEY is set.")
 def test_openai():
     provider = OpenAIProvider(
         name="openai",
@@ -38,6 +39,7 @@ def test_openai():
     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.skipif(model_settings.openai_api_key is None, reason="Only run if OPENAI_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_openai_async():
     provider = OpenAIProvider(
@@ -54,6 +56,7 @@ async def test_openai_async():
     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.skipif(model_settings.anthropic_api_key is None, reason="Only run if ANTHROPIC_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_anthropic():
     provider = AnthropicProvider(
@@ -65,10 +68,10 @@ async def test_anthropic():
     assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
+@pytest.mark.skipif(model_settings.gemini_api_key is None, reason="Only run if GEMINI_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_googleai():
     api_key = model_settings.gemini_api_key
-    assert api_key is not None
     provider = GoogleAIProvider(
         name="google_ai",
         api_key_enc=Secret.from_plaintext(api_key),
@@ -82,6 +85,10 @@ async def test_googleai():
     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.skipif(
+    model_settings.google_cloud_project is None or model_settings.google_cloud_location is None,
+    reason="Only run if GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION are set.",
+)
 @pytest.mark.asyncio
 async def test_google_vertex():
     provider = GoogleVertexProvider(
@@ -253,6 +260,7 @@ async def test_sglang():
 #     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.skipif(model_settings.anthropic_api_key is None, reason="Only run if ANTHROPIC_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_custom_anthropic():
     provider = AnthropicProvider(
@@ -264,6 +272,7 @@ async def test_custom_anthropic():
     assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
+@pytest.mark.skipif(model_settings.openai_api_key is None, reason="Only run if OPENAI_API_KEY is set.")
 def test_provider_context_window():
     """Test that providers implement context window methods correctly."""
     provider = OpenAIProvider(
@@ -279,6 +288,7 @@ def test_provider_context_window():
     assert context_window > 0
 
 
+@pytest.mark.skipif(model_settings.openai_api_key is None, reason="Only run if OPENAI_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_provider_context_window_async():
     """Test that providers implement async context window methods correctly."""
@@ -330,6 +340,7 @@ def test_provider_casting():
     assert cast_provider.api_key_enc.get_plaintext() == "test_key"
 
 
+@pytest.mark.skipif(model_settings.openai_api_key is None, reason="Only run if OPENAI_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_provider_embedding_models_consistency():
     """Test that providers return consistent embedding model formats."""

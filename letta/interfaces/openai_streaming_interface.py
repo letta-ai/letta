@@ -66,6 +66,76 @@ from letta.streaming_utils import (
 logger = get_logger(__name__)
 
 
+class VeniceThinkTagStreamBuffer:
+    """Buffers streaming content to detect and split Venice <think>...</think> tags.
+
+    As content chunks arrive, this buffer tracks whether we're inside a <think> block.
+    Call feed(text) for each chunk; it yields (is_reasoning, text) tuples so the caller
+    can emit ReasoningMessage vs AssistantMessage appropriately.
+    """
+
+    def __init__(self):
+        self._inside_think = False
+        self._tag_buffer = ""  # partial tag detection buffer
+
+    def feed(self, text: str):
+        """Yield (is_reasoning: bool, text: str) segments from the incoming chunk."""
+        buf = self._tag_buffer + text
+        self._tag_buffer = ""
+
+        while buf:
+            if self._inside_think:
+                end_idx = buf.find("</think>")
+                if end_idx == -1:
+                    # Could be a partial closing tag at the end
+                    if buf.endswith("<") or any(buf.endswith("</think>"[:i]) for i in range(2, 9)):
+                        # Hold back potential partial tag
+                        for i in range(min(len(buf), 8), 0, -1):
+                            if "</think>".startswith(buf[-i:]):
+                                self._tag_buffer = buf[-i:]
+                                remaining = buf[:-i]
+                                if remaining:
+                                    yield (True, remaining)
+                                return
+                    yield (True, buf)
+                    return
+                else:
+                    # Found closing tag
+                    reasoning_text = buf[:end_idx]
+                    if reasoning_text:
+                        yield (True, reasoning_text)
+                    self._inside_think = False
+                    buf = buf[end_idx + len("</think>"):]
+            else:
+                start_idx = buf.find("<think>")
+                if start_idx == -1:
+                    # Could be a partial opening tag at the end
+                    for i in range(min(len(buf), 7), 0, -1):
+                        if "<think>".startswith(buf[-i:]):
+                            self._tag_buffer = buf[-i:]
+                            remaining = buf[:-i]
+                            if remaining:
+                                yield (False, remaining)
+                            return
+                    if buf:
+                        yield (False, buf)
+                    return
+                else:
+                    # Found opening tag
+                    before = buf[:start_idx]
+                    if before:
+                        yield (False, before)
+                    self._inside_think = True
+                    buf = buf[start_idx + len("<think>"):]
+
+    def flush(self):
+        """Flush any remaining buffered content."""
+        if self._tag_buffer:
+            text = self._tag_buffer
+            self._tag_buffer = ""
+            yield (self._inside_think, text)
+
+
 class OpenAIStreamingInterface:
     """
     Encapsulates the logic for streaming responses from OpenAI.
@@ -77,6 +147,7 @@ class OpenAIStreamingInterface:
         self,
         use_assistant_message: bool = False,
         is_openai_proxy: bool = False,
+        is_venice: bool = False,
         messages: Optional[list] = None,
         tools: Optional[list] = None,
         put_inner_thoughts_in_kwarg: bool = True,
@@ -96,6 +167,10 @@ class OpenAIStreamingInterface:
         self.run_id = run_id
         self.step_id = step_id
         self.cancellation_event = cancellation_event
+
+        # Venice: buffer for <think> tag extraction from streamed content
+        self.is_venice = is_venice
+        self._venice_think_buffer = VeniceThinkTagStreamBuffer() if is_venice else None
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
@@ -274,7 +349,38 @@ class OpenAIStreamingInterface:
                         # Don't raise the exception here
                         continue
 
-                # Stream iterator exited normally
+                # Stream iterator exited normally — flush any Venice think-tag buffer remnants
+                if self._venice_think_buffer is not None:
+                    for is_reasoning, segment in self._venice_think_buffer.flush():
+                        if not segment:
+                            continue
+                        if is_reasoning:
+                            if prev_message_type and prev_message_type != "reasoning_message":
+                                message_index += 1
+                            reasoning_msg = ReasoningMessage(
+                                id=self.letta_message_id,
+                                date=datetime.now(timezone.utc),
+                                reasoning=segment,
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            prev_message_type = reasoning_msg.message_type
+                            yield reasoning_msg
+                        else:
+                            if prev_message_type and prev_message_type != "assistant_message":
+                                message_index += 1
+                            assistant_msg = AssistantMessage(
+                                id=self.letta_message_id,
+                                date=datetime.now(timezone.utc),
+                                content=segment,
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            prev_message_type = assistant_msg.message_type
+                            yield assistant_msg
+
                 logger.info(
                     f"Chat Completions stream iterator exited. "
                     f"Received {self.total_events_received} events, "
@@ -585,6 +691,7 @@ class SimpleOpenAIStreamingInterface:
     def __init__(
         self,
         is_openai_proxy: bool = False,
+        is_venice: bool = False,
         messages: Optional[list] = None,
         tools: Optional[list] = None,
         requires_approval_tools: list = [],
@@ -627,6 +734,10 @@ class SimpleOpenAIStreamingInterface:
         self.is_openai_proxy = is_openai_proxy
         self.messages = messages or []
         self.tools = tools or []
+
+        # Venice: buffer for <think> tag extraction from streamed content
+        self.is_venice = is_venice
+        self._venice_think_buffer = VeniceThinkTagStreamBuffer() if is_venice else None
 
         # Accumulate per-index tool call fragments and preserve order
         self._tool_calls_acc: dict[int, dict[str, str]] = {}
@@ -792,7 +903,42 @@ class SimpleOpenAIStreamingInterface:
                         # Don't raise the exception here
                         continue
 
-                # Stream iterator exited normally
+                # Stream iterator exited normally — flush any Venice think-tag buffer remnants
+                if self._venice_think_buffer is not None:
+                    for is_reasoning, segment in self._venice_think_buffer.flush():
+                        if not segment:
+                            continue
+                        if is_reasoning:
+                            if prev_message_type and prev_message_type != "reasoning_message":
+                                message_index += 1
+                            reasoning_msg = ReasoningMessage(
+                                id=self.letta_message_id,
+                                date=datetime.now(timezone.utc).isoformat(),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                source="reasoner_model",
+                                reasoning=segment,
+                                signature=None,
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            self.content_messages.append(reasoning_msg)
+                            prev_message_type = reasoning_msg.message_type
+                            yield reasoning_msg
+                        else:
+                            if prev_message_type and prev_message_type != "assistant_message":
+                                message_index += 1
+                            assistant_msg = AssistantMessage(
+                                id=self.letta_message_id,
+                                content=segment,
+                                date=datetime.now(timezone.utc).isoformat(),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            self.content_messages.append(assistant_msg)
+                            prev_message_type = assistant_msg.message_type
+                            yield assistant_msg
+
                 logger.info(
                     f"Chat Completions stream iterator exited (SimpleOpenAIStreamingInterface). "
                     f"Received {self.total_events_received} events, "
@@ -873,19 +1019,55 @@ class SimpleOpenAIStreamingInterface:
             message_delta = choice.delta
 
             if message_delta.content is not None and message_delta.content != "":
-                if prev_message_type and prev_message_type != "assistant_message":
-                    message_index += 1
-                assistant_msg = AssistantMessage(
-                    id=self.letta_message_id,
-                    content=message_delta.content,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                self.content_messages.append(assistant_msg)
-                prev_message_type = assistant_msg.message_type
-                yield assistant_msg
+                # Venice: split <think> tags into ReasoningMessage vs AssistantMessage
+                if self._venice_think_buffer is not None:
+                    for is_reasoning, segment in self._venice_think_buffer.feed(message_delta.content):
+                        if not segment:
+                            continue
+                        if is_reasoning:
+                            if prev_message_type and prev_message_type != "reasoning_message":
+                                message_index += 1
+                            reasoning_msg = ReasoningMessage(
+                                id=self.letta_message_id,
+                                date=datetime.now(timezone.utc).isoformat(),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                source="reasoner_model",
+                                reasoning=segment,
+                                signature=None,
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            self.content_messages.append(reasoning_msg)
+                            prev_message_type = reasoning_msg.message_type
+                            yield reasoning_msg
+                        else:
+                            if prev_message_type and prev_message_type != "assistant_message":
+                                message_index += 1
+                            assistant_msg = AssistantMessage(
+                                id=self.letta_message_id,
+                                content=segment,
+                                date=datetime.now(timezone.utc).isoformat(),
+                                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                                run_id=self.run_id,
+                                step_id=self.step_id,
+                            )
+                            self.content_messages.append(assistant_msg)
+                            prev_message_type = assistant_msg.message_type
+                            yield assistant_msg
+                else:
+                    if prev_message_type and prev_message_type != "assistant_message":
+                        message_index += 1
+                    assistant_msg = AssistantMessage(
+                        id=self.letta_message_id,
+                        content=message_delta.content,
+                        date=datetime.now(timezone.utc).isoformat(),
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        run_id=self.run_id,
+                        step_id=self.step_id,
+                    )
+                    self.content_messages.append(assistant_msg)
+                    prev_message_type = assistant_msg.message_type
+                    yield assistant_msg
 
             if (
                 hasattr(chunk, "choices")

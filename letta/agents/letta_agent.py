@@ -1055,9 +1055,14 @@ class LettaAgent(BaseAgent):
                             requires_approval_tools=tool_rules_solver.get_requires_approval_tools(valid_tool_names),
                         )
                     elif agent_state.llm_config.model_endpoint_type == ProviderType.openai:
+                        is_venice = bool(
+                            agent_state.llm_config.model_endpoint
+                            and "venice.ai" in agent_state.llm_config.model_endpoint
+                        )
                         interface = OpenAIStreamingInterface(
                             use_assistant_message=use_assistant_message,
                             is_openai_proxy=agent_state.llm_config.provider_name == "lmstudio_openai",
+                            is_venice=is_venice,
                             messages=current_in_context_messages + new_in_context_messages,
                             tools=request_data.get("tools", []),
                             put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
