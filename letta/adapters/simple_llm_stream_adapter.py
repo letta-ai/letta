@@ -109,8 +109,10 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                     cancellation_event=cancellation_event,
                 )
             else:
+                is_venice = bool(self.llm_config.model_endpoint and "venice.ai" in self.llm_config.model_endpoint)
                 self.interface = SimpleOpenAIStreamingInterface(
                     is_openai_proxy=self.llm_config.provider_name == "lmstudio_openai",
+                    is_venice=is_venice,
                     messages=messages,
                     tools=tools,
                     requires_approval_tools=requires_approval_tools,

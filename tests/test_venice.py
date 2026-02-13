@@ -580,3 +580,225 @@ async def test_venice_ensure_capabilities_async_api_failure():
 
     # Cache should still be empty (not populated with bad data)
     assert client._venice_capabilities_cache == {}
+
+
+# ---------------------------------------------------------------------------
+# VeniceThinkTagStreamBuffer tests
+# ---------------------------------------------------------------------------
+
+from letta.interfaces.openai_streaming_interface import VeniceThinkTagStreamBuffer
+
+
+class TestVeniceThinkTagStreamBuffer:
+    """Tests for the streaming <think> tag extraction buffer."""
+
+    def test_no_think_tags(self):
+        buf = VeniceThinkTagStreamBuffer()
+        segments = list(buf.feed("Hello, world!"))
+        assert segments == [(False, "Hello, world!")]
+
+    def test_complete_think_tag_single_chunk(self):
+        buf = VeniceThinkTagStreamBuffer()
+        segments = list(buf.feed("<think>reasoning here</think>actual reply"))
+        assert segments == [(True, "reasoning here"), (False, "actual reply")]
+
+    def test_think_tag_split_across_chunks(self):
+        """Tag is split across multiple feed() calls."""
+        buf = VeniceThinkTagStreamBuffer()
+        all_segments = []
+        all_segments.extend(buf.feed("<thi"))
+        all_segments.extend(buf.feed("nk>I am thinking"))
+        all_segments.extend(buf.feed("</think>OK done"))
+        all_segments.extend(buf.flush())
+        # Filter out empty
+        all_segments = [(r, t) for r, t in all_segments if t]
+        reasoning = "".join(t for r, t in all_segments if r)
+        content = "".join(t for r, t in all_segments if not r)
+        assert "I am thinking" in reasoning
+        assert "OK done" in content
+
+    def test_think_tag_content_before_and_after(self):
+        buf = VeniceThinkTagStreamBuffer()
+        segments = list(buf.feed("before<think>middle</think>after"))
+        assert (False, "before") in segments
+        assert (True, "middle") in segments
+        assert (False, "after") in segments
+
+    def test_empty_think_tag(self):
+        buf = VeniceThinkTagStreamBuffer()
+        segments = list(buf.feed("<think></think>content"))
+        # Empty think tag should not produce reasoning segment
+        segments = [(r, t) for r, t in segments if t]
+        assert (False, "content") in segments
+
+    def test_partial_closing_tag_buffered(self):
+        """Partial </think> at chunk boundary should be buffered."""
+        buf = VeniceThinkTagStreamBuffer()
+        seg1 = list(buf.feed("<think>reasoning</th"))
+        seg2 = list(buf.feed("ink>result"))
+        seg2.extend(buf.flush())
+        all_segments = seg1 + seg2
+        all_segments = [(r, t) for r, t in all_segments if t]
+        reasoning = "".join(t for r, t in all_segments if r)
+        content = "".join(t for r, t in all_segments if not r)
+        assert "reasoning" in reasoning
+        assert "result" in content
+
+    def test_flush_remaining_content(self):
+        """flush() yields buffered partial tags at chunk boundary."""
+        buf = VeniceThinkTagStreamBuffer()
+        # Feed a partial closing tag at the end so partial gets buffered
+        list(buf.feed("<think>still going</th"))
+        flushed = list(buf.flush())
+        flushed = [(r, t) for r, t in flushed if t]
+        assert len(flushed) > 0
+
+    def test_only_think_content(self):
+        """Entire message is inside think tags."""
+        buf = VeniceThinkTagStreamBuffer()
+        segments = list(buf.feed("<think>all reasoning no content</think>"))
+        segments = [(r, t) for r, t in segments if t]
+        assert len(segments) == 1
+        assert segments[0] == (True, "all reasoning no content")
+
+    def test_multiple_think_blocks(self):
+        """Multiple <think> blocks in a single chunk."""
+        buf = VeniceThinkTagStreamBuffer()
+        segments = list(buf.feed("<think>r1</think>text1<think>r2</think>text2"))
+        assert (True, "r1") in segments
+        assert (False, "text1") in segments
+        assert (True, "r2") in segments
+        assert (False, "text2") in segments
+
+
+# ---------------------------------------------------------------------------
+# Tool schema cleaning tests
+# ---------------------------------------------------------------------------
+
+class TestVeniceToolSchemaCleaning:
+    """Tests for _venice_clean_tool_schemas."""
+
+    def test_strips_strict_and_additional_properties(self):
+        from letta.llm_api.openai_client import OpenAIClient
+
+        client = OpenAIClient.__new__(OpenAIClient)
+        tools = [{
+            "type": "function",
+            "function": {
+                "name": "send_message",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {"message": {"type": "string"}},
+                    "required": ["message"],
+                    "additionalProperties": False,
+                },
+            },
+        }]
+        cleaned = client._venice_clean_tool_schemas(tools)
+        func = cleaned[0]["function"]
+        assert "strict" not in func
+        assert "additionalProperties" not in func["parameters"]
+        # Other fields preserved
+        assert func["name"] == "send_message"
+        assert func["parameters"]["properties"] == {"message": {"type": "string"}}
+
+    def test_preserves_tools_without_strict_fields(self):
+        from letta.llm_api.openai_client import OpenAIClient
+
+        client = OpenAIClient.__new__(OpenAIClient)
+        tools = [{
+            "type": "function",
+            "function": {
+                "name": "my_tool",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }]
+        cleaned = client._venice_clean_tool_schemas(tools)
+        assert cleaned[0]["function"]["name"] == "my_tool"
+
+    def test_filter_request_data_cleans_tool_schemas(self):
+        """When model supports tools, schemas should be cleaned."""
+        from letta.llm_api.openai_client import OpenAIClient
+        from letta.schemas.llm_config import LLMConfig
+
+        client = OpenAIClient.__new__(OpenAIClient)
+        client._venice_capabilities_cache = {
+            "llama-3.3-70b": {"supports_tools": True, "supports_vision": False},
+        }
+        data = {
+            "model": "llama-3.3-70b",
+            "messages": [{"role": "user", "content": "hello"}],
+            "tools": [{
+                "type": "function",
+                "function": {
+                    "name": "send_message",
+                    "strict": True,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                    },
+                },
+            }],
+            "tool_choice": "auto",
+        }
+        config = LLMConfig(
+            model="llama-3.3-70b",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.venice.ai/api/v1",
+            context_window=131072,
+        )
+        result = client._venice_filter_request_data(data, config)
+        func = result["tools"][0]["function"]
+        assert "strict" not in func
+        assert "additionalProperties" not in func["parameters"]
+
+
+# ---------------------------------------------------------------------------
+# supports_structured_output / requires_auto_tool_choice / content_none
+# ---------------------------------------------------------------------------
+
+from letta.llm_api.openai_client import supports_structured_output, requires_auto_tool_choice, supports_content_none
+
+
+class TestVeniceCompatibilityFlags:
+    """Ensure Venice endpoints get correct compatibility flags."""
+
+    def _venice_config(self):
+        from letta.schemas.llm_config import LLMConfig
+
+        return LLMConfig(
+            model="llama-3.3-70b",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.venice.ai/api/v1",
+            context_window=131072,
+        )
+
+    def _openai_config(self):
+        from letta.schemas.llm_config import LLMConfig
+
+        return LLMConfig(
+            model="gpt-4o",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=128000,
+        )
+
+    def test_venice_no_structured_output(self):
+        assert supports_structured_output(self._venice_config()) is False
+
+    def test_openai_has_structured_output(self):
+        assert supports_structured_output(self._openai_config()) is True
+
+    def test_venice_requires_auto_tool_choice(self):
+        assert requires_auto_tool_choice(self._venice_config()) is True
+
+    def test_openai_does_not_require_auto_tool_choice(self):
+        assert requires_auto_tool_choice(self._openai_config()) is False
+
+    def test_venice_no_content_none(self):
+        assert supports_content_none(self._venice_config()) is False
+
+    def test_openai_supports_content_none(self):
+        assert supports_content_none(self._openai_config()) is True

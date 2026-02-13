@@ -140,6 +140,9 @@ def supports_structured_output(llm_config: LLMConfig) -> bool:
     #       but also don't support structured output
     if llm_config.model_endpoint and "nebius.com" in llm_config.model_endpoint:
         return False
+    # Venice uses an OpenAI-compatible proxy but does not support strict schemas
+    if llm_config.model_endpoint and "venice.ai" in llm_config.model_endpoint:
+        return False
     else:
         return True
 
@@ -148,6 +151,9 @@ def supports_structured_output(llm_config: LLMConfig) -> bool:
 def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     """Certain providers require the tool choice to be set to 'auto'."""
     if llm_config.model_endpoint and "nebius.com" in llm_config.model_endpoint:
+        return True
+    # Venice's proxy doesn't support tool_choice='required' or named tool_choice
+    if llm_config.model_endpoint and "venice.ai" in llm_config.model_endpoint:
         return True
     if llm_config.handle and "vllm" in llm_config.handle:
         return True
@@ -164,6 +170,9 @@ def use_responses_api(llm_config: LLMConfig) -> bool:
 def supports_content_none(llm_config: LLMConfig) -> bool:
     """Certain providers don't support the content None."""
     if "gpt-oss" in llm_config.model:
+        return False
+    # Venice rejects null values in request payloads
+    if llm_config.model_endpoint and "venice.ai" in llm_config.model_endpoint:
         return False
     return True
 
@@ -214,6 +223,26 @@ class OpenAIClient(LLMClientBase):
         except Exception as e:
             logger.warning("Failed to fetch Venice model capabilities: %s", e)
 
+    def _venice_clean_tool_schemas(self, tools: list) -> list:
+        """Strip strict-mode fields from tool schemas that Venice doesn't support."""
+        cleaned = []
+        for tool in tools:
+            tool = dict(tool) if isinstance(tool, dict) else tool
+            func = tool.get("function", {})
+            if isinstance(func, dict):
+                func = dict(func)
+                # Remove strict flag
+                func.pop("strict", None)
+                params = func.get("parameters")
+                if isinstance(params, dict):
+                    params = dict(params)
+                    # Remove additionalProperties (OpenAI strict-mode artifact)
+                    params.pop("additionalProperties", None)
+                    func["parameters"] = params
+                tool["function"] = func
+            cleaned.append(tool)
+        return cleaned
+
     def _venice_filter_request_data(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """Strip None and, when capabilities are cached, filter tools/vision for Venice."""
         data = self._venice_filter_none_values(request_data)
@@ -243,6 +272,10 @@ class OpenAIClient(LLMClientBase):
                 else:
                     converted.append(msg)
             data["messages"] = converted
+        elif "tools" in data and data["tools"]:
+            # Model supports tools; clean up schema fields Venice doesn't support
+            data = {**data, "tools": self._venice_clean_tool_schemas(data["tools"])}
+
         return data
 
     def _venice_filter_image_content(self, messages: list, model: str) -> list:
