@@ -94,6 +94,23 @@ def test_empty_object_in_required_marked_invalid():
     assert any("config" in reason for reason in reasons)
 
 
+def test_mcp_schema_healing_adds_missing_properties_for_object_root():
+    """Object schemas without `properties` should be normalized to include an empty properties map."""
+    mcp_tool = MCPTool(
+        name="object_root_without_properties",
+        inputSchema={
+            "type": "object",
+        },
+    )
+
+    schema = generate_tool_schema_for_mcp(mcp_tool, append_heartbeat=False, strict=False)
+
+    assert schema["parameters"]["type"] == "object"
+    assert "properties" in schema["parameters"]
+    assert schema["parameters"]["properties"] == {}
+    assert schema["parameters"]["additionalProperties"] is False
+
+
 @pytest.mark.asyncio
 async def test_add_mcp_tool_accepts_non_strict_schemas():
     """Test that adding MCP tools with non-strict schemas is allowed."""
