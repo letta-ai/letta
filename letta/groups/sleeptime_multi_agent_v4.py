@@ -66,6 +66,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             conversation_id=conversation_id,
             client_tools=client_tools,
             include_compaction_messages=include_compaction_messages,
+            auto_mode_enabled=auto_mode_enabled,
             billing_context=billing_context,
         )
 
@@ -86,6 +87,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,
+        auto_mode_enabled: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> AsyncGenerator[str, None]:
         self.run_ids = []
@@ -106,6 +108,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 conversation_id=conversation_id,
                 client_tools=client_tools,
                 include_compaction_messages=include_compaction_messages,
+                auto_mode_enabled=auto_mode_enabled,
                 billing_context=billing_context,
             ):
                 yield chunk
