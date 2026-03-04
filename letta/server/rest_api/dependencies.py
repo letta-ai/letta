@@ -20,6 +20,7 @@ class ExperimentalParams(BaseModel):
     letta_v1_agent: Optional[bool] = None
     letta_v1_agent_message_async: Optional[bool] = None
     modal_sandbox: Optional[bool] = None
+    auto_mode: Optional[bool] = None
 
 
 class HeaderParams(BaseModel):
@@ -46,6 +47,7 @@ def get_headers(
         None, alias="X-Experimental-Letta-V1-Agent-Message-Async", include_in_schema=False
     ),
     modal_sandbox: Optional[str] = Header(None, alias="X-Experimental-Modal-Sandbox", include_in_schema=False),
+    auto_mode: Optional[str] = Header(None, alias="X-Experimental-Auto-Mode", include_in_schema=False),
     billing_plan_type: Optional[str] = Header(None, alias="X-Billing-Plan-Type", include_in_schema=False),
     billing_cost_source: Optional[str] = Header(None, alias="X-Billing-Cost-Source", include_in_schema=False),
     billing_customer_id: Optional[str] = Header(None, alias="X-Billing-Customer-Id", include_in_schema=False),
@@ -69,6 +71,7 @@ def get_headers(
                 letta_v1_agent=(letta_v1_agent == "true") if letta_v1_agent else None,
                 letta_v1_agent_message_async=(letta_v1_agent_message_async == "true") if letta_v1_agent_message_async else None,
                 modal_sandbox=(modal_sandbox == "true") if modal_sandbox else None,
+                auto_mode=(auto_mode == "true") if auto_mode else None,
             ),
             billing_context=BillingContext(
                 plan_type=billing_plan_type,

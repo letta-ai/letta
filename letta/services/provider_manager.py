@@ -1,3 +1,4 @@
+import hashlib
 from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import and_, select
@@ -18,6 +19,9 @@ from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
+
+# Auto mode model handles
+AUTO_MODE_HANDLES = ["letta/auto", "letta/auto-fast"]
 
 
 class ProviderManager:
@@ -929,7 +933,31 @@ class ProviderManager:
             all_models = {(m.handle, m.model_type): m for m in global_models}
             all_models.update({(m.handle, m.model_type): m for m in org_models})
 
-            return [m.to_pydantic() for m in all_models.values()]
+            models = [m.to_pydantic() for m in all_models.values()]
+
+            from letta.settings import model_settings
+
+            if model_settings.auto_mode_enabled and (model_type is None or model_type == "llm"):
+                for handle in AUTO_MODE_HANDLES:
+                    # Generate deterministic 8-char hex ID from handle
+                    handle_hash = hashlib.sha256(handle.encode()).hexdigest()[:8]
+                    models.append(
+                        PydanticProviderModel(
+                            id=f"model-{handle_hash}",
+                            handle=handle,
+                            name=handle.split("/")[1],
+                            display_name=handle.split("/")[1],
+                            provider_id="letta",
+                            model_type="llm",
+                            model_endpoint_type="openai",
+                            enabled=True,
+                            max_context_window=180000,
+                            supports_token_streaming=True,
+                            supports_tool_calling=True,
+                        )
+                    )
+
+            return models
 
     @enforce_types
     @trace_method
@@ -951,6 +979,22 @@ class ProviderManager:
             NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
+        from letta.settings import model_settings
+
+        # Auto mode handles return a placeholder config for storage/persistence
+        if handle in AUTO_MODE_HANDLES:
+            if not model_settings.auto_mode_enabled:
+                raise NoResultFound(f"Auto mode not enabled for handle='{handle}'")
+            return LLMConfig(
+                model="auto" if handle == "letta/auto" else "auto-fast",
+                model_endpoint_type="openai",
+                model_endpoint="",
+                context_window=180000,
+                handle=handle,
+                max_tokens=8192,
+                provider_name="letta",
+                provider_category=ProviderCategory.base,
+            )
 
         # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")

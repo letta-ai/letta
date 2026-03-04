@@ -1240,9 +1240,25 @@ class SyncServer(object):
             )
 
             # Build LLMConfig objects from database
+            from letta.services.provider_manager import AUTO_MODE_HANDLES
+
             provider_cache: Dict[str, Provider] = {}
             typed_provider_cache: Dict[str, Any] = {}
             for model in provider_models:
+                # Handle synthetic auto mode models separately
+                if model.handle in AUTO_MODE_HANDLES:
+                    llm_config = LLMConfig(
+                        model=model.name,
+                        model_endpoint_type=model.model_endpoint_type,
+                        model_endpoint="",
+                        context_window=model.max_context_window or 180000,
+                        handle=model.handle,
+                        provider_name="letta",
+                        max_tokens=8192,
+                    )
+                    llm_models.append(llm_config)
+                    continue
+
                 # Get provider details (with caching to avoid N+1 queries)
                 if model.provider_id not in provider_cache:
                     provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)

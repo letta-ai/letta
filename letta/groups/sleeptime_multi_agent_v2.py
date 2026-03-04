@@ -70,6 +70,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        auto_mode_enabled: bool = False,  # Not used in multi-agent, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         run_ids = []

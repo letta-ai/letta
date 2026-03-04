@@ -116,6 +116,11 @@ class ModelSettings(BaseSettings):
 
     global_max_context_window_limit: int = 128000
 
+    auto_mode_enabled: bool = Field(
+        default=False,
+        description="Enable auto mode model handles (i.e. letta/auto, letta/auto-fast) in model listing",
+    )
+
     inner_thoughts_kwarg: str | None = Field(default=INNER_THOUGHTS_KWARG, description="Key used for passing in inner thoughts.")
 
     # env_prefix='my_prefix_'
