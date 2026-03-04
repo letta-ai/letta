@@ -959,6 +959,9 @@ class LettaAgentV3(LettaAgentV2):
                         put_inner_thoughts_first=True,
                         actor=self.actor,
                     )
+                    # Update the adapter to use the resolved client and config
+                    llm_adapter.llm_client = active_llm_client
+                    llm_adapter.llm_config = active_llm_config
                 else:
                     active_llm_config = self.agent_state.llm_config
                     active_llm_client = self.llm_client

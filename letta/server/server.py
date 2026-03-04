@@ -1254,6 +1254,7 @@ class SyncServer(object):
                         context_window=model.max_context_window or 180000,
                         handle=model.handle,
                         provider_name="letta",
+                        provider_category=ProviderCategory.base,
                         max_tokens=8192,
                     )
                     llm_models.append(llm_config)

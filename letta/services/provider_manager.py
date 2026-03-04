@@ -937,7 +937,7 @@ class ProviderManager:
 
             from letta.settings import model_settings
 
-            if model_settings.auto_mode_enabled and (model_type is None or model_type == "llm"):
+            if model_settings.auto_mode_enabled and not provider_id and (model_type is None or model_type == "llm"):
                 for handle in AUTO_MODE_HANDLES:
                     # Generate deterministic 8-char hex ID from handle
                     handle_hash = hashlib.sha256(handle.encode()).hexdigest()[:8]
