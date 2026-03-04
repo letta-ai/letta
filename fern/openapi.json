@@ -22142,6 +22142,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
                     "email": {
                       "type": "string"
                     },
@@ -22161,15 +22164,24 @@
                     "current_project_id": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "billing_tier": {
+                      "type": "string"
+                    },
+                    "remaining_credits": {
+                      "type": "number"
                     }
                   },
                   "required": [
+                    "id",
                     "email",
                     "name",
                     "organization_name",
                     "organization_id",
                     "current_project_name",
-                    "current_project_id"
+                    "current_project_id",
+                    "billing_tier",
+                    "remaining_credits"
                   ]
                 }
               }
