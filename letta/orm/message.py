@@ -25,7 +25,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
 
     __tablename__ = "messages"
     __table_args__ = (
+        Index("idx_messages_on_updated_at", "updated_at"),
         Index("ix_messages_agent_created_at", "agent_id", "created_at"),
+        Index("ix_messages_agent_conversation_sequence", "agent_id", "conversation_id", "sequence_id"),
         Index("ix_messages_created_at", "created_at", "id"),
         Index("ix_messages_agent_sequence", "agent_id", "sequence_id"),
         Index("ix_messages_org_agent", "organization_id", "agent_id"),
