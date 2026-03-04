@@ -48,6 +48,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,
+        auto_mode_enabled: bool = False,  # Not used in multi-agent, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         self.run_ids = []

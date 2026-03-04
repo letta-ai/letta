@@ -1692,12 +1692,14 @@ async def send_message(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     if request.streaming and is_1_0_sdk:
+        auto_mode_enabled = bool(headers.experimental_params and headers.experimental_params.auto_mode)
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
             agent_id=agent_id,
             actor=actor,
             request=request,
             run_type="send_message",
+            auto_mode_enabled=auto_mode_enabled,
             billing_context=headers.billing_context,
         )
         return result
@@ -1759,6 +1761,7 @@ async def send_message(
                 }
             )
 
+        auto_mode_enabled = bool(headers.experimental_params and headers.experimental_params.auto_mode)
         agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
         result = await agent_loop.step(
             request.messages,
@@ -1769,6 +1772,7 @@ async def send_message(
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
             include_compaction_messages=request.include_compaction_messages,
+            auto_mode_enabled=auto_mode_enabled,
             billing_context=headers.billing_context,
         )
         run_status = result.stop_reason.stop_reason.run_status
