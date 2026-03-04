@@ -140,6 +140,7 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
                         org_id=self.org_id,
                         user_id=self.user_id,
                         llm_config=self.llm_config.model_dump() if self.llm_config else None,
+                        billing_context=self.billing_context,
                     ),
                 ),
                 label="create_provider_trace",
