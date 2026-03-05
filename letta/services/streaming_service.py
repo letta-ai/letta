@@ -497,10 +497,13 @@ class StreamingService:
                 # Run was explicitly cancelled - this is not an error
                 # The cancellation has already been handled by cancellation_aware_stream_wrapper
                 logger.info(f"Run {run_id} was cancelled, exiting stream gracefully")
-                # Send [DONE] to properly close the stream
-                yield "data: [DONE]\n\n"
+                # Mark as terminal BEFORE yielding [DONE]. Some consumers stop immediately
+                # after receiving [DONE], so code after yield may never run.
+                saw_done = True
                 # Don't update run status in finally - cancellation is already recorded
                 run_status = None  # Signal to finally block to skip update
+                # Send [DONE] to properly close the stream
+                yield "data: [DONE]\n\n"
             except Exception as e:
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
@@ -521,6 +524,20 @@ class StreamingService:
                 # Capture for Sentry but don't re-raise to allow stream to complete gracefully
                 capture_sentry_exception(e)
             finally:
+                # If run_status was never set and the stream ended without [DONE],
+                # mark as failed so the run doesn't stay "running" forever.
+                if run_id and self.runs_manager and run_status is None and not saw_done:
+                    logger.warning(f"Run {run_id} stream ended without setting run_status or emitting [DONE]. Marking as failed.")
+                    run_status = RunStatus.failed
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
+                    error_data = {
+                        "error": {
+                            "run_id": run_id,
+                            "error_type": "stream_incomplete",
+                            "message": "Stream ended unexpectedly without a terminal event.",
+                        }
+                    }
+
                 # always update run status, whether success or failure
                 if run_id and self.runs_manager and run_status:
                     # Extract stop_reason enum value from LettaStopReason object

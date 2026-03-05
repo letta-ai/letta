@@ -320,6 +320,60 @@ async def create_background_stream_processor(
         # Write [DONE] marker to properly close the stream for clients reading from Redis
         await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
         saw_done = True
+    except asyncio.CancelledError:
+        # Task-level cancellation can happen for different reasons:
+        # - runtime/pod shutdown
+        # - parent task cancellation
+        # - rare cancellation races
+        # Distinguish explicit user run cancellation from infrastructure/task interruption.
+        logger.warning(f"Background stream processor for run {run_id} was cancelled")
+
+        run_was_explicitly_cancelled = False
+        if run_manager and actor:
+            try:
+                run = await run_manager.get_run_by_id(run_id=run_id, actor=actor)
+                run_was_explicitly_cancelled = run.status == RunStatus.cancelled
+            except Exception as lookup_err:
+                logger.warning(f"Failed to inspect run status during cancellation for run {run_id}: {lookup_err}")
+
+        if run_was_explicitly_cancelled:
+            stop_reason = StopReasonType.cancelled.value
+            logger.info(f"Run {run_id} was already cancelled; writing terminal cancelled marker")
+            try:
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"data: {LettaStopReason(stop_reason=StopReasonType.cancelled).model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+            except Exception as write_err:
+                logger.warning(f"Failed to write terminal cancelled marker for run {run_id}: {write_err}")
+            saw_done = True
+        else:
+            stop_reason = StopReasonType.error.value
+            error_message = LettaErrorMessage(
+                run_id=run_id,
+                error_type="stream_task_cancelled",
+                message="Background stream processing was interrupted before completion. Please retry.",
+                detail=None,
+            )
+            error_metadata = {"error": error_message.model_dump()}
+            try:
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"data: {LettaStopReason(stop_reason=StopReasonType.error).model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"event: error\ndata: {error_message.model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+            except Exception as write_err:
+                logger.warning(f"Failed to write terminal error marker after cancellation for run {run_id}: {write_err}")
+            saw_error = True
+            saw_done = True
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
