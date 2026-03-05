@@ -1,9 +1,9 @@
 """
 Integration tests for system prompt prefix caching optimization.
 
-These tests verify that the system prompt is NOT rebuilt on every step,
-only after compaction or message reset. This helps preserve prefix caching
-for LLM providers.
+These tests verify that the system prompt is NOT rebuilt on every agent step
+(e.g. after agent memory tool calls or messages), preserving prefix caching
+for LLM providers. Manual block edits via the API DO trigger recompilation.
 """
 
 import pytest
@@ -45,8 +45,7 @@ class TestSystemPromptPrefixCaching:
         4. Send another message to the agent
         5. Verify system prompt still hasn't changed
         6. Manually update a block via API
-        7. Send another message and verify system prompt still hasn't changed
-           (memory block changes are deferred to compaction)
+        7. Verify system prompt HAS changed (manual block edits trigger recompilation)
         """
         # Step 1: Get initial context window, system prompt, and human block value
         initial_context = client.agents.context.retrieve(agent.id)
@@ -114,37 +113,32 @@ class TestSystemPromptPrefixCaching:
         assert human_block, "Agent should have a 'human' memory block"
 
         # Update the block directly via API
+        sushi_marker = "SUSHI_MARKER_FOR_VERIFICATION"
         client.blocks.modify(
             block_id=human_block.id,
-            value=human_block.value + "\nUser also likes sushi.",
+            value=human_block.value + f"\nUser also likes sushi. {sushi_marker}",
         )
 
-        # Step 7: Send another message and verify system prompt still hasn't changed
-        response3 = client.agents.messages.create(
-            agent_id=agent.id,
-            messages=[
-                {
-                    "role": "user",
-                    "content": "What foods do I like?",
-                }
-            ],
-        )
-        assert response3.messages, "Agent should respond with messages"
-
-        # Verify system prompt STILL hasn't changed (deferred to compaction/reset)
+        # Step 7: Verify system prompt HAS changed after manual block edit via API
+        # Manual block edits via the standalone blocks API trigger recompilation
         context_after_manual_update = client.agents.context.retrieve(agent.id)
         system_prompt_after_manual = context_after_manual_update.system_prompt
-        assert system_prompt_after_manual == initial_system_prompt, (
-            "System prompt should NOT change after manual block update (deferred to compaction)"
+        assert system_prompt_after_manual != initial_system_prompt, (
+            "System prompt SHOULD change after manual block update via API (triggers recompilation)"
+        )
+        assert sushi_marker in system_prompt_after_manual, (
+            "System prompt should include the updated memory block content after manual API edit"
         )
 
     def test_system_prompt_updates_after_reset(self, client: Letta, agent):
         """
         Test that system prompt IS updated after message reset.
+        Also verifies that the standalone block API edit already triggers recompilation.
         1. Get initial system prompt
-        2. Manually update a memory block
-        3. Reset messages
-        4. Verify system prompt HAS changed to include the new memory
+        2. Manually update a memory block (triggers recompilation via API)
+        3. Verify system prompt HAS already changed from the block edit
+        4. Reset messages
+        5. Verify system prompt still includes the new memory after reset
         """
         # Step 1: Get initial system prompt
         initial_context = client.agents.context.retrieve(agent.id)
@@ -165,10 +159,18 @@ class TestSystemPromptPrefixCaching:
             value=human_block.value + f"\n{new_memory_content}",
         )
 
-        # Step 3: Reset messages (this should trigger system prompt rebuild)
+        # Step 3: Verify system prompt has already changed from the block edit
+        context_after_edit = client.agents.context.retrieve(agent.id)
+        system_prompt_after_edit = context_after_edit.system_prompt
+        assert system_prompt_after_edit != initial_system_prompt, "System prompt SHOULD change immediately after manual block edit via API"
+        assert "UNIQUE_TEST_MARKER_12345" in system_prompt_after_edit, (
+            "System prompt should include the updated memory block content after API edit"
+        )
+
+        # Step 4: Reset messages (this should also trigger system prompt rebuild)
         client.agents.messages.reset(agent.id)
 
-        # Step 4: Verify system prompt HAS changed and includes the new memory
+        # Step 5: Verify system prompt still includes the new memory after reset
         context_after_reset = client.agents.context.retrieve(agent.id)
         system_prompt_after_reset = context_after_reset.system_prompt
 
