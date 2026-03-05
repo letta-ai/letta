@@ -411,6 +411,11 @@ async def test_provider_llm_models_consistency():
         ("anthropic/claude-3-7-sonnet", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("anthropic/claude-sonnet-4", AgentType.memgpt_v2_agent, True, True, False, 1024, None),
         ("anthropic/claude-sonnet-4", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        # Opus 4.6 / Sonnet 4.6 use adaptive thinking - max_reasoning_tokens should stay 0
+        ("anthropic/claude-opus-4-6", AgentType.memgpt_v2_agent, True, True, False, 0, None),
+        ("anthropic/claude-opus-4-6", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.memgpt_v2_agent, True, True, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.memgpt_v2_agent, True, True, True, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.5-flash", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
@@ -428,6 +433,11 @@ async def test_provider_llm_models_consistency():
         ("anthropic/claude-3-7-sonnet", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, True, True, False, 1024, None),
         ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, False, False, False, 0, None),
+        # Opus 4.6 / Sonnet 4.6 use adaptive thinking - max_reasoning_tokens should stay 0
+        ("anthropic/claude-opus-4-6", AgentType.letta_v1_agent, True, True, False, 0, None),
+        ("anthropic/claude-opus-4-6", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.letta_v1_agent, True, True, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, True, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, True, True, False, 1024, None),

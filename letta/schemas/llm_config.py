@@ -563,7 +563,9 @@ class LLMConfig(BaseModel):
             if cls.is_anthropic_reasoning_model(config) or is_google_reasoner_with_configurable_thinking:
                 config.enable_reasoner = bool(reasoning)
                 config.put_inner_thoughts_in_kwargs = False
-                if config.enable_reasoner and config.max_reasoning_tokens == 0:
+                # Opus 4.6 / Sonnet 4.6 use adaptive thinking (no budget_tokens), so max_reasoning_tokens is unused
+                is_adaptive_thinking_model = config.model.startswith("claude-opus-4-6") or config.model.startswith("claude-sonnet-4-6")
+                if config.enable_reasoner and config.max_reasoning_tokens == 0 and not is_adaptive_thinking_model:
                     config.max_reasoning_tokens = 1024
                 # Set default effort level for Claude Opus 4.5 and Opus 4.6
                 if (
@@ -636,7 +638,9 @@ class LLMConfig(BaseModel):
             config.enable_reasoner = True
             if cls.is_anthropic_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
-                if config.max_reasoning_tokens == 0:
+                # Opus 4.6 / Sonnet 4.6 use adaptive thinking (no budget_tokens), so max_reasoning_tokens is unused
+                is_adaptive_thinking_model = config.model.startswith("claude-opus-4-6") or config.model.startswith("claude-sonnet-4-6")
+                if config.max_reasoning_tokens == 0 and not is_adaptive_thinking_model:
                     config.max_reasoning_tokens = 1024
                 # Set default effort level for Claude Opus 4.5 and Opus 4.6
                 if (
