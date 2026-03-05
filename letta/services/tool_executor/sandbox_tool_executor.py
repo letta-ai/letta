@@ -153,12 +153,17 @@ class SandboxToolExecutor(ToolExecutor):
         if tool.source_type == "typescript":
             return function_args
 
+        # Some built-in sandbox tools (e.g., multi-agent tools) do not persist
+        # source_code in DB and hydrate it at execution time.
+        if not isinstance(tool.source_code, str) or not tool.source_code:
+            return function_args
+
         try:
             # Parse the source code to extract function annotations (Python only)
             annotations = get_function_annotations_from_source(tool.source_code, function_name)
             # Coerce the function arguments to the correct types based on the annotations
             return coerce_dict_args_by_annotations(function_args, annotations)
-        except ValueError:
+        except (ValueError, TypeError):
             # Just log the error and continue with original args
             # This is defensive programming - we try to coerce but fall back if it fails
             return function_args
