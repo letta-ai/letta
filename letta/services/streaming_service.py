@@ -139,6 +139,7 @@ class StreamingService:
             agent = agent.model_copy(update={"llm_config": override_llm_config})
 
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
+        route_class = "background" if request.background else "foreground"
 
         # Determine lock key: use conversation_id if provided, else agent_id if should_lock
         lock_key = conversation_id if conversation_id else (agent_id if should_lock else None)
@@ -147,10 +148,18 @@ class StreamingService:
         # This prevents concurrent message processing for the same conversation/agent
         # Skip locking if Redis is not available (graceful degradation)
         if lock_key and not isinstance(redis_client, NoopAsyncRedisClient):
-            await redis_client.acquire_conversation_lock(
-                conversation_id=lock_key,
-                token=str(uuid4()),
-            )
+            admission_wait_start_ns = get_utc_timestamp_ns()
+            try:
+                await redis_client.acquire_conversation_lock(
+                    conversation_id=lock_key,
+                    token=str(uuid4()),
+                )
+            finally:
+                admission_wait_ms = (get_utc_timestamp_ns() - admission_wait_start_ns) / 1_000_000
+                MetricRegistry().request_admission_wait_ms_histogram.record(
+                    admission_wait_ms,
+                    attributes={"route_class": route_class},
+                )
 
         # create run if tracking is enabled
         run = None
@@ -181,6 +190,8 @@ class StreamingService:
                 include_compaction_messages=request.include_compaction_messages,
                 auto_mode_enabled=auto_mode_enabled,
                 billing_context=billing_context,
+                route_class=route_class,
+                is_background=request.background,
             )
 
             # handle background streaming if requested
@@ -347,6 +358,8 @@ class StreamingService:
         include_compaction_messages: bool = False,
         auto_mode_enabled: bool = False,
         billing_context: BillingContext | None = None,
+        route_class: str = "foreground",
+        is_background: bool = False,
     ) -> AsyncIterator:
         """
         Create a stream with unified error handling.
@@ -362,6 +375,12 @@ class StreamingService:
             error_data = None
             saw_done = False
             saw_error = False
+            in_flight_attrs = {"route_class": route_class}
+            in_flight_counter = (
+                MetricRegistry().in_flight_background_counter if is_background else MetricRegistry().in_flight_foreground_counter
+            )
+
+            in_flight_counter.add(1, attributes=in_flight_attrs)
 
             try:
                 stream = agent_loop.stream(
@@ -419,6 +438,7 @@ class StreamingService:
                     stop_reason = agent_loop.stop_reason if agent_loop.stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn)
 
             except LLMTimeoutError as e:
+                MetricRegistry().request_timeout_counter.add(1, attributes=in_flight_attrs)
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(
@@ -548,6 +568,8 @@ class StreamingService:
                         update=RunUpdate(status=run_status, stop_reason=stop_reason_value, metadata=error_data),
                         actor=actor,
                     )
+
+                in_flight_counter.add(-1, attributes=in_flight_attrs)
 
         return error_aware_stream()
 
