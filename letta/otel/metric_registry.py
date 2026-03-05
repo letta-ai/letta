@@ -269,6 +269,56 @@ class MetricRegistry:
             ),
         )
 
+    # Runtime saturation and dependency timeout metrics
+    @property
+    def event_loop_lag_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "event_loop_lag_ms",
+            partial(
+                self._meter.create_histogram,
+                name="event_loop_lag_ms",
+                description="Event loop scheduling lag measured by the watchdog heartbeat.",
+                unit="ms",
+            ),
+        )
+
+    @property
+    def executor_backlog_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "executor_backlog",
+            partial(
+                self._meter.create_gauge,
+                name="executor_backlog",
+                description="Best-effort backlog depth of the default event-loop executor queue.",
+                unit="1",
+            ),
+        )
+
+    # (includes operation)
+    @property
+    def redis_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "redis_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="redis_timeout_total",
+                description="Total number of Redis operation timeout errors.",
+                unit="1",
+            ),
+        )
+
+    # (includes provider)
+    @property
+    def provider_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "provider_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="provider_timeout_total",
+                description="Total number of model provider timeout errors.",
+                unit="1",
+            ),
+        )
     # Database connection pool metrics
     # (includes engine_name, pool_mode)
     @property

@@ -11,6 +11,7 @@ from collections import defaultdict
 from typing import Optional
 
 from letta.log import get_logger
+from letta.otel.metric_registry import MetricRegistry
 
 logger = get_logger(__name__)
 
@@ -82,6 +83,12 @@ class EventLoopWatchdog:
             self._last_heartbeat = now
             self._heartbeat_scheduled_at = now + 1.0
 
+            try:
+                MetricRegistry().event_loop_lag_ms_histogram.record(lag * 1000, attributes={"source": "watchdog_heartbeat"})
+            except Exception:
+                # Observability must never interfere with watchdog safety.
+                pass
+
             # Log if lag is significant (> 2 seconds means event loop is saturated)
             if lag > 2.0:
                 logger.warning(f"Event loop lag in heartbeat: {lag:.2f}s (expected ~1.0s)")
@@ -110,19 +117,28 @@ class EventLoopWatchdog:
 
                 # Try to estimate event loop load (safe from separate thread)
                 task_count = -1
+                executor_backlog = -1
                 try:
                     if self._loop and not self._loop.is_closed():
                         # all_tasks returns only unfinished tasks
                         all_tasks = asyncio.all_tasks(self._loop)
                         task_count = len(all_tasks)
+                        executor_backlog = self._get_executor_backlog(self._loop)
                 except Exception:
                     # Accessing loop from thread can be fragile, don't fail
                     pass
 
+                if executor_backlog >= 0:
+                    try:
+                        MetricRegistry().executor_backlog_gauge.set(executor_backlog, attributes={"source": "default_executor"})
+                    except Exception:
+                        pass
+
                 # ALWAYS log every check to prove watchdog is alive
                 logger.debug(
                     f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, current_lag={current_lag:.2f}s, "
-                    f"max_lag={max_lag_seen:.2f}s, consecutive_hangs={consecutive_hangs}, tasks={task_count}"
+                    f"max_lag={max_lag_seen:.2f}s, consecutive_hangs={consecutive_hangs}, "
+                    f"tasks={task_count}, executor_backlog={executor_backlog}"
                 )
 
                 # Log at INFO if we see significant lag (> 2 seconds indicates saturation)
@@ -169,6 +185,22 @@ class EventLoopWatchdog:
 
             except Exception as e:
                 logger.error(f"Watchdog error: {e}")
+
+    @staticmethod
+    def _get_executor_backlog(loop: asyncio.AbstractEventLoop) -> int:
+        """Best-effort backlog size for the loop's default executor work queue."""
+        default_executor = getattr(loop, "_default_executor", None)
+        if default_executor is None:
+            return 0
+
+        work_queue = getattr(default_executor, "_work_queue", None)
+        if work_queue is None or not hasattr(work_queue, "qsize"):
+            return 0
+
+        try:
+            return int(work_queue.qsize())
+        except Exception:
+            return 0
 
     def _dump_state(self):
         """Dump state with stack traces when hang detected."""
