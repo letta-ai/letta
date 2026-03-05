@@ -51,6 +51,7 @@ class LLMConfig(BaseModel):
         "deepseek",
         "xai",
         "zai",
+        "fireworks",
         "openrouter",
         "chatgpt_oauth",
     ] = Field(..., description="The endpoint type for the model.")

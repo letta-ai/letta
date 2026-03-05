@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Auto mode model routing
-AUTO_MODE_PRIMARY = "zai/glm-5"
+AUTO_MODE_PRIMARY = "fireworks/glm-5"
 AUTO_MODE_FALLBACK = "zai/glm-5"
 
 # Circuit breaker configuration
@@ -34,6 +34,24 @@ OPEN_DURATION_SECONDS = 30  # How long circuit stays open
 CIRCUIT_ERRORS_KEY = "circuit:errors:"
 CIRCUIT_STATE_KEY = "circuit:state:"
 CIRCUIT_OPENED_AT_KEY = "circuit:opened:"
+
+
+def _build_fireworks_config() -> "LLMConfig":
+    """Build a hardcoded LLMConfig for Fireworks GLM-5 (not discoverable via provider sync)."""
+    from letta.schemas.enums import ProviderCategory
+    from letta.schemas.llm_config import LLMConfig
+    from letta.settings import model_settings
+
+    return LLMConfig(
+        model="accounts/fireworks/models/glm-5",
+        model_endpoint_type="fireworks",
+        model_endpoint=model_settings.fireworks_api_base,
+        context_window=180000,
+        max_tokens=16384,
+        handle="fireworks/glm-5",
+        provider_name="fireworks",
+        provider_category=ProviderCategory.base,
+    )
 
 
 class CircuitState(str, Enum):
@@ -77,7 +95,7 @@ class LLMRoutingClient(LLMRoutingClientBase):
 
         if auto_mode_enabled:
             if await self._is_healthy(primary_handle):
-                config = await provider_manager.get_llm_config_from_handle(primary_handle, actor)
+                config = _build_fireworks_config()
                 config = config.model_copy(
                     update={
                         "context_window": min(stored_llm_config.context_window, config.context_window),

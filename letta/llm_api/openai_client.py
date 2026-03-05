@@ -641,14 +641,6 @@ class OpenAIClient(LLMClientBase):
                     tool.function.strict = False
         request_data = data.model_dump(exclude_unset=True)
 
-        # Fireworks uses strict validation (additionalProperties: false) and rejects
-        # reasoning fields that are not in their schema.
-        is_fireworks = llm_config.model_endpoint and "fireworks.ai" in llm_config.model_endpoint
-        if is_fireworks and "messages" in request_data:
-            for message in request_data["messages"]:
-                for field in ("reasoning_content_signature", "redacted_reasoning_content", "omitted_reasoning_content"):
-                    message.pop(field, None)
-
         # If Ollama
         # if llm_config.handle.startswith("ollama/") and llm_config.enable_reasoner:
         # Sadly, reasoning via the OpenAI proxy on Ollama only works for Harmony/gpt-oss

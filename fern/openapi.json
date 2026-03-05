@@ -38683,6 +38683,7 @@
               "deepseek",
               "xai",
               "zai",
+              "fireworks",
               "openrouter",
               "chatgpt_oauth"
             ],
@@ -43088,6 +43089,7 @@
           "cerebras",
           "chatgpt_oauth",
           "deepseek",
+          "fireworks",
           "google_ai",
           "google_vertex",
           "groq",
