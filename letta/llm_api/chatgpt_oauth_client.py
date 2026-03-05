@@ -1018,6 +1018,11 @@ class ChatGPTOAuthClient(LLMClientBase):
                 part=part,
             )
 
+        # Keepalive events - ignore but log at info for traceability
+        elif event_type == "keepalive":
+            logger.info("ChatGPT SSE keepalive event received")
+            return None
+
         # Unhandled event types
         logger.warning(f"Unhandled ChatGPT SSE event type: {event_type}")
         return None
