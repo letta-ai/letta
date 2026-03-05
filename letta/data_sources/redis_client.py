@@ -13,6 +13,7 @@ from letta.constants import (
 )
 from letta.errors import ConversationBusyError, MemoryRepoBusyError
 from letta.log import get_logger
+from letta.monitoring.readiness_state import set_readiness_state
 from letta.otel.metric_registry import MetricRegistry
 from letta.settings import settings
 
@@ -134,6 +135,7 @@ class AsyncRedisClient:
                         return await func(self, *args, **kwargs)
                     except TimeoutError as e:
                         MetricRegistry().redis_timeout_counter.add(1, attributes={"operation": func.__name__})
+                        set_readiness_state(reason="degraded_dependency", source=f"redis_timeout:{func.__name__}")
                         last_error = e
                         if attempt < max_attempts - 1:
                             await asyncio.sleep(delay * (2**attempt))

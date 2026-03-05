@@ -243,6 +243,19 @@ class MetricRegistry:
             ),
         )
 
+    # (includes reason)
+    @property
+    def readiness_state_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "readiness_state",
+            partial(
+                self._meter.create_gauge,
+                name="readiness_state",
+                description="Current readiness telemetry state encoded as one-hot reason labels.",
+                unit="1",
+            ),
+        )
+
     # (includes reason, route_class)
     @property
     def sse_disconnect_counter(self) -> Counter:
