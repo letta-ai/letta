@@ -26,7 +26,7 @@ from letta.orm.errors import (
     NoResultFound,
     UniqueConstraintViolationError,
 )
-from letta.settings import DatabaseChoice
+from letta.settings import DatabaseChoice, settings
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
@@ -39,6 +39,18 @@ logger = get_logger(__name__)
 
 _DEADLOCK_MAX_RETRIES = 3
 _DEADLOCK_BASE_DELAY = 0.1
+
+
+def _record_db_checkout_timeout_metric() -> None:
+    """Best-effort metric for DB client pool checkout timeouts."""
+    try:
+        from letta.otel.metric_registry import MetricRegistry
+
+        pool_mode = "client_pooling_disabled" if settings.disable_sqlalchemy_pooling else "client_pooling_enabled"
+        MetricRegistry().db_pool_checkout_timeout_counter.add(1, attributes={"engine_name": "core", "pool_mode": pool_mode})
+    except Exception:
+        # Never break DB error handling due to metric failures.
+        pass
 
 
 def _is_deadlock_error(exc: Exception) -> bool:
@@ -67,6 +79,7 @@ def handle_db_timeout(func):
             try:
                 return func(*args, **kwargs)
             except TimeoutError as e:
+                _record_db_checkout_timeout_metric()
                 logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
                 raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
             except QueryCanceledError as e:
@@ -83,6 +96,7 @@ def handle_db_timeout(func):
             try:
                 return await func(*args, **kwargs)
             except TimeoutError as e:
+                _record_db_checkout_timeout_metric()
                 logger.error(f"Timeout while executing {func.__name__} with args {args} and kwargs {kwargs}: {e}")
                 raise DatabaseTimeoutError(message=f"Timeout occurred in {func.__name__}.", original_exception=e)
             except QueryCanceledError as e:
