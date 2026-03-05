@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from functools import partial
 
 from opentelemetry import metrics
-from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram, UpDownCounter
 from opentelemetry.metrics._internal import Gauge
 
 from letta.helpers.singleton import singleton
@@ -28,7 +28,7 @@ class MetricRegistry:
         agent_id -1:N -> tool_name
     """
 
-    Instrument = Counter | Histogram | Gauge
+    Instrument = Counter | Histogram | Gauge | UpDownCounter
     _metrics: dict[str, Instrument] = field(default_factory=dict, init=False)
     _meter: metrics.Meter = field(init=False)
 
@@ -50,6 +50,54 @@ class MetricRegistry:
                 self._meter.create_counter,
                 name="count_user_message",
                 description="Counts the number of messages sent by the user",
+                unit="1",
+            ),
+        )
+
+    @property
+    def in_flight_foreground_counter(self) -> UpDownCounter:
+        return self._get_or_create_metric(
+            "in_flight_foreground",
+            partial(
+                self._meter.create_up_down_counter,
+                name="in_flight_foreground",
+                description="Number of active foreground request streams.",
+                unit="1",
+            ),
+        )
+
+    @property
+    def in_flight_background_counter(self) -> UpDownCounter:
+        return self._get_or_create_metric(
+            "in_flight_background",
+            partial(
+                self._meter.create_up_down_counter,
+                name="in_flight_background",
+                description="Number of active background stream processing tasks.",
+                unit="1",
+            ),
+        )
+
+    @property
+    def request_admission_wait_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "request_admission_wait_ms",
+            partial(
+                self._meter.create_histogram,
+                name="request_admission_wait_ms",
+                description="Time spent waiting for request admission control.",
+                unit="ms",
+            ),
+        )
+
+    @property
+    def request_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "request_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="request_timeout_total",
+                description="Total number of timed out requests.",
                 unit="1",
             ),
         )
