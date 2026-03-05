@@ -1,13 +1,16 @@
+import importlib
+import inspect
 import os
 import pickle
 import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
+from letta.constants import LETTA_MULTI_AGENT_TOOL_MODULE_NAME
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import ToolSourceType
+from letta.schemas.enums import ToolSourceType, ToolType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -63,6 +66,10 @@ class AsyncToolSandboxBase(ABC):
                 raise ValueError(
                     f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
                 )
+
+            if not self.tool.source_code and self.tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
+                module = importlib.import_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME)
+                self.tool.source_code = inspect.getsource(module)
 
             # TypeScript tools do not support agent_state or agent_id injection as function params
             # (these are Python-only features). Instead, agent_id is exposed via LETTA_AGENT_ID env var.
