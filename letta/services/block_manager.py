@@ -107,6 +107,20 @@ def _cursor_filter(sort_col, id_col, ref_sort_val, ref_id, forward: bool):
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
 
+    def __init__(self):
+        from letta.services.agent_manager import AgentManager
+
+        self.agent_manager = AgentManager(block_manager=self)
+
+    async def _rebuild_system_prompts_for_connected_agents(self, block_id: str, actor: PydanticUser) -> None:
+        """Rebuild system prompts for all agents connected to the given block."""
+        agent_ids = await self.get_agent_ids_for_block_async(block_id=block_id, actor=actor)
+        for agent_id in agent_ids:
+            try:
+                await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+            except Exception:
+                logger.exception(f"Failed to rebuild system prompt for agent {agent_id} after block {block_id} was updated")
+
     # ======================================================================================================================
     # Helper methods for pivot tables
     # ======================================================================================================================
@@ -285,7 +299,11 @@ class BlockManager:
 
             # context manager now handles commits
             # await session.commit()
-            return pydantic_block
+
+        # Recompile system prompts for all agents connected to this block
+        await self._rebuild_system_prompts_for_connected_agents(block_id, actor)
+
+        return pydantic_block
 
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
@@ -665,6 +683,21 @@ class BlockManager:
 
         # Decrypt secrets outside session
         return await decrypt_agent_secrets(agents_encrypted)
+
+    @enforce_types
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
+    async def get_agent_ids_for_block_async(self, block_id: str, actor: PydanticUser) -> List[str]:
+        """
+        Retrieve all agent IDs associated with a given block.
+        This is a lightweight query that only returns IDs, not full agent states.
+        """
+        async with db_registry.async_session() as session:
+            query = select(BlocksAgents.agent_id).where(
+                BlocksAgents.block_id == block_id,
+            )
+            result = await session.execute(query)
+            return [row[0] for row in result.fetchall()]
 
     @enforce_types
     @trace_method
