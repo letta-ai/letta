@@ -207,7 +207,12 @@ async def lifespan(app_: FastAPI):
     try:
         from sqlalchemy import text
 
-        from letta.server.db import db_registry
+        from letta.otel.db_pool_monitoring import setup_pool_monitoring
+        from letta.server.db import db_registry, engine as db_engine
+
+        if settings.enable_db_pool_monitoring:
+            setup_pool_monitoring(db_engine.sync_engine, engine_name="core")
+            logger.info(f"[Worker {worker_id}] DB pool monitoring initialized")
 
         async with db_registry.async_session() as session:
             result = await session.execute(text("SHOW statement_timeout"))

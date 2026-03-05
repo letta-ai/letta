@@ -231,6 +231,58 @@ class MetricRegistry:
         )
 
     # Database connection pool metrics
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_in_use_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "db_pool_in_use",
+            partial(
+                self._meter.create_gauge,
+                name="db_pool_in_use",
+                description="Number of database connections currently in use by the client pool.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_waiters_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "db_pool_waiters",
+            partial(
+                self._meter.create_gauge,
+                name="db_pool_waiters",
+                description="Estimated number of waiters blocked on DB client pool checkout.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_checkout_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "db_pool_checkout_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="db_pool_checkout_timeout_total",
+                description="Total number of DB client pool checkout timeout errors.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_checkout_latency_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "db_checkout_latency_ms",
+            partial(
+                self._meter.create_histogram,
+                name="db_checkout_latency_ms",
+                description="Latency of checking out a DB connection from the client pool.",
+                unit="ms",
+            ),
+        )
+
     # (includes engine_name)
     @property
     def db_pool_connections_total_gauge(self) -> Gauge:
