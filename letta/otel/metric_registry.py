@@ -230,6 +230,45 @@ class MetricRegistry:
             ),
         )
 
+    # (includes route_class)
+    @property
+    def sse_active_sessions_counter(self) -> UpDownCounter:
+        return self._get_or_create_metric(
+            "sse_active_sessions",
+            partial(
+                self._meter.create_up_down_counter,
+                name="sse_active_sessions",
+                description="Number of active SSE streaming sessions.",
+                unit="1",
+            ),
+        )
+
+    # (includes reason, route_class)
+    @property
+    def sse_disconnect_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "sse_disconnect_total",
+            partial(
+                self._meter.create_counter,
+                name="sse_disconnect_total",
+                description="Total number of non-clean SSE stream terminations.",
+                unit="1",
+            ),
+        )
+
+    # (includes route_class)
+    @property
+    def sse_duration_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "sse_duration_ms",
+            partial(
+                self._meter.create_histogram,
+                name="sse_duration_ms",
+                description="Lifetime duration of SSE stream sessions.",
+                unit="ms",
+            ),
+        )
+
     # Database connection pool metrics
     # (includes engine_name, pool_mode)
     @property

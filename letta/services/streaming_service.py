@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from typing import AsyncIterator, Optional, Union
@@ -246,6 +247,9 @@ class StreamingService:
             # conditionally wrap with keepalive based on request parameter
             if request.include_pings and settings.enable_keepalive:
                 stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
+
+            # Track SSE lifecycle metrics on the final stream returned to clients.
+            stream = self._create_sse_lifecycle_stream(stream, route_class=route_class)
 
             result = StreamingResponseWithStatusCode(
                 stream,
@@ -590,6 +594,95 @@ class StreamingService:
             "google_vertex",
         ]
         return base_compatible or google_letta_v1
+
+    @staticmethod
+    def _map_sse_error_type_to_disconnect_reason(error_type: Optional[str]) -> str:
+        """Map stream error types to SSE disconnect reason taxonomy."""
+        if error_type == "llm_timeout":
+            return "timeout"
+        if error_type in {
+            "llm_error",
+            "llm_rate_limit",
+            "llm_authentication",
+            "llm_empty_response",
+            "internal_error",
+            "stream_incomplete",
+        }:
+            return "upstream_error"
+        return "unknown"
+
+    @staticmethod
+    def _extract_sse_error_type(chunk: str) -> Optional[str]:
+        """Extract Letta stream error_type from an SSE error chunk."""
+        if not ("\nevent: error" in chunk or chunk.startswith("event: error")):
+            return None
+
+        for line in chunk.splitlines():
+            if not line.startswith("data: "):
+                continue
+            try:
+                payload = json.loads(line[len("data: ") :])
+            except json.JSONDecodeError:
+                continue
+
+            if isinstance(payload, dict):
+                error_type = payload.get("error_type")
+                if isinstance(error_type, str):
+                    return error_type
+        return None
+
+    def _create_sse_lifecycle_stream(self, stream_generator: AsyncIterator, route_class: str) -> AsyncIterator:
+        """Wrap a stream generator with SSE lifecycle metrics instrumentation."""
+
+        async def instrumented_stream():
+            start_ns = get_utc_timestamp_ns()
+            attrs = {"route_class": route_class}
+            saw_done = False
+            saw_error = False
+            error_type = None
+            disconnect_reason = None
+
+            MetricRegistry().sse_active_sessions_counter.add(1, attributes=attrs)
+
+            try:
+                async for chunk in stream_generator:
+                    if isinstance(chunk, str):
+                        if "\ndata: [DONE]" in chunk or chunk.startswith("data: [DONE]"):
+                            saw_done = True
+                        if "\nevent: error" in chunk or chunk.startswith("event: error"):
+                            saw_error = True
+                            parsed_error_type = self._extract_sse_error_type(chunk)
+                            if parsed_error_type:
+                                error_type = parsed_error_type
+
+                    yield chunk
+            except asyncio.CancelledError:
+                disconnect_reason = "client_cancel"
+                raise
+            except (BrokenPipeError, ConnectionError, ConnectionResetError):
+                disconnect_reason = "network_error"
+                raise
+            except TimeoutError:
+                disconnect_reason = "timeout"
+                raise
+            finally:
+                MetricRegistry().sse_active_sessions_counter.add(-1, attributes=attrs)
+
+                duration_ms = (get_utc_timestamp_ns() - start_ns) / 1_000_000
+                MetricRegistry().sse_duration_ms_histogram.record(duration_ms, attributes=attrs)
+
+                if disconnect_reason is None and saw_error:
+                    disconnect_reason = self._map_sse_error_type_to_disconnect_reason(error_type)
+                if disconnect_reason is None and not saw_done:
+                    disconnect_reason = "unknown"
+
+                if disconnect_reason:
+                    MetricRegistry().sse_disconnect_counter.add(
+                        1,
+                        attributes={"reason": disconnect_reason, "route_class": route_class},
+                    )
+
+        return instrumented_stream()
 
     async def _create_run(
         self, agent_id: str, request: LettaStreamingRequest, run_type: str, actor: User, conversation_id: Optional[str] = None
