@@ -89,6 +89,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             ProviderType.deepseek,
             ProviderType.openrouter,
             ProviderType.zai,
+            ProviderType.fireworks,
             ProviderType.chatgpt_oauth,
         ]:
             # Decide interface based on payload shape
