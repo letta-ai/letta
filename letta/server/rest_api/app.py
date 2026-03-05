@@ -178,6 +178,9 @@ async def lifespan(app_: FastAPI):
     FastAPI lifespan context manager with setup before the app starts pre-yield and on shutdown after the yield.
     """
     worker_id = os.getpid()
+    from letta.monitoring.readiness_state import initialize_readiness_state, set_readiness_state
+
+    initialize_readiness_state(reason="warming", source="lifespan_startup")
 
     # Initialize event loop watchdog
     try:
@@ -249,10 +252,14 @@ async def lifespan(app_: FastAPI):
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
     except Exception as e:
         logger.error(f"[Worker {worker_id}] Scheduler initialization failed: {e}", exc_info=True)
+        set_readiness_state(reason="degraded_dependency", source="scheduler_init_failure")
+
+    set_readiness_state(reason="ready", source="lifespan_startup_complete")
     logger.info(f"[Worker {worker_id}] Lifespan startup completed")
     yield
 
     # Cleanup on shutdown
+    set_readiness_state(reason="draining", source="lifespan_shutdown")
     logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
 
     # Stop watchdog thread (important for clean test/worker shutdown)
