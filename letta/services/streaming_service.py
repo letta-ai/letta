@@ -185,6 +185,7 @@ class StreamingService:
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
                 actor=actor,
+                provider_name=agent.llm_config.model_endpoint_type,
                 conversation_id=conversation_id,
                 lock_key=lock_key,  # For lock release (may differ from conversation_id)
                 client_tools=request.client_tools,
@@ -356,6 +357,7 @@ class StreamingService:
         request_start_timestamp_ns: int,
         include_return_message_types: Optional[list[MessageType]],
         actor: User,
+        provider_name: str,
         conversation_id: Optional[str] = None,
         lock_key: Optional[str] = None,
         client_tools: Optional[list[ClientToolSchema]] = None,
@@ -443,6 +445,7 @@ class StreamingService:
 
             except LLMTimeoutError as e:
                 MetricRegistry().request_timeout_counter.add(1, attributes=in_flight_attrs)
+                MetricRegistry().provider_timeout_counter.add(1, attributes={"provider": provider_name})
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(
