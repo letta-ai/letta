@@ -1,10 +1,5 @@
-import asyncio
-from typing import TYPE_CHECKING, Any, Iterable, List
+from typing import Any, Iterable, List
 
-if TYPE_CHECKING:
-    from letta.agents.letta_agent import LettaAgent as Agent
-
-from letta.functions.helpers import _send_message_to_all_agents_in_group_async
 from letta.settings import settings
 
 
@@ -163,22 +158,6 @@ def send_message_to_agents_matching_tags(message: str, match_all: List[str], mat
             results.append({"agent_id": agent_id, "response": [f"<error: {exc}>"]})
 
     return results
-
-
-def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:
-    """
-    Sends a message to all agents within the same multi-agent group.
-
-    Args:
-        message (str): The content of the message to be sent to each matching agent.
-
-    Returns:
-        List[str]: A list of responses from the agents that matched the filtering criteria. Each
-        response corresponds to a single agent. Agents that do not respond will not have an entry
-        in the returned list.
-    """
-
-    return asyncio.run(_send_message_to_all_agents_in_group_async(self, message))
 
 
 def send_message_to_agent_async(message: str, other_agent_id: str) -> str:
