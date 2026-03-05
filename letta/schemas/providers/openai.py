@@ -54,12 +54,12 @@ class OpenAIProvider(Provider):
     def _openai_default_max_output_tokens(model_name: str) -> int:
         """Return a sensible max-output-tokens default for OpenAI models.
 
-        gpt-5.2* / gpt-5.3* support 128k output tokens, except the
+        gpt-5.2* / gpt-5.3* / gpt-5.4* support 128k output tokens, except the
         `-chat` variants which are capped at 16k.
         """
         import re
 
-        if re.match(r"^gpt-5\.[23]", model_name) and "-chat" not in model_name:
+        if re.match(r"^gpt-5\.[234]", model_name) and "-chat" not in model_name:
             return 128000
         return 16384
 
