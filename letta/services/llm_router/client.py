@@ -42,8 +42,9 @@ def _build_baseten_config() -> "LLMConfig":
     from letta.schemas.llm_config import LLMConfig
 
     return LLMConfig(
-        model="3m5zok9w",
+        model="zai-org/GLM-5",
         model_endpoint_type="baseten",
+        model_endpoint="3m5zok9w",
         context_window=180000,
         max_tokens=16384,
         handle="baseten/glm-5",
