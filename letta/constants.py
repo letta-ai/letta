@@ -282,6 +282,7 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gpt-5.3-codex": 272000,
     # gpt-5.4
     "gpt-5.4": 1050000,
+    "gpt-5.4-fast": 1050000,
     "gpt-5.4-2026-03-05": 1050000,
     # reasoners
     "o1": 200000,

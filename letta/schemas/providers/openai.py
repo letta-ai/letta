@@ -217,6 +217,19 @@ class OpenAIProvider(Provider):
             config = self._set_model_parameter_tuned_defaults(model_name, config)
             configs.append(config)
 
+        # Add synthetic fast variants (e.g. gpt-5.4-fast with service_tier="priority")
+        fast_configs = []
+        for config in configs:
+            if config.model == "gpt-5.4":
+                fast_config = config.model_copy(
+                    update={
+                        "model": "gpt-5.4-fast",
+                        "handle": self.get_handle("gpt-5.4-fast"),
+                    }
+                )
+                fast_configs.append(fast_config)
+        configs.extend(fast_configs)
+
         # for OpenAI, sort in reverse order
         if self.base_url == "https://api.openai.com/v1":
             configs.sort(key=lambda x: x.model, reverse=True)

@@ -393,6 +393,11 @@ class OpenAIClient(LLMClientBase):
             parallel_tool_calls=llm_config.parallel_tool_calls if tools and supports_parallel_tool_calling(model) else False,
         )
 
+        # Handle "fast" model variants → real model + priority service tier
+        if data.model.endswith("-fast"):
+            data.model = data.model.removesuffix("-fast")
+            data.service_tier = "priority"
+
         # Handle text configuration (verbosity and response format)
         text_config_kwargs = {}
 
@@ -563,6 +568,11 @@ class OpenAIClient(LLMClientBase):
             # NOTE: the reasoners that don't support temperature require 1.0, not None
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
+
+        # Handle "fast" model variants → real model + priority service tier
+        if data.model.endswith("-fast"):
+            data.model = data.model.removesuffix("-fast")
+            data.service_tier = "priority"
 
         # Add verbosity control for GPT-5 models
         if supports_verbosity_control(model) and llm_config.verbosity:
