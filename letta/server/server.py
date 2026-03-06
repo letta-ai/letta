@@ -657,9 +657,12 @@ class SyncServer(object):
         request: UpdateAgent,
         actor: User,
     ) -> AgentState:
-        # Build llm_config from convenience fields if llm_config is not provided
+        # Build llm_config from convenience fields if llm_config is not provided.
+        # Use model_fields_set to distinguish "max_tokens omitted" from "max_tokens: null"
+        # so the client can explicitly clear a stale max_tokens on model switch.
+        max_tokens_explicitly_set = "max_tokens" in request.model_fields_set
         if request.llm_config is None and (
-            request.model is not None or request.context_window_limit is not None or request.max_tokens is not None
+            request.model is not None or request.context_window_limit is not None or max_tokens_explicitly_set
         ):
             if request.model is None:
                 agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -672,6 +675,10 @@ class SyncServer(object):
             log_event(name="start get_llm_config_from_handle", attributes=config_params)
             request.llm_config = await self.get_llm_config_from_handle_async(actor=actor, **config_params)
             log_event(name="end get_llm_config_from_handle", attributes=config_params)
+            # Explicitly clear max_tokens when the caller sent null (get_llm_config_from_handle
+            # skips null values, so we apply it here after the config is built).
+            if max_tokens_explicitly_set and request.max_tokens is None:
+                request.llm_config.max_tokens = None
 
         # update with model_settings
         if request.model_settings is not None:
@@ -682,7 +689,7 @@ class SyncServer(object):
             else:
                 # TODO: Refactor update_agent to accept partial llm_config so we
                 # don't need to fetch the full agent just to preserve max_tokens.
-                if request.max_tokens is None and "max_output_tokens" not in request.model_settings.model_fields_set:
+                if not max_tokens_explicitly_set and "max_output_tokens" not in request.model_settings.model_fields_set:
                     agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
                     request.llm_config.max_tokens = agent.llm_config.max_tokens
             update_llm_config_params = request.model_settings._to_legacy_config_params()
