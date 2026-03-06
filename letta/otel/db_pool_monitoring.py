@@ -105,12 +105,15 @@ class DatabasePoolMonitor:
                     MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
                     MetricRegistry().db_pool_connections_total_gauge.set(pool_stats["total"], attributes=attrs)
                     MetricRegistry().db_pool_in_use_gauge.set(pool_stats["checked_out"], attributes=attrs)
+                    utilization_ratio = (pool_stats["checked_out"] / pool_stats["total"]) if pool_stats["total"] > 0 else 0.0
+                    MetricRegistry().db_pool_utilization_ratio_gauge.set(utilization_ratio, attributes=attrs)
                     waiters = self._get_pool_waiters(pool)
                     MetricRegistry().db_pool_waiters_gauge.set(waiters, attributes=attrs)
                     if pool_stats["overflow"] is not None:
                         MetricRegistry().db_pool_connections_overflow_gauge.set(pool_stats["overflow"], attributes=attrs)
                 else:
                     MetricRegistry().db_pool_in_use_gauge.set(0, attributes=attrs)
+                    MetricRegistry().db_pool_utilization_ratio_gauge.set(0.0, attributes=attrs)
                     MetricRegistry().db_pool_waiters_gauge.set(0, attributes=attrs)
 
                 # Record checkout event
@@ -160,6 +163,9 @@ class DatabasePoolMonitor:
                     pool_stats = self._get_pool_stats(pool)
                     MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
                     MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
+                    MetricRegistry().db_pool_in_use_gauge.set(pool_stats["checked_out"], attributes=attrs)
+                    utilization_ratio = (pool_stats["checked_out"] / pool_stats["total"]) if pool_stats["total"] > 0 else 0.0
+                    MetricRegistry().db_pool_utilization_ratio_gauge.set(utilization_ratio, attributes=attrs)
 
                 # Record checkin event
                 attrs["event"] = "checkin"

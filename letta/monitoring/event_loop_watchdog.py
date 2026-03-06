@@ -39,8 +39,10 @@ class EventLoopWatchdog:
         self.timeout_threshold = timeout_threshold
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
-        self._last_heartbeat = time.time()
-        self._heartbeat_scheduled_at = time.time()
+        # Use monotonic time for watchdog timing to avoid wall-clock jumps (e.g. NTP)
+        # producing negative lag samples.
+        self._last_heartbeat = time.monotonic()
+        self._heartbeat_scheduled_at = time.monotonic()
         self._heartbeat_lock = threading.Lock()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._monitoring = False
@@ -57,7 +59,7 @@ class EventLoopWatchdog:
         self._loop = loop
         self._monitoring = True
         self._stop_event.clear()
-        now = time.time()
+        now = time.monotonic()
         self._last_heartbeat = now
         self._heartbeat_scheduled_at = now
 
@@ -85,10 +87,10 @@ class EventLoopWatchdog:
         if not self._monitoring:
             return
 
-        now = time.time()
+        now = time.monotonic()
         with self._heartbeat_lock:
             # Calculate event loop lag: time between when we scheduled this callback and when it ran
-            lag = now - self._heartbeat_scheduled_at
+            lag = max(0.0, now - self._heartbeat_scheduled_at)
             self._last_heartbeat = now
             self._heartbeat_scheduled_at = now + 1.0
 
@@ -118,10 +120,10 @@ class EventLoopWatchdog:
                     last_beat = self._last_heartbeat
                     scheduled_at = self._heartbeat_scheduled_at
 
-                now = time.time()
+                now = time.monotonic()
                 time_since_heartbeat = now - last_beat
                 # Calculate current lag: how far behind schedule is the heartbeat?
-                current_lag = now - scheduled_at
+                current_lag = max(0.0, now - scheduled_at)
                 max_lag_seen = max(max_lag_seen, current_lag)
 
                 # Try to estimate event loop load (safe from separate thread)
