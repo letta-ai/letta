@@ -443,7 +443,9 @@ class StreamingService:
             except LLMTimeoutError as e:
                 MetricRegistry().request_timeout_counter.add(1, attributes=in_flight_attrs)
                 MetricRegistry().provider_timeout_counter.add(1, attributes={"provider": provider_name})
-                set_readiness_state(reason="degraded_dependency", source="provider_timeout")
+                from letta.settings import readiness_settings
+                if readiness_settings.enforcement_enabled:
+                    set_readiness_state(reason="degraded_dependency", source="provider_timeout")
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(

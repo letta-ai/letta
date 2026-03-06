@@ -135,7 +135,9 @@ class AsyncRedisClient:
                         return await func(self, *args, **kwargs)
                     except TimeoutError as e:
                         MetricRegistry().redis_timeout_counter.add(1, attributes={"operation": func.__name__})
-                        set_readiness_state(reason="degraded_dependency", source=f"redis_timeout:{func.__name__}")
+                        from letta.settings import readiness_settings
+                        if readiness_settings.enforcement_enabled:
+                            set_readiness_state(reason="degraded_dependency", source=f"redis_timeout:{func.__name__}")
                         last_error = e
                         if attempt < max_attempts - 1:
                             await asyncio.sleep(delay * (2**attempt))

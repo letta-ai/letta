@@ -16,6 +16,13 @@ from letta.otel.metric_registry import MetricRegistry
 logger = get_logger(__name__)
 
 
+# Lazy import to avoid circular deps at module load time.
+def _get_readiness_settings():
+    from letta.settings import readiness_settings
+
+    return readiness_settings
+
+
 class EventLoopWatchdog:
     """
     Minimal watchdog that monitors event loop health from a separate thread.
@@ -39,6 +46,8 @@ class EventLoopWatchdog:
         self._monitoring = False
         self._last_dump_time = 0.0  # Cooldown between task dumps
         self._saturation_start: Optional[float] = None  # Track when saturation began
+        self._degraded_since: Optional[float] = None  # Track when we entered sustained overload
+        self._recovery_since: Optional[float] = None  # Track when we started recovering
 
     def start(self, loop: asyncio.AbstractEventLoop):
         """Start the watchdog thread."""
@@ -158,12 +167,18 @@ class EventLoopWatchdog:
                         self._dump_asyncio_tasks()  # Dump async tasks
                         self._dump_state()  # Dump thread stacks
                         self._last_dump_time = now
+
+                    # Readiness gating: transition to degraded after sustained overload
+                    self._maybe_degrade_readiness(now, current_lag_ms=current_lag * 1000)
                 else:
                     # Reset saturation tracking when recovered
                     if self._saturation_start is not None:
                         duration = now - self._saturation_start
                         logger.info(f"Event loop saturation ended after {duration:.1f}s")
                         self._saturation_start = None
+
+                    # Readiness gating: attempt recovery when lag is healthy
+                    self._maybe_recover_readiness(now)
 
                 if time_since_heartbeat > self.timeout_threshold:
                     consecutive_hangs += 1
@@ -185,6 +200,57 @@ class EventLoopWatchdog:
 
             except Exception as e:
                 logger.error(f"Watchdog error: {e}")
+
+    def _maybe_degrade_readiness(self, now: float, current_lag_ms: float) -> None:
+        """Transition to degraded when event loop lag exceeds threshold for sustained period."""
+        try:
+            rs = _get_readiness_settings()
+            if not rs.enforcement_enabled or not rs.event_loop_lag_gating_enabled:
+                return
+            if current_lag_ms < rs.event_loop_lag_threshold_ms:
+                return
+
+            from letta.monitoring.readiness_state import get_readiness_state, set_readiness_state
+
+            if get_readiness_state() not in ("ready", "degraded"):
+                return  # Don't override draining/warming/manual_disable
+
+            if self._degraded_since is None:
+                self._degraded_since = now
+                self._recovery_since = None
+                return
+
+            elapsed = now - self._degraded_since
+            if elapsed >= rs.degraded_stabilization_seconds and get_readiness_state() == "ready":
+                set_readiness_state("degraded", source=f"event_loop_lag:{current_lag_ms:.0f}ms")
+        except Exception:
+            pass  # Readiness gating must never crash the watchdog
+
+    def _maybe_recover_readiness(self, now: float) -> None:
+        """Recover from event-loop-lag-induced degraded state after sustained healthy period."""
+        try:
+            rs = _get_readiness_settings()
+            if not rs.enforcement_enabled or not rs.event_loop_lag_gating_enabled:
+                return
+
+            from letta.monitoring.readiness_state import get_readiness_state, set_readiness_state
+
+            self._degraded_since = None  # Reset overload timer
+
+            if get_readiness_state() != "degraded":
+                self._recovery_since = None
+                return
+
+            if self._recovery_since is None:
+                self._recovery_since = now
+                return
+
+            elapsed = now - self._recovery_since
+            if elapsed >= rs.recovery_stabilization_seconds:
+                set_readiness_state("ready", source="event_loop_lag_recovered")
+                self._recovery_since = None
+        except Exception:
+            pass  # Readiness gating must never crash the watchdog
 
     @staticmethod
     def _get_executor_backlog(loop: asyncio.AbstractEventLoop) -> int:
