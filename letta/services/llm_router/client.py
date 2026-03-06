@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Auto mode model routing
-AUTO_MODE_PRIMARY = "fireworks/glm-5"
+AUTO_MODE_PRIMARY = "baseten/glm-5"
 AUTO_MODE_FALLBACK = "zai/glm-5"
 
 # Circuit breaker configuration
@@ -34,6 +34,22 @@ OPEN_DURATION_SECONDS = 30  # How long circuit stays open
 CIRCUIT_ERRORS_KEY = "circuit:errors:"
 CIRCUIT_STATE_KEY = "circuit:state:"
 CIRCUIT_OPENED_AT_KEY = "circuit:opened:"
+
+
+def _build_baseten_config() -> "LLMConfig":
+    """Build a hardcoded LLMConfig for Baseten GLM-5 (not discoverable via provider sync)."""
+    from letta.schemas.enums import ProviderCategory
+    from letta.schemas.llm_config import LLMConfig
+
+    return LLMConfig(
+        model="3m5zok9w",
+        model_endpoint_type="baseten",
+        context_window=180000,
+        max_tokens=16384,
+        handle="baseten/glm-5",
+        provider_name="baseten",
+        provider_category=ProviderCategory.base,
+    )
 
 
 def _build_fireworks_config() -> "LLMConfig":
@@ -95,7 +111,7 @@ class LLMRoutingClient(LLMRoutingClientBase):
         if not model_settings.auto_mode_enabled:
             logger.info(f"[AUTO MODE]: primary {primary_handle} disabled via kill switch, using {AUTO_MODE_FALLBACK}")
         elif await self._is_healthy(primary_handle):
-            config = _build_fireworks_config()
+            config = _build_baseten_config()
             config = config.model_copy(
                 update={
                     "context_window": min(stored_llm_config.context_window, config.context_window),

@@ -53,6 +53,7 @@ class PrimitiveType(str, Enum):
 class ProviderType(str, Enum):
     anthropic = "anthropic"
     azure = "azure"
+    baseten = "baseten"
     bedrock = "bedrock"
     cerebras = "cerebras"
     chatgpt_oauth = "chatgpt_oauth"
