@@ -82,6 +82,7 @@ class StreamingService:
         conversation_id: Optional[str] = None,
         should_lock: bool = False,
         billing_context: "BillingContext | None" = None,
+        openai_responses_websocket: bool = False,
     ) -> tuple[Optional[PydanticRun], Union[StreamingResponse, LettaResponse]]:
         """
         Create a streaming response for an agent.
@@ -193,6 +194,7 @@ class StreamingService:
                 billing_context=billing_context,
                 route_class=route_class,
                 is_background=request.background,
+                openai_responses_websocket=openai_responses_websocket,
             )
 
             # handle background streaming if requested
@@ -364,6 +366,7 @@ class StreamingService:
         billing_context: BillingContext | None = None,
         route_class: str = "foreground",
         is_background: bool = False,
+        openai_responses_websocket: bool = False,
     ) -> AsyncIterator:
         """
         Create a stream with unified error handling.
@@ -399,6 +402,7 @@ class StreamingService:
                     client_tools=client_tools,
                     include_compaction_messages=include_compaction_messages,
                     billing_context=billing_context,
+                    openai_responses_websocket=openai_responses_websocket,
                 )
 
                 async for chunk in stream:

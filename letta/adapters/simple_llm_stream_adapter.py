@@ -9,6 +9,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_parallel_tool_call_streaming_interface import SimpleAnthropicStreamingInterface
 from letta.interfaces.gemini_streaming_interface import SimpleGeminiStreamingInterface
 from letta.interfaces.openai_streaming_interface import SimpleOpenAIResponsesStreamingInterface, SimpleOpenAIStreamingInterface
+from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
@@ -139,6 +140,14 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             # Other providers return awaitables that resolve to iterators
             if self.llm_config.model_endpoint_type in [ProviderType.google_ai, ProviderType.google_vertex]:
                 stream = self.llm_client.stream_async(request_data, self.llm_config)
+            elif self.use_openai_responses_websocket and isinstance(self.llm_client, OpenAIClient):
+                ws_session = await self._get_or_create_ws_session()
+                stream = await self.llm_client.stream_async(
+                    request_data,
+                    self.llm_config,
+                    use_websocket=True,
+                    ws_session=ws_session,
+                )
             else:
                 stream = await self.llm_client.stream_async(request_data, self.llm_config)
         except Exception as e:

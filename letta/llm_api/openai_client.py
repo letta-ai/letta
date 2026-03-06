@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import os
 import time
-from typing import Any, List, Optional
+from typing import Any, AsyncIterator, List, Optional
 
 import httpx
 import openai
@@ -36,6 +38,7 @@ from letta.llm_api.helpers import (
     unpack_all_inner_thoughts_from_kwargs,
 )
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.llm_api.openai_ws_session import AsyncStreamCompat, OpenAIWSSessionManager
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -916,18 +919,48 @@ class OpenAIClient(LLMClientBase):
         return chat_completion_response
 
     @trace_method
-    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk | ResponseStreamEvent]:
+    async def stream_async(
+        self,
+        request_data: dict,
+        llm_config: LLMConfig,
+        use_websocket: bool = False,
+        ws_session: OpenAIWSSessionManager | None = None,
+    ) -> AsyncStream[ChatCompletionChunk | ResponseStreamEvent] | AsyncIterator[ResponseStreamEvent]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
+
+        Args:
+            use_websocket: If True and the request is a Responses API request, use a
+                WebSocket session instead of HTTP SSE. Requires ``ws_session``.
+            ws_session: An active ``OpenAIWSSessionManager``. When provided *and*
+                ``use_websocket`` is True, the request is sent over WebSocket.
+                If ``use_websocket`` is True but no session is given, one is created
+                on-the-fly (but won't persist across steps — prefer passing one).
         """
         # Sanitize Unicode surrogates to prevent encoding errors
         request_data = sanitize_unicode_surrogates(request_data)
 
+        is_responses_request = "input" in request_data and "messages" not in request_data
+
+        # --- WebSocket path (Responses API only) ---
+        if use_websocket and is_responses_request:
+            if ws_session is None:
+                # Create a one-shot session (caller should prefer reuse)
+                kwargs = await self._prepare_client_kwargs_async(llm_config)
+                ws_session = OpenAIWSSessionManager(client_kwargs=kwargs)
+            try:
+                # Wrap in AsyncStreamCompat so callers can use ``async with stream:``
+                return AsyncStreamCompat(ws_session.stream_responses(request_data))
+            except Exception as e:
+                logger.error(f"Error streaming OpenAI Responses WebSocket request: {e}")
+                raise
+
+        # --- HTTP SSE path (default) ---
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
 
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
-        if "input" in request_data and "messages" not in request_data:
+        if is_responses_request:
             try:
                 response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
                     **request_data,
