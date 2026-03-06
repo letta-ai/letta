@@ -14752,8 +14752,28 @@
       "get": {
         "tags": ["health"],
         "summary": "Check Health",
-        "description": "Async health check endpoint.",
+        "description": "Liveness endpoint; returns 200 when process is responsive.",
         "operationId": "check_health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ready/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Check Readiness",
+        "description": "Readiness endpoint gated by internal readiness state when enforcement is enabled.",
+        "operationId": "check_readiness",
         "responses": {
           "200": {
             "description": "Successful Response",
