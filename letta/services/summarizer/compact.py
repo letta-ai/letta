@@ -163,6 +163,8 @@ async def compact_messages(
     )
 
     summarization_mode_used = summarizer_config.mode
+    if summarizer_config.prompt is None:
+        summarizer_config.prompt = get_default_prompt_for_mode(summarizer_config.mode)
     if summarizer_config.mode == "self_compact_all":
         try:
             summary, compacted_messages = await self_summarize_all(

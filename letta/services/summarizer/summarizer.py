@@ -17,7 +17,6 @@ from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.prompts import gpt_summarize
 from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ProviderType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.llm_config import LLMConfig
@@ -466,6 +465,7 @@ async def simple_summary(
 
     Intentionally kept functional due to the simplicity of the prompt.
     """
+    from letta.prompts.summarizer_prompt import ALL_PROMPT
     from letta.services.telemetry_manager import TelemetryManager
 
     # Create an LLMClient from the config
@@ -491,7 +491,7 @@ async def simple_summary(
     )
 
     # Prepare the messages payload to send to the LLM
-    system_prompt = prompt or gpt_summarize.SYSTEM
+    system_prompt = prompt or ALL_PROMPT
     # Build the initial transcript without clamping to preserve fidelity
     # TODO proactively clip here?
     summary_transcript = simple_formatter(messages)
