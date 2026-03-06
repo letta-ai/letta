@@ -186,9 +186,6 @@ def send_message_to_agent_async(message: str, other_agent_id: str) -> str:
         "messages": [{"role": "system", "content": augmented_message}],
     }
 
-    try:
-        client_obj.agents.messages.create(background=True, **create_kwargs)
-    except TypeError:
-        client_obj.agents.messages.create(**create_kwargs)
+    client_obj.agents.messages.create(**create_kwargs)
 
     return "Successfully sent message"
