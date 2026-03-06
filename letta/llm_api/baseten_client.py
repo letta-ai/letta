@@ -43,8 +43,7 @@ class BasetenClient(OpenAIClient):
     ) -> dict:
         data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
 
-        # Baseten expects a generic model name
-        data["model"] = "baseten"
+        # model field is passed through from llm_config.model (e.g. "zai-org/GLM-5")
 
         # Baseten uses max_tokens, not max_completion_tokens
         if "max_completion_tokens" in data:
@@ -84,7 +83,7 @@ class BasetenClient(OpenAIClient):
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         api_key = model_settings.baseten_api_key
-        base_url = _build_base_url(llm_config.model)
+        base_url = _build_base_url(llm_config.model_endpoint)
         client = OpenAI(api_key="unused", base_url=base_url, default_headers={"Authorization": f"Api-Key {api_key}"})
         response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
@@ -93,7 +92,7 @@ class BasetenClient(OpenAIClient):
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         request_data = sanitize_unicode_surrogates(request_data)
         api_key = model_settings.baseten_api_key
-        base_url = _build_base_url(llm_config.model)
+        base_url = _build_base_url(llm_config.model_endpoint)
         client = AsyncOpenAI(api_key="unused", base_url=base_url, default_headers={"Authorization": f"Api-Key {api_key}"})
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
@@ -102,7 +101,7 @@ class BasetenClient(OpenAIClient):
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         request_data = sanitize_unicode_surrogates(request_data)
         api_key = model_settings.baseten_api_key
-        base_url = _build_base_url(llm_config.model)
+        base_url = _build_base_url(llm_config.model_endpoint)
         client = AsyncOpenAI(api_key="unused", base_url=base_url, default_headers={"Authorization": f"Api-Key {api_key}"})
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
             **request_data, stream=True, stream_options={"include_usage": True}
