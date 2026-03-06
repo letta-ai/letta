@@ -120,7 +120,6 @@ class TestAutoModeResolution:
             MockPM.return_value = mock_pm
 
             config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
-                auto_mode_enabled=True,
                 stored_llm_config=stored_config,
                 actor=actor,
             )
@@ -158,7 +157,6 @@ class TestAutoModeResolution:
             MockPM.return_value = mock_pm
 
             config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
-                auto_mode_enabled=True,
                 stored_llm_config=stored_config,
                 actor=actor,
             )
@@ -166,63 +164,3 @@ class TestAutoModeResolution:
             assert is_primary is False
             assert config.context_window == 180000
             assert config.max_tokens == 8192
-
-    @pytest.mark.asyncio
-    async def test_skips_primary_when_auto_mode_disabled(self):
-        from letta.services.llm_router.client import LLMRoutingClient
-
-        stored_config = self._make_config()
-        actor = MagicMock()
-        actor.organization_id = "org-test"
-
-        fallback_config = LLMConfig(
-            model="glm-5",
-            model_endpoint_type="zai",
-            model_endpoint="https://api.zai.com",
-            context_window=128000,
-            handle=AUTO_MODE_FALLBACK,
-            max_tokens=4096,
-        )
-
-        mock_redis = AsyncMock()
-        routing_client = LLMRoutingClient(mock_redis)
-
-        with (
-            patch.object(routing_client, "_is_healthy") as mock_is_healthy,
-            patch("letta.services.provider_manager.ProviderManager") as MockPM,
-        ):
-            mock_pm = AsyncMock()
-            mock_pm.get_llm_config_from_handle = AsyncMock(return_value=fallback_config)
-            MockPM.return_value = mock_pm
-
-            config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
-                auto_mode_enabled=False,
-                stored_llm_config=stored_config,
-                actor=actor,
-            )
-
-            assert is_primary is False
-            mock_is_healthy.assert_not_called()
-            assert config.context_window == 180000
-
-
-class TestExperimentalParamsAutoMode:
-    """Test that auto_mode header is parsed correctly."""
-
-    def test_auto_mode_true(self):
-        from letta.server.rest_api.dependencies import ExperimentalParams
-
-        params = ExperimentalParams(auto_mode=True)
-        assert params.auto_mode is True
-
-    def test_auto_mode_false(self):
-        from letta.server.rest_api.dependencies import ExperimentalParams
-
-        params = ExperimentalParams(auto_mode=False)
-        assert params.auto_mode is False
-
-    def test_auto_mode_none_default(self):
-        from letta.server.rest_api.dependencies import ExperimentalParams
-
-        params = ExperimentalParams()
-        assert params.auto_mode is None

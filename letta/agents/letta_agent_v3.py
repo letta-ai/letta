@@ -161,7 +161,6 @@ class LettaAgentV3(LettaAgentV2):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,
-        auto_mode_enabled: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
@@ -273,7 +272,6 @@ class LettaAgentV3(LettaAgentV2):
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_compaction_messages=include_compaction_messages,
-                auto_mode_enabled=auto_mode_enabled,
             )
             input_messages_to_persist = []  # clear after first step
 
@@ -378,7 +376,6 @@ class LettaAgentV3(LettaAgentV2):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,
-        auto_mode_enabled: bool = False,
         billing_context: BillingContext | None = None,
     ) -> AsyncGenerator[str, None]:
         """
@@ -507,7 +504,6 @@ class LettaAgentV3(LettaAgentV2):
                     include_return_message_types=include_return_message_types,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_compaction_messages=include_compaction_messages,
-                    auto_mode_enabled=auto_mode_enabled,
                 )
                 input_messages_to_persist = []  # clear after first step
                 async for chunk in response:
@@ -807,7 +803,6 @@ class LettaAgentV3(LettaAgentV2):
         dry_run: bool = False,
         enforce_run_id_set: bool = True,
         include_compaction_messages: bool = False,
-        auto_mode_enabled: bool = False,
     ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
@@ -948,7 +943,6 @@ class LettaAgentV3(LettaAgentV2):
                 if is_auto_mode:
                     routing_client = await get_llm_routing_client()
                     active_llm_config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
-                        auto_mode_enabled=auto_mode_enabled,
                         stored_llm_config=self.agent_state.llm_config,
                         actor=self.actor,
                     )

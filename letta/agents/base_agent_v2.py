@@ -53,7 +53,6 @@ class BaseAgentV2(ABC):
         request_start_timestamp_ns: int | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
-        auto_mode_enabled: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
@@ -79,7 +78,6 @@ class BaseAgentV2(ABC):
         conversation_id: str | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
-        auto_mode_enabled: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """
