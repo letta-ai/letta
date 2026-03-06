@@ -90,6 +90,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             ProviderType.deepseek,
             ProviderType.openrouter,
             ProviderType.zai,
+            ProviderType.baseten,
             ProviderType.fireworks,
             ProviderType.chatgpt_oauth,
         ]:

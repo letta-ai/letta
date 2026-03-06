@@ -150,6 +150,9 @@ class ModelSettings(BaseSettings):
     # deepseek
     deepseek_api_key: Optional[str] = None
 
+    # baseten
+    baseten_api_key: Optional[str] = None
+
     # fireworks
     fireworks_api_key: Optional[str] = None
     fireworks_api_base: str = "https://api.fireworks.ai/inference/v1"

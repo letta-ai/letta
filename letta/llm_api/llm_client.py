@@ -115,6 +115,13 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
+            case ProviderType.baseten:
+                from letta.llm_api.baseten_client import BasetenClient
+
+                return BasetenClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
             case ProviderType.fireworks:
                 from letta.llm_api.fireworks_client import FireworksClient
 
