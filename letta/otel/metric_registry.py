@@ -332,6 +332,7 @@ class MetricRegistry:
                 unit="1",
             ),
         )
+
     # Database connection pool metrics
     # (includes engine_name, pool_mode)
     @property
@@ -355,6 +356,19 @@ class MetricRegistry:
                 self._meter.create_gauge,
                 name="db_pool_waiters",
                 description="Estimated number of waiters blocked on DB client pool checkout.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_utilization_ratio_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "db_pool_utilization_ratio",
+            partial(
+                self._meter.create_gauge,
+                name="db_pool_utilization_ratio",
+                description="Ratio of checked-out base pool connections to configured pool size (excludes overflow).",
                 unit="1",
             ),
         )
