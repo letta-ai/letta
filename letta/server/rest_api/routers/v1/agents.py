@@ -1699,6 +1699,7 @@ async def send_message(
             request=request,
             run_type="send_message",
             billing_context=headers.billing_context,
+            openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
         )
         return result
 
@@ -1849,6 +1850,7 @@ async def send_message_streaming(
         request=request,
         run_type="send_message_streaming",
         billing_context=headers.billing_context,
+        openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
     )
 
     return result

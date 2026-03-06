@@ -111,6 +111,15 @@ class LettaLLMAdapter(ABC):
         """
         return False
 
+    async def aclose(self) -> None:
+        """
+        Clean up any resources held by the adapter.
+
+        Subclasses that hold long-lived connections (e.g. WebSocket sessions)
+        should override this to release them.  The default implementation is a no-op.
+        """
+        pass
+
     def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
         """
         Log provider trace data for telemetry purposes.

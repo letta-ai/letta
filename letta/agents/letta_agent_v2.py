@@ -293,6 +293,7 @@ class LettaAgentV2(BaseAgentV2):
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: BillingContext | None = None,
+        openai_responses_websocket: bool = False,  # Not used in V2, but accepted for API compatibility
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.

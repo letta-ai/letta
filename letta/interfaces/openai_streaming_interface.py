@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -16,6 +16,8 @@ from openai.types.responses import (
     ResponseContentPartAddedEvent,
     ResponseContentPartDoneEvent,
     ResponseCreatedEvent,
+    ResponseErrorEvent,
+    ResponseFailedEvent,
     ResponseFunctionCallArgumentsDeltaEvent,
     ResponseFunctionCallArgumentsDoneEvent,
     ResponseFunctionToolCall,
@@ -25,6 +27,7 @@ from openai.types.responses import (
     ResponseOutputItemDoneEvent,
     ResponseOutputMessage,
     ResponseOutputText,
+    ResponseQueuedEvent,
     ResponseReasoningItem,
     ResponseReasoningSummaryPartAddedEvent,
     ResponseReasoningSummaryPartDoneEvent,
@@ -1145,12 +1148,15 @@ class SimpleOpenAIResponsesStreamingInterface:
 
     async def process(
         self,
-        stream: AsyncStream[ResponseStreamEvent],
+        stream: "AsyncStream[ResponseStreamEvent] | Any",
         ttft_span: Optional["Span"] = None,
     ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
         """
         Iterates over the OpenAI stream, yielding SSE events.
         It also collects tokens and detects if a tool call is triggered.
+
+        ``stream`` may be an ``AsyncStream`` (HTTP SSE) or an ``AsyncStreamCompat``
+        wrapper (WebSocket mode).  Both support ``async with`` + ``async for``.
         """
         # Fallback input token counting - this should only be required for non-OpenAI providers using the OpenAI client (e.g. LMStudio)
         if self.is_openai_proxy:
@@ -1246,6 +1252,10 @@ class SimpleOpenAIResponsesStreamingInterface:
 
         elif isinstance(event, ResponseInProgressEvent):
             # No-op, just an indicator that we've started
+            return
+
+        elif isinstance(event, ResponseQueuedEvent):
+            # No-op, emitted in WebSocket mode when the response is queued
             return
 
         elif isinstance(event, ResponseOutputItemAddedEvent):
@@ -1494,6 +1504,32 @@ class SimpleOpenAIResponsesStreamingInterface:
         elif isinstance(event, ResponseOutputItemDoneEvent):
             # Inclusive, so skip
             return
+
+        # Error / failure events (WebSocket mode may emit these explicitly)
+        elif isinstance(event, ResponseFailedEvent):
+            error_info = getattr(event.response, "error", None)
+            error_msg = str(error_info) if error_info else "unknown"
+            logger.error(f"OpenAI Responses API returned a failed response: {error_msg}")
+
+            # Still extract partial response + usage if available
+            self.final_response = event.response
+            self.model = event.response.model
+            self.message_id = event.response.id
+            usage = event.response.usage
+            if usage is not None:
+                self.input_tokens = usage.input_tokens
+                self.output_tokens = usage.output_tokens
+
+            from letta.errors import LLMError
+
+            raise LLMError(f"OpenAI Responses API failed: {error_msg}")
+
+        elif isinstance(event, ResponseErrorEvent):
+            error_detail = getattr(event, "message", None) or str(event)
+            logger.error(f"OpenAI Responses API error event: {error_detail}")
+            from letta.errors import LLMError
+
+            raise LLMError(f"OpenAI Responses API error: {error_detail}")
 
         # Generic finish
         elif isinstance(event, (ResponseCompletedEvent, ResponseIncompleteEvent)):

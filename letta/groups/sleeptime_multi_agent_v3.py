@@ -85,6 +85,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
+        openai_responses_websocket: bool = False,
     ) -> AsyncGenerator[str, None]:
         self.run_ids = []
 

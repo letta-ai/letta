@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
@@ -6,6 +8,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.llm_api.openai_ws_session import OpenAIWSSessionManager
 from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import LLMCallType, ProviderType
 from letta.schemas.letta_message import LettaMessage
@@ -37,6 +40,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         org_id: str | None = None,
         user_id: str | None = None,
         billing_context: "BillingContext | None" = None,
+        use_openai_responses_websocket: bool = False,
     ) -> None:
         super().__init__(
             llm_client,
@@ -50,6 +54,21 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             billing_context=billing_context,
         )
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
+        self.use_openai_responses_websocket: bool = use_openai_responses_websocket
+        self._ws_session: OpenAIWSSessionManager | None = None  # lazy, created on first WS call
+
+    async def _get_or_create_ws_session(self) -> OpenAIWSSessionManager:
+        """Lazily create and return the WebSocket session for reuse across steps."""
+        if self._ws_session is None:
+            kwargs = await self.llm_client._prepare_client_kwargs_async(self.llm_config)
+            self._ws_session = OpenAIWSSessionManager(client_kwargs=kwargs)
+        return self._ws_session
+
+    async def aclose(self) -> None:
+        """Close the WebSocket session if one was opened."""
+        if self._ws_session is not None:
+            await self._ws_session.aclose()
+            self._ws_session = None
 
     async def invoke_llm(
         self,

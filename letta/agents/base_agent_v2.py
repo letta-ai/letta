@@ -79,6 +79,7 @@ class BaseAgentV2(ABC):
         client_tools: list["ClientToolSchema"] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
+        openai_responses_websocket: bool = False,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -90,5 +91,6 @@ class BaseAgentV2(ABC):
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
             include_compaction_messages: Not used in V2, but accepted for API compatibility.
+            openai_responses_websocket: If True, use WebSocket transport for OpenAI Responses API.
         """
         raise NotImplementedError

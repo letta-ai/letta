@@ -377,6 +377,7 @@ class LettaAgentV3(LettaAgentV2):
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,
         billing_context: BillingContext | None = None,
+        openai_responses_websocket: bool = False,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -397,6 +398,7 @@ class LettaAgentV3(LettaAgentV2):
             conversation_id: Optional conversation ID for conversation-scoped messaging
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
+            openai_responses_websocket: If True, use WebSocket transport for OpenAI Responses API.
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
@@ -435,6 +437,7 @@ class LettaAgentV3(LettaAgentV2):
                 org_id=self.actor.organization_id,
                 user_id=self.actor.id,
                 billing_context=billing_context,
+                use_openai_responses_websocket=openai_responses_websocket,
             )
         elif use_sglang_native:
             # Use SGLang native adapter for multi-turn RL training
@@ -575,6 +578,7 @@ class LettaAgentV3(LettaAgentV2):
 
             if first_chunk:
                 # Raise if no chunks sent yet (response not started, can return error status code)
+                await llm_adapter.aclose()
                 raise
             else:
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
@@ -590,6 +594,7 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Return immediately - don't fall through to finish chunks
                 # This prevents sending end_turn finish chunks after an error
+                await llm_adapter.aclose()
                 return
 
         # Cleanup and finalize (only runs if no exception occurred)
@@ -635,6 +640,9 @@ class LettaAgentV3(LettaAgentV2):
             )
             yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
             # Note: we don't send finish chunks here since we already errored
+        finally:
+            # Ensure adapter resources (e.g. WebSocket connections) are cleaned up
+            await llm_adapter.aclose()
 
     async def _check_for_system_prompt_overflow(self, system_message):
         """
