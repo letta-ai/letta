@@ -71,7 +71,6 @@ class LLMRoutingClient(LLMRoutingClientBase):
 
     async def resolve_auto_mode_config(
         self,
-        auto_mode_enabled: bool,
         stored_llm_config: "LLMConfig",
         actor: "User",
     ) -> tuple["LLMConfig", bool, str]:
@@ -81,7 +80,6 @@ class LLMRoutingClient(LLMRoutingClientBase):
         Preserves user-configured context_window and max_tokens from the stored config.
 
         Args:
-            auto_mode_enabled: Whether the experimental auto_mode header was set.
             stored_llm_config: The agent's stored LLM config (with auto mode handle).
             actor: The user actor for provider lookups.
 
@@ -89,22 +87,24 @@ class LLMRoutingClient(LLMRoutingClientBase):
             Tuple of (resolved_config, is_primary, primary_handle).
         """
         from letta.services.provider_manager import ProviderManager
+        from letta.settings import model_settings
 
         provider_manager = ProviderManager()
         primary_handle = AUTO_MODE_PRIMARY
 
-        if auto_mode_enabled:
-            if await self._is_healthy(primary_handle):
-                config = _build_fireworks_config()
-                config = config.model_copy(
-                    update={
-                        "context_window": min(stored_llm_config.context_window, config.context_window),
-                        "max_tokens": min(stored_llm_config.max_tokens, config.max_tokens),
-                    }
-                )
-                return config, True, primary_handle
-
-            logger.warning(f"Auto mode: primary {primary_handle} unhealthy, using {AUTO_MODE_FALLBACK}")
+        if not model_settings.auto_mode_enabled:
+            logger.info(f"[AUTO MODE]: primary {primary_handle} disabled via kill switch, using {AUTO_MODE_FALLBACK}")
+        elif await self._is_healthy(primary_handle):
+            config = _build_fireworks_config()
+            config = config.model_copy(
+                update={
+                    "context_window": min(stored_llm_config.context_window, config.context_window),
+                    "max_tokens": min(stored_llm_config.max_tokens, config.max_tokens),
+                }
+            )
+            return config, True, primary_handle
+        else:
+            logger.warning(f"[AUTO MODE]: primary {primary_handle} unhealthy, using {AUTO_MODE_FALLBACK}")
 
         config = await provider_manager.get_llm_config_from_handle(AUTO_MODE_FALLBACK, actor)
         config = config.model_copy(

@@ -20,14 +20,12 @@ class LLMRoutingClient:
 
     async def resolve_auto_mode_config(
         self,
-        auto_mode_enabled: bool,
         stored_llm_config: "LLMConfig",
         actor: "User",
     ) -> tuple["LLMConfig", bool, str]:
         """Resolve an auto mode handle to an actual model config.
 
         Args:
-            auto_mode_enabled: Whether the experimental auto_mode header was set.
             stored_llm_config: The agent's stored LLM config (with auto mode handle).
             actor: The user actor for provider lookups.
 

@@ -186,7 +186,6 @@ class LettaAgentV2(BaseAgentV2):
         request_start_timestamp_ns: int | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
-        auto_mode_enabled: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
@@ -293,7 +292,6 @@ class LettaAgentV2(BaseAgentV2):
         conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
         client_tools: list[ClientToolSchema] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
-        auto_mode_enabled: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: BillingContext | None = None,
     ) -> AsyncGenerator[str, None]:
         """

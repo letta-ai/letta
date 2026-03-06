@@ -81,7 +81,6 @@ class StreamingService:
         run_type: str = "streaming",
         conversation_id: Optional[str] = None,
         should_lock: bool = False,
-        auto_mode_enabled: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> tuple[Optional[PydanticRun], Union[StreamingResponse, LettaResponse]]:
         """
@@ -191,7 +190,6 @@ class StreamingService:
                 lock_key=lock_key,  # For lock release (may differ from conversation_id)
                 client_tools=request.client_tools,
                 include_compaction_messages=request.include_compaction_messages,
-                auto_mode_enabled=auto_mode_enabled,
                 billing_context=billing_context,
                 route_class=route_class,
                 is_background=request.background,
@@ -363,7 +361,6 @@ class StreamingService:
         lock_key: Optional[str] = None,
         client_tools: Optional[list[ClientToolSchema]] = None,
         include_compaction_messages: bool = False,
-        auto_mode_enabled: bool = False,
         billing_context: BillingContext | None = None,
         route_class: str = "foreground",
         is_background: bool = False,
@@ -401,7 +398,6 @@ class StreamingService:
                     conversation_id=conversation_id,
                     client_tools=client_tools,
                     include_compaction_messages=include_compaction_messages,
-                    auto_mode_enabled=auto_mode_enabled,
                     billing_context=billing_context,
                 )
 
