@@ -594,6 +594,34 @@ class TelemetrySettings(BaseSettings):
         return "socket" in self.provider_trace_backends
 
 
+class ReadinessSettings(BaseSettings):
+    """Readiness enforcement configuration. All gates default to OFF (non-breaking)."""
+
+    model_config = SettingsConfigDict(env_prefix="letta_readiness_", extra="ignore")
+
+    # Master kill switch — enables health probe integration with readiness_state module.
+    # When False (default), /v1/health/ always returns 200 regardless of internal state.
+    enforcement_enabled: bool = Field(default=False, description="Gate /v1/health/ on internal readiness state.")
+
+    # When True, /v1/health/ returns 503 during draining state (graceful shutdown signal to k8s).
+    drain_returns_503: bool = Field(default=True, description="Return HTTP 503 when readiness state is 'draining'.")
+
+    # When True, event loop lag above threshold triggers degraded_dependency state.
+    event_loop_lag_gating_enabled: bool = Field(default=False, description="Gate readiness on event loop lag threshold.")
+    event_loop_lag_threshold_ms: float = Field(
+        default=5000.0, ge=100.0, description="Event loop lag threshold (ms) for degraded transition."
+    )
+
+    # Stabilization window prevents flapping: state must be consistently bad for this many seconds before degrading.
+    degraded_stabilization_seconds: float = Field(
+        default=30.0, ge=0.0, description="Seconds of sustained overload before transitioning to degraded_dependency."
+    )
+    # Recovery: state must be healthy for this long before returning to ready.
+    recovery_stabilization_seconds: float = Field(
+        default=15.0, ge=0.0, description="Seconds of sustained health before recovering from degraded_dependency."
+    )
+
+
 # singleton
 settings = Settings(_env_parse_none_str="None")
 test_settings = TestSettings()
@@ -602,3 +630,4 @@ tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
 log_settings = LogSettings()
 telemetry_settings = TelemetrySettings()
+readiness_settings = ReadinessSettings()
