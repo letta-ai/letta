@@ -92,10 +92,12 @@ class TestConversationsSDK:
         # Verify message ordering by listing messages
         messages = client.conversations.messages.list(conversation_id=created.id)
         assert len(messages) >= 3  # system + user + assistant
-        # First message should be system message (shared across conversations)
+        # First message should be system message for this conversation.
         assert messages[0].message_type == "system_message", f"First message should be system_message, got {messages[0].message_type}"
+        assert getattr(messages[0], "conversation_id", None) == created.id
         # Second message should be user message
         assert messages[1].message_type == "user_message", f"Second message should be user_message, got {messages[1].message_type}"
+        assert getattr(messages[1], "conversation_id", None) == created.id
 
     def test_send_message_to_conversation(self, client: Letta, agent):
         """Test sending a message to a conversation."""
@@ -113,6 +115,9 @@ class TestConversationsSDK:
 
         # Check response contains messages
         assert len(messages) > 0
+        for message in messages:
+            if hasattr(message, "id"):
+                assert getattr(message, "conversation_id", None) == conversation.id
         # Should have at least an assistant message
         message_types = [m.message_type for m in messages if hasattr(m, "message_type")]
         assert "assistant_message" in message_types
@@ -770,6 +775,10 @@ class TestConversationsSDK:
         data = response.json()
         assert "messages" in data, "Response should contain messages"
         assert len(data["messages"]) > 0, "Should receive response messages"
+
+        # Default conversation remains virtual, so returned messages should still have no conversation_id.
+        for message in data["messages"]:
+            assert message.get("conversation_id") is None
 
         # Verify we got an assistant message
         assistant_messages = [m for m in data["messages"] if m.get("message_type") == "assistant_message"]

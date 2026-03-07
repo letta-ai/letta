@@ -327,6 +327,7 @@ class StepManager:
                 ascending=ascending,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 step_id=step_id,
             )
             return [message.to_pydantic() for message in messages]

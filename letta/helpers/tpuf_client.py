@@ -670,6 +670,7 @@ class TurbopufferClient:
         project_ids_list = []
         template_ids_list = []
         conversation_ids_list = []
+        is_deleted_list = []
 
         for (original_idx, text), embedding in zip(filtered_messages, embeddings):
             message_id = message_ids[original_idx]
@@ -696,6 +697,7 @@ class TurbopufferClient:
             project_ids_list.append(project_id)
             template_ids_list.append(template_id)
             conversation_ids_list.append(conversation_id)
+            is_deleted_list.append(False)
 
         # build column-based upsert data
         upsert_columns = {
@@ -706,6 +708,7 @@ class TurbopufferClient:
             "agent_id": agent_ids_list,
             "role": message_roles,
             "created_at": created_at_timestamps,
+            "is_deleted": is_deleted_list,
         }
 
         # only include conversation_id if it's provided
@@ -734,6 +737,7 @@ class TurbopufferClient:
                     schema={
                         "text": {"type": "string", "full_text_search": True},
                         "conversation_id": {"type": "string"},
+                        "is_deleted": {"type": "bool"},
                     },
                 )
                 logger.info(f"Successfully inserted {len(ids)} messages to Turbopuffer for agent {agent_id}")
@@ -1010,6 +1014,9 @@ class TurbopufferClient:
             raise
 
     @trace_method
+    # TODO: Once existing TPUF namespaces are backfilled with is_deleted attribute,
+    # add is_deleted=False filter to query_messages_by_agent_id and query_messages_by_org_id.
+    # Until then, soft-deleted messages are filtered out via DB post-filter in MessageManager.search_messages_async.
     async def query_messages_by_agent_id(
         self,
         agent_id: str,

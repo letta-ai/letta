@@ -218,6 +218,7 @@ class GroupManager:
                 before=before,
                 after=after,
                 limit=limit,
+                check_is_deleted=True,
                 **filters,
             )
 

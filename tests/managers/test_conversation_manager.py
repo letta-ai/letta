@@ -198,6 +198,121 @@ async def test_delete_conversation_removes_from_list(conversation_manager, serve
 
 
 @pytest.mark.asyncio
+async def test_delete_conversation_soft_deletes_messages(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test that deleting a conversation soft-deletes messages by Message.conversation_id."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    # Create conversation and verify the initial system message is stamped with the conversation ID.
+    conversation = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Delete with messages"),
+        actor=default_user,
+    )
+
+    message_ids = await conversation_manager.get_message_ids_for_conversation(
+        conversation_id=conversation.id,
+        actor=default_user,
+    )
+    assert len(message_ids) == 1
+
+    system_message = await server.message_manager.get_message_by_id_async(message_ids[0], actor=default_user)
+    assert system_message is not None
+    assert system_message.conversation_id == conversation.id
+
+    user_message = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role="user",
+        content=[TextContent(text="Message to be soft deleted")],
+        conversation_id=conversation.id,
+    )
+    created_messages = await server.message_manager.create_many_messages_async([user_message], actor=default_user)
+    user_message_id = created_messages[0].id
+
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conversation.id,
+        agent_id=sarah_agent.id,
+        message_ids=[user_message_id],
+        actor=default_user,
+    )
+
+    # Sanity-check message is visible before delete
+    before_delete = await server.message_manager.get_message_by_id_async(user_message_id, actor=default_user)
+    assert before_delete is not None
+
+    # Delete conversation
+    await conversation_manager.delete_conversation(
+        conversation_id=conversation.id,
+        actor=default_user,
+    )
+
+    # Both system and user messages should now be hidden (soft-deleted)
+    after_delete_system = await server.message_manager.get_message_by_id_async(message_ids[0], actor=default_user)
+    after_delete = await server.message_manager.get_message_by_id_async(user_message_id, actor=default_user)
+    assert after_delete_system is None
+    assert after_delete is None
+
+
+@pytest.mark.asyncio
+async def test_delete_conversation_only_soft_deletes_messages_for_that_conversation(
+    conversation_manager, server: SyncServer, sarah_agent, default_user
+):
+    """Test deleting one conversation does not affect messages from another conversation."""
+    from letta.schemas.letta_message_content import TextContent
+    from letta.schemas.message import Message as PydanticMessage
+
+    conv1 = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Conversation one"),
+        actor=default_user,
+    )
+    conv2 = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="Conversation two"),
+        actor=default_user,
+    )
+
+    conv1_message = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role="user",
+        content=[TextContent(text="conv1 message")],
+        conversation_id=conv1.id,
+    )
+    conv2_message = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role="user",
+        content=[TextContent(text="conv2 message")],
+        conversation_id=conv2.id,
+    )
+    created_messages = await server.message_manager.create_many_messages_async([conv1_message, conv2_message], actor=default_user)
+    conv1_message_id, conv2_message_id = [message.id for message in created_messages]
+
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conv1.id,
+        agent_id=sarah_agent.id,
+        message_ids=[conv1_message_id],
+        actor=default_user,
+    )
+    await conversation_manager.add_messages_to_conversation(
+        conversation_id=conv2.id,
+        agent_id=sarah_agent.id,
+        message_ids=[conv2_message_id],
+        actor=default_user,
+    )
+
+    await conversation_manager.delete_conversation(
+        conversation_id=conv1.id,
+        actor=default_user,
+    )
+
+    assert await server.message_manager.get_message_by_id_async(conv1_message_id, actor=default_user) is None
+
+    still_visible = await server.message_manager.get_message_by_id_async(conv2_message_id, actor=default_user)
+    assert still_visible is not None
+    assert still_visible.conversation_id == conv2.id
+
+
+@pytest.mark.asyncio
 async def test_delete_conversation_double_delete_raises(conversation_manager, server: SyncServer, sarah_agent, default_user):
     """Test that deleting an already-deleted conversation raises NoResultFound."""
     created = await conversation_manager.create_conversation(

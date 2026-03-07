@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     pass
 
 # Import AgentState outside TYPE_CHECKING for @enforce_types decorator
-from sqlalchemy import and_, asc, delete, desc, func, nulls_last, or_, select
+from sqlalchemy import and_, asc, delete, desc, func, nulls_last, or_, select, update
 
 from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
@@ -169,6 +169,7 @@ class ConversationManager:
             model=agent_state.llm_config.model,
             openai_message_dict={"role": "system", "content": system_message_str},
         )
+        system_message.conversation_id = conversation_id
 
         # Persist the new system message
         persisted_messages = await message_manager.create_many_messages_async([system_message], actor=actor)
@@ -408,9 +409,26 @@ class ConversationManager:
             # Get isolated blocks before modifying conversation
             isolated_blocks = list(conversation.isolated_blocks)
 
-            # Soft delete the conversation first
-            conversation.is_deleted = True
-            await conversation.update_async(db_session=session, actor=actor)
+            # Bulk soft-delete conversation message associations.
+            await session.execute(
+                update(ConversationMessageModel)
+                .where(ConversationMessageModel.conversation_id == conversation_id)
+                .where(ConversationMessageModel.organization_id == actor.organization_id)
+                .where(ConversationMessageModel.is_deleted == False)
+                .values({ConversationMessageModel.is_deleted: True})
+            )
+
+            # Bulk soft-delete messages that belong to this real conversation.
+            await session.execute(
+                update(MessageModel)
+                .where(MessageModel.conversation_id == conversation_id)
+                .where(MessageModel.organization_id == actor.organization_id)
+                .where(MessageModel.is_deleted == False)
+                .values({MessageModel.is_deleted: True})
+            )
+
+            # Soft delete the conversation
+            await conversation.delete_async(db_session=session, actor=actor)
 
             # Hard-delete isolated blocks (Block model doesn't support soft-delete)
             # Following same pattern as block_manager.delete_block_async
