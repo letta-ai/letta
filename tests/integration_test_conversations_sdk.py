@@ -949,6 +949,116 @@ class TestConversationDelete:
         assert response.status_code == 404, "Updating deleted conversation should return 404"
 
 
+class TestConversationRecompile:
+    """Tests for the conversation recompile endpoint."""
+
+    def test_recompile_conversation_updates_existing_conversation_system_message(self, client: Letta, server_url: str):
+        unique_marker = f"RECOMPILE_MARKER_{uuid.uuid4().hex[:8]}"
+
+        agent = client.agents.create(
+            name=f"test_conv_recompile_{uuid.uuid4().hex[:8]}",
+            model="openai/gpt-4o-mini",
+            embedding="openai/text-embedding-3-small",
+            memory_blocks=[
+                {"label": "human", "value": "The user is a test user."},
+                {"label": "persona", "value": "You are a helpful assistant."},
+            ],
+        )
+
+        try:
+            conversation = client.conversations.create(agent_id=agent.id)
+            list(
+                client.conversations.messages.create(
+                    conversation_id=conversation.id,
+                    messages=[{"role": "user", "content": "Hello, just a quick test."}],
+                )
+            )
+
+            original_messages = client.conversations.messages.list(conversation_id=conversation.id, order="asc")
+            assert original_messages[0].message_type == "system_message"
+            assert unique_marker not in original_messages[0].content
+
+            client.agents.blocks.update(
+                agent_id=agent.id,
+                block_label="human",
+                value=f"The user is a test user. {unique_marker}",
+            )
+
+            before_recompile_messages = client.conversations.messages.list(conversation_id=conversation.id, order="asc")
+            assert unique_marker not in before_recompile_messages[0].content
+
+            response = requests.post(f"{server_url}/v1/conversations/{conversation.id}/recompile")
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+            assert unique_marker in response.json()
+
+            after_recompile_messages = client.conversations.messages.list(conversation_id=conversation.id, order="asc")
+            assert unique_marker in after_recompile_messages[0].content
+
+        finally:
+            client.agents.delete(agent_id=agent.id)
+
+    def test_recompile_conversation_dry_run_does_not_persist(self, client: Letta, server_url: str):
+        unique_marker = f"DRY_RUN_MARKER_{uuid.uuid4().hex[:8]}"
+
+        agent = client.agents.create(
+            name=f"test_conv_recompile_dry_run_{uuid.uuid4().hex[:8]}",
+            model="openai/gpt-4o-mini",
+            embedding="openai/text-embedding-3-small",
+            memory_blocks=[
+                {"label": "human", "value": "The user is a test user."},
+                {"label": "persona", "value": "You are a helpful assistant."},
+            ],
+        )
+
+        try:
+            conversation = client.conversations.create(agent_id=agent.id)
+            client.agents.blocks.update(
+                agent_id=agent.id,
+                block_label="human",
+                value=f"The user is a test user. {unique_marker}",
+            )
+
+            response = requests.post(f"{server_url}/v1/conversations/{conversation.id}/recompile", params={"dry_run": "true"})
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+            assert unique_marker in response.json()
+
+            messages = client.conversations.messages.list(conversation_id=conversation.id, order="asc")
+            assert unique_marker not in messages[0].content
+
+        finally:
+            client.agents.delete(agent_id=agent.id)
+
+    def test_recompile_conversation_agent_direct_mode(self, client: Letta, server_url: str):
+        unique_marker = f"AGENT_DIRECT_MARKER_{uuid.uuid4().hex[:8]}"
+
+        agent = client.agents.create(
+            name=f"test_conv_recompile_default_{uuid.uuid4().hex[:8]}",
+            model="openai/gpt-4o-mini",
+            embedding="openai/text-embedding-3-small",
+            memory_blocks=[
+                {"label": "human", "value": "The user is a test user."},
+                {"label": "persona", "value": "You are a helpful assistant."},
+            ],
+        )
+
+        try:
+            client.agents.blocks.update(
+                agent_id=agent.id,
+                block_label="human",
+                value=f"The user is a test user. {unique_marker}",
+            )
+
+            response = requests.post(
+                f"{server_url}/v1/conversations/default/recompile",
+                json={"agent_id": agent.id},
+            )
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+            assert unique_marker in response.json()
+
+        finally:
+            client.agents.delete(agent_id=agent.id)
+
+
 class TestConversationCompact:
     """Tests for the conversation compact (summarization) endpoint."""
 

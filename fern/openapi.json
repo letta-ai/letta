@@ -9415,6 +9415,87 @@
         }
       }
     },
+    "/v1/conversations/{conversation_id}/recompile": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Recompile Conversation",
+        "description": "Manually trigger system prompt recompilation for a conversation.",
+        "operationId": "recompile_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 42,
+              "pattern": "^(default|conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated).",
+              "examples": [
+                "default",
+                "conv-123e4567-e89b-42d3-8456-426614174000",
+                "agent-123e4567-e89b-42d3-8456-426614174000"
+              ],
+              "title": "Conversation Id"
+            },
+            "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated)."
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, do not persist changes; still returns the compiled system prompt.",
+              "default": false,
+              "title": "Dry Run"
+            },
+            "description": "If True, do not persist changes; still returns the compiled system prompt."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__conversations__CompactionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Recompile Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/conversations/{conversation_id}/compact": {
       "post": {
         "tags": ["conversations"],

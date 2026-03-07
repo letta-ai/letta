@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Annotated, List, Literal, Optional
+
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
@@ -711,6 +712,91 @@ class CompactionResponse(BaseModel):
     summary: str
     num_messages_before: int
     num_messages_after: int
+
+
+@router.post(
+    "/{conversation_id}/recompile",
+    response_model=str,
+    operation_id="recompile_conversation",
+)
+async def recompile_conversation(
+    conversation_id: ConversationIdOrDefault,
+    request: Optional[CompactionRequest] = Body(default=None),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+    dry_run: bool = Query(
+        False,
+        description="If True, do not persist changes; still returns the compiled system prompt.",
+    ),
+):
+    """Manually trigger system prompt recompilation for a conversation."""
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    resolved_agent_id = None
+    if conversation_id == "default" and request and request.agent_id:
+        resolved_agent_id = request.agent_id
+    elif conversation_id.startswith("agent-"):
+        resolved_agent_id = conversation_id
+
+    if resolved_agent_id:
+        _, system_message, _, _ = await server.agent_manager.rebuild_system_prompt_async(
+            agent_id=resolved_agent_id,
+            actor=actor,
+            force=True,
+            update_timestamp=True,
+            dry_run=dry_run,
+        )
+
+        if system_message is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No system message found for agent '{resolved_agent_id}'")
+
+        return system_message.to_openai_dict().get("content", "")
+
+    conversation = await conversation_manager.get_conversation_by_id(
+        conversation_id=conversation_id,
+        actor=actor,
+    )
+
+    _, system_message, _, _ = await server.agent_manager.rebuild_system_prompt_async(
+        agent_id=conversation.agent_id,
+        actor=actor,
+        force=True,
+        update_timestamp=True,
+        dry_run=True,
+    )
+
+    if system_message is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No system message found for conversation '{conversation_id}'")
+
+    compiled_content = system_message.to_openai_dict().get("content", "")
+
+    if not dry_run:
+        in_context_messages = await conversation_manager.get_messages_for_conversation(
+            conversation_id=conversation_id,
+            actor=actor,
+        )
+        if not in_context_messages:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No in-context messages found for this conversation.",
+            )
+
+        existing_system_message = in_context_messages[0]
+        if existing_system_message.role != "system":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Conversation does not have a system message in the first position.",
+            )
+
+        temp_message = existing_system_message.model_copy(update={"text": compiled_content})
+        await server.message_manager.update_message_by_id_async(
+            message_id=existing_system_message.id,
+            message_update=temp_message,
+            actor=actor,
+            project_id=conversation.project_id,
+        )
+
+    return compiled_content
 
 
 @router.post("/{conversation_id}/compact", response_model=CompactionResponse, operation_id="compact_conversation")
