@@ -47,6 +47,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills=None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -63,6 +64,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
             include_return_message_types=include_return_message_types,
             request_start_timestamp_ns=request_start_timestamp_ns,
             client_tools=client_tools,
+            client_skills=client_skills,
             include_compaction_messages=include_compaction_messages,
             billing_context=billing_context,
         )
@@ -83,6 +85,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills=None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
         openai_responses_websocket: bool = False,
@@ -103,6 +106,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 client_tools=client_tools,
+                client_skills=client_skills,
                 include_compaction_messages=include_compaction_messages,
                 billing_context=billing_context,
             ):

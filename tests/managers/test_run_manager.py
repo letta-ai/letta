@@ -1849,7 +1849,7 @@ async def test_list_runs_by_duration_percentile(server: SyncServer, sarah_agent,
 
     # Create runs with varied durations
     run_ids = []
-    durations_ms = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+    durations_ms = [100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 2000]
 
     for i, duration_ms in enumerate(durations_ms):
         run = await server.run_manager.create_run(

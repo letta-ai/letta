@@ -120,6 +120,7 @@ class LettaAgentBatch(BaseAgent):
         self.job_manager = job_manager
         self.actor = actor
         self.max_steps = max_steps
+        self.client_skills: list = []
 
     @trace_method
     async def step_until_request(
@@ -613,6 +614,7 @@ class LettaAgentBatch(BaseAgent):
             input_messages, agent_state, self.message_manager, self.actor, run_id=None
         )
 
+        self.conversation_id = None
         in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)
         return in_context_messages
 

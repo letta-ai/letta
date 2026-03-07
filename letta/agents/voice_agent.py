@@ -150,6 +150,8 @@ class VoiceAgent(BaseAgent):
         in_context_messages[0].content[0].text = await PromptGenerator.compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
+            agent_id=agent_state.id,
+            conversation_id="default",
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
             previous_message_count=self.num_messages,

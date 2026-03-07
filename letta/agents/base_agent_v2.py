@@ -11,7 +11,7 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 
 if TYPE_CHECKING:
-    from letta.schemas.letta_request import ClientToolSchema
+    from letta.schemas.letta_request import ClientSkillSchema, ClientToolSchema
     from letta.schemas.provider_trace import BillingContext
 
 
@@ -25,6 +25,7 @@ class BaseAgentV2(ABC):
         self.agent_state = agent_state
         self.actor = actor
         self.logger = get_logger(agent_state.id)
+        self.conversation_id: str | None = None
 
     @property
     def agent_id(self) -> str:
@@ -35,6 +36,7 @@ class BaseAgentV2(ABC):
     async def build_request(
         self,
         input_messages: list[MessageCreate],
+        client_skills: list["ClientSkillSchema"] | None = None,
     ) -> dict:
         """
         Execute the agent loop in dry_run mode, returning just the generated request
@@ -52,6 +54,7 @@ class BaseAgentV2(ABC):
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
+        client_skills: list["ClientSkillSchema"] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -77,6 +80,7 @@ class BaseAgentV2(ABC):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
+        client_skills: list["ClientSkillSchema"] | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
         openai_responses_websocket: bool = False,

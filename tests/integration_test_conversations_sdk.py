@@ -35,6 +35,28 @@ def agent(client: Letta):
 class TestConversationsSDK:
     """Test conversations using the SDK client."""
 
+    @staticmethod
+    def _get_system_message_content(server_url: str, message_id: str) -> str:
+        """Fetch a system message by ID via REST and return its content."""
+        response = requests.get(f"{server_url}/v1/messages/{message_id}")
+        assert response.status_code == 200, f"Failed to retrieve message {message_id}: {response.text}"
+
+        payload = response.json()
+        assert isinstance(payload, list) and len(payload) == 1, f"Expected one message for {message_id}, got: {payload}"
+        message = payload[0]
+        assert message.get("message_type") == "system_message", f"Expected system message, got: {message}"
+        assert isinstance(message.get("content"), str), f"Expected string content, got: {message}"
+        return message["content"]
+
+    @staticmethod
+    def _assert_system_metadata_identifiers(content: str, agent_id: str, conversation_id: str):
+        """Assert system prompt metadata includes expected IDs and excludes deprecated date line."""
+        assert "<memory_metadata>" in content
+        assert f"- AGENT_ID: {agent_id}" in content
+        assert f"- CONVERSATION_ID: {conversation_id}" in content
+        assert "- System prompt last recompiled:" in content
+        assert "- The current system date is:" not in content
+
     def test_create_conversation(self, client: Letta, agent):
         """Test creating a conversation for an agent."""
         conversation = client.conversations.create(agent_id=agent.id)
@@ -98,6 +120,24 @@ class TestConversationsSDK:
         # Second message should be user message
         assert messages[1].message_type == "user_message", f"Second message should be user_message, got {messages[1].message_type}"
         assert getattr(messages[1], "conversation_id", None) == created.id
+
+    def test_default_system_message_metadata_has_agent_and_default_conversation(self, client: Letta, agent, server_url: str):
+        """Default conversation system prompt should include AGENT_ID and CONVERSATION_ID=default."""
+        assert agent.message_ids and len(agent.message_ids) > 0, "Agent should have an initial system message"
+
+        content = self._get_system_message_content(server_url=server_url, message_id=agent.message_ids[0])
+        self._assert_system_metadata_identifiers(content=content, agent_id=agent.id, conversation_id="default")
+
+    def test_conversation_system_message_metadata_has_agent_and_conversation_id(self, client: Letta, agent, server_url: str):
+        """Conversation-scoped system prompt should include AGENT_ID and the concrete conversation ID."""
+        conversation = client.conversations.create(agent_id=agent.id)
+        retrieved = client.conversations.retrieve(conversation_id=conversation.id)
+
+        assert retrieved.in_context_message_ids and len(retrieved.in_context_message_ids) > 0
+        system_message_id = retrieved.in_context_message_ids[0]
+
+        content = self._get_system_message_content(server_url=server_url, message_id=system_message_id)
+        self._assert_system_metadata_identifiers(content=content, agent_id=agent.id, conversation_id=conversation.id)
 
     def test_send_message_to_conversation(self, client: Letta, agent):
         """Test sending a message to a conversation."""
@@ -756,9 +796,34 @@ class TestConversationsSDK:
         assert isinstance(data, list), "Response should be a list of messages"
         assert len(data) >= 3, "Should have at least system + user + assistant messages"
 
-        # Verify our message is there
-        user_messages = [m for m in data if m.get("message_type") == "user_message"]
-        assert any("Testing old pattern still works" in str(m.get("content", "")) for m in user_messages), "Should find our test message"
+    def test_new_pattern_default_system_message_metadata(self, client: Letta, agent, server_url: str):
+        """Agent-direct default path should render system metadata with AGENT_ID and CONVERSATION_ID=default."""
+        # Trigger default conversation path via new pattern
+        response = requests.post(
+            f"{server_url}/v1/conversations/default/messages",
+            json={
+                "agent_id": agent.id,
+                "messages": [{"role": "user", "content": "Please acknowledge."}],
+                "streaming": False,
+            },
+        )
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+
+        # Read default conversation messages and inspect the first (system) message content
+        list_response = requests.get(
+            f"{server_url}/v1/conversations/default/messages",
+            params={"agent_id": agent.id, "order": "asc"},
+        )
+        assert list_response.status_code == 200, f"Expected 200, got {list_response.status_code}: {list_response.text}"
+
+        messages = list_response.json()
+        assert isinstance(messages, list) and len(messages) > 0, f"Expected non-empty message list, got: {messages}"
+        assert messages[0].get("message_type") == "system_message", f"Expected first message to be system_message, got: {messages[0]}"
+
+        content = messages[0].get("content")
+        assert isinstance(content, str), f"Expected system message content string, got: {messages[0]}"
+
+        self._assert_system_metadata_identifiers(content=content, agent_id=agent.id, conversation_id="default")
 
     def test_new_pattern_send_message(self, client: Letta, agent, server_url: str):
         """Test sending messages using the new pattern: conversation_id='default' + agent_id in body."""

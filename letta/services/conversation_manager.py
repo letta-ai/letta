@@ -154,6 +154,8 @@ class ConversationManager:
         system_message_str = await PromptGenerator.compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
+            agent_id=agent_state.id,
+            conversation_id=conversation_id,
             in_context_memory_last_edit=get_utc_time(),
             timezone=agent_state.timezone,
             user_defined_variables=None,

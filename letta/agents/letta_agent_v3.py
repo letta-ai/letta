@@ -49,7 +49,7 @@ from letta.schemas.letta_message import (
     extract_compaction_stats_from_packed_json,
 )
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
-from letta.schemas.letta_request import ClientToolSchema
+from letta.schemas.letta_request import ClientSkillSchema, ClientToolSchema
 from letta.schemas.letta_response import LettaResponse, TurnTokenData
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, ToolReturn
@@ -131,6 +131,8 @@ class LettaAgentV3(LettaAgentV2):
         self.conversation_id: str | None = None
         # Client-side tools passed in the request (executed by client, not server)
         self.client_tools: list[ClientToolSchema] = []
+        # Client-side skills passed in the request (rendered in system prompt)
+        self.client_skills: list[ClientSkillSchema] = []
         # Log probabilities from the most recent LLM call (for RL training)
         self.logprobs: ChoiceLogprobs | None = None
         # Multi-turn token tracking for RL training (accumulated across all LLM calls)
@@ -160,6 +162,7 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills: list[ClientSkillSchema] | None = None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -185,6 +188,7 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
+        self.client_skills = client_skills or []
 
         # Apply conversation-specific block overrides if conversation_id is provided
         if conversation_id:
@@ -375,6 +379,7 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills: list[ClientSkillSchema] | None = None,
         include_compaction_messages: bool = False,
         billing_context: BillingContext | None = None,
         openai_responses_websocket: bool = False,
@@ -406,6 +411,7 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
+        self.client_skills = client_skills or []
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True
