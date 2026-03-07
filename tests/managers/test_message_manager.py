@@ -326,6 +326,57 @@ async def test_message_delete(server: SyncServer, hello_world_message_fixture, d
 
 
 @pytest.mark.asyncio
+async def test_soft_deleted_message_excluded_from_list_and_getters(server: SyncServer, sarah_agent, default_user):
+    """Test soft-deleted messages are excluded from list/get message APIs."""
+    message = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="soft delete visibility test")],
+    )
+
+    created = await server.message_manager.create_many_messages_async([message], actor=default_user)
+    assert len(created) == 1
+    message_id = created[0].id
+
+    # Verify message is initially visible
+    assert await server.message_manager.get_message_by_id_async(message_id, actor=default_user) is not None
+    fetched_by_ids = await server.message_manager.get_messages_by_ids_async([message_id], actor=default_user)
+    assert [m.id for m in fetched_by_ids] == [message_id]
+
+    listed_before = await server.message_manager.list_messages(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        roles=[MessageRole.user],
+        limit=200,
+        ascending=False,
+    )
+    assert message_id in [m.id for m in listed_before]
+
+    # Soft delete message directly in ORM
+    from letta.orm.message import Message as MessageModel
+    from letta.server.db import db_registry
+
+    async with db_registry.async_session() as session:
+        orm_message = await MessageModel.read_async(db_session=session, identifier=message_id, actor=default_user)
+        orm_message.is_deleted = True
+        await orm_message.update_async(db_session=session, actor=default_user)
+
+    # Verify hidden everywhere
+    assert await server.message_manager.get_message_by_id_async(message_id, actor=default_user) is None
+    fetched_by_ids_after = await server.message_manager.get_messages_by_ids_async([message_id], actor=default_user)
+    assert fetched_by_ids_after == []
+
+    listed_after = await server.message_manager.list_messages(
+        actor=default_user,
+        agent_id=sarah_agent.id,
+        roles=[MessageRole.user],
+        limit=200,
+        ascending=False,
+    )
+    assert message_id not in [m.id for m in listed_after]
+
+
+@pytest.mark.asyncio
 async def test_message_conversation_id_persistence(server: SyncServer, sarah_agent, default_user):
     """Test that conversation_id is properly persisted and retrieved from DB to Pydantic object"""
     from letta.schemas.conversation import CreateConversation
