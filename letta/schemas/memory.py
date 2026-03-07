@@ -207,6 +207,10 @@ class Memory(BaseModel, validate_assignment=True):
         Each block is rendered as <label.md>---frontmatter---value</label.md>,
         matching the format stored in the git repo. Labels without a 'system/'
         prefix get one added automatically.
+
+        DEPRECATED: Kept for backward compatibility. New agents use
+        _render_memory_filesystem_structured() which embeds core memory
+        inside the <memory_filesystem> tag.
         """
         renderable = self._get_renderable_blocks()
         if not renderable:
@@ -237,14 +241,14 @@ class Memory(BaseModel, validate_assignment=True):
             s.write(f"{value}\n")
             s.write(f"</{tag}>")
 
-    def _render_memory_filesystem(self, s: StringIO):
+    def _render_memory_filesystem(self, s: StringIO, client_skills=None):
         """Render a filesystem tree view of all memory blocks.
 
         Only rendered for git-memory-enabled agents. Uses box-drawing
         characters (├──, └──, │) like the Unix `tree` command, while keeping
         deterministic ordering (directories first, then files, alphabetically).
         """
-        if not self.blocks:
+        if not self.blocks and not client_skills:
             return
 
         # Build tree structure from block labels.
@@ -369,6 +373,56 @@ class Memory(BaseModel, validate_assignment=True):
         _render_tree(tree)
         s.write("</memory_filesystem>")
 
+        # Render explicit skill metadata block (agent-scoped + client-provided).
+        all_skill_entries: list[tuple[str, str, str]] = []  # (name, description, location)
+        seen_skill_names: set[str] = set()
+
+        # Agent-scoped skills from memFS blocks.
+        for block in self.blocks:
+            label = block.label or ""
+            if not label.startswith("skills/"):
+                continue
+
+            parts = label.split("/")
+            if len(parts) < 2:
+                continue
+
+            skill_name = parts[1]
+            # Only include top-level skill entries, skip nested files.
+            is_top_level = len(parts) == 2 or (len(parts) == 3 and parts[2] == "SKILL")
+            if not is_top_level or skill_name in seen_skill_names:
+                continue
+
+            seen_skill_names.add(skill_name)
+            desc = (getattr(block, "description", None) or "").strip().split("\n")[0].strip()
+            location = f"${{MEMORY_DIR}}/skills/{skill_name}/SKILL.md"
+            all_skill_entries.append((skill_name, desc, location))
+
+        # Client-provided skills.
+        if client_skills:
+            for cs in client_skills:
+                name = cs.name
+                if name in seen_skill_names:
+                    continue
+
+                seen_skill_names.add(name)
+                desc = (cs.description or "").strip().split("\n")[0].strip()
+                location = cs.location or ""
+                all_skill_entries.append((name, desc, location))
+
+        if all_skill_entries:
+            all_skill_entries.sort(key=lambda e: e[0])
+            s.write("\n\n<available_skills>\n")
+            for name, desc, location in all_skill_entries:
+                s.write("<skill>\n")
+                s.write(f"<name>{name}</name>\n")
+                if desc:
+                    s.write(f"<description>{desc}</description>\n")
+                if location:
+                    s.write(f"<location>{location}</location>\n")
+                s.write("</skill>\n")
+            s.write("</available_skills>")
+
     def _render_directories_common(self, s: StringIO, sources, max_files_open):
         s.write("\n\n<directories>\n")
         if max_files_open is not None:
@@ -469,7 +523,7 @@ class Memory(BaseModel, validate_assignment=True):
             s.write("</directory>\n")
         s.write("</directories>")
 
-    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
+    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None, client_skills=None) -> str:
         """Efficiently render memory, tool rules, and sources into a prompt string."""
         s = StringIO()
 
@@ -489,7 +543,7 @@ class Memory(BaseModel, validate_assignment=True):
         if not is_react:
             if self.git_enabled:
                 # Git-enabled: filesystem tree + file-style block rendering
-                self._render_memory_filesystem(s)
+                self._render_memory_filesystem(s, client_skills=client_skills)
                 self._render_memory_blocks_git(s)
             elif is_line_numbered:
                 self._render_memory_blocks_line_numbered(s)
@@ -513,7 +567,7 @@ class Memory(BaseModel, validate_assignment=True):
         return s.getvalue()
 
     @trace_method
-    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
+    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None, client_skills=None) -> str:
         """Async version that offloads to a thread for CPU-bound string building."""
         return await asyncio.to_thread(
             self.compile,
@@ -521,6 +575,7 @@ class Memory(BaseModel, validate_assignment=True):
             sources=sources,
             max_files_open=max_files_open,
             llm_config=llm_config,
+            client_skills=client_skills,
         )
 
     def list_block_labels(self) -> List[str]:

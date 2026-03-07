@@ -253,6 +253,8 @@ def compile_system_message(
     in_context_memory: Memory,
     in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
     timezone: str,
+    agent_id: str,
+    conversation_id: str = "default",
     user_defined_variables: Optional[dict] = None,
     append_icm_if_missing: bool = True,
     template_format: Literal["f-string", "mustache"] = "f-string",
@@ -289,6 +291,8 @@ def compile_system_message(
         # TODO should this all put into the memory.__repr__ function?
         memory_metadata_string = PromptGenerator.compile_memory_metadata_block(
             memory_edit_timestamp=in_context_memory_last_edit,
+            agent_id=agent_id,
+            conversation_id=conversation_id,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size or 0,
             timezone=timezone,
@@ -344,6 +348,8 @@ def initialize_message_sequence(
         in_context_memory=agent_state.memory,
         in_context_memory_last_edit=memory_edit_timestamp,
         timezone=agent_state.timezone,
+        agent_id=agent_state.id,
+        conversation_id="default",
         user_defined_variables=None,
         append_icm_if_missing=True,
         previous_message_count=previous_message_count,
@@ -406,6 +412,8 @@ async def initialize_message_sequence_async(
         in_context_memory=agent_state.memory,
         in_context_memory_last_edit=memory_edit_timestamp,
         timezone=agent_state.timezone,
+        agent_id=agent_state.id,
+        conversation_id="default",
         user_defined_variables=None,
         append_icm_if_missing=True,
         previous_message_count=previous_message_count,

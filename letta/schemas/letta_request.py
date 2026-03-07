@@ -23,6 +23,19 @@ class ClientToolSchema(BaseModel):
     parameters: Optional[Dict[str, Any]] = Field(None, description="JSON Schema for the function parameters")
 
 
+class ClientSkillSchema(BaseModel):
+    """Schema for a client-side skill passed in the request.
+
+    Client-side skills represent environment-provided capabilities (e.g. project-scoped
+    skills) that are not stored in the agent's MemFS but should appear in the system
+    prompt's available skills section.
+    """
+
+    name: str = Field(..., description="The name of the skill")
+    description: str = Field(..., description="Description of what the skill does")
+    location: str = Field(..., description="Path or location hint for the skill (e.g. skills/my-skill/SKILL.md)")
+
+
 class LettaRequest(BaseModel):
     messages: Optional[List[MessageCreateUnion]] = Field(None, description="The messages to be sent to the agent.")
     input: Optional[Union[str, List[LettaMessageContentUnion]]] = Field(
@@ -64,6 +77,13 @@ class LettaRequest(BaseModel):
         None,
         description="Client-side tools that the agent can call. When the agent calls a client-side tool, "
         "execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn.",
+    )
+
+    # Client-side skills
+    client_skills: Optional[List[ClientSkillSchema]] = Field(
+        None,
+        description="Client-side skills available in the environment. These are rendered in the system prompt's "
+        "available skills section alongside agent-scoped skills from MemFS.",
     )
 
     # Model override

@@ -454,7 +454,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, disable_turbopuf
         messages=[
             MessageCreate(
                 role="user",
-                content=f"Use ONLY the open_files tool to open the file named {file.file_name} with offset {offset} and length {length}",
+                content=f"Use ONLY the open_files tool to open the file named test_source/{file.file_name} with offset {offset} and length {length}",
             )
         ],
     )

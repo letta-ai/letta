@@ -98,19 +98,52 @@ def has_system_reminder_in_content(message: Dict[str, Any]) -> bool:
     return any(needle in s.lower() for s in _iter_strings(content))
 
 
+def _extract_text_blocks(content: Any) -> List[str]:
+    """Extract ordered human-readable text blocks from structured content arrays.
+
+    Preview payloads often encode message content as a list of typed blocks, e.g.:
+      [{"type": "text", "text": "..."}, ...]
+      [{"type": "input_text", "text": "..."}, ...]
+
+    This helper preserves that order and returns plain text blocks so we can render
+    them cleanly instead of dumping JSON.
+    """
+    blocks: List[str] = []
+    if not isinstance(content, list):
+        return blocks
+
+    for item in content:
+        if isinstance(item, str):
+            blocks.append(item)
+            continue
+
+        if not isinstance(item, dict):
+            continue
+
+        # Primary shape: {"type": "text"|"input_text"|..., "text": "..."}
+        text_value = item.get("text")
+        if isinstance(text_value, str):
+            blocks.append(text_value)
+            continue
+
+        # Secondary shape: nested content arrays/strings under "content"
+        nested = item.get("content")
+        if isinstance(nested, str):
+            blocks.append(nested)
+        elif isinstance(nested, list):
+            blocks.extend(_extract_text_blocks(nested))
+
+    return blocks
+
+
 def render_content_for_display(message: Dict[str, Any], msg_type: Optional[str]) -> str:
     content = message.get("content")
 
-    # For user messages in OpenAI-style payloads, content is often a list of blocks:
-    # [{"type": "input_text", "text": "..."}, ...].
-    # Render all input_text blocks in order with blank lines between blocks.
-    if message.get("role") == "user" and isinstance(content, list):
-        text_blocks: List[str] = []
-        for item in content:
-            if isinstance(item, dict) and item.get("type") == "input_text" and isinstance(item.get("text"), str):
-                text_blocks.append(item["text"])
-        if text_blocks:
-            return "\n\n".join(text_blocks)[:8000]
+    # Structured multi-part content (e.g. [{"type":"text","text":"..."}])
+    # should render as readable text blocks instead of JSON.
+    text_blocks = _extract_text_blocks(content)
+    if text_blocks:
+        return "\n\n".join(text_blocks)[:8000]
 
     if isinstance(content, str):
         return content[:8000]
@@ -236,9 +269,7 @@ def build_html(
     }
 
     warn_html = (
-        "<div class='panel warn'><strong>Warnings</strong><ul>"
-        + "".join(f"<li>{html.escape(e)}</li>" for e in errors)
-        + "</ul></div>"
+        "<div class='panel warn'><strong>Warnings</strong><ul>" + "".join(f"<li>{html.escape(e)}</li>" for e in errors) + "</ul></div>"
         if errors
         else ""
     )
@@ -370,7 +401,9 @@ def main() -> int:
         errors.append(f"agent: {agent_err}")
 
     payload_dict = payload if isinstance(payload, dict) else ({"raw": payload} if payload is not None else {})
-    agent_payload = agent_payload_raw if isinstance(agent_payload_raw, dict) else ({"raw": agent_payload_raw} if agent_payload_raw is not None else {})
+    agent_payload = (
+        agent_payload_raw if isinstance(agent_payload_raw, dict) else ({"raw": agent_payload_raw} if agent_payload_raw is not None else {})
+    )
 
     out = Path(args.out).expanduser() if args.out else Path.home() / ".letta" / "viewers" / f"viewing-agent-context-{args.agent_id}.html"
     out.parent.mkdir(parents=True, exist_ok=True)

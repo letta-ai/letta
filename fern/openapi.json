@@ -31534,6 +31534,29 @@
         "required": ["finish_reason", "index", "message"],
         "title": "Choice"
       },
+      "ClientSkillSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the skill"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Description of what the skill does"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Path or location hint for the skill (e.g. skills/my-skill/SKILL.md)"
+          }
+        },
+        "type": "object",
+        "required": ["name", "description", "location"],
+        "title": "ClientSkillSchema",
+        "description": "Schema for a client-side skill passed in the request.\n\nClient-side skills represent environment-provided capabilities (e.g. project-scoped\nskills) that are not stored in the agent's MemFS but should appear in the system\nprompt's available skills section."
+      },
       "ClientToolSchema": {
         "properties": {
           "name": {
@@ -32688,6 +32711,21 @@
             ],
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
           },
           "override_model": {
             "anyOf": [
@@ -39202,6 +39240,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -39420,6 +39473,21 @@
             ],
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
           },
           "override_model": {
             "anyOf": [
@@ -39820,6 +39888,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -40119,6 +40202,21 @@
             ],
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
+          },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
           },
           "override_model": {
             "anyOf": [

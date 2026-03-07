@@ -1769,6 +1769,7 @@ async def send_message(
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=headers.billing_context,
         )
@@ -2080,6 +2081,7 @@ async def _process_message_background(
             use_assistant_message=use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=include_return_message_types,
+            client_skills=[],
             include_compaction_messages=include_compaction_messages,
             billing_context=billing_context,
         )
@@ -2373,6 +2375,7 @@ async def preview_model_request(
     agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
     return await agent_loop.build_request(
         input_messages=request.messages,
+        client_skills=request.client_skills,
     )
 
 

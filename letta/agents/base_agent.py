@@ -49,6 +49,8 @@ class BaseAgent(ABC):
         self.passage_manager = PassageManager()
         self.actor = actor
         self.logger = get_logger(agent_id)
+        self.client_skills: list = []
+        self.conversation_id: str | None = None
 
     @abstractmethod
     async def step(
@@ -134,6 +136,7 @@ class BaseAgent(ABC):
                 sources=agent_state.sources,
                 max_files_open=agent_state.max_files_open,
                 llm_config=agent_state.llm_config,
+                client_skills=self.client_skills,
             )
 
             system_prompt_changed = agent_state.system not in curr_system_message_text
@@ -155,6 +158,8 @@ class BaseAgent(ABC):
             new_system_message_str = PromptGenerator.get_system_message_from_compiled_memory(
                 system_prompt=agent_state.system,
                 memory_with_sources=curr_memory_str,
+                agent_id=agent_state.id,
+                conversation_id=self.conversation_id or "default",
                 in_context_memory_last_edit=memory_edit_timestamp,
                 timezone=agent_state.timezone,
                 previous_message_count=num_messages - len(in_context_messages),

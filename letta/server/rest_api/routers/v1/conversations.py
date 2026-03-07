@@ -249,6 +249,7 @@ async def _send_agent_direct_message(
             include_return_message_types=request.include_return_message_types,
             override_model=request.override_model,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
         )
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
@@ -313,6 +314,7 @@ async def _send_agent_direct_message(
             use_assistant_message=request.use_assistant_message,
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
             conversation_id=None,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=billing_context,
@@ -400,6 +402,7 @@ async def send_conversation_message(
             include_return_message_types=request.include_return_message_types,
             override_model=request.override_model,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
         )
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
@@ -470,6 +473,7 @@ async def send_conversation_message(
         use_assistant_message=request.use_assistant_message,
         include_return_message_types=request.include_return_message_types,
         client_tools=request.client_tools,
+        client_skills=request.client_skills,
         conversation_id=conversation_id,
         include_compaction_messages=request.include_compaction_messages,
         billing_context=headers.billing_context,
