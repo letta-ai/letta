@@ -26913,6 +26913,11 @@
                                       "reason": {
                                         "type": "string",
                                         "nullable": true
+                                      },
+                                      "updated_input": {
+                                        "type": "object",
+                                        "additionalProperties": {},
+                                        "nullable": true
                                       }
                                     },
                                     "required": ["approve", "tool_call_id"]
