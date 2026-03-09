@@ -1,6 +1,5 @@
 from datetime import timedelta
 from typing import Annotated, List, Literal, Optional
-
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
@@ -199,7 +198,7 @@ async def list_conversation_messages(
             before=before,
             limit=limit,
             group_id=group_id,
-            conversation_id=None,  # Default conversation (no isolation)
+            conversation_id="default",  # Filter to default conversation messages only
             reverse=(order == "desc"),
             return_message_object=False,
             include_err=include_err,
