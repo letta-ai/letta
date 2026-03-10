@@ -11,6 +11,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.user import User
+from letta.services.summarizer.constants import SUMMARY_TRUNCATION_SUFFIX
 from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_prompt_for_mode
 from letta.services.summarizer.summarizer_sliding_window import count_tokens
 from letta.services.telemetry_manager import TelemetryManager
@@ -131,7 +132,7 @@ async def self_summarize_all(
     # Clip if needed
     if compaction_settings.clip_chars is not None and len(summary_text) > compaction_settings.clip_chars:
         logger.warning(f"CC summary length {len(summary_text)} exceeds clip length {compaction_settings.clip_chars}. Truncating.")
-        summary_text = summary_text[: compaction_settings.clip_chars] + "... [summary truncated to fit]"
+        summary_text = summary_text[: compaction_settings.clip_chars] + SUMMARY_TRUNCATION_SUFFIX
 
     # Build final messages: [system] + protected messages
     # Summary message handling is done in compact parent function
