@@ -1504,11 +1504,11 @@ class SyncServer(object):
             raise
 
         if context_window_limit is not None:
-            if context_window_limit > llm_config.context_window:
-                raise LettaInvalidArgumentError(
-                    f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})",
-                    argument_name="context_window_limit",
-                )
+            # if context_window_limit > llm_config.context_window:
+            #     raise LettaInvalidArgumentError(
+            #         f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})",
+            #         argument_name="context_window_limit",
+            #     )
             llm_config.context_window = context_window_limit
         else:
             llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)

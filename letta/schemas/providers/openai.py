@@ -278,12 +278,16 @@ class OpenAIProvider(Provider):
 
     def get_model_context_window_size(self, model_name: str) -> int | None:
         """Get the context window size for a model (sync fallback)."""
+        basename = model_name.rsplit("/", 1)[-1].lower()
+        if basename in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[basename]
         return LLM_MAX_CONTEXT_WINDOW["DEFAULT"]
 
     async def get_model_context_window_size_async(self, model_name: str) -> int | None:
         """Get the context window size for a model.
 
         Uses litellm model specifications which covers all OpenAI models.
+        Falls back to LLM_MAX_CONTEXT_WINDOW with normalized name matching.
         """
         from letta.model_specs.litellm_model_specs import get_context_window
 
@@ -291,9 +295,14 @@ class OpenAIProvider(Provider):
         if context_window is not None:
             return context_window
 
-        # Simple fallback
+        # Try matching against LLM_MAX_CONTEXT_WINDOW with basename
+        # e.g. "zai-org/GLM-5" -> "glm-5", "accounts/fireworks/models/glm-5" -> "glm-5"
+        basename = model_name.rsplit("/", 1)[-1].lower()
+        if basename in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[basename]
+
         logger.debug(
-            "Model %s not found in litellm specs. Using default of %s",
+            "Model %s not found in litellm specs or context window map. Using default of %s",
             model_name,
             LLM_MAX_CONTEXT_WINDOW["DEFAULT"],
         )
