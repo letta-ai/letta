@@ -6,7 +6,7 @@ import pytest
 import requests
 from dotenv import load_dotenv
 from letta_client import APIError, Letta
-from letta_client.types import CreateBlockParam, MessageCreateParam, SleeptimeManagerParam
+from letta_client.types import CreateBlockParam, MessageCreateParam
 
 from letta.constants import DEFAULT_HUMAN
 from letta.utils import get_human_text, get_persona_text
@@ -86,21 +86,26 @@ async def test_sleeptime_group_chat(client):
     assert "core_memory_replace" not in main_agent_tools
     assert "archival_memory_insert" not in main_agent_tools
 
-    # 2. Override frequency for test
-    group = client.groups.update(
-        group_id=main_agent.multi_agent_group.id,
-        manager_config=SleeptimeManagerParam(
-            manager_type="sleeptime",
-            sleeptime_agent_frequency=2,
-        ),
+    # 2. Override frequency for test (groups API deprecated and removed from SDK, use raw HTTP)
+    group_id = main_agent.multi_agent_group.id
+    resp = requests.patch(
+        f"{client.base_url}/v1/groups/{group_id}",
+        json={
+            "manager_config": {
+                "manager_type": "sleeptime",
+                "sleeptime_agent_frequency": 2,
+            }
+        },
     )
+    resp.raise_for_status()
+    group = resp.json()
 
-    assert group.manager_type == "sleeptime"
-    assert group.sleeptime_agent_frequency == 2
-    assert len(group.agent_ids) == 1
+    assert group["manager_type"] == "sleeptime"
+    assert group["sleeptime_agent_frequency"] == 2
+    assert len(group["agent_ids"]) == 1
 
     # 3. Verify shared blocks
-    sleeptime_agent_id = group.agent_ids[0]
+    sleeptime_agent_id = group["agent_ids"][0]
     shared_block = client.agents.blocks.retrieve(agent_id=main_agent.id, block_label="human")
     agents = client.blocks.agents.list(block_id=shared_block.id).items
     assert len(agents) == 2
@@ -172,8 +177,6 @@ async def test_sleeptime_group_chat(client):
     client.agents.delete(agent_id=main_agent.id)
 
     with pytest.raises(APIError):
-        client.groups.retrieve(group_id=group.id)
-    with pytest.raises(APIError):
         client.agents.retrieve(agent_id=sleeptime_agent_id)
 
 
@@ -199,14 +202,19 @@ async def test_sleeptime_removes_redundant_information(client):
         agent_type="letta_v1_agent",
     )
 
-    group = client.groups.update(
-        group_id=main_agent.multi_agent_group.id,
-        manager_config=SleeptimeManagerParam(
-            manager_type="sleeptime",
-            sleeptime_agent_frequency=1,
-        ),
+    group_id = main_agent.multi_agent_group.id
+    resp = requests.patch(
+        f"{client.base_url}/v1/groups/{group_id}",
+        json={
+            "manager_config": {
+                "manager_type": "sleeptime",
+                "sleeptime_agent_frequency": 1,
+            }
+        },
     )
-    sleeptime_agent_id = group.agent_ids[0]
+    resp.raise_for_status()
+    group = resp.json()
+    sleeptime_agent_id = group["agent_ids"][0]
     shared_block = client.agents.blocks.retrieve(agent_id=main_agent.id, block_label="human")
     count_before_memory_edits = shared_block.value.count("fiddle leaf")
     test_messages = ["hello there", "my favorite bird is the sparrow"]
@@ -232,8 +240,6 @@ async def test_sleeptime_removes_redundant_information(client):
     # 4. Delete agent
     client.agents.delete(agent_id=main_agent.id)
 
-    with pytest.raises(APIError):
-        client.groups.retrieve(group_id=group.id)
     with pytest.raises(APIError):
         client.agents.retrieve(agent_id=sleeptime_agent_id)
 

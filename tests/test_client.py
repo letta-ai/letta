@@ -798,11 +798,8 @@ def test_attach_sleeptime_block(client: Letta):
         enable_sleeptime=True,
     )
 
-    # get the sleeptime agent
-    # get the multi-agent group
-    group_id = agent.multi_agent_group.id
-    group = client.groups.retrieve(group_id=group_id)
-    agent_ids = group.agent_ids
+    # get the sleeptime agent from the multi-agent group
+    agent_ids = agent.multi_agent_group.agent_ids
     sleeptime_id = next(id for id in agent_ids if id != agent.id)
 
     # attach a new block

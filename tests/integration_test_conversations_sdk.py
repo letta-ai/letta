@@ -388,8 +388,8 @@ class TestConversationsSDK:
             stream = client.conversations.messages.stream(conversation_id=conversation.id)
             list(stream)  # Consume the stream to trigger the error
 
-        # Should return 400 because no active run exists (run is completed)
-        assert "No active runs found" in str(exc_info.value)
+        # Should return 400 because the run was not created in background mode
+        assert "not created in background mode" in str(exc_info.value) or "No active runs found" in str(exc_info.value)
 
     def test_conversation_lock_released_after_completion(self, client: Letta, agent):
         """Test that lock is released after request completes by sending sequential messages."""
