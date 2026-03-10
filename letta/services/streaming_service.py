@@ -1,6 +1,7 @@
 import asyncio
 import json
 import time
+from datetime import datetime, timezone
 from typing import AsyncIterator, Optional, Union
 from uuid import uuid4
 
@@ -30,7 +31,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus
 from letta.schemas.job import LettaRequestConfig
-from letta.schemas.letta_message import AssistantMessage, LettaErrorMessage, MessageType
+from letta.schemas.letta_message import AssistantMessage, LettaErrorMessage, LettaPing, MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import ClientToolSchema, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
@@ -55,6 +56,42 @@ from letta.settings import settings
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
+
+
+async def prepend_initial_run_ping(
+    stream_generator: AsyncIterator[str | bytes],
+    run_id: str,
+) -> AsyncIterator[str | bytes]:
+    """
+    Emit an immediate run_id-bearing ping before the first stream chunk.
+
+    Device/listener mode currently waits for the first chunk that exposes run_id
+    before it can attach the run. Prepending a ping lets clients bind earlier
+    without changing the streaming schema surface.
+    """
+    yield (
+        "data: "
+        + LettaPing(
+            id=f"ping-{uuid4()}",
+            date=datetime.now(timezone.utc),
+            run_id=run_id,
+        ).model_dump_json()
+        + "\n\n"
+    )
+
+    try:
+        async for chunk in stream_generator:
+            yield chunk
+    except RunCancelledException as e:
+        # Forward cancellation to the inner generator so its handler fires
+        # (sets saw_done, run_status=None, emits [DONE]) before the finally block.
+        # Without this, aclose() sends GeneratorExit which skips the handler and
+        # causes the finally block to mark the run as "failed" instead of "cancelled".
+        try:
+            await stream_generator.athrow(e)
+        except (StopAsyncIteration, RunCancelledException):
+            pass
+        raise
 
 
 class StreamingService:
@@ -197,6 +234,9 @@ class StreamingService:
                 is_background=request.background,
                 openai_responses_websocket=openai_responses_websocket,
             )
+
+            if request.include_pings and run:
+                raw_stream = prepend_initial_run_ping(raw_stream, run.id)
 
             # handle background streaming if requested
             if request.background and settings.track_agent_run:

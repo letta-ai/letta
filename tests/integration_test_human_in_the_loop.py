@@ -81,6 +81,10 @@ def accumulate_chunks(stream):
 
         current_message_type = getattr(chunk, "message_type", None)
 
+        # Skip keepalive/initial pings — not content messages
+        if current_message_type == "ping":
+            continue
+
         if prev_message_type != current_message_type:
             # Save the previous message if it exists
             if current_message is not None:
