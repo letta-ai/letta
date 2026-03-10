@@ -39,8 +39,10 @@ CHATGPT_MODELS = [
     # GPT-5.4 (supports none/low/medium/high/xhigh reasoning)
     {"name": "gpt-5.4", "context_window": 272000},
     {"name": "gpt-5.4-pro", "context_window": 272000},
+    {"name": "gpt-5.4-fast", "context_window": 272000},
     # GPT-5.3 codex
     {"name": "gpt-5.3-codex", "context_window": 272000},
+    {"name": "gpt-5.3-codex-spark", "context_window": 128000},
     # GPT-5.2 models (supports none/low/medium/high/xhigh reasoning)
     {"name": "gpt-5.2", "context_window": 272000},
     {"name": "gpt-5.2-codex", "context_window": 272000},
