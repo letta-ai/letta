@@ -596,7 +596,7 @@ class OpenAIClient(LLMClientBase):
                 data.top_logprobs = llm_config.top_logprobs
 
         if tools and supports_parallel_tool_calling(model):
-            data.parallel_tool_calls = False
+            data.parallel_tool_calls = llm_config.parallel_tool_calls
 
         # Add response_format support for structured outputs
         if hasattr(llm_config, "response_format") and llm_config.response_format is not None:
