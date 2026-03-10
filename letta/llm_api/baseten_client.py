@@ -13,9 +13,15 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.settings import model_settings
 
 
-def _build_base_url(model_id: str) -> str:
-    """Build the Baseten endpoint URL from a model ID."""
-    return f"https://model-{model_id}.api.baseten.co/environments/production/sync/v1"
+def _build_base_url(model_endpoint: str) -> str:
+    """Build the Baseten endpoint URL.
+
+    For custom deployments, model_endpoint is a model ID (e.g. '3m5zok9w').
+    For serverless, model_endpoint is a full URL (e.g. 'https://inference.baseten.co/v1').
+    """
+    if model_endpoint.startswith("https://"):
+        return model_endpoint
+    return f"https://model-{model_endpoint}.api.baseten.co/environments/production/sync/v1"
 
 
 class BasetenClient(OpenAIClient):
@@ -81,29 +87,37 @@ class BasetenClient(OpenAIClient):
 
         return data
 
-    @trace_method
-    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
+    def _build_client_kwargs(self, llm_config: LLMConfig) -> dict:
+        """Build OpenAI client kwargs for Baseten.
+
+        Custom deployments use Api-Key header auth.
+        Serverless uses standard Bearer token auth.
+        """
         api_key = model_settings.baseten_api_key
         base_url = _build_base_url(llm_config.model_endpoint)
-        client = OpenAI(api_key="unused", base_url=base_url, default_headers={"Authorization": f"Api-Key {api_key}"})
+        is_serverless = llm_config.model_endpoint.startswith("https://")
+
+        if is_serverless:
+            return {"api_key": api_key, "base_url": base_url}
+        return {"api_key": "unused", "base_url": base_url, "default_headers": {"Authorization": f"Api-Key {api_key}"}}
+
+    @trace_method
+    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
+        client = OpenAI(**self._build_client_kwargs(llm_config))
         response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         request_data = sanitize_unicode_surrogates(request_data)
-        api_key = model_settings.baseten_api_key
-        base_url = _build_base_url(llm_config.model_endpoint)
-        client = AsyncOpenAI(api_key="unused", base_url=base_url, default_headers={"Authorization": f"Api-Key {api_key}"})
+        client = AsyncOpenAI(**self._build_client_kwargs(llm_config))
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         request_data = sanitize_unicode_surrogates(request_data)
-        api_key = model_settings.baseten_api_key
-        base_url = _build_base_url(llm_config.model_endpoint)
-        client = AsyncOpenAI(api_key="unused", base_url=base_url, default_headers={"Authorization": f"Api-Key {api_key}"})
+        client = AsyncOpenAI(**self._build_client_kwargs(llm_config))
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
             **request_data, stream=True, stream_options={"include_usage": True}
         )
