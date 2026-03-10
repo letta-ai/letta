@@ -276,11 +276,10 @@ def test_invoke_approval_request(
     # Test pending_approval relationship field
     agent_with_pending = client.agents.retrieve(agent_id=agent.id, include=["agent.pending_approval"])
     assert agent_with_pending.pending_approval is not None
-    # Client SDK returns it as a dict, so use dict access
-    assert agent_with_pending.pending_approval["tool_call"]["name"] == "get_secret_code_tool"
-    assert len(agent_with_pending.pending_approval["tool_calls"]) > 0
-    assert agent_with_pending.pending_approval["tool_calls"][0]["name"] == "get_secret_code_tool"
-    assert agent_with_pending.pending_approval["tool_calls"][0]["tool_call_id"] == response.messages[-1].tool_call.tool_call_id
+    assert agent_with_pending.pending_approval.tool_call.name == "get_secret_code_tool"
+    assert len(agent_with_pending.pending_approval.tool_calls) > 0
+    assert agent_with_pending.pending_approval.tool_calls[0].name == "get_secret_code_tool"
+    assert agent_with_pending.pending_approval.tool_calls[0].tool_call_id == response.messages[-1].tool_call.tool_call_id
 
     approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
 

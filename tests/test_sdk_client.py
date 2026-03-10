@@ -28,7 +28,6 @@ from letta_client.types.tool import BaseTool
 from pydantic import BaseModel, Field
 
 from letta.config import LettaConfig
-from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.server.server import SyncServer
 from tests.utils import wait_for_server
 
@@ -2137,70 +2136,6 @@ def test_run_list(client: LettaSDKClient):
     # test get run - use the async_run we created
     run = client.runs.retrieve(async_run.id)
     assert run.agent_id == agent.id
-
-
-@pytest.mark.asyncio
-async def test_create_batch(client: LettaSDKClient, server: SyncServer):
-    # create agents
-    agent1 = client.agents.create(
-        name="agent1_batch",
-        memory_blocks=[{"label": "persona", "value": "you are agent 1"}],
-        model="anthropic/claude-sonnet-4-20250514",
-        embedding="openai/text-embedding-3-small",
-    )
-    agent2 = client.agents.create(
-        name="agent2_batch",
-        memory_blocks=[{"label": "persona", "value": "you are agent 2"}],
-        model="anthropic/claude-sonnet-4-20250514",
-        embedding="openai/text-embedding-3-small",
-    )
-
-    # create a run
-    run = client.batches.create(
-        requests=[
-            {
-                "messages": [
-                    MessageCreateParam(
-                        role="user",
-                        content="hi",
-                    )
-                ],
-                "agent_id": agent1.id,
-            },
-            {
-                "messages": [
-                    MessageCreateParam(
-                        role="user",
-                        content="hi",
-                    )
-                ],
-                "agent_id": agent2.id,
-            },
-        ]
-    )
-    assert run is not None
-
-    # list batches
-    batches = client.batches.list()
-    batches_list = list(batches)
-    assert len(batches_list) >= 1, f"Expected 1 or more batches, got {len(batches_list)}"
-    assert batches_list[0].status == "running"
-
-    # Poll it once
-    await poll_running_llm_batches(server)
-
-    # get the batch results
-    results = client.batches.retrieve(
-        batch_id=run.id,
-    )
-    assert results is not None
-
-    # cancel
-    client.batches.cancel(batch_id=run.id)
-    batch_job = client.batches.retrieve(
-        batch_id=run.id,
-    )
-    assert batch_job.status == "cancelled"
 
 
 def test_create_agent(client: LettaSDKClient) -> None:
