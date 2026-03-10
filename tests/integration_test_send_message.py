@@ -954,6 +954,9 @@ def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = False) -
         # Handle message objects
         for chunk in chunks:
             current_message_type = chunk.message_type
+            # Skip keepalive/initial pings — not content messages
+            if current_message_type == "ping":
+                continue
             if prev_message_type != current_message_type:
                 messages.append(current_message)
                 if (
