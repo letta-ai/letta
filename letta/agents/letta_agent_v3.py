@@ -72,6 +72,7 @@ from letta.services.provider_manager import AUTO_MODE_HANDLES
 from letta.services.summarizer.compact import compact_messages
 from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.services.summarizer.summarizer_sliding_window import count_tokens
+from letta.services.summarizer.thresholds import get_compaction_trigger_threshold
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
 from letta.utils import safe_create_task_with_return, validate_function_response
@@ -910,6 +911,8 @@ class LettaAgentV3(LettaAgentV2):
         if self.context_token_estimate is None:
             self.logger.warning("Context token estimate is not set")
 
+        compaction_trigger_threshold = get_compaction_trigger_threshold(self.agent_state.llm_config)
+
         step_progression = StepProgression.START
         caught_exception = None
         # TODO(@caren): clean this up
@@ -1184,7 +1187,7 @@ class LettaAgentV3(LettaAgentV2):
 
                                 summary_message, messages, summary_text = await self.compact(
                                     messages,
-                                    trigger_threshold=self.agent_state.llm_config.context_window,
+                                    trigger_threshold=compaction_trigger_threshold,
                                     run_id=run_id,
                                     step_id=step_id,
                                     use_summary_role=include_compaction_messages,
@@ -1379,9 +1382,11 @@ class LettaAgentV3(LettaAgentV2):
                         yield message
 
             # check compaction
-            if self.context_token_estimate is not None and self.context_token_estimate > self.agent_state.llm_config.context_window:
+            if self.context_token_estimate is not None and self.context_token_estimate > compaction_trigger_threshold:
                 self.logger.info(
-                    f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
+                    "Compaction threshold exceeded "
+                    f"(current: {self.context_token_estimate}, threshold: {compaction_trigger_threshold}, "
+                    f"context_window: {self.agent_state.llm_config.context_window}), trying to compact messages"
                 )
 
                 # Capture pre-compaction state for metadata
@@ -1404,7 +1409,7 @@ class LettaAgentV3(LettaAgentV2):
 
                     summary_message, messages, summary_text = await self.compact(
                         messages,
-                        trigger_threshold=self.agent_state.llm_config.context_window,
+                        trigger_threshold=compaction_trigger_threshold,
                         run_id=run_id,
                         step_id=step_id,
                         use_summary_role=include_compaction_messages,
