@@ -24,9 +24,6 @@ class BasetenClient(OpenAIClient):
     def requires_auto_tool_choice(self, llm_config: LLMConfig) -> bool:
         return False
 
-    def supports_structured_output(self, llm_config: LLMConfig) -> bool:
-        return False
-
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return False
 
