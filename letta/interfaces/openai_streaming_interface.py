@@ -182,7 +182,8 @@ class OpenAIStreamingInterface:
         self._function_name_parts.append(s)
 
     def _append_function_id(self, s: str) -> None:
-        self._function_id_parts.append(s)
+        if not self._function_id_parts:
+            self._function_id_parts.append(s)
 
     def _append_current_function_arguments(self, s: str) -> None:
         self._current_function_arguments_parts.append(s)
@@ -678,7 +679,7 @@ class SimpleOpenAIStreamingInterface:
             ctx = self._tool_calls_acc[idx]
             name = "".join(ctx.get("name_parts", [])) if "name_parts" in ctx else ctx.get("name", "")
             args = "".join(ctx.get("arguments_parts", [])) if "arguments_parts" in ctx else ctx.get("arguments", "")
-            call_id = "".join(ctx.get("id_parts", [])) if "id_parts" in ctx else ctx.get("id", "")
+            call_id = ctx["id_parts"][0] if ctx.get("id_parts") else ctx.get("id", "")
             if call_id and name:
                 result.append(ToolCall(id=call_id, function=FunctionCall(arguments=args or "", name=name)))
         return result
@@ -933,10 +934,11 @@ class SimpleOpenAIStreamingInterface:
                     if tool_call.function and tool_call.function.arguments:
                         acc["arguments_parts"].append(tool_call.function.arguments)
                     if tool_call.id:
-                        acc["id_parts"].append(tool_call.id)
+                        if not acc["id_parts"]:
+                            acc["id_parts"].append(tool_call.id)
 
                     # Resolve stable id from accumulator; OpenAI may omit id on argument-only deltas
-                    resolved_id = "".join(acc.get("id_parts", [])) if acc.get("id_parts") else None
+                    resolved_id = acc["id_parts"][0] if acc.get("id_parts") else None
                     # If we don't yet have an id for this tool_call index, skip emitting unusable delta
                     if resolved_id is None:
                         continue
