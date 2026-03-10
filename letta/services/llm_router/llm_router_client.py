@@ -75,9 +75,11 @@ def _build_fireworks_config() -> "LLMConfig":
         model_endpoint=model_settings.fireworks_api_base,
         context_window=180000,
         max_tokens=16384,
-        handle="fireworks/glm-5",
+        handle="fireworks/glm-5-serverless",
         provider_name="fireworks",
         provider_category=ProviderCategory.base,
+        strict=True,
+        parallel_tool_calls=True,
     )
 
 
