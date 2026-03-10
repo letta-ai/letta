@@ -9240,6 +9240,69 @@
         }
       }
     },
+    "/v1/conversations/{conversation_id}/messages/preview-raw-payload": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Preview Conversation Model Request",
+        "description": "Inspect the raw LLM request payload for a conversation message without sending it.\n\nThis endpoint processes the message through the same path as send_conversation_message\n(including conversation-scoped messages, isolated blocks, model overrides, and\nclient tools/skills) but stops before the LLM call and returns the raw request\npayload. Useful for debugging and verifying what the LLM will actually see.",
+        "operationId": "preview_conversation_model_request",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 42,
+              "pattern": "^(default|conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated).",
+              "examples": [
+                "default",
+                "conv-123e4567-e89b-42d3-8456-426614174000",
+                "agent-123e4567-e89b-42d3-8456-426614174000"
+              ],
+              "title": "Conversation Id"
+            },
+            "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Preview Conversation Model Request"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/conversations/{conversation_id}/stream": {
       "post": {
         "tags": ["conversations"],

@@ -37,6 +37,8 @@ class BaseAgentV2(ABC):
         self,
         input_messages: list[MessageCreate],
         client_skills: list["ClientSkillSchema"] | None = None,
+        client_tools: list["ClientToolSchema"] | None = None,
+        conversation_id: str | None = None,
     ) -> dict:
         """
         Execute the agent loop in dry_run mode, returning just the generated request

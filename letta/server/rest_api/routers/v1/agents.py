@@ -2370,12 +2370,20 @@ async def preview_model_request(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id, actor, include_relationships=["multi_agent_group", "memory", "sources"]
+        agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
     )
+
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(actor=actor, handle=request.override_model)
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
     agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
     return await agent_loop.build_request(
         input_messages=request.messages,
         client_skills=request.client_skills,
+        client_tools=request.client_tools,
     )
 
 
