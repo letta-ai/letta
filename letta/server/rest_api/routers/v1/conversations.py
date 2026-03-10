@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Annotated, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
@@ -476,6 +476,97 @@ async def send_conversation_message(
         conversation_id=conversation_id,
         include_compaction_messages=request.include_compaction_messages,
         billing_context=headers.billing_context,
+    )
+
+
+@router.post(
+    "/{conversation_id}/messages/preview-raw-payload",
+    response_model=Dict[str, Any],
+    operation_id="preview_conversation_model_request",
+)
+async def preview_conversation_model_request(
+    conversation_id: ConversationIdOrDefault,
+    request: ConversationMessageRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Inspect the raw LLM request payload for a conversation message without sending it.
+
+    This endpoint processes the message through the same path as send_conversation_message
+    (including conversation-scoped messages, isolated blocks, model overrides, and
+    client tools/skills) but stops before the LLM call and returns the raw request
+    payload. Useful for debugging and verifying what the LLM will actually see.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    if not request.messages or len(request.messages) == 0:
+        raise HTTPException(status_code=422, detail="Messages must not be empty")
+
+    # Agent-direct mode (same logic as send_conversation_message)
+    resolved_agent_id = None
+    if conversation_id == "default" and request.agent_id:
+        resolved_agent_id = request.agent_id
+    elif conversation_id.startswith("agent-"):
+        resolved_agent_id = conversation_id
+
+    if resolved_agent_id:
+        # Agent-direct mode: load agent directly, no conversation features
+        agent = await server.agent_manager.get_agent_by_id_async(
+            resolved_agent_id,
+            actor,
+            include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
+        )
+
+        if request.override_model:
+            override_llm_config = await server.get_llm_config_from_handle_async(actor=actor, handle=request.override_model)
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+        agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+        return await agent_loop.build_request(
+            input_messages=request.messages,
+            client_skills=request.client_skills,
+            client_tools=request.client_tools,
+        )
+
+    # Normal conversation mode
+    conversation = await conversation_manager.get_conversation_by_id(
+        conversation_id=conversation_id,
+        actor=actor,
+    )
+
+    agent = await server.agent_manager.get_agent_by_id_async(
+        conversation.agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
+    )
+
+    # Apply conversation-level model override (same as send_conversation_message)
+    if conversation.model and not request.override_model:
+        conversation_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=conversation.model,
+        )
+        if conversation.model_settings is not None:
+            update_params = conversation.model_settings._to_legacy_config_params()
+            if "max_output_tokens" not in conversation.model_settings.model_fields_set:
+                update_params.pop("max_tokens", None)
+            conversation_llm_config = conversation_llm_config.model_copy(update=update_params)
+        agent = agent.model_copy(update={"llm_config": conversation_llm_config})
+
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=request.override_model,
+        )
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+    agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+    return await agent_loop.build_request(
+        input_messages=request.messages,
+        client_skills=request.client_skills,
+        client_tools=request.client_tools,
+        conversation_id=conversation_id,
     )
 
 

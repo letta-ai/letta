@@ -152,6 +152,70 @@ class LettaAgentV3(LettaAgentV2):
         return max(5000, cap)
 
     @trace_method
+    async def build_request(
+        self,
+        input_messages: list[MessageCreate],
+        client_skills: list[ClientSkillSchema] | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
+        conversation_id: str | None = None,
+    ) -> dict:
+        """
+        Build the request data for an LLM call without actually executing it.
+
+        Overrides V2 to support conversation-scoped messages, conversation-isolated
+        blocks, and client-side tools — matching the real execution path in step().
+
+        Args:
+            input_messages: List of new messages to process
+            client_skills: Optional client-side skills to include in system prompt
+            client_tools: Optional client-side tools to merge into tool list
+            conversation_id: Optional conversation ID for conversation-scoped context
+
+        Returns:
+            dict: The request data that would be sent to the LLM
+        """
+        from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
+
+        self._initialize_state()
+        self.client_tools = client_tools or []
+        self.client_skills = client_skills or []
+        self.conversation_id = conversation_id
+
+        # Apply conversation-specific block overrides (same as step())
+        if conversation_id:
+            self.agent_state = await ConversationManager().apply_isolated_blocks_to_agent_state(
+                agent_state=self.agent_state,
+                conversation_id=conversation_id,
+                actor=self.actor,
+            )
+
+        in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
+            input_messages, self.agent_state, self.message_manager, self.actor, None, conversation_id=conversation_id
+        )
+
+        response = self._step(
+            run_id=None,
+            messages=in_context_messages + input_messages_to_persist,
+            llm_adapter=LettaLLMRequestAdapter(
+                llm_client=self.llm_client,
+                llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
+                agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
+            ),
+            dry_run=True,
+            enforce_run_id_set=False,
+        )
+        request = {}
+        async for chunk in response:
+            request = chunk
+            break
+
+        return request
+
+    @trace_method
     async def step(
         self,
         input_messages: list[MessageCreate],

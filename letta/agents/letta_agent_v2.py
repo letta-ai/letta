@@ -138,7 +138,13 @@ class LettaAgentV2(BaseAgentV2):
         )
 
     @trace_method
-    async def build_request(self, input_messages: list[MessageCreate], client_skills: list[ClientSkillSchema] | None = None) -> dict:
+    async def build_request(
+        self,
+        input_messages: list[MessageCreate],
+        client_skills: list[ClientSkillSchema] | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
+        conversation_id: str | None = None,
+    ) -> dict:
         """
         Build the request data for an LLM call without actually executing it.
 
@@ -146,6 +152,9 @@ class LettaAgentV2(BaseAgentV2):
 
         Args:
             input_messages: List of new messages to process
+            client_skills: Optional client-side skills to include in system prompt
+            client_tools: Optional client-side tools to include in tool list (V2 ignores, V3 uses)
+            conversation_id: Optional conversation ID (V2 ignores, V3 uses for scoped context)
 
         Returns:
             dict: The request data that would be sent to the LLM
