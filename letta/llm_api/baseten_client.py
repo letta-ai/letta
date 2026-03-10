@@ -25,7 +25,7 @@ class BasetenClient(OpenAIClient):
         return False
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
-        return False
+        return True  # hardcode for now
 
     @trace_method
     def build_request_data(
@@ -40,7 +40,7 @@ class BasetenClient(OpenAIClient):
     ) -> dict:
         data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
 
-        # model field is passed through from llm_config.model (e.g. "zai-org/GLM-5")
+        # model field is passed through from llm_config.model
 
         # Baseten uses max_tokens, not max_completion_tokens
         if "max_completion_tokens" in data:
