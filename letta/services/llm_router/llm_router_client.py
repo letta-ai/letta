@@ -59,6 +59,7 @@ def _build_baseten_config() -> "LLMConfig":
         provider_name="baseten",
         provider_category=ProviderCategory.base,
         strict=True,
+        parallel_tool_calls=True,
     )
 
 
