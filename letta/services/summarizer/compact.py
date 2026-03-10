@@ -49,6 +49,9 @@ async def build_summarizer_llm_config(
     then apply any explicit ``compaction_settings.model_settings`` via
     ``_to_legacy_config_params``.
 
+    For auto mode agents (letta/baseten providers), uses the LLM router's
+    circuit breaker to try the primary model first, falling back if unhealthy.
+
     Args:
         agent_llm_config: The agent's LLM configuration to use as base.
         summarizer_config: Compaction settings with optional model override.
@@ -58,6 +61,20 @@ async def build_summarizer_llm_config(
         LLMConfig configured for summarization.
     """
     from letta.schemas.enums import ProviderType
+
+    # Auto mode agents: use the LLM router to resolve primary vs fallback
+    if not summarizer_config.model and agent_llm_config.provider_name in ("letta", "baseten"):
+        try:
+            from letta.services.llm_router import get_llm_routing_client
+
+            routing_client = await get_llm_routing_client()
+            resolved_config, _, _ = await routing_client.resolve_auto_mode_config(
+                stored_llm_config=agent_llm_config,
+                actor=actor,
+            )
+            return resolved_config
+        except Exception as e:
+            logger.warning(f"Failed to resolve auto mode config for summarizer: {e}. Falling back to defaults.")
 
     # If no summarizer model specified, use lightweight provider-specific defaults
     if not summarizer_config.model:

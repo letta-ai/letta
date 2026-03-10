@@ -961,7 +961,7 @@ class LettaAgentV3(LettaAgentV2):
                         actor=self.actor,
                     )
                     if not is_primary:
-                        self.logger.info(f"[AUTO MODE]: primary {primary_handle} rerouted, falling back to {active_llm_config.handle}")
+                        self.logger.info(f"[LLM ROUTER]: primary {primary_handle} rerouted, falling back to {active_llm_config.handle}")
                     active_llm_client = LLMClient.create(
                         provider_type=active_llm_config.model_endpoint_type,
                         put_inner_thoughts_first=True,
@@ -1048,10 +1048,10 @@ class LettaAgentV3(LettaAgentV2):
                             if llm_adapter.supports_token_streaming():
                                 if include_return_message_types is None or chunk.message_type in include_return_message_types:
                                     yield chunk
-                        # Report success to circuit breaker
-                        if is_auto_mode and is_primary:
-                            routing_client = await get_llm_routing_client()
-                            await routing_client.record_success(primary_handle)
+                        # Report success to circuit breaker (only for models with fallback routes)
+                        routing_client = await get_llm_routing_client()
+                        if routing_client.get_fallback_handle(active_llm_config.handle):
+                            await routing_client.record_success(active_llm_config.handle)
                         # If you've reached this point without an error, break out of retry loop
                         break
                     except ValueError as e:
@@ -1061,59 +1061,34 @@ class LettaAgentV3(LettaAgentV2):
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
                         raise e
                     except (LLMRateLimitError, LLMServerError, LLMProviderOverloaded) as e:
-                        if is_auto_mode and is_primary:
-                            routing_client = await get_llm_routing_client()
-                            await routing_client.record_failure(primary_handle)
+                        # Check if there's a fallback route for the current model
+                        routing_client = await get_llm_routing_client()
+                        current_handle = active_llm_config.handle
+                        fallback_handle = routing_client.get_fallback_handle(current_handle)
 
-                            fallback_config = await routing_client.get_fallback_config(
+                        if fallback_handle:
+                            await routing_client.record_failure(current_handle)
+
+                            fallback_config = await routing_client.get_fallback_config_for_handle(
+                                fallback_handle=fallback_handle,
                                 stored_llm_config=self.agent_state.llm_config,
                                 actor=self.actor,
                             )
                             self.logger.warning(
-                                f"[AUTO MODE]: primary {primary_handle} failed ({type(e).__name__}), falling back to {fallback_config.handle}"
+                                f"[LLM ROUTER]: {current_handle} failed ({type(e).__name__}), falling back to {fallback_config.handle}"
                             )
-                            fallback_client = LLMClient.create(
+
+                            # Switch to fallback for this attempt and any subsequent retries (e.g. compaction)
+                            active_llm_config = fallback_config
+                            active_llm_client = LLMClient.create(
                                 provider_type=fallback_config.model_endpoint_type,
                                 put_inner_thoughts_first=True,
                                 actor=self.actor,
                             )
-                            fallback_request_data = fallback_client.build_request_data(
-                                agent_type=self.agent_state.agent_type,
-                                messages=messages,
-                                llm_config=fallback_config,
-                                tools=valid_tools,
-                                force_tool_call=force_tool_call,
-                                requires_subsequent_tool_call=self._require_tool_call,
-                                tool_return_truncation_chars=self._compute_tool_return_truncation_chars(),
-                            )
-                            fallback_adapter = SimpleLLMRequestAdapter(
-                                llm_client=fallback_client,
-                                llm_config=fallback_config,
-                                call_type=LLMCallType.agent_step,
-                                agent_id=self.agent_state.id,
-                                agent_tags=self.agent_state.tags,
-                                run_id=run_id,
-                                org_id=self.actor.organization_id,
-                                user_id=self.actor.id,
-                            )
-                            fallback_invocation = fallback_adapter.invoke_llm(
-                                request_data=fallback_request_data,
-                                messages=messages,
-                                tools=valid_tools,
-                                use_assistant_message=False,
-                                requires_approval_tools=self.tool_rules_solver.get_requires_approval_tools(
-                                    set([t["name"] for t in valid_tools])
-                                )
-                                + [ct.name for ct in self.client_tools],
-                                step_id=step_id,
-                                actor=self.actor,
-                            )
-                            async for chunk in fallback_invocation:
-                                if fallback_adapter.supports_token_streaming():
-                                    if include_return_message_types is None or chunk.message_type in include_return_message_types:
-                                        yield chunk
-                            llm_adapter = fallback_adapter
-                            break
+                            llm_adapter.llm_client = active_llm_client
+                            llm_adapter.llm_config = active_llm_config
+                            is_primary = False
+                            continue
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
                         raise e
                     except LLMError as e:
