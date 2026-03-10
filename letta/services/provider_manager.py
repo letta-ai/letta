@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple, Union
 from sqlalchemy import and_, select
 
 from letta.log import get_logger
+from letta.model_aliases import get_deprecated_google_handle_replacement
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -998,6 +999,17 @@ class ProviderManager:
 
         # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
+
+        if not model:
+            redirected_handle = get_deprecated_google_handle_replacement(handle)
+            if redirected_handle != handle:
+                logger.warning(
+                    "Model handle '%s' has been discontinued by Google; automatically using '%s' instead.",
+                    handle,
+                    redirected_handle,
+                )
+                handle = redirected_handle
+                model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
 
         if not model:
             # Model not in DB - check if it's from a BYOK provider
