@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
+from letta.model_aliases import get_deprecated_google_handle_replacement, get_deprecated_google_model_replacement
 from letta.schemas.enums import AgentType, ProviderCategory
 from letta.schemas.response_format import ResponseFormatUnion
 
@@ -128,6 +129,28 @@ class LLMConfig(BaseModel):
         description="Whether to return token IDs for all LLM generations via SGLang native endpoint. "
         "Required for multi-turn RL training with loss masking. Only works with SGLang provider.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def redirect_deprecated_google_models(cls, values):
+        model = values.get("model")
+        model_endpoint_type = values.get("model_endpoint_type")
+        redirected_model = get_deprecated_google_model_replacement(model_endpoint_type=model_endpoint_type, model=model)
+
+        if redirected_model != model:
+            logger.warning(
+                "Model '%s' has been discontinued by Google; automatically using '%s' instead.",
+                model,
+                redirected_model,
+            )
+            values["model"] = redirected_model
+
+            handle = values.get("handle")
+            redirected_handle = get_deprecated_google_handle_replacement(handle)
+            if redirected_handle != handle:
+                values["handle"] = redirected_handle
+
+        return values
 
     @model_validator(mode="before")
     @classmethod
