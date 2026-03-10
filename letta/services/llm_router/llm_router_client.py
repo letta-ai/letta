@@ -58,6 +58,7 @@ def _build_baseten_config() -> "LLMConfig":
         handle="baseten/glm-5",
         provider_name="baseten",
         provider_category=ProviderCategory.base,
+        strict=True,
     )
 
 
