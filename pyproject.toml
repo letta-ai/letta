@@ -43,7 +43,7 @@ dependencies = [
     "llama-index>=0.12.2",
     "llama-index-embeddings-openai>=0.3.1",
     "anthropic>=0.75.0",
-    "letta-client>=1.6.3",
+    "letta-client>=1.7.12",
     "openai[realtime]>=2.24.0",
     "opentelemetry-api==1.30.0",
     "opentelemetry-sdk==1.30.0",

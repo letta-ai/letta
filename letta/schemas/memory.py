@@ -374,6 +374,16 @@ class Memory(BaseModel, validate_assignment=True):
         s.write("</memory_filesystem>")
 
         # Render explicit skill metadata block (agent-scoped + client-provided).
+        skills_str = self.compile_available_skills(client_skills=client_skills)
+        if skills_str:
+            s.write(skills_str)
+
+    def compile_available_skills(self, client_skills=None) -> str:
+        """Render the <available_skills> block from agent-scoped and client-provided skills.
+
+        Returns the full string including leading newlines and XML tags, or an
+        empty string if there are no skills to render.
+        """
         all_skill_entries: list[tuple[str, str, str]] = []  # (name, description, location)
         seen_skill_names: set[str] = set()
 
@@ -410,18 +420,22 @@ class Memory(BaseModel, validate_assignment=True):
                 location = cs.location or ""
                 all_skill_entries.append((name, desc, location))
 
-        if all_skill_entries:
-            all_skill_entries.sort(key=lambda e: e[0])
-            s.write("\n\n<available_skills>\n")
-            for name, desc, location in all_skill_entries:
-                s.write("<skill>\n")
-                s.write(f"<name>{name}</name>\n")
-                if desc:
-                    s.write(f"<description>{desc}</description>\n")
-                if location:
-                    s.write(f"<location>{location}</location>\n")
-                s.write("</skill>\n")
-            s.write("</available_skills>")
+        if not all_skill_entries:
+            return ""
+
+        s = StringIO()
+        all_skill_entries.sort(key=lambda e: e[0])
+        s.write("\n\n<available_skills>\n")
+        for name, desc, location in all_skill_entries:
+            s.write("<skill>\n")
+            s.write(f"<name>{name}</name>\n")
+            if desc:
+                s.write(f"<description>{desc}</description>\n")
+            if location:
+                s.write(f"<location>{location}</location>\n")
+            s.write("</skill>\n")
+        s.write("</available_skills>")
+        return s.getvalue()
 
     def _render_directories_common(self, s: StringIO, sources, max_files_open):
         s.write("\n\n<directories>\n")

@@ -791,12 +791,13 @@ async def recompile_conversation(
                 detail="Conversation does not have a system message in the first position.",
             )
 
-        temp_message = existing_system_message.model_copy(update={"text": compiled_content})
+        from letta.schemas.message import MessageUpdate
+
+        message_update = MessageUpdate(content=compiled_content)
         await server.message_manager.update_message_by_id_async(
             message_id=existing_system_message.id,
-            message_update=temp_message,
+            message_update=message_update,
             actor=actor,
-            project_id=conversation.project_id,
         )
 
     return compiled_content
