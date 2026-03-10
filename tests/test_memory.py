@@ -407,6 +407,69 @@ def test_compile_git_structured_dedup_client_skills():
     assert out.count("<name>my-skill</name>") == 1
 
 
+def test_compile_git_structured_client_skills_omits_empty_description_location_tags():
+    """Client skills with blank description/location should still render name but omit empty XML tags."""
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="blanky", description="", location=""),
+    ]
+
+    out = m.compile(client_skills=client_skills)
+
+    assert "<available_skills>" in out
+    assert "<name>blanky</name>" in out
+    assert "<description></description>" not in out
+    assert "<location></location>" not in out
+
+
+def test_compile_available_skills_standalone():
+    """compile_available_skills() returns the skills block without recompiling the full prompt."""
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(label="skills/my-skill", value="skill", limit=100, description="Agent skill."),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="client-only", description="From client.", location="/tmp/client-only/SKILL.md"),
+    ]
+
+    result = m.compile_available_skills(client_skills=client_skills)
+
+    assert "<available_skills>" in result
+    assert "</available_skills>" in result
+    # Agent skill present
+    assert "<name>my-skill</name>" in result
+    assert "<description>Agent skill.</description>" in result
+    # Client skill present
+    assert "<name>client-only</name>" in result
+    assert "<description>From client.</description>" in result
+    assert "<location>/tmp/client-only/SKILL.md</location>" in result
+
+    # No skills → empty string
+    m_empty = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[Block(label="system/human", value="human data", limit=100)],
+    )
+    assert m_empty.compile_available_skills() == ""
+    assert m_empty.compile_available_skills(client_skills=[]) == ""
+
+
 def test_compile_git_structured_recompile_after_block_edit():
     """Editing a block value should produce a different compile() output.
 

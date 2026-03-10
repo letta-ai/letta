@@ -744,6 +744,8 @@ class LettaAgentV2(BaseAgentV2):
            This avoids rebuilding the system prompt on every step due to dynamic metadata (e.g. message counts),
            which can bust prefix caching.
         2) Scrub inner thoughts from messages.
+        3) If client_skills are present, surgically update just the <available_skills> section
+           without rebuilding the full system prompt (preserves prefix cache).
 
         Args:
             in_context_messages: Current in-context messages
@@ -766,9 +768,56 @@ class LettaAgentV2(BaseAgentV2):
             except Exception:
                 raise
 
+        # Surgically update the <available_skills> section when client_skills are
+        # present without triggering a full system prompt rebuild (preserves prefix cache).
+        if self.client_skills:
+            in_context_messages = await self._update_system_message_skills(in_context_messages)
+
         # Always scrub inner thoughts regardless of system prompt refresh
         in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, self.agent_state.llm_config)
         return in_context_messages
+
+    @trace_method
+    async def _update_system_message_skills(self, in_context_messages: list[Message]) -> list[Message]:
+        """Surgically update the <available_skills> section in the system message.
+
+        This avoids a full system prompt rebuild (which would change timestamps and
+        bust prefix caching) by only replacing the skills portion of the prompt.
+        """
+        import re
+
+        if not in_context_messages:
+            return in_context_messages
+
+        system_message = in_context_messages[0]
+        old_text = system_message.content[0].text
+
+        # Compile the new skills section from agent blocks + client skills
+        new_skills = self.agent_state.memory.compile_available_skills(client_skills=self.client_skills)
+
+        # Replace existing <available_skills>...</available_skills> if present
+        pattern = re.compile(r"\n*<available_skills>.*?</available_skills>", re.DOTALL)
+        if pattern.search(old_text):
+            new_text = pattern.sub(new_skills, old_text)
+        elif new_skills:
+            # No existing skills section — insert after </memory_filesystem> if present
+            if "</memory_filesystem>" in old_text:
+                new_text = old_text.replace("</memory_filesystem>", "</memory_filesystem>" + new_skills)
+            else:
+                # Fallback: insert before <memory_metadata>
+                # Strip leading newlines from new_skills to avoid doubling up with
+                # the existing whitespace before <memory_metadata>.
+                new_text = old_text.replace("<memory_metadata>", new_skills.lstrip("\n") + "\n\n<memory_metadata>")
+        else:
+            return in_context_messages
+
+        if new_text == old_text:
+            return in_context_messages
+
+        new_system_message = await self.message_manager.update_message_by_id_async(
+            system_message.id, message_update=MessageUpdate(content=new_text), actor=self.actor
+        )
+        return [new_system_message, *in_context_messages[1:]]
 
     @trace_method
     async def _rebuild_memory(

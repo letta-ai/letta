@@ -875,7 +875,7 @@ class LettaAgentV3(LettaAgentV2):
             # NOTE: We skip system prompt refresh during normal steps to preserve prefix caching.
             # The system prompt is only rebuilt after compaction or message reset.
             try:
-                messages = await self._refresh_messages(messages, force_system_prompt_refresh=False)
+                messages = await self._refresh_messages(messages)
             except Exception as e:
                 self.logger.warning(f"Failed to refresh messages at step start: {e}")
 
