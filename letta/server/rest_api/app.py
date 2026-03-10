@@ -775,7 +775,7 @@ def create_application() -> "FastAPI":
     @app.exception_handler(LLMError)
     async def llm_error_handler(request: Request, exc: LLMError):
         return JSONResponse(
-            status_code=502,
+            status_code=500,
             content={
                 "error": {
                     "type": "llm_error",
