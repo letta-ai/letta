@@ -14,6 +14,7 @@ def get_default_summarizer_model(provider_type: ProviderType) -> str | None:
         ProviderType.anthropic: "anthropic/claude-haiku-4-5",
         ProviderType.openai: "openai/gpt-5-mini",
         ProviderType.google_ai: "google_ai/gemini-2.5-flash",
+        ProviderType.letta: "zai/glm-5",
     }
     return summarizer_defaults.get(provider_type)
 
