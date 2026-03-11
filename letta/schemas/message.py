@@ -2115,7 +2115,7 @@ class Message(BaseMessage):
     def to_google_dict(
         self,
         current_model: str,
-        put_inner_thoughts_in_kwargs: bool = False,
+        put_inner_thoughts_in_kwargs: bool = True,
         # if true, then treat the content field as AssistantMessage
         native_content: bool = False,
         strip_request_heartbeat: bool = False,
@@ -2395,7 +2395,7 @@ class Message(BaseMessage):
     def to_google_dicts_from_list(
         messages: List[Message],
         current_model: str,
-        put_inner_thoughts_in_kwargs: bool = False,
+        put_inner_thoughts_in_kwargs: bool = True,
         native_content: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
     ):
