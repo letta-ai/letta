@@ -220,13 +220,23 @@ class ChatGPTOAuthClient(LLMClientBase):
             else:
                 tool_choice = "auto"
 
+        # Handle "fast" model variants → real model + priority service tier
+        model = llm_config.model
+        service_tier = None
+        if model.endswith("-fast"):
+            model = model.removesuffix("-fast")
+            service_tier = "priority"
+
         # Build request payload for ChatGPT backend
         data: Dict[str, Any] = {
-            "model": llm_config.model,
+            "model": model,
             "input": filtered_input,
             "store": False,  # Required for stateless operation
             "stream": True,  # ChatGPT backend requires streaming
         }
+
+        if service_tier:
+            data["service_tier"] = service_tier
 
         if instructions:
             data["instructions"] = instructions
