@@ -17,6 +17,10 @@ _VALID_REASONS = {
 _state_lock = threading.Lock()
 _current_reason = "warming"
 
+# Tracks which gate sources are currently active. Recovery to "ready" only happens
+# when all sources have cleared — prevents one gate recovering while another is still firing.
+_active_degradation_sources: set = set()
+
 
 def initialize_readiness_state(reason: str = "warming", source: str = "startup") -> str:
     """Initialize readiness telemetry state without changing probe behavior."""
@@ -55,3 +59,27 @@ def set_readiness_state(reason: str, source: str = "unknown") -> str:
 def get_readiness_state() -> str:
     with _state_lock:
         return _current_reason
+
+
+def mark_degraded(source: str) -> None:
+    """Register a degradation source and transition to degraded state.
+
+    Multiple gates can independently call mark_degraded. The pod stays degraded
+    until all sources have called clear_degraded.
+    """
+    with _state_lock:
+        _active_degradation_sources.add(source)
+
+    set_readiness_state("degraded", source=source)
+
+
+def clear_degraded(source: str) -> None:
+    """Deregister a degradation source. Recovers to ready only when all sources clear."""
+    with _state_lock:
+        _active_degradation_sources.discard(source)
+        remaining = set(_active_degradation_sources)
+
+    if not remaining:
+        set_readiness_state("ready", source=f"{source}_recovered")
+    else:
+        logger.debug(f"Readiness gate cleared source={source}, still degraded by: {remaining}")
