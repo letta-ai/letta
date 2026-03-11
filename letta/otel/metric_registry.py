@@ -307,6 +307,18 @@ class MetricRegistry:
             ),
         )
 
+    @property
+    def asyncio_task_count_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "asyncio_task_count",
+            partial(
+                self._meter.create_gauge,
+                name="asyncio_task_count",
+                description="Number of active asyncio tasks on the event loop.",
+                unit="1",
+            ),
+        )
+
     # (includes operation)
     @property
     def redis_timeout_counter(self) -> Counter:
