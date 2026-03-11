@@ -62,19 +62,22 @@ async def build_summarizer_llm_config(
     """
     from letta.schemas.enums import ProviderType
 
-    # Auto mode agents: use the LLM router to resolve primary vs fallback
-    if not summarizer_config.model and agent_llm_config.provider_name in ("letta", "baseten"):
+    # Auto mode agents: resolve the placeholder config upfront so every fallback path
+    # returns a working config instead of the unresolved placeholder (model_endpoint='').
+    if agent_llm_config.handle and agent_llm_config.handle.startswith("letta/auto"):
         try:
             from letta.services.llm_router import get_llm_routing_client
 
             routing_client = await get_llm_routing_client()
-            resolved_config, _, _ = await routing_client.resolve_auto_mode_config(
+            agent_llm_config, _, _ = await routing_client.resolve_auto_mode_config(
                 stored_llm_config=agent_llm_config,
                 actor=actor,
             )
-            return resolved_config
         except Exception as e:
-            logger.warning(f"Failed to resolve auto mode config for summarizer: {e}. Falling back to defaults.")
+            logger.warning(f"Failed to resolve auto mode config for summarizer: {e}. Falling back to zai/glm-5.")
+            from letta.services.provider_manager import ProviderManager
+
+            agent_llm_config = await ProviderManager().get_llm_config_from_handle("zai/glm-5", actor)
 
     # If no summarizer model specified, use lightweight provider-specific defaults
     if not summarizer_config.model:
@@ -83,7 +86,6 @@ async def build_summarizer_llm_config(
             provider_type = ProviderType(provider_name)
             default_model = get_default_summarizer_model(provider_type=provider_type)
             if default_model:
-                # Use default model
                 summarizer_config = summarizer_config.model_copy(update={"model": default_model})
         except (ValueError, TypeError):
             pass  # Unknown provider - will fall back to agent's model below
@@ -98,7 +100,6 @@ async def build_summarizer_llm_config(
 
         provider_manager = ProviderManager()
         try:
-            # automatically sets the context window to the max available for the summarizer model
             base = await provider_manager.get_llm_config_from_handle(
                 handle=summarizer_config.model,
                 actor=actor,
