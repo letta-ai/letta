@@ -212,7 +212,7 @@ class EventLoopWatchdog:
             if current_lag_ms < rs.event_loop_lag_threshold_ms:
                 return
 
-            from letta.monitoring.readiness_state import get_readiness_state, set_readiness_state
+            from letta.monitoring.readiness_state import get_readiness_state, mark_degraded
 
             if get_readiness_state() not in ("ready", "degraded"):
                 return  # Don't override draining/warming/manual_disable
@@ -224,7 +224,7 @@ class EventLoopWatchdog:
 
             elapsed = now - self._degraded_since
             if elapsed >= rs.degraded_stabilization_seconds and get_readiness_state() == "ready":
-                set_readiness_state("degraded", source=f"event_loop_lag:{current_lag_ms:.0f}ms")
+                mark_degraded(f"event_loop_lag:{current_lag_ms:.0f}ms")
         except Exception:
             pass  # Readiness gating must never crash the watchdog
 
@@ -235,7 +235,7 @@ class EventLoopWatchdog:
             if not rs.enforcement_enabled or not rs.event_loop_lag_gating_enabled:
                 return
 
-            from letta.monitoring.readiness_state import get_readiness_state, set_readiness_state
+            from letta.monitoring.readiness_state import clear_degraded, get_readiness_state
 
             self._degraded_since = None  # Reset overload timer
 
@@ -249,7 +249,7 @@ class EventLoopWatchdog:
 
             elapsed = now - self._recovery_since
             if elapsed >= rs.recovery_stabilization_seconds:
-                set_readiness_state("ready", source="event_loop_lag_recovered")
+                clear_degraded("event_loop_lag")
                 self._recovery_since = None
         except Exception:
             pass  # Readiness gating must never crash the watchdog

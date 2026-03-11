@@ -199,6 +199,9 @@ class StreamingService:
                     admission_wait_ms,
                     attributes={"route_class": route_class},
                 )
+                from letta.monitoring.load_gate import get_load_gate
+
+                get_load_gate().on_admission_wait(admission_wait_ms)
 
         # create run if tracking is enabled
         run = None
@@ -430,6 +433,13 @@ class StreamingService:
             )
 
             in_flight_counter.add(1, attributes=in_flight_attrs)
+            from letta.monitoring.load_gate import get_load_gate
+
+            _load_gate = get_load_gate()
+            if is_background:
+                _load_gate.on_bg_start()
+            else:
+                _load_gate.on_fg_start()
 
             try:
                 stream = agent_loop.stream(
@@ -491,6 +501,7 @@ class StreamingService:
                 MetricRegistry().request_timeout_counter.add(1, attributes=in_flight_attrs)
                 MetricRegistry().provider_timeout_counter.add(1, attributes={"provider": provider_name})
                 from letta.settings import readiness_settings
+
                 if readiness_settings.enforcement_enabled:
                     set_readiness_state(reason="degraded_dependency", source="provider_timeout")
                 run_status = RunStatus.failed
@@ -624,6 +635,10 @@ class StreamingService:
                     )
 
                 in_flight_counter.add(-1, attributes=in_flight_attrs)
+                if is_background:
+                    _load_gate.on_bg_end()
+                else:
+                    _load_gate.on_fg_end()
 
         return error_aware_stream()
 
