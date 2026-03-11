@@ -1,7 +1,11 @@
 import base64
 import json
+import re
 from datetime import datetime
 from typing import Any
+
+# Precompiled regex for surrogate range U+D800..U+DFFF — much faster than char-by-char ord() loop
+_SURROGATE_RE = re.compile("[\ud800-\udfff]")
 
 
 def sanitize_unicode_surrogates(value: Any) -> Any:
@@ -25,11 +29,11 @@ def sanitize_unicode_surrogates(value: Any) -> Any:
         The sanitized value with surrogate characters removed from all strings
     """
     if isinstance(value, str):
-        # Remove lone surrogate characters (U+D800 to U+DFFF) which are invalid in UTF-8
-        # Using character filtering is more reliable than encode/decode for edge cases
+        # Remove lone surrogate characters (U+D800 to U+DFFF) which are invalid in UTF-8.
+        # re.sub runs in C and is orders of magnitude faster than a char-by-char Python loop,
+        # which was blocking the asyncio event loop on large LLM payloads.
         try:
-            # Filter out any character in the surrogate range
-            return "".join(char for char in value if not (0xD800 <= ord(char) <= 0xDFFF))
+            return _SURROGATE_RE.sub("", value)
         except Exception:
             # Fallback: try encode with errors="replace" which replaces surrogates with �
             try:
