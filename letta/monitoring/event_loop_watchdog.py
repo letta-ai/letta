@@ -145,6 +145,12 @@ class EventLoopWatchdog:
                     except Exception:
                         pass
 
+                if task_count >= 0:
+                    try:
+                        MetricRegistry().asyncio_task_count_gauge.set(task_count)
+                    except Exception:
+                        pass
+
                 # ALWAYS log every check to prove watchdog is alive
                 logger.debug(
                     f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, current_lag={current_lag:.2f}s, "
