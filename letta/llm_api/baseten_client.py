@@ -81,10 +81,6 @@ class BasetenClient(OpenAIClient):
                 for field in ("reasoning_content_signature", "redacted_reasoning_content", "omitted_reasoning_content"):
                     msg.pop(field, None)
 
-        # Special tokens are used as turn delimiters; stop generation before the model
-        # starts predicting the next turn (prevents "<|user|>" leaking into responses)
-        data["stop"] = ["<|user|>", "<|assistant|>", "<|observation|>"]
-
         return data
 
     def _build_client_kwargs(self, llm_config: LLMConfig) -> dict:
