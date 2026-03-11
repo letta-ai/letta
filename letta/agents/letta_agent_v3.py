@@ -1280,7 +1280,7 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Enforce parallel_tool_calls=false by truncating to first tool call
                 # Some providers (e.g. Gemini) don't respect this setting via API, so we enforce it client-side
-                if len(tool_calls) > 1 and not self.agent_state.llm_config.parallel_tool_calls:
+                if len(tool_calls) > 1 and not active_llm_config.parallel_tool_calls:
                     self.logger.warning(
                         f"LLM returned {len(tool_calls)} tool calls but parallel_tool_calls=false. "
                         f"Truncating to first tool call: {tool_calls[0].function.name}"
