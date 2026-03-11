@@ -661,6 +661,11 @@ class OpenAIClient(LLMClientBase):
         # If set, then in the backend "medium" thinking is turned on
         # request_data["reasoning_effort"] = "medium"
 
+        # GLM-5 will sometimes send turn delimiters; stop generation before the model
+        # starts predicting the next turn (prevents "<|user|>" leaking into responses)
+        if (model or "").lower().endswith("glm-5"):
+            request_data["stop"] = ["<|user|>", "<|assistant|>", "<|observation|>"]
+
         # Add OpenRouter reasoning configuration via extra_body
         if is_openrouter and llm_config.enable_reasoner:
             reasoning_config = {}
