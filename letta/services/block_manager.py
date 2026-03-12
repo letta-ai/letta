@@ -29,6 +29,8 @@ from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
+PROMPT_AFFECTING_BLOCK_FIELDS = {"description", "label", "limit", "read_only", "value"}
+
 
 def validate_block_limit_constraint(update_data: dict, existing_block: BlockModel) -> None:
     """
@@ -277,12 +279,35 @@ class BlockManager:
             # Validate limit constraints before updating
             validate_block_limit_constraint(update_data, block)
 
-            for key, value in update_data.items():
-                setattr(block, key, value)
-
-            await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-
+            current_tags: Optional[List[str]] = None
             if new_tags is not None:
+                result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                current_tags = sorted(row[0] for row in result.fetchall())
+
+            has_scalar_changes = any(getattr(block, key) != value for key, value in update_data.items())
+            has_prompt_changes = any(
+                key in PROMPT_AFFECTING_BLOCK_FIELDS and getattr(block, key) != value for key, value in update_data.items()
+            )
+            has_tag_changes = new_tags is not None and sorted(new_tags) != (current_tags or [])
+
+            if not has_scalar_changes and not has_tag_changes:
+                logger.debug(f"Skipping no-op block update for block {block_id}")
+                pydantic_block = block.to_pydantic()
+
+                if current_tags is None:
+                    result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                    current_tags = [row[0] for row in result.fetchall()]
+
+                pydantic_block.tags = current_tags
+                return pydantic_block
+
+            if has_scalar_changes:
+                for key, value in update_data.items():
+                    setattr(block, key, value)
+
+                await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+
+            if has_tag_changes:
                 await self._replace_block_pivot_rows_async(
                     session,
                     BlocksTags.__table__,
@@ -301,7 +326,8 @@ class BlockManager:
             # await session.commit()
 
         # Recompile system prompts for all agents connected to this block
-        await self._rebuild_system_prompts_for_connected_agents(block_id, actor)
+        if has_prompt_changes:
+            await self._rebuild_system_prompts_for_connected_agents(block_id, actor)
 
         return pydantic_block
 
