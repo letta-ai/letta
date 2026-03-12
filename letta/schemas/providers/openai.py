@@ -198,7 +198,9 @@ class OpenAIProvider(Provider):
 
             # We'll set the model endpoint based on the base URL
             # Note: openai-proxy just means that the model is using the OpenAIProvider
-            if self.base_url != "https://api.openai.com/v1":
+            if self.base_url.endswith("api.baseten.co/environments/production/sync/v1"):
+                handle = self.get_handle(model_name, base_name="baseten")
+            elif self.base_url != "https://api.openai.com/v1":
                 handle = self.get_handle(model_name, base_name="openai-proxy")
             else:
                 handle = self.get_handle(model_name)
