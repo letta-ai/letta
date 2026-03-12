@@ -27255,6 +27255,314 @@
           }
         }
       }
+    },
+    "/v1/sandboxes": {
+      "post": {
+        "description": "Create a new Modal Sandbox that runs letta remote automatically",
+        "summary": "Create Sandbox",
+        "tags": ["sandboxes"],
+        "parameters": [],
+        "operationId": "sandboxes.createSandbox",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  },
+                  "connectionName": {
+                    "type": "string"
+                  }
+                },
+                "required": ["agentId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sandboxId": {
+                      "type": "string"
+                    },
+                    "deviceId": {
+                      "type": "string"
+                    },
+                    "connectionName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sandboxId", "deviceId", "connectionName"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "List all sandboxes for the organization",
+        "summary": "List Sandboxes",
+        "tags": ["sandboxes"],
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "sandboxes.listSandboxes",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sandboxes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "sandboxId": {
+                            "type": "string"
+                          },
+                          "agentId": {
+                            "type": "string"
+                          },
+                          "connectionName": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "organizationId": {
+                            "type": "string"
+                          },
+                          "connectionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "podId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "connectedAt": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "lastHeartbeat": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "lastSeenAt": {
+                            "type": "number"
+                          },
+                          "firstSeenAt": {
+                            "type": "number"
+                          },
+                          "currentMode": {
+                            "type": "string",
+                            "enum": [
+                              "default",
+                              "acceptEdits",
+                              "plan",
+                              "bypassPermissions"
+                            ]
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "properties": {
+                              "os": {
+                                "type": "string"
+                              },
+                              "lettaCodeVersion": {
+                                "type": "string"
+                              },
+                              "nodeVersion": {
+                                "type": "string"
+                              },
+                              "workingDirectory": {
+                                "type": "string"
+                              },
+                              "gitBranch": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sandboxId",
+                          "agentId",
+                          "connectionName",
+                          "deviceId",
+                          "organizationId",
+                          "connectionId",
+                          "podId",
+                          "connectedAt",
+                          "lastHeartbeat",
+                          "lastSeenAt",
+                          "firstSeenAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["sandboxes"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandboxes/{sandboxId}/terminate": {
+      "post": {
+        "description": "Terminate a Modal Sandbox",
+        "summary": "Terminate Sandbox",
+        "tags": ["sandboxes"],
+        "parameters": [
+          {
+            "name": "sandboxId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "sandboxes.terminateSandbox",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
