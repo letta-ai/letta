@@ -356,24 +356,60 @@ def simple_formatter(
         [message for message in messages if message.role != MessageRole.system or include_system],
         tool_return_truncation_chars=tool_return_truncation_chars,
     )
-    return "<start_transcript>\n" + "\n".join(json.dumps(msg) for msg in parsed_messages) + "\n<end_transcript>\n. Generate the summary."
+
+    # Format as compact plaintext instead of JSON to reduce token overhead.
+    # Falls back to json.dumps if any message has an unexpected structure.
+    lines = []
+    for msg in parsed_messages:
+        try:
+            role = msg.get("role", "?") if isinstance(msg, dict) else "?"
+            content = msg.get("content") if isinstance(msg, dict) else None
+            # Normalize list-of-blocks content (multimodal) to string
+            if isinstance(content, list):
+                content = " ".join(b.get("text", str(b)) if isinstance(b, dict) else str(b) for b in content)
+            content = content or ""
+            tool_calls = msg.get("tool_calls") if isinstance(msg, dict) else None
+            if tool_calls and isinstance(tool_calls, list):
+                call_parts = []
+                for tc in tool_calls:
+                    fn = (tc.get("function") or {}) if isinstance(tc, dict) else {}
+                    call_parts.append(f"{fn.get('name', '?')}({fn.get('arguments', '')})")
+                content = (content + " " if content else "") + "-> " + ", ".join(call_parts)
+            if content:
+                lines.append(f"[{role}] {content}")
+        except Exception:
+            lines.append(json.dumps(msg))
+
+    return "<start_transcript>\n" + "\n".join(lines) + "\n<end_transcript>\n. Generate the summary."
 
 
 def middle_truncate_text(
     text: str,
-    budget_chars: int,
+    budget_bytes: int,
     head_frac: float = 0.3,
     tail_frac: float = 0.3,
 ) -> tuple[str, int]:
-    """Middle-truncate a string to fit within a character budget.
+    """Middle-truncate a string to fit within a byte budget.
 
-    Keeps the first `head_frac` and last `tail_frac` portions (by budget chars)
-    and drops the middle. Returns (truncated_text, dropped_char_count).
+    Uses UTF-8 byte length to determine whether truncation is needed, which
+    correctly accounts for multi-byte characters.
+    The byte budget is converted to a character budget using the
+    text's actual bytes-per-char ratio, then slicing is done on characters
+    to avoid splitting multi-byte sequences.
 
-    Fractions are relative to budget, not original text length.
+    Keeps the first ``head_frac`` and last ``tail_frac`` portions and drops
+    the middle.  Returns (truncated_text, dropped_char_count).
     """
-    if budget_chars <= 0 or len(text) <= budget_chars:
+    if budget_bytes <= 0:
         return text, 0
+
+    text_bytes = len(text.encode("utf-8"))
+    if text_bytes <= budget_bytes:
+        return text, 0
+
+    # Convert byte budget -> char budget
+    bytes_per_char = text_bytes / len(text) if text else 1.0
+    budget_chars = max(1, int(budget_bytes / bytes_per_char))
 
     head_len = max(0, int(budget_chars * head_frac))
     tail_len = max(0, int(budget_chars * tail_frac))
@@ -561,20 +597,23 @@ async def simple_summary(
             try:
                 summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
             except Exception as fallback_error_a:
-                # Fallback B: hard-truncate the user transcript to fit a conservative char budget
+                # Fallback B: hard-truncate the user transcript to fit a conservative byte budget.
+                # We use bytes (not chars) to be more applicable across languages.
                 logger.warning(f"Clamped tool returns still overflowed ({fallback_error_a}). Falling back to transcript truncation.")
                 logger.info(f"Full fallback summarization payload: {request_data}")
 
-                # Compute a conservative char budget for the transcript based on context window
+                # Compute a conservative byte budget for the transcript based on context window
                 try:
-                    budget_chars = int(summarizer_llm_config.context_window * 0.6 * 4)
+                    budget_bytes = int(summarizer_llm_config.context_window * 0.6 * 4)
                 except Exception:
-                    budget_chars = 48000
+                    budget_bytes = 48000
 
-                overhead = len(system_prompt) + (len(MESSAGE_SUMMARY_REQUEST_ACK) if include_ack else 0) + 1024
-                budget_chars = max(2000, budget_chars - overhead)
+                overhead_bytes = (
+                    len(system_prompt.encode("utf-8")) + (len(MESSAGE_SUMMARY_REQUEST_ACK.encode("utf-8")) if include_ack else 0) + 1024
+                )
+                budget_bytes = max(2000, budget_bytes - overhead_bytes)
 
-                truncated_transcript, _ = middle_truncate_text(summary_transcript, budget_chars=budget_chars, head_frac=0.3, tail_frac=0.3)
+                truncated_transcript, _ = middle_truncate_text(summary_transcript, budget_bytes=budget_bytes, head_frac=0.3, tail_frac=0.3)
 
                 if include_ack:
                     input_messages = [

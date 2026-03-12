@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
+from letta.errors import ContextWindowExceededError
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -261,6 +262,8 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 tools=tools,
             )
+        except ContextWindowExceededError:
+            raise
         except Exception as e:
             # Prompts for all and self mode should be similar --> can use original prompt
             logger.error(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
@@ -305,6 +308,10 @@ async def compact_messages(
                 run_id=run_id,
                 step_id=step_id,
             )
+        except ContextWindowExceededError:
+            # If sliding window failed because the transcript was too large for
+            # the summarizer's context window, falling back to all mode will fail harder.
+            raise
         except Exception as e:
             logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
             fallback_config = summarizer_config.model_copy(
