@@ -33,8 +33,6 @@ from letta.services.memory_repo.path_mapping import memory_block_label_from_mark
 
 logger = get_logger(__name__)
 
-_background_tasks: set[asyncio.Task] = set()
-
 
 def _is_syncable_block_markdown_path(path: str) -> bool:
     """Return whether a markdown path should be mirrored into block cache.
@@ -271,6 +269,7 @@ async def proxy_git_http(
 
     # Resolve org_id from the authenticated actor + agent and forward to memfs.
     agent_id = _parse_agent_id_from_repo_path(path)
+    sync_after_push_context: tuple[str, str] | None = None
     if agent_id is not None:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         # Authorization check: ensure the actor can access this agent.
@@ -282,6 +281,11 @@ async def proxy_git_http(
                 req_headers.pop(k, None)
         # Use the authenticated actor's org; AgentState may not carry an organization field.
         req_headers["X-Organization-Id"] = actor.organization_id
+
+        # Defer post-push sync until after the upstream response stream has fully
+        # completed, so memfs has finished persisting refs/objects.
+        if request.method == "POST" and path.endswith("git-receive-pack"):
+            sync_after_push_context = (actor.id, agent_id)
 
     logger.info(
         "proxy_git_http: method=%s path=%s parsed_agent_id=%s actor_id=%s has_user_id_hdr=%s x_org_hdr=%s",
@@ -309,25 +313,18 @@ async def proxy_git_http(
 
     resp_headers = _filter_out_hop_by_hop_headers(upstream.headers.items())
 
-    # If this was a push, trigger our sync.
-    if request.method == "POST" and path.endswith("git-receive-pack") and upstream.status_code < 400:
-        agent_id = _parse_agent_id_from_repo_path(path)
-        if agent_id is not None:
-            try:
-                actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-                # Authorization check: ensure the actor can access this agent.
-                await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor, include_relationships=[])
-                task = asyncio.create_task(_sync_after_push(actor.id, agent_id))
-                _background_tasks.add(task)
-                task.add_done_callback(_background_tasks.discard)
-            except Exception:
-                logger.exception("Failed to trigger post-push sync (agent_id=%s)", agent_id)
-
     async def _aclose_upstream_and_client() -> None:
         try:
             await upstream.aclose()
         finally:
             await client.aclose()
+
+        if sync_after_push_context is not None and upstream.status_code < 400:
+            actor_id, pushed_agent_id = sync_after_push_context
+            try:
+                await _sync_after_push(actor_id, pushed_agent_id)
+            except Exception:
+                logger.exception("Failed to trigger deferred post-push sync (agent_id=%s)", pushed_agent_id)
 
     return StreamingResponse(
         upstream.aiter_raw(),
