@@ -181,6 +181,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="raise")
     file_agents: Mapped[List["FileAgent"]] = relationship(
         "FileAgent",
+        primaryjoin="and_(Agent.id == foreign(FileAgent.agent_id), FileAgent.is_deleted == False)",
         back_populates="agent",
         cascade="all, delete-orphan",
         lazy="selectin",
