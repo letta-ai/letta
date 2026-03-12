@@ -663,8 +663,14 @@ class OpenAIClient(LLMClientBase):
 
         # GLM-5 will sometimes send turn delimiters; stop generation before the model
         # starts predicting the next turn (prevents "<|user|>" leaking into responses)
+        # also strip reasoning fields that providers like Fireworks reject as extra inputs
         if (model or "").lower().endswith("glm-5"):
             request_data["stop"] = ["<|user|>", "<|assistant|>", "<|observation|>"]
+            if "messages" in request_data:
+                for msg in request_data["messages"]:
+                    if isinstance(msg, dict):
+                        for field in ("reasoning_content_signature", "redacted_reasoning_content", "omitted_reasoning_content"):
+                            msg.pop(field, None)
 
         # Add OpenRouter reasoning configuration via extra_body
         if is_openrouter and llm_config.enable_reasoner:
