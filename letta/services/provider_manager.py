@@ -1062,7 +1062,10 @@ class ProviderManager:
         else:
             model_endpoint = f"https://api.{provider.provider_type.value}.com/v1"
 
-        # Construct the LLMConfig from the model and provider data
+        # Construct the LLMConfig from the model and provider data.
+        # SGLang providers get return_token_ids/return_logprobs=True so the native
+        # adapter is used and token IDs are returned for RL training.
+        is_sglang = provider.provider_type == ProviderType.sglang
         llm_config = LLMConfig(
             model=model.name,
             model_endpoint_type=model.model_endpoint_type,
@@ -1072,6 +1075,8 @@ class ProviderManager:
             provider_name=provider.name,
             provider_category=provider.provider_category,
             max_tokens=max_tokens,
+            return_token_ids=is_sglang,
+            return_logprobs=is_sglang,
         )
 
         return llm_config

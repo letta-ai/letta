@@ -1954,6 +1954,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "return_logprobs",
         "top_logprobs",
         "return_token_ids",
+        "tool_call_parser",
     }
     actual_llm_config_fields = set(llm_config_fields.keys())
     if actual_llm_config_fields != expected_llm_config_fields:

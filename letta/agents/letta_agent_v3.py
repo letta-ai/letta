@@ -282,11 +282,13 @@ class LettaAgentV3(LettaAgentV2):
 
         self.in_context_messages = curr_in_context_messages
 
-        # Check if we should use SGLang native adapter for multi-turn RL training
+        # Check if we should use SGLang native adapter for multi-turn RL training.
+        # Matches handles starting with "sglang/" OR providers named like "*sglang*"
+        # (e.g. "slime-sglang" used in training).
+        _handle = self.agent_state.llm_config.handle or ""
+        _provider = (self.agent_state.llm_config.provider_name or "").lower()
         use_sglang_native = (
-            self.agent_state.llm_config.return_token_ids
-            and self.agent_state.llm_config.handle
-            and self.agent_state.llm_config.handle.startswith("sglang/")
+            self.agent_state.llm_config.return_token_ids and _handle and (_handle.startswith("sglang/") or "sglang" in _provider)
         )
         self.return_token_ids = use_sglang_native
 
@@ -295,6 +297,7 @@ class LettaAgentV3(LettaAgentV2):
             llm_adapter = SGLangNativeAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                model_settings=self.agent_state.model_settings,
                 call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
@@ -515,6 +518,7 @@ class LettaAgentV3(LettaAgentV2):
             llm_adapter = SGLangNativeAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                model_settings=self.agent_state.model_settings,
                 call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,

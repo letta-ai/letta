@@ -44,7 +44,7 @@ class SGLangProvider(Provider):
             configs.append(
                 LLMConfig(
                     model=model_name,
-                    model_endpoint_type="openai",  # SGLang is OpenAI-compatible
+                    model_endpoint_type="openai",  # SGLang exposes OpenAI-compatible API
                     model_endpoint=base_url,
                     model_wrapper=self.default_prompt_formatter,
                     context_window=model.get("max_model_len", 32768),
@@ -52,6 +52,7 @@ class SGLangProvider(Provider):
                     max_tokens=self.get_default_max_output_tokens(model_name),
                     provider_name=self.name,
                     provider_category=self.provider_category,
+
                 )
             )
 
