@@ -629,6 +629,13 @@ class SyncServer(object):
             except Exception:
                 pass
 
+            # Recompile the system prompt now that git_enabled=True, so the
+            # persisted system message uses the git-style memory rendering
+            # instead of the legacy <memory_blocks> format.
+            await self.agent_manager.rebuild_system_prompt_async(
+                agent_id=main_agent.id, actor=actor, force=True, update_timestamp=True
+            )
+
         log_event(name="start insert_files_into_context_window db")
         # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
         folder_ids_to_attach = request.folder_ids if request.folder_ids else request.source_ids
