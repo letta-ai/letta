@@ -129,6 +129,11 @@ class LLMConfig(BaseModel):
         description="Whether to return token IDs for all LLM generations via SGLang native endpoint. "
         "Required for multi-turn RL training with loss masking. Only works with SGLang provider.",
     )
+    tool_call_parser: Optional[str] = Field(
+        None,
+        description="SGLang tool call parser name (e.g. 'glm47', 'qwen25', 'hermes'). "
+        "Used by the SGLang native adapter to parse tool calls from raw model output.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -367,12 +372,23 @@ class LLMConfig(BaseModel):
             OpenAIModelSettings,
             OpenAIReasoning,
             OpenRouterModelSettings,
+            SGLangModelSettings,
             TogetherModelSettings,
             XAIModelSettings,
             ZAIModelSettings,
         )
 
         if self.model_endpoint_type == "openai":
+            handle = self.handle or ""
+            provider_name = (self.provider_name or "").lower()
+            if handle.startswith("sglang/") or "sglang" in provider_name:
+                return SGLangModelSettings(
+                    max_output_tokens=self.max_tokens or 4096,
+                    temperature=self.temperature,
+                    reasoning=OpenAIReasoning(reasoning_effort=self.reasoning_effort or "minimal"),
+                    strict=self.strict,
+                    tool_call_parser=self.tool_call_parser,
+                )
             return OpenAIModelSettings(
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,

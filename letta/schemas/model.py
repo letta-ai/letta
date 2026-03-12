@@ -130,6 +130,7 @@ class Model(LLMConfig, ModelBase):
         """Returns the JSON schema for the ModelSettings class corresponding to this model's provider."""
         PROVIDER_SETTINGS_MAP = {
             ProviderType.openai: OpenAIModelSettings,
+            ProviderType.sglang: SGLangModelSettings,
             ProviderType.anthropic: AnthropicModelSettings,
             ProviderType.google_ai: GoogleAIModelSettings,
             ProviderType.google_vertex: GoogleVertexModelSettings,
@@ -255,6 +256,21 @@ class OpenAIModelSettings(ModelSettings):
             "parallel_tool_calls": self.parallel_tool_calls,
             "strict": self.strict,
         }
+
+
+class SGLangModelSettings(OpenAIModelSettings):
+    """SGLang model configuration (OpenAI-compatible runtime with SGLang-specific parsing)."""
+
+    provider_type: Literal[ProviderType.sglang] = Field(ProviderType.sglang, description="The type of the provider.")
+    tool_call_parser: Optional[str] = Field(
+        None,
+        description="SGLang tool call parser name (for example 'glm47', 'qwen25', or 'hermes').",
+    )
+
+    def _to_legacy_config_params(self) -> dict:
+        params = super()._to_legacy_config_params()
+        params["tool_call_parser"] = self.tool_call_parser
+        return params
 
 
 #    "thinking": {
@@ -516,6 +532,7 @@ class ChatGPTOAuthModelSettings(ModelSettings):
 ModelSettingsUnion = Annotated[
     Union[
         OpenAIModelSettings,
+        SGLangModelSettings,
         AnthropicModelSettings,
         GoogleAIModelSettings,
         GoogleVertexModelSettings,

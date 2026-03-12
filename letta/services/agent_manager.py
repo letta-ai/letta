@@ -515,7 +515,6 @@ class AgentManager:
 
                 # Will set mode-specific default prompt if no prompt is provided
                 effective_compaction_settings = effective_compaction_settings.set_mode_specific_prompt()
-
                 new_agent = AgentModel(
                     name=agent_create.name,
                     system=derive_system_message(
