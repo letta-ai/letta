@@ -306,7 +306,9 @@ async def search_pinecone_index(query: str, limit: int, filter: Dict[str, Any], 
 
 @pinecone_retry()
 @trace_method
-async def list_pinecone_index_for_files(file_id: str, actor: User, limit: int = None, pagination_token: str = None) -> List[str]:
+async def list_pinecone_index_for_files(
+    file_id: str, actor: User, limit: int | None = None, pagination_token: str | None = None
+) -> List[str]:
     if not PINECONE_AVAILABLE:
         raise ImportError("Pinecone is not available. Please install pinecone to use this feature.")
 

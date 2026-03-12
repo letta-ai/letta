@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from io import StringIO
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import List, Optional, Union
 
 from letta.log import get_logger
 
@@ -43,6 +43,17 @@ class ContextWindowOverview(BaseModel):
     num_tokens_core_memory: int = Field(..., description="The number of tokens in the core memory.")
     core_memory: str = Field(..., description="The content of the core memory.")
 
+    num_tokens_memory_filesystem: int = Field(
+        0, description="The number of tokens in the memory filesystem section (git-enabled agents only)."
+    )
+    memory_filesystem: Optional[str] = Field(None, description="The content of the memory filesystem section.")
+
+    num_tokens_tool_usage_rules: int = Field(0, description="The number of tokens in the tool usage rules section.")
+    tool_usage_rules: Optional[str] = Field(None, description="The content of the tool usage rules section.")
+
+    num_tokens_directories: int = Field(0, description="The number of tokens in the directories section (attached sources).")
+    directories: Optional[str] = Field(None, description="The content of the directories section.")
+
     num_tokens_summary_memory: int = Field(..., description="The number of tokens in the summary memory.")
     summary_memory: Optional[str] = Field(None, description="The content of the summary memory.")
 
@@ -61,6 +72,7 @@ class Memory(BaseModel, validate_assignment=True):
     """
 
     agent_type: Optional[Union["AgentType", str]] = Field(None, description="Agent type controlling prompt rendering.")
+    git_enabled: bool = Field(False, description="Whether this agent uses git-backed memory with structured labels.")
     blocks: List[Block] = Field(..., description="Memory blocks contained in the agent's in-context memory")
     file_blocks: List[FileBlock] = Field(
         default_factory=list, description="Special blocks representing the agent's in-context memory of an attached file"
@@ -106,16 +118,36 @@ class Memory(BaseModel, validate_assignment=True):
         """Deprecated. Async setter that stores the string but does not validate or use it."""
         self.prompt_template = prompt_template
 
+    def _get_renderable_blocks(self) -> list:
+        """Return blocks that should be rendered into <memory_blocks>.
+
+        For git-memory-enabled agents, only system/ blocks are rendered.
+        For standard agents, all blocks are rendered.
+        """
+        if self.git_enabled:
+            return [b for b in self.blocks if b.label and b.label.startswith("system/")]
+        return list(self.blocks)
+
+    def _display_label(self, label: str) -> str:
+        """Return the XML tag name for a block label.
+
+        For git-memory-enabled agents, strip the 'system/' prefix so
+        system/human renders as <human>.
+        """
+        if self.git_enabled and label.startswith("system/"):
+            return label.removeprefix("system/")
+        return label
+
     @trace_method
     def _render_memory_blocks_standard(self, s: StringIO):
-        if len(self.blocks) == 0:
-            # s.write("<memory_blocks></memory_blocks>") # TODO: consider empty tags
+        renderable = self._get_renderable_blocks()
+        if len(renderable) == 0:
             s.write("")
             return
 
         s.write("<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n")
-        for idx, block in enumerate(self.blocks):
-            label = block.label or "block"
+        for idx, block in enumerate(renderable):
+            label = self._display_label(block.label or "block")
             value = block.value or ""
             desc = block.description or ""
             chars_current = len(value)
@@ -135,14 +167,15 @@ class Memory(BaseModel, validate_assignment=True):
             s.write(f"{value}\n")
             s.write("</value>\n")
             s.write(f"</{label}>\n")
-            if idx != len(self.blocks) - 1:
+            if idx != len(renderable) - 1:
                 s.write("\n")
         s.write("\n</memory_blocks>")
 
     def _render_memory_blocks_line_numbered(self, s: StringIO):
+        renderable = self._get_renderable_blocks()
         s.write("<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n")
-        for idx, block in enumerate(self.blocks):
-            label = block.label or "block"
+        for idx, block in enumerate(renderable):
+            label = self._display_label(block.label or "block")
             value = block.value or ""
             desc = block.description or ""
             limit = block.limit if block.limit is not None else 0
@@ -164,9 +197,177 @@ class Memory(BaseModel, validate_assignment=True):
                     s.write(f"{i}→ {line}\n")
             s.write("</value>\n")
             s.write(f"</{label}>\n")
-            if idx != len(self.blocks) - 1:
+            if idx != len(renderable) - 1:
                 s.write("\n")
         s.write("\n</memory_blocks>")
+
+    def _render_memory_blocks_git(self, s: StringIO):
+        """Render memory blocks as individual file tags with YAML frontmatter.
+
+        Each block is rendered as <label.md>---frontmatter---value</label.md>,
+        matching the format stored in the git repo. Labels without a 'system/'
+        prefix get one added automatically.
+        """
+        renderable = self._get_renderable_blocks()
+        if not renderable:
+            return
+
+        for idx, block in enumerate(renderable):
+            label = block.label or "block"
+            # Ensure system/ prefix
+            if not label.startswith("system/"):
+                label = f"system/{label}"
+            tag = f"{label}.md"
+            value = block.value or ""
+
+            s.write(f"\n\n<{tag}>\n")
+
+            # Build frontmatter (same fields as serialize_block)
+            front_lines = []
+            if block.description:
+                front_lines.append(f"description: {block.description}")
+            if getattr(block, "read_only", False):
+                front_lines.append("read_only: true")
+
+            if front_lines:
+                s.write("---\n")
+                s.write("\n".join(front_lines))
+                s.write("\n---\n")
+
+            s.write(f"{value}\n")
+            s.write(f"</{tag}>")
+
+    def _render_memory_filesystem(self, s: StringIO):
+        """Render a filesystem tree view of all memory blocks.
+
+        Only rendered for git-memory-enabled agents. Uses box-drawing
+        characters (├──, └──, │) like the Unix `tree` command, while keeping
+        deterministic ordering (directories first, then files, alphabetically).
+        """
+        if not self.blocks:
+            return
+
+        # Build tree structure from block labels.
+        #
+        # IMPORTANT: labels are path-like (e.g. "system/human"). In real filesystems a
+        # path component cannot be both a directory and a file, but our block namespace
+        # can contain collisions like:
+        #   - "system" (a block)
+        #   - "system/human" (a block under a virtual "system/" directory)
+        #
+        # When we detect a collision, we convert the would-be directory node into a
+        # dict and store the colliding leaf block under LEAF_KEY.
+        LEAF_KEY = "__block__"
+
+        tree: dict = {}
+        for block in self.blocks:
+            label = block.label or "block"
+            parts = [p for p in label.split("/") if p]
+            if not parts:
+                parts = ["block"]
+
+            node: dict = tree
+            for part in parts[:-1]:
+                existing = node.get(part)
+                if existing is None:
+                    node[part] = {}
+                elif not isinstance(existing, dict):
+                    # Collision: leaf at `part` and now we need it to be a directory.
+                    node[part] = {LEAF_KEY: existing}
+                node = node[part]  # type: ignore[assignment]
+
+            leaf = parts[-1]
+            existing_leaf = node.get(leaf)
+            if existing_leaf is None:
+                node[leaf] = block
+            elif isinstance(existing_leaf, dict):
+                # Collision: directory at `leaf` already exists; attach the leaf block.
+                existing_leaf[LEAF_KEY] = block
+            else:
+                # Duplicate leaf label; last writer wins.
+                node[leaf] = block
+
+        s.write("\n\n<memory_filesystem>\n")
+
+        def _render_tree(node: dict, prefix: str = "", in_system: bool = False, path_parts: tuple[str, ...] = ()):
+            # Render skills/ as concise top-level entries only, using both
+            # current (`skills/<name>`) and legacy (`skills/<name>/SKILL`) labels.
+            if path_parts == ("skills",):
+                skill_entries: list[tuple[str, str]] = []
+                for name, val in node.items():
+                    if name == LEAF_KEY:
+                        continue
+
+                    block = None
+                    if isinstance(val, dict):
+                        legacy_skill_block = val.get("SKILL")
+                        if legacy_skill_block is not None and not isinstance(legacy_skill_block, dict):
+                            block = legacy_skill_block
+                        elif LEAF_KEY in val and not isinstance(val[LEAF_KEY], dict):
+                            block = val[LEAF_KEY]
+                    else:
+                        block = val
+
+                    if block is None:
+                        continue
+
+                    desc = getattr(block, "description", None)
+                    desc_line = (desc or "").strip().split("\n")[0].strip()
+                    skill_entries.append((name, desc_line))
+
+                skill_entries.sort(key=lambda e: e[0])
+                for i, (name, desc_line) in enumerate(skill_entries):
+                    is_last = i == len(skill_entries) - 1
+                    connector = "└── " if is_last else "├── "
+                    desc_suffix = f" ({desc_line})" if desc_line else ""
+                    s.write(f"{prefix}{connector}{name}{desc_suffix}\n")
+                return
+
+            # Sort: directories first, then files. If a node is both a directory and a
+            # leaf (LEAF_KEY present), show both <name>/ and <name>.md.
+            dirs = []
+            files = []
+            for name, val in node.items():
+                if name == LEAF_KEY:
+                    continue
+                if isinstance(val, dict):
+                    dirs.append(name)
+                    if LEAF_KEY in val:
+                        files.append(name)
+                else:
+                    files.append(name)
+
+            dirs = sorted(dirs)
+            files = sorted(files)
+            entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+
+            for i, (name, is_dir) in enumerate(entries):
+                is_last = i == len(entries) - 1
+                connector = "└── " if is_last else "├── "
+                if is_dir:
+                    s.write(f"{prefix}{connector}{name}/\n")
+                    extension = "    " if is_last else "│   "
+                    _render_tree(
+                        node[name],
+                        prefix + extension,
+                        in_system=in_system or name == "system",
+                        path_parts=(*path_parts, name),
+                    )
+                else:
+                    # For files outside system/, append the block description
+                    desc_suffix = ""
+                    if not in_system:
+                        val = node[name]
+                        block = val[LEAF_KEY] if isinstance(val, dict) else val
+                        desc = getattr(block, "description", None)
+                        if desc:
+                            desc_line = desc.strip().split("\n")[0].strip()
+                            if desc_line:
+                                desc_suffix = f" ({desc_line})"
+                    s.write(f"{prefix}{connector}{name}.md{desc_suffix}\n")
+
+        _render_tree(tree)
+        s.write("</memory_filesystem>")
 
     def _render_directories_common(self, s: StringIO, sources, max_files_open):
         s.write("\n\n<directories>\n")
@@ -286,7 +487,11 @@ class Memory(BaseModel, validate_assignment=True):
 
         # Memory blocks (not for react/workflow). Always include wrapper for preview/tests.
         if not is_react:
-            if is_line_numbered:
+            if self.git_enabled:
+                # Git-enabled: filesystem tree + file-style block rendering
+                self._render_memory_filesystem(s)
+                self._render_memory_blocks_git(s)
+            elif is_line_numbered:
                 self._render_memory_blocks_line_numbered(s)
             else:
                 self._render_memory_blocks_standard(s)
@@ -376,7 +581,7 @@ class BasicBlockMemory(Memory):
         """
         super().__init__(blocks=blocks)
 
-    def core_memory_append(agent_state: "AgentState", label: str, content: str) -> Optional[str]:  # type: ignore
+    def core_memory_append(agent_state: "AgentState", label: str, content: str) -> Optional[str]:  # type: ignore  # noqa: F821
         """
         Append to the contents of core memory.
 
@@ -392,7 +597,7 @@ class BasicBlockMemory(Memory):
         agent_state.memory.update_block_value(label=label, value=new_value)
         return None
 
-    def core_memory_replace(agent_state: "AgentState", label: str, old_content: str, new_content: str) -> Optional[str]:  # type: ignore
+    def core_memory_replace(agent_state: "AgentState", label: str, old_content: str, new_content: str) -> Optional[str]:  # type: ignore  # noqa: F821
         """
         Replace the contents of core memory. To delete memories, use an empty string for new_content.
 

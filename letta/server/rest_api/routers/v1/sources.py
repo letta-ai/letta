@@ -5,8 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
-from starlette import status
+from fastapi import APIRouter, Depends, Query, UploadFile
 from starlette.responses import Response
 
 import letta.constants as constants
@@ -22,9 +21,9 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import DuplicateFileHandling, FileProcessingStatus
-from letta.schemas.file import FileMetadata, FileMetadataBase
+from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
-from letta.schemas.source import BaseSource, Source, SourceCreate, SourceUpdate
+from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -310,7 +309,7 @@ async def upload_file_to_source(
             return response
         elif duplicate_handling == DuplicateFileHandling.REPLACE:
             # delete the file
-            deleted_file = await server.file_manager.delete_file(file_id=existing_file.id, actor=actor)
+            await server.file_manager.delete_file(file_id=existing_file.id, actor=actor)
             unique_filename = original_filename
 
     if not unique_filename:

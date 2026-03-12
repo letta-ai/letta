@@ -142,7 +142,7 @@ def assert_invoked_send_message_with_keyword(messages: Sequence[LettaMessage], k
     send_message_function_call = target_message.tool_call
     try:
         arguments = json.loads(send_message_function_call.arguments)
-    except:
+    except Exception:
         raise InvalidToolCallError(messages=[target_message], explanation="Function call arguments could not be loaded into JSON")
 
     # Message field not in send_message

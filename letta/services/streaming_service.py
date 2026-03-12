@@ -15,6 +15,7 @@ from letta.errors import (
     LettaInvalidArgumentError,
     LettaServiceUnavailableError,
     LLMAuthenticationError,
+    LLMEmptyResponseError,
     LLMError,
     LLMRateLimitError,
     LLMTimeoutError,
@@ -33,6 +34,7 @@ from letta.schemas.letta_request import ClientToolSchema, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.run import Run as PydanticRun, RunUpdate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -45,6 +47,7 @@ from letta.server.rest_api.streaming_response import (
     get_cancellation_event_for_run,
 )
 from letta.server.rest_api.utils import capture_sentry_exception
+from letta.services.conversation_manager import ConversationManager
 from letta.services.run_manager import RunManager
 from letta.settings import settings
 from letta.utils import safe_create_task
@@ -75,6 +78,8 @@ class StreamingService:
         request: LettaStreamingRequest,
         run_type: str = "streaming",
         conversation_id: Optional[str] = None,
+        should_lock: bool = False,
+        billing_context: "BillingContext | None" = None,
     ) -> tuple[Optional[PydanticRun], Union[StreamingResponse, LettaResponse]]:
         """
         Create a streaming response for an agent.
@@ -85,6 +90,7 @@ class StreamingService:
             request: The LettaStreamingRequest containing all request parameters
             run_type: Type of run for tracking
             conversation_id: Optional conversation ID for conversation-scoped messaging
+            should_lock: If True and conversation_id is None, use agent_id as lock key
 
         Returns:
             Tuple of (run object or None, streaming response)
@@ -102,6 +108,26 @@ class StreamingService:
             include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
         )
 
+        # Apply conversation-level model override if set (lower priority than request override)
+        if conversation_id and not request.override_model:
+            conversation = await ConversationManager().get_conversation_by_id(
+                conversation_id=conversation_id,
+                actor=actor,
+            )
+            if conversation.model:
+                conversation_llm_config = await self.server.get_llm_config_from_handle_async(
+                    actor=actor,
+                    handle=conversation.model,
+                )
+                if conversation.model_settings is not None:
+                    update_params = conversation.model_settings._to_legacy_config_params()
+                    # Don't clobber max_tokens with the Pydantic default when the caller
+                    # didn't explicitly provide max_output_tokens.
+                    if "max_output_tokens" not in conversation.model_settings.model_fields_set:
+                        update_params.pop("max_tokens", None)
+                    conversation_llm_config = conversation_llm_config.model_copy(update=update_params)
+                agent = agent.model_copy(update={"llm_config": conversation_llm_config})
+
         # Handle model override if specified in the request
         if request.override_model:
             override_llm_config = await self.server.get_llm_config_from_handle_async(
@@ -111,16 +137,17 @@ class StreamingService:
             # Create a copy of agent state with the overridden llm_config
             agent = agent.model_copy(update={"llm_config": override_llm_config})
 
-        agent_eligible = self._is_agent_eligible(agent)
-        model_compatible = self._is_model_compatible(agent)
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
 
-        # Attempt to acquire conversation lock if conversation_id is provided
-        # This prevents concurrent message processing for the same conversation
+        # Determine lock key: use conversation_id if provided, else agent_id if should_lock
+        lock_key = conversation_id if conversation_id else (agent_id if should_lock else None)
+
+        # Attempt to acquire lock if lock_key is set
+        # This prevents concurrent message processing for the same conversation/agent
         # Skip locking if Redis is not available (graceful degradation)
-        if conversation_id and not isinstance(redis_client, NoopAsyncRedisClient):
+        if lock_key and not isinstance(redis_client, NoopAsyncRedisClient):
             await redis_client.acquire_conversation_lock(
-                conversation_id=conversation_id,
+                conversation_id=lock_key,
                 token=str(uuid4()),
             )
 
@@ -133,67 +160,41 @@ class StreamingService:
                 run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
                 await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
-            if agent_eligible and model_compatible:
-                # use agent loop for streaming
-                agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+            # use agent loop for streaming
+            agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
 
-                # create the base stream with error handling
-                raw_stream = self._create_error_aware_stream(
-                    agent_loop=agent_loop,
-                    messages=request.messages,
-                    max_steps=request.max_steps,
-                    stream_tokens=request.stream_tokens and model_compatible_token_streaming,
-                    run_id=run.id if run else None,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                    actor=actor,
-                    conversation_id=conversation_id,
-                    client_tools=request.client_tools,
-                )
+            # create the base stream with error handling
+            raw_stream = self._create_error_aware_stream(
+                agent_loop=agent_loop,
+                messages=request.messages,
+                max_steps=request.max_steps,
+                stream_tokens=request.stream_tokens and model_compatible_token_streaming,
+                run_id=run.id if run else None,
+                use_assistant_message=request.use_assistant_message,
+                request_start_timestamp_ns=request_start_timestamp_ns,
+                include_return_message_types=request.include_return_message_types,
+                actor=actor,
+                conversation_id=conversation_id,
+                lock_key=lock_key,  # For lock release (may differ from conversation_id)
+                client_tools=request.client_tools,
+                include_compaction_messages=request.include_compaction_messages,
+                billing_context=billing_context,
+            )
 
-                # handle background streaming if requested
-                if request.background and settings.track_agent_run:
-                    if isinstance(redis_client, NoopAsyncRedisClient):
-                        raise LettaServiceUnavailableError(
-                            f"Background streaming requires Redis to be running. "
-                            f"Please ensure Redis is properly configured. "
-                            f"LETTA_REDIS_HOST: {settings.redis_host}, LETTA_REDIS_PORT: {settings.redis_port}",
-                            service_name="redis",
-                        )
-
-                    # Wrap the agent loop stream with cancellation awareness for background task
-                    background_stream = raw_stream
-                    if settings.enable_cancellation_aware_streaming and run:
-                        background_stream = cancellation_aware_stream_wrapper(
-                            stream_generator=raw_stream,
-                            run_manager=self.runs_manager,
-                            run_id=run.id,
-                            actor=actor,
-                            cancellation_event=get_cancellation_event_for_run(run.id),
-                        )
-
-                    safe_create_task(
-                        create_background_stream_processor(
-                            stream_generator=background_stream,
-                            redis_client=redis_client,
-                            run_id=run.id,
-                            run_manager=self.server.run_manager,
-                            actor=actor,
-                            conversation_id=conversation_id,
-                        ),
-                        label=f"background_stream_processor_{run.id}",
+            # handle background streaming if requested
+            if request.background and settings.track_agent_run:
+                if isinstance(redis_client, NoopAsyncRedisClient):
+                    raise LettaServiceUnavailableError(
+                        f"Background streaming requires Redis to be running. "
+                        f"Please ensure Redis is properly configured. "
+                        f"LETTA_REDIS_HOST: {settings.redis_host}, LETTA_REDIS_PORT: {settings.redis_port}",
+                        service_name="redis",
                     )
 
-                    raw_stream = redis_sse_stream_generator(
-                        redis_client=redis_client,
-                        run_id=run.id,
-                    )
-
-                # wrap client stream with cancellation awareness if enabled and tracking runs
-                stream = raw_stream
-                if settings.enable_cancellation_aware_streaming and settings.track_agent_run and run and not request.background:
-                    stream = cancellation_aware_stream_wrapper(
+                # Wrap the agent loop stream with cancellation awareness for background task
+                background_stream = raw_stream
+                if settings.enable_cancellation_aware_streaming and run:
+                    background_stream = cancellation_aware_stream_wrapper(
                         stream_generator=raw_stream,
                         run_manager=self.runs_manager,
                         run_id=run.id,
@@ -201,28 +202,42 @@ class StreamingService:
                         cancellation_event=get_cancellation_event_for_run(run.id),
                     )
 
-                # conditionally wrap with keepalive based on request parameter
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
+                safe_create_task(
+                    create_background_stream_processor(
+                        stream_generator=background_stream,
+                        redis_client=redis_client,
+                        run_id=run.id,
+                        run_manager=self.server.run_manager,
+                        actor=actor,
+                        conversation_id=lock_key,  # Use lock_key for lock release
+                    ),
+                    label=f"background_stream_processor_{run.id}",
+                )
 
-                result = StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
+                raw_stream = redis_sse_stream_generator(
+                    redis_client=redis_client,
+                    run_id=run.id,
                 )
-            else:
-                # fallback to non-agent-loop streaming
-                result = await self.server.send_message_to_agent(
-                    agent_id=agent_id,
+
+            # wrap client stream with cancellation awareness if enabled and tracking runs
+            stream = raw_stream
+            if settings.enable_cancellation_aware_streaming and settings.track_agent_run and run and not request.background:
+                stream = cancellation_aware_stream_wrapper(
+                    stream_generator=raw_stream,
+                    run_manager=self.runs_manager,
+                    run_id=run.id,
                     actor=actor,
-                    input_messages=request.messages,
-                    stream_steps=True,
-                    stream_tokens=request.stream_tokens,
-                    use_assistant_message=request.use_assistant_message,
-                    assistant_message_tool_name=request.assistant_message_tool_name,
-                    assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
+                    cancellation_event=get_cancellation_event_for_run(run.id),
                 )
+
+            # conditionally wrap with keepalive based on request parameter
+            if request.include_pings and settings.enable_keepalive:
+                stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
+
+            result = StreamingResponseWithStatusCode(
+                stream,
+                media_type="text/event-stream",
+            )
 
             # update run status to running before returning
             if settings.track_agent_run and run:
@@ -250,7 +265,7 @@ class StreamingService:
             if settings.track_agent_run and run and run_status:
                 await self.server.run_manager.update_run_by_id_async(
                     run_id=run.id,
-                    conversation_id=conversation_id,
+                    conversation_id=lock_key,  # Use lock_key for lock release
                     update=RunUpdate(status=run_status, metadata=run_update_metadata),
                     actor=actor,
                 )
@@ -325,7 +340,10 @@ class StreamingService:
         include_return_message_types: Optional[list[MessageType]],
         actor: User,
         conversation_id: Optional[str] = None,
+        lock_key: Optional[str] = None,
         client_tools: Optional[list[ClientToolSchema]] = None,
+        include_compaction_messages: bool = False,
+        billing_context: BillingContext | None = None,
     ) -> AsyncIterator:
         """
         Create a stream with unified error handling.
@@ -337,7 +355,6 @@ class StreamingService:
         async def error_aware_stream():
             """Stream that handles early LLM errors gracefully in streaming format."""
             run_status = None
-            run_update_metadata = None
             stop_reason = None
             error_data = None
             saw_done = False
@@ -354,6 +371,8 @@ class StreamingService:
                     include_return_message_types=include_return_message_types,
                     conversation_id=conversation_id,
                     client_tools=client_tools,
+                    include_compaction_messages=include_compaction_messages,
+                    billing_context=billing_context,
                 )
 
                 async for chunk in stream:
@@ -440,6 +459,21 @@ class StreamingService:
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
+            except LLMEmptyResponseError as e:
+                run_status = RunStatus.failed
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response)
+                error_message = LettaErrorMessage(
+                    run_id=run_id,
+                    error_type="llm_empty_response",
+                    message="LLM returned an empty response.",
+                    detail=str(e),
+                )
+                error_data = {"error": error_message.model_dump()}
+                logger.warning(f"Run {run_id} stopped with LLM empty response: {e}, error_data: {error_message.model_dump()}")
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except LLMError as e:
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
@@ -455,7 +489,7 @@ class StreamingService:
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
-            except RunCancelledException as e:
+            except RunCancelledException:
                 # Run was explicitly cancelled - this is not an error
                 # The cancellation has already been handled by cancellation_aware_stream_wrapper
                 logger.info(f"Run {run_id} was cancelled, exiting stream gracefully")
@@ -489,36 +523,12 @@ class StreamingService:
                     stop_reason_value = stop_reason.stop_reason if stop_reason else StopReasonType.error.value
                     await self.runs_manager.update_run_by_id_async(
                         run_id=run_id,
-                        conversation_id=conversation_id,
+                        conversation_id=lock_key,  # Use lock_key for lock release
                         update=RunUpdate(status=run_status, stop_reason=stop_reason_value, metadata=error_data),
                         actor=actor,
                     )
 
         return error_aware_stream()
-
-    def _is_agent_eligible(self, agent: AgentState) -> bool:
-        """Check if agent is eligible for streaming."""
-        return agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-
-    def _is_model_compatible(self, agent: AgentState) -> bool:
-        """Check if agent's model is compatible with streaming."""
-        return agent.llm_config.model_endpoint_type in [
-            "anthropic",
-            "openai",
-            "together",
-            "google_ai",
-            "google_vertex",
-            "bedrock",
-            "ollama",
-            "azure",
-            "xai",
-            "zai",
-            "groq",
-            "deepseek",
-            "chatgpt_oauth",
-            "minimax",
-            "openrouter",
-        ]
 
     def _is_token_streaming_compatible(self, agent: AgentState) -> bool:
         """Check if agent's model supports token-level streaming."""

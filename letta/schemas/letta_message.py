@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, ClassVar, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
@@ -61,6 +61,8 @@ class MessageType(str, Enum):
     tool_return_message = "tool_return_message"
     approval_request_message = "approval_request_message"
     approval_response_message = "approval_response_message"
+    summary_message = "summary_message"
+    event_message = "event_message"
 
 
 class LettaMessage(BaseModel):
@@ -244,7 +246,7 @@ class ToolCallMessage(LettaMessage):
         return data
 
     class Config:
-        json_encoders = {
+        json_encoders: ClassVar[dict] = {
             ToolCallDelta: lambda v: v.model_dump(exclude_none=True),
             ToolCall: lambda v: v.model_dump(exclude_none=True),
         }
@@ -394,13 +396,50 @@ class LettaErrorMessage(BaseModel):
     seq_id: Optional[int] = None
 
 
+class CompactionStats(BaseModel):
+    """
+    Statistics about a memory compaction operation.
+    """
+
+    trigger: str = Field(..., description="What triggered the compaction (e.g., 'context_window_exceeded', 'post_step_context_check')")
+    context_tokens_before: Optional[int] = Field(
+        None, description="Token count before compaction (from LLM usage stats, includes full context sent to LLM)"
+    )
+    context_tokens_after: Optional[int] = Field(
+        None, description="Token count after compaction (message tokens only, does not include tool definitions)"
+    )
+    context_window: int = Field(..., description="The model's context window size")
+    messages_count_before: int = Field(..., description="Number of messages before compaction")
+    messages_count_after: int = Field(..., description="Number of messages after compaction")
+
+
+def extract_compaction_stats_from_packed_json(text_content: str) -> Optional[CompactionStats]:
+    """
+    Extract CompactionStats from a packed summary message JSON string.
+
+    Args:
+        text_content: The packed JSON string from summary message content
+
+    Returns:
+        CompactionStats if found and valid, None otherwise
+    """
+    try:
+        packed_json = json.loads(text_content)
+        if isinstance(packed_json, dict) and "compaction_stats" in packed_json:
+            return CompactionStats(**packed_json["compaction_stats"])
+    except (json.JSONDecodeError, TypeError, ValueError):
+        pass
+    return None
+
+
 class SummaryMessage(LettaMessage):
     """
     A message representing a summary of the conversation. Sent to the LLM as a user or system message depending on the provider.
     """
 
-    message_type: Literal["summary"] = "summary_message"
+    message_type: Literal["summary_message"] = "summary_message"
     summary: str
+    compaction_stats: Optional[CompactionStats] = None
 
 
 class EventMessage(LettaMessage):
@@ -408,7 +447,7 @@ class EventMessage(LettaMessage):
     A message for notifying the developer that an event that has occured (e.g. a compaction). Events are NOT part of the context window.
     """
 
-    message_type: Literal["event"] = "event_message"
+    message_type: Literal["event_message"] = "event_message"
     event_type: Literal["compaction"]
     event_data: dict
 
@@ -459,8 +498,8 @@ def create_letta_message_union_schema():
                 "assistant_message": "#/components/schemas/AssistantMessage",
                 "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
                 "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
-                "summary": "#/components/schemas/SummaryMessage",
-                "event": "#/components/schemas/EventMessage",
+                "summary_message": "#/components/schemas/SummaryMessage",
+                "event_message": "#/components/schemas/EventMessage",
             },
         },
     }

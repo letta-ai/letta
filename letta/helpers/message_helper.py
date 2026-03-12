@@ -139,6 +139,20 @@ async def _convert_message_create_to_message(
                     image_media_type, _ = mimetypes.guess_type(file_path)
                     if not image_media_type:
                         image_media_type = "image/jpeg"  # default fallback
+                elif url.startswith("data:"):
+                    # Handle data: URLs (inline base64 encoded images)
+                    # Format: data:[<mediatype>][;base64],<data>
+                    try:
+                        # Split header from data
+                        header, image_data = url.split(",", 1)
+                        # Extract media type from header (e.g., "data:image/jpeg;base64")
+                        header_parts = header.split(";")
+                        image_media_type = header_parts[0].replace("data:", "") or "image/jpeg"
+                        # Data is already base64 encoded, set directly and continue
+                        content.source = Base64Image(media_type=image_media_type, data=image_data)
+                        continue  # Skip the common conversion path below
+                    except ValueError:
+                        raise LettaImageFetchError(url=url[:100] + "...", reason="Invalid data URL format")
                 else:
                     # Handle http(s):// URLs using async httpx
                     image_bytes, image_media_type = await _fetch_image_from_url(url)

@@ -4,7 +4,6 @@ Shared helper functions for Anthropic-compatible proxy endpoints.
 These helpers are used by both the Anthropic and Z.ai proxy routers to reduce code duplication.
 """
 
-import asyncio
 import json
 
 from fastapi import Request
@@ -302,7 +301,7 @@ async def inject_memory_context(
         # Handle both string and list system prompts
         if isinstance(existing_system, list):
             # If it's a list, prepend our context as a text block
-            modified_data["system"] = existing_system + [{"type": "text", "text": memory_context.rstrip()}]
+            modified_data["system"] = [*existing_system, {"type": "text", "text": memory_context.rstrip()}]
         elif existing_system:
             # If it's a non-empty string, prepend our context
             modified_data["system"] = memory_context + existing_system
@@ -452,8 +451,8 @@ async def backfill_agent_project_id(server, agent, actor, project_id: str):
 async def get_or_create_claude_code_agent(
     server,
     actor,
-    project_id: str = None,
-    agent_id: str = None,
+    project_id: str | None = None,
+    agent_id: str | None = None,
 ):
     """
     Get or create a special agent for Claude Code sessions.

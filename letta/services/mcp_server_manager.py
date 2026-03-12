@@ -46,7 +46,7 @@ from letta.services.mcp.server_side_oauth import ServerSideOAuth
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings, tool_settings
+from letta.settings import tool_settings
 from letta.utils import enforce_types, printd, safe_create_task
 
 logger = get_logger(__name__)
@@ -500,7 +500,7 @@ class MCPServerManager:
                 # context manager now handles commits
                 # await session.commit()
                 return mcp_server.to_pydantic()
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 raise
 
@@ -607,7 +607,6 @@ class MCPServerManager:
         2. Attempts to connect and fetch tools
         3. Persists valid tools in parallel (best-effort)
         """
-        import asyncio
 
         # First, create the MCP server
         created_server = await self.create_mcp_server(pydantic_mcp_server, actor)

@@ -234,9 +234,9 @@ async def test_web_search() -> None:
 
             # Check for education-related information in summary and highlights
             result_text = ""
-            if "summary" in result and result["summary"]:
+            if result.get("summary"):
                 result_text += " " + result["summary"].lower()
-            if "highlights" in result and result["highlights"]:
+            if result.get("highlights"):
                 for highlight in result["highlights"]:
                     result_text += " " + highlight.lower()
 

@@ -1,9 +1,9 @@
 from typing import Literal
 
-from openai import AsyncOpenAI, AuthenticationError
+from openai import AsyncOpenAI, AuthenticationError, PermissionDeniedError
 from pydantic import Field
 
-from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError, LLMPermissionDeniedError
 from letta.log import get_logger
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
@@ -41,6 +41,15 @@ class OpenRouterProvider(OpenAIProvider):
             await client.models.list()
         except AuthenticationError as e:
             raise LLMAuthenticationError(message=f"Failed to authenticate with OpenRouter: {e}", code=ErrorCode.UNAUTHENTICATED)
+        except PermissionDeniedError as e:
+            raise LLMPermissionDeniedError(message=f"Permission denied by OpenRouter: {e}", code=ErrorCode.PERMISSION_DENIED)
+        except AttributeError as e:
+            if "_set_private_attributes" in str(e):
+                raise LLMError(
+                    message=f"OpenRouter endpoint at {self.base_url} returned an unexpected non-JSON response. Verify the base URL and API key.",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
         except Exception as e:
             raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
@@ -84,7 +93,7 @@ class OpenRouterProvider(OpenAIProvider):
             model_name = model["id"]
 
             # OpenRouter returns context_length in the model listing
-            if "context_length" in model and model["context_length"]:
+            if model.get("context_length"):
                 context_window_size = model["context_length"]
             else:
                 context_window_size = self.get_model_context_window_size(model_name)

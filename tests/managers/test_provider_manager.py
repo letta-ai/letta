@@ -1,12 +1,10 @@
 """Tests for ProviderManager encryption/decryption logic."""
 
-import os
-
 import pytest
 
 from letta.orm.provider import Provider as ProviderModel
 from letta.schemas.enums import ProviderCategory, ProviderType
-from letta.schemas.providers import Provider, ProviderCreate, ProviderUpdate
+from letta.schemas.providers import ProviderCreate, ProviderUpdate
 from letta.schemas.secret import Secret
 from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
@@ -501,11 +499,7 @@ async def test_server_startup_syncs_base_providers(default_user, default_organiz
     3. Models are properly persisted to the database with correct metadata
     4. Models can be retrieved using handles
     """
-    from unittest.mock import AsyncMock
 
-    from letta.schemas.embedding_config import EmbeddingConfig
-    from letta.schemas.llm_config import LLMConfig
-    from letta.schemas.providers import AnthropicProvider, OpenAIProvider
     from letta.server.server import SyncServer
 
     # Mock OpenAI API responses
@@ -563,16 +557,34 @@ async def test_server_startup_syncs_base_providers(default_user, default_organiz
     async def mock_openai_get_model_list_async(*args, **kwargs):
         return mock_openai_models
 
-    # Mock Anthropic models.list() response
-    from unittest.mock import MagicMock
+    # Mock Anthropic models.list() response as an async iterable
+    # (the real SDK returns an AsyncPage that supports async iteration)
 
-    mock_anthropic_response = MagicMock()
-    mock_anthropic_response.model_dump.return_value = mock_anthropic_models
+    class MockAnthropicModelItem:
+        def __init__(self, data):
+            self._data = data
+
+        def model_dump(self):
+            return self._data
+
+    class MockAnthropicAsyncPage:
+        def __init__(self, items):
+            self._items = [MockAnthropicModelItem(item) for item in items]
+
+        def __aiter__(self):
+            return self._async_iter()
+
+        async def _async_iter(self):
+            for item in self._items:
+                yield item
 
     # Mock the Anthropic AsyncAnthropic client
+    # NOTE: list() must be a regular (non-async) method that returns an async iterable,
+    # because the real Anthropic SDK's models.list() returns an AsyncPage (which has __aiter__)
+    # directly, and the code uses `async for model in client.models.list()`.
     class MockAnthropicModels:
-        async def list(self):
-            return mock_anthropic_response
+        def list(self):
+            return MockAnthropicAsyncPage(mock_anthropic_models["data"])
 
     class MockAsyncAnthropic:
         def __init__(self, *args, **kwargs):
@@ -745,7 +757,7 @@ async def test_server_startup_handles_disabled_providers(default_user, default_o
     2. BYOK providers that are no longer enabled are NOT deleted (user-created)
     3. The sync process handles providers gracefully when API calls fail
     """
-    from letta.schemas.providers import OpenAIProvider, ProviderCreate
+    from letta.schemas.providers import ProviderCreate
     from letta.server.server import SyncServer
 
     # First, manually create providers in the database
@@ -833,31 +845,46 @@ async def test_server_startup_handles_api_errors_gracefully(default_user, defaul
     2. Other providers can still sync successfully
     3. The server startup completes without crashing
     """
-    from letta.schemas.providers import AnthropicProvider, OpenAIProvider
     from letta.server.server import SyncServer
 
     # Mock OpenAI to fail
     async def mock_openai_fail(*args, **kwargs):
         raise Exception("OpenAI API is down")
 
-    # Mock Anthropic to succeed
-    from unittest.mock import MagicMock
+    # Mock Anthropic to succeed (as async iterable, matching real SDK pagination)
 
-    mock_anthropic_response = MagicMock()
-    mock_anthropic_response.model_dump.return_value = {
-        "data": [
-            {
-                "id": "claude-3-5-sonnet-20241022",
-                "type": "model",
-                "display_name": "Claude 3.5 Sonnet",
-                "created_at": "2024-10-22T00:00:00Z",
-            }
-        ]
-    }
+    mock_anthropic_data = [
+        {
+            "id": "claude-3-5-sonnet-20241022",
+            "type": "model",
+            "display_name": "Claude 3.5 Sonnet",
+            "created_at": "2024-10-22T00:00:00Z",
+        }
+    ]
 
+    class MockAnthropicModelItem:
+        def __init__(self, data):
+            self._data = data
+
+        def model_dump(self):
+            return self._data
+
+    class MockAnthropicAsyncPage:
+        def __init__(self, items):
+            self._items = [MockAnthropicModelItem(item) for item in items]
+
+        def __aiter__(self):
+            return self._async_iter()
+
+        async def _async_iter(self):
+            for item in self._items:
+                yield item
+
+    # NOTE: The real SDK's models.list() is a regular (non-async) method that
+    # returns an AsyncPaginator (which is async-iterable).
     class MockAnthropicModels:
-        async def list(self):
-            return mock_anthropic_response
+        def list(self):
+            return MockAnthropicAsyncPage(mock_anthropic_data)
 
     class MockAsyncAnthropic:
         def __init__(self, *args, **kwargs):
@@ -915,7 +942,7 @@ async def test_server_startup_handles_api_errors_gracefully(default_user, defaul
         actor=default_user,
     )
     if len(openai_providers) > 0:
-        openai_models = await server.provider_manager.list_models_async(
+        await server.provider_manager.list_models_async(
             actor=default_user,
             provider_id=openai_providers[0].id,
         )

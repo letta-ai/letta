@@ -3,13 +3,11 @@ Tests for global exception logging system.
 """
 
 import asyncio
-import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from letta.exceptions.logging import add_exception_context, log_and_raise, log_exception
 from letta.server.rest_api.middleware.logging import LoggingMiddleware

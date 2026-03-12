@@ -18,4 +18,4 @@ class SerializedAgentEnvironmentVariableSchema(BaseSchema):
 
     class Meta(BaseSchema.Meta):
         model = AgentEnvironmentVariable
-        exclude = BaseSchema.Meta.exclude + ("agent",)
+        exclude = (*BaseSchema.Meta.exclude, "agent")

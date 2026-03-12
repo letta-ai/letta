@@ -184,7 +184,7 @@ def sanitize_for_pickle(obj: Any) -> Any:
                     # Test if the value is pickleable
                     pickle.dumps(value, protocol=PICKLE_PROTOCOL)
                     sanitized[key] = value
-                except:
+                except Exception:
                     sanitized[key] = str(value)
 
         return sanitized

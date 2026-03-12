@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, Query
 
-from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
+from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentRelationships, AgentState
-from letta.schemas.block import Block, BlockResponse
+from letta.schemas.block import BlockResponse
 from letta.schemas.identity import (
     Identity,
     IdentityCreate,
@@ -53,7 +53,7 @@ async def list_identities(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    identities, next_cursor, has_more = await server.identity_manager.list_identities_async(
+    identities, _next_cursor, _has_more = await server.identity_manager.list_identities_async(
         name=name,
         project_id=project_id,
         identifier_key=identifier_key,

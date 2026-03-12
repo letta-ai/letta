@@ -16,7 +16,7 @@ def llm_config():
         model="claude-3-7-sonnet-20250219",
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
-        context_window=32000,
+        context_window=128000,
         handle="anthropic/claude-sonnet-4-20250514",
         put_inner_thoughts_in_kwargs=False,
         max_tokens=4096,
@@ -101,7 +101,7 @@ async def test_send_llm_batch_request_async_mismatched_keys(anthropic_client, mo
     a ValueError is raised.
     """
     mismatched_tools = {"agent-2": []}  # Different agent ID than in the messages mapping.
-    with pytest.raises(ValueError, match="Agent mappings for messages and tools must use the same agent_ids."):
+    with pytest.raises(ValueError, match=r"Agent mappings for messages and tools must use the same agent_ids."):
         await anthropic_client.send_llm_batch_request_async(
             AgentType.memgpt_agent, mock_agent_messages, mismatched_tools, mock_agent_llm_config
         )

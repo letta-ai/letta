@@ -13,7 +13,7 @@ from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.letta_message import LettaMessageUpdateUnion
-from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType, TextContent
+from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType
 from letta.schemas.message import Message as PydanticMessage, MessageSearchResult, MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry

@@ -4,6 +4,53 @@ from datetime import datetime
 from typing import Any
 
 
+def sanitize_unicode_surrogates(value: Any) -> Any:
+    """Recursively remove invalid Unicode surrogate characters from strings.
+
+    Unicode surrogate pairs (U+D800 to U+DFFF) are used internally by UTF-16 encoding
+    but are invalid as standalone characters in UTF-8. When present, they cause
+    UnicodeEncodeError when encoding to UTF-8, breaking API requests that need to
+    serialize data to JSON.
+
+    This function sanitizes:
+    - Strings: removes unpaired surrogates that can't be encoded to UTF-8
+    - Dicts: recursively sanitizes all string values
+    - Lists: recursively sanitizes all elements
+    - Other types: returned as-is
+
+    Args:
+        value: The value to sanitize
+
+    Returns:
+        The sanitized value with surrogate characters removed from all strings
+    """
+    if isinstance(value, str):
+        # Remove lone surrogate characters (U+D800 to U+DFFF) which are invalid in UTF-8
+        # Using character filtering is more reliable than encode/decode for edge cases
+        try:
+            # Filter out any character in the surrogate range
+            return "".join(char for char in value if not (0xD800 <= ord(char) <= 0xDFFF))
+        except Exception:
+            # Fallback: try encode with errors="replace" which replaces surrogates with �
+            try:
+                return value.encode("utf-8", errors="replace").decode("utf-8")
+            except Exception:
+                # Last resort: return original (should never reach here)
+                return value
+    elif isinstance(value, dict):
+        # Recursively sanitize dictionary keys and values
+        return {sanitize_unicode_surrogates(k): sanitize_unicode_surrogates(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        # Recursively sanitize list elements
+        return [sanitize_unicode_surrogates(item) for item in value]
+    elif isinstance(value, tuple):
+        # Recursively sanitize tuple elements (return as tuple)
+        return tuple(sanitize_unicode_surrogates(item) for item in value)
+    else:
+        # Return other types as-is (int, float, bool, None, etc.)
+        return value
+
+
 def sanitize_null_bytes(value: Any) -> Any:
     """Recursively remove null bytes (0x00) from strings.
 

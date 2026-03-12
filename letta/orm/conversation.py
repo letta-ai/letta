@@ -1,17 +1,21 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import ForeignKey, Index, String
+from pydantic import TypeAdapter
+from sqlalchemy import JSON, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.conversation import Conversation as PydanticConversation
+from letta.schemas.model import ModelSettingsUnion
 
 if TYPE_CHECKING:
     from letta.orm.agent import Agent
     from letta.orm.block import Block
     from letta.orm.conversation_messages import ConversationMessage
+
+_model_settings_adapter = TypeAdapter(ModelSettingsUnion)
 
 
 class Conversation(SqlalchemyBase, OrganizationMixin):
@@ -27,6 +31,12 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"conv-{uuid.uuid4()}")
     agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Summary of the conversation")
+    model: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, doc="Model handle override for this conversation (format: provider/model-name)"
+    )
+    model_settings: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, doc="Model settings override for this conversation (provider-specific settings)"
+    )
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="conversations", lazy="raise")
@@ -34,7 +44,7 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
         "ConversationMessage",
         back_populates="conversation",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="raise",
     )
     isolated_blocks: Mapped[List["Block"]] = relationship(
         "Block",
@@ -55,4 +65,6 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
             created_by_id=self.created_by_id,
             last_updated_by_id=self.last_updated_by_id,
             isolated_block_ids=[b.id for b in self.isolated_blocks] if self.isolated_blocks else [],
+            model=self.model,
+            model_settings=_model_settings_adapter.validate_python(self.model_settings) if self.model_settings else None,
         )

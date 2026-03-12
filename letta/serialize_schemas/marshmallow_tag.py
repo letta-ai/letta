@@ -25,4 +25,4 @@ class SerializedAgentTagSchema(BaseSchema):
 
     class Meta(BaseSchema.Meta):
         model = AgentsTags
-        exclude = BaseSchema.Meta.exclude + ("agent",)
+        exclude = (*BaseSchema.Meta.exclude, "agent")

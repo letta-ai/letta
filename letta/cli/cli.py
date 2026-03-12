@@ -5,7 +5,6 @@ from typing import Annotated, Optional
 import typer
 
 from letta.log import get_logger
-from letta.streaming_interface import StreamingRefreshCLIInterface as interface  # for printing to terminal
 
 logger = get_logger(__name__)
 

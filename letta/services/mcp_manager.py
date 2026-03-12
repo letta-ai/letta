@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from fastapi import HTTPException
-from sqlalchemy import delete, desc, null, select
+from sqlalchemy import delete, desc, select
 from starlette.requests import Request
 
 import letta.constants as constants
@@ -48,7 +48,7 @@ from letta.services.mcp.server_side_oauth import ServerSideOAuth
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings, tool_settings
+from letta.settings import tool_settings
 from letta.utils import enforce_types, printd, safe_create_task_with_return
 from letta.validators import raise_on_invalid_id
 
@@ -403,7 +403,7 @@ class MCPManager:
                 # context manager now handles commits
                 # await session.commit()
                 return mcp_server.to_pydantic()
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 raise
 
@@ -483,7 +483,6 @@ class MCPManager:
         2. Attempts to connect and fetch tools
         3. Persists valid tools in parallel (best-effort)
         """
-        import asyncio
 
         # First, create the MCP server
         created_server = await self.create_mcp_server(pydantic_mcp_server, actor)
@@ -1194,7 +1193,7 @@ class MCPManager:
 
             # Give the OAuth flow time to connect to the MCP server and store the authorization URL
             timeout = 0
-            while not auth_session or not auth_session.authorization_url and not connect_task.done() and timeout < 10:
+            while not auth_session or (not auth_session.authorization_url and not connect_task.done() and timeout < 10):
                 timeout += 1
                 auth_session = await self.get_oauth_session_by_id(session_id, actor)
                 await asyncio.sleep(1.0)

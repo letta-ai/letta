@@ -20,10 +20,10 @@ class TelemetryManager:
     Supports multiple backends for dual-write scenarios (e.g., migration).
     Configure via LETTA_TELEMETRY_PROVIDER_TRACE_BACKEND (comma-separated):
     - postgres: Store in PostgreSQL (default)
-    - clickhouse: Store in ClickHouse via OTEL instrumentation
-    - socket: Store via Unix socket to Crouton sidecar (which writes to GCS)
+    - clickhouse: Store in ClickHouse (reads and writes from llm_traces table)
+    - socket: Store via Unix socket to external sidecar
 
-    Example: LETTA_TELEMETRY_PROVIDER_TRACE_BACKEND=postgres,socket
+    Example: LETTA_TELEMETRY_PROVIDER_TRACE_BACKEND=postgres,clickhouse
 
     Multi-backend behavior:
     - Writes: Sent to ALL configured backends concurrently via asyncio.gather.

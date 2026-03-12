@@ -29,7 +29,7 @@ class PostgresProviderTraceBackend(ProviderTraceBackendClient):
     ) -> ProviderTrace:
         """Write full provider trace to provider_traces table."""
         async with db_registry.async_session() as session:
-            provider_trace_model = ProviderTraceModel(**provider_trace.model_dump())
+            provider_trace_model = ProviderTraceModel(**provider_trace.model_dump(exclude={"billing_context"}))
             provider_trace_model.organization_id = actor.organization_id
 
             if provider_trace.request_json:

@@ -96,7 +96,7 @@ def type_to_json_schema_type(py_type) -> dict:
 
     # Handle array types
     origin = get_origin(py_type)
-    if py_type == list or origin in (list, List):
+    if py_type is list or origin in (list, List):
         args = get_args(py_type)
         if len(args) == 0:
             # is this correct
@@ -142,7 +142,7 @@ def type_to_json_schema_type(py_type) -> dict:
         }
 
     # Handle object types
-    if py_type == dict or origin in (dict, Dict):
+    if py_type is dict or origin in (dict, Dict):
         args = get_args(py_type)
         if not args:
             # Generic dict without type arguments
@@ -704,8 +704,9 @@ def generate_tool_schema_for_mcp(
     name = mcp_tool.name
     description = mcp_tool.description
 
-    assert "type" in parameters_schema, parameters_schema
-    assert "properties" in parameters_schema, parameters_schema
+    if "type" not in parameters_schema:
+        parameters_schema["type"] = "object"
+    parameters_schema.setdefault("properties", {})
     # assert "required" in parameters_schema, parameters_schema
 
     # Normalize the schema to fix common issues with MCP schemas

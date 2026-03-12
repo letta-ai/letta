@@ -20,7 +20,6 @@ from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.secret import Secret
-from letta.settings import settings
 
 
 class BaseMCPServer(LettaBase):

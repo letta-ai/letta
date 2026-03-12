@@ -136,7 +136,7 @@ class CLIInterface(AgentInterface):
             else:
                 try:
                     msg_json = json_loads(msg)
-                except:
+                except Exception:
                     printd(f"{CLI_WARNING_PREFIX}failed to parse user message into json")
                     printd_user_message("🧑", msg)
                     return

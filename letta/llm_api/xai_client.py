@@ -5,6 +5,7 @@ from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -59,6 +60,8 @@ class XAIClient(OpenAIClient):
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key = model_settings.xai_api_key or os.environ.get("XAI_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
 
@@ -70,6 +73,8 @@ class XAIClient(OpenAIClient):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key = model_settings.xai_api_key or os.environ.get("XAI_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(

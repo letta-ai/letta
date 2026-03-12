@@ -4,6 +4,7 @@ import anthropic
 from anthropic import AsyncStream
 from anthropic.types.beta import BetaMessage, BetaRawMessageStreamEvent
 
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.anthropic_client import AnthropicClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -83,6 +84,8 @@ class MiniMaxClient(AnthropicClient):
 
         Uses beta messages API for compatibility with Anthropic streaming interfaces.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
 
         try:
@@ -105,6 +108,8 @@ class MiniMaxClient(AnthropicClient):
 
         Uses beta messages API for compatibility with Anthropic streaming interfaces.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
         request_data["stream"] = True
 

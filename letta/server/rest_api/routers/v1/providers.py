@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
 from letta.schemas.enums import ProviderCategory, ProviderType
-from letta.schemas.providers import Provider, ProviderBase, ProviderCheck, ProviderCreate, ProviderUpdate
+from letta.schemas.providers import Provider, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.validators import ProviderId
 

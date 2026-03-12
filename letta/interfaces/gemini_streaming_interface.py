@@ -3,7 +3,12 @@ import base64
 import json
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
-from typing import AsyncIterator, List, Optional
+from typing import TYPE_CHECKING, AsyncIterator, List, Optional
+
+if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
+    from letta.schemas.usage import LettaUsageStatistics
 
 from google.genai.types import (
     GenerateContentResponse,
@@ -97,9 +102,11 @@ class SimpleGeminiStreamingInterface:
 
     def get_content(self) -> List[ReasoningContent | TextContent | ToolCallContent]:
         """This is (unusually) in chunked format, instead of merged"""
+        has_reasoning = any(isinstance(c, ReasoningContent) for c in self.content_parts)
         for content in self.content_parts:
             if isinstance(content, ReasoningContent):
-                # This assumes there is only one signature per turn
+                content.signature = self.thinking_signature
+            elif isinstance(content, TextContent) and not has_reasoning and self.thinking_signature:
                 content.signature = self.thinking_signature
         return self.content_parts
 
@@ -322,15 +329,18 @@ class SimpleGeminiStreamingInterface:
                 self.collected_tool_calls.append(ToolCall(id=call_id, function=FunctionCall(name=name, arguments=arguments_str)))
 
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
+                    tool_call_delta = ToolCallDelta(
+                        name=name,
+                        arguments=arguments_str,
+                        tool_call_id=call_id,
+                    )
+
                     yield ApprovalRequestMessage(
                         id=decrement_message_uuid(self.letta_message_id),
                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         date=datetime.now(timezone.utc),
-                        tool_call=ToolCallDelta(
-                            name=name,
-                            arguments=arguments_str,
-                            tool_call_id=call_id,
-                        ),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )

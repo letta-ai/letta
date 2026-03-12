@@ -1,4 +1,10 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+if TYPE_CHECKING:
+    from letta.orm.job import Job
+    from letta.orm.organization import Organization
+    from letta.orm.run import Run
+    from letta.orm.step import Step
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from sqlalchemy import BigInteger, FetchedValue, ForeignKey, Index, event, text

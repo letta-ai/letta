@@ -73,6 +73,31 @@ class LettaRequest(BaseModel):
         "This allows sending a message to a different model without changing the agent's configuration.",
     )
 
+    # Compaction message format
+    include_compaction_messages: bool = Field(
+        default=False,
+        description="If True, compaction events emit structured `SummaryMessage` and `EventMessage` types. "
+        "If False (default), compaction messages are not included in the response.",
+    )
+
+    # Log probabilities for RL training
+    return_logprobs: bool = Field(
+        default=False,
+        description="If True, returns log probabilities of the output tokens in the response. "
+        "Useful for RL training. Only supported for OpenAI-compatible providers (including SGLang).",
+    )
+    top_logprobs: Optional[int] = Field(
+        default=None,
+        description="Number of most likely tokens to return at each position (0-20). Requires return_logprobs=True.",
+    )
+    return_token_ids: bool = Field(
+        default=False,
+        description="If True, returns token IDs and logprobs for ALL LLM generations in the agent step, "
+        "not just the last one. Uses SGLang native /generate endpoint. "
+        "Returns 'turns' field with TurnTokenData for each assistant/tool turn. "
+        "Required for proper multi-turn RL training with loss masking.",
+    )
+
     @field_validator("messages", mode="before")
     @classmethod
     def add_default_type_to_messages(cls, v):
@@ -129,6 +154,10 @@ class LettaStreamingRequest(LettaRequest):
 class ConversationMessageRequest(LettaRequest):
     """Request for sending messages to a conversation. Streams by default."""
 
+    agent_id: Optional[str] = Field(
+        default=None,
+        description="Agent ID for agent-direct mode with 'default' conversation. Use with conversation_id='default' in the URL path.",
+    )
     streaming: bool = Field(
         default=True,
         description="If True (default), returns a streaming response (Server-Sent Events). If False, returns a complete JSON response.",
@@ -168,6 +197,10 @@ class CreateBatch(BaseModel):
 
 
 class RetrieveStreamRequest(BaseModel):
+    agent_id: Optional[str] = Field(
+        default=None,
+        description="Agent ID for agent-direct mode with 'default' conversation. Use with conversation_id='default' in the URL path.",
+    )
     starting_after: int = Field(
         0, description="Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id"
     )

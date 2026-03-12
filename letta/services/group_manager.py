@@ -238,7 +238,7 @@ class GroupManager:
     async def reset_messages_async(self, group_id: str, actor: PydanticUser) -> None:
         async with db_registry.async_session() as session:
             # Ensure group is loadable by user
-            group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
+            await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
 
             # Delete all messages in the group
             delete_stmt = delete(MessageModel).where(

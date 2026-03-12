@@ -1,9 +1,9 @@
 {
-  "handle": "ollama/qwen2.5:7b",
+  "handle": "ollama/qwen3:8b",
   "model_settings": {
     "provider_type": "openai",
-    "temperature": 1.0,
+    "temperature": 0.7,
     "max_output_tokens": 4096,
-    "parallel_tool_calls": false
+    "parallel_tool_calls": true
   }
 }

@@ -1,4 +1,3 @@
-import asyncio
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 
@@ -7,15 +6,15 @@ from letta.constants import DEFAULT_MAX_STEPS
 from letta.groups.helpers import stringify_message
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import JobStatus, RunStatus
+from letta.schemas.enums import RunStatus
 from letta.schemas.group import Group, ManagerType
-from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.run import Run, RunUpdate
 from letta.schemas.user import User
 from letta.services.group_manager import GroupManager
@@ -48,6 +47,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        include_compaction_messages: bool = False,
+        billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         self.run_ids = []
 
@@ -63,6 +64,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             request_start_timestamp_ns=request_start_timestamp_ns,
             conversation_id=conversation_id,
             client_tools=client_tools,
+            include_compaction_messages=include_compaction_messages,
+            billing_context=billing_context,
         )
 
         run_ids = await self.run_sleeptime_agents()
@@ -81,6 +84,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         include_return_message_types: list[MessageType] | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        include_compaction_messages: bool = False,
+        billing_context: "BillingContext | None" = None,
     ) -> AsyncGenerator[str, None]:
         self.run_ids = []
 
@@ -99,6 +104,8 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 conversation_id=conversation_id,
                 client_tools=client_tools,
+                include_compaction_messages=include_compaction_messages,
+                billing_context=billing_context,
             ):
                 yield chunk
         finally:

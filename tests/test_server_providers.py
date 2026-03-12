@@ -1,5 +1,6 @@
 """Tests for provider initialization via ProviderManager.sync_base_providers and provider model persistence."""
 
+import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -109,7 +110,6 @@ async def test_sync_base_providers_handles_race_condition(default_user, provider
 
     # Mock a race condition: list returns empty, but create fails with UniqueConstraintViolation
     original_list = provider_manager.list_providers_async
-    original_create = provider_manager.create_provider_async
 
     call_count = {"count": 0}
 
@@ -2029,14 +2029,14 @@ async def test_get_enabled_providers_async_queries_database(default_user, provid
         api_key="sk-test-key",
         base_url="https://api.openai.com/v1",
     )
-    base_provider = await provider_manager.create_provider_async(base_provider_create, actor=default_user, is_byok=False)
+    await provider_manager.create_provider_async(base_provider_create, actor=default_user, is_byok=False)
 
     byok_provider_create = ProviderCreate(
         name=f"test-byok-provider-{test_id}",
         provider_type=ProviderType.anthropic,
         api_key="sk-test-byok-key",
     )
-    byok_provider = await provider_manager.create_provider_async(byok_provider_create, actor=default_user, is_byok=True)
+    await provider_manager.create_provider_async(byok_provider_create, actor=default_user, is_byok=True)
 
     # Create server instance - importantly, don't set _enabled_providers
     # This ensures we're testing database queries, not in-memory list
@@ -2181,7 +2181,7 @@ async def test_byok_provider_api_key_stored_in_db(default_user, provider_manager
         provider_type=ProviderType.openai,
         api_key="sk-byok-should-be-stored",
     )
-    byok_provider = await provider_manager.create_provider_async(byok_provider_create, actor=default_user, is_byok=True)
+    await provider_manager.create_provider_async(byok_provider_create, actor=default_user, is_byok=True)
 
     # Retrieve the provider from database
     providers = await provider_manager.list_providers_async(name=f"test-byok-with-key-{test_id}", actor=default_user)
@@ -2572,7 +2572,7 @@ async def test_byok_provider_last_synced_triggers_sync_when_null(default_user, p
 
     with patch.object(Provider, "cast_to_subtype", return_value=mock_typed_provider):
         # List BYOK models - should trigger sync because last_synced is null
-        byok_models = await server.list_llm_models_async(
+        await server.list_llm_models_async(
             actor=default_user,
             provider_category=[ProviderCategory.byok],
         )
@@ -2599,7 +2599,6 @@ async def test_byok_provider_last_synced_triggers_sync_when_null(default_user, p
 @pytest.mark.asyncio
 async def test_byok_provider_last_synced_skips_sync_when_set(default_user, provider_manager):
     """Test that BYOK providers with last_synced set skip sync and read from DB."""
-    from datetime import datetime, timezone
 
     from letta.schemas.providers import Provider
     from letta.server.server import SyncServer
@@ -2661,9 +2660,68 @@ async def test_byok_provider_last_synced_skips_sync_when_set(default_user, provi
 
 
 @pytest.mark.asyncio
+async def test_chatgpt_oauth_byok_resyncs_when_allowlist_expands(default_user, provider_manager):
+    """ChatGPT OAuth providers should backfill newly added hardcoded models."""
+    test_id = generate_test_id()
+    provider_name = f"test-chatgpt-oauth-{test_id}"
+
+    oauth_credentials = json.dumps(
+        {
+            "access_token": "test-access-token",
+            "refresh_token": "test-refresh-token",
+            "account_id": "test-account-id",
+            "expires_at": 4_102_444_800,  # year 2100 (seconds)
+        }
+    )
+
+    byok_provider = await provider_manager.create_provider_async(
+        ProviderCreate(
+            name=provider_name,
+            provider_type=ProviderType.chatgpt_oauth,
+            api_key=oauth_credentials,
+        ),
+        actor=default_user,
+        is_byok=True,
+    )
+
+    # Simulate a stale provider model cache that predates gpt-5.3-codex.
+    stale_models = [
+        LLMConfig(
+            model="gpt-5.2-codex",
+            model_endpoint_type="chatgpt_oauth",
+            model_endpoint="https://chatgpt.com/backend-api/codex/responses",
+            context_window=272000,
+            handle=f"{provider_name}/gpt-5.2-codex",
+            provider_name=provider_name,
+            provider_category=ProviderCategory.byok,
+        )
+    ]
+    await provider_manager.sync_provider_models_async(
+        provider=byok_provider,
+        llm_models=stale_models,
+        embedding_models=[],
+        organization_id=default_user.organization_id,
+    )
+    await provider_manager.update_provider_last_synced_async(byok_provider.id, actor=default_user)
+
+    server = SyncServer(init_with_default_org_and_user=False)
+    server.default_user = default_user
+    server.provider_manager = provider_manager
+    server._enabled_providers = []
+
+    byok_models = await server.list_llm_models_async(
+        actor=default_user,
+        provider_category=[ProviderCategory.byok],
+        provider_name=provider_name,
+    )
+
+    byok_handles = {model.handle for model in byok_models}
+    assert f"{provider_name}/gpt-5.3-codex" in byok_handles
+
+
+@pytest.mark.asyncio
 async def test_base_provider_updates_last_synced_on_sync(default_user, provider_manager):
     """Test that base provider sync updates the last_synced timestamp."""
-    from letta.server.server import SyncServer
 
     test_id = generate_test_id()
 
@@ -3159,7 +3217,6 @@ async def test_byok_provider_uses_schema_default_base_url(default_user, provider
     """
     from letta.orm.provider import Provider as ProviderORM
     from letta.schemas.providers import Provider as PydanticProvider
-    from letta.schemas.providers.zai import ZAIProvider
     from letta.server.db import db_registry
 
     test_id = generate_test_id()

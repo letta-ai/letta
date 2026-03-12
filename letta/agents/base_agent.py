@@ -15,6 +15,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
@@ -51,7 +52,11 @@ class BaseAgent(ABC):
 
     @abstractmethod
     async def step(
-        self, input_messages: List[MessageCreate], max_steps: int = DEFAULT_MAX_STEPS, run_id: Optional[str] = None
+        self,
+        input_messages: List[MessageCreate],
+        max_steps: int = DEFAULT_MAX_STEPS,
+        run_id: Optional[str] = None,
+        billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
         Main execution loop for the agent.
@@ -123,32 +128,17 @@ class BaseAgent(ABC):
             curr_system_message = in_context_messages[0]
             curr_system_message_text = curr_system_message.content[0].text
 
-            # extract the dynamic section that includes memory blocks, tool rules, and directories
-            # this avoids timestamp comparison issues
-            def extract_dynamic_section(text):
-                start_marker = "</base_instructions>"
-                end_marker = "<memory_metadata>"
-
-                start_idx = text.find(start_marker)
-                end_idx = text.find(end_marker)
-
-                if start_idx != -1 and end_idx != -1:
-                    return text[start_idx:end_idx]
-                return text  # fallback to full text if markers not found
-
-            curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
-
-            # generate just the memory string with current state for comparison
+            # generate memory string with current state for comparison
             curr_memory_str = agent_state.memory.compile(
                 tool_usage_rules=tool_constraint_block,
                 sources=agent_state.sources,
                 max_files_open=agent_state.max_files_open,
                 llm_config=agent_state.llm_config,
             )
-            new_dynamic_section = extract_dynamic_section(curr_memory_str)
 
-            # compare just the dynamic sections (memory blocks, tool rules, directories)
-            if curr_dynamic_section == new_dynamic_section:
+            system_prompt_changed = agent_state.system not in curr_system_message_text
+            memory_changed = curr_memory_str not in curr_system_message_text
+            if (not system_prompt_changed) and (not memory_changed):
                 logger.debug(
                     f"Memory and sources haven't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
                 )
@@ -183,7 +173,7 @@ class BaseAgent(ABC):
                     actor=self.actor,
                     project_id=agent_state.project_id,
                 )
-                return [new_system_message] + in_context_messages[1:]
+                return [new_system_message, *in_context_messages[1:]]
 
             else:
                 return in_context_messages

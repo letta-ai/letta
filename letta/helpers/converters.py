@@ -1,4 +1,7 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
+if TYPE_CHECKING:
+    from letta.services.summarizer.summarizer_config import CompactionSettings
 
 import numpy as np
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse

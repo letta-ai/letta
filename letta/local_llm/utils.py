@@ -25,15 +25,15 @@ def post_json_auth_request(uri, json_payload, auth_type, auth_key):
 
     # Used by OpenAI, together.ai, Mistral AI
     elif auth_type == "bearer_token":
-        if auth_key is None:
-            raise ValueError(f"auth_type is {auth_type}, but auth_key is null")
+        if not auth_key:
+            raise ValueError(f"auth_type is {auth_type}, but auth_key is null or empty")
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {auth_key}"}
         response = requests.post(uri, json=json_payload, headers=headers)
 
     # Used by OpenAI Azure
     elif auth_type == "api_key":
-        if auth_key is None:
-            raise ValueError(f"auth_type is {auth_type}, but auth_key is null")
+        if not auth_key:
+            raise ValueError(f"auth_type is {auth_type}, but auth_key is null or empty")
         headers = {"Content-Type": "application/json", "api-key": f"{auth_key}"}
         response = requests.post(uri, json=json_payload, headers=headers)
 

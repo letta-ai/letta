@@ -5,27 +5,28 @@ import logging
 import os
 import platform
 import sys
-import threading
 from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
 from typing import Optional
 
+import anyio
 import uvicorn
 
 # Enable Python fault handler to get stack traces on segfaults
 faulthandler.enable()
 
+import orjson
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, ORJSONResponse
 from marshmallow import ValidationError
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__ as letta_version
 from letta.agents.exceptions import IncompatibleAgentType
-from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
+from letta.constants import ADMIN_PREFIX, API_PREFIX
 from letta.errors import (
     AgentExportIdMappingError,
     AgentExportProcessingError,
@@ -33,6 +34,7 @@ from letta.errors import (
     AgentNotFoundForExportError,
     BedrockPermissionError,
     ConcurrentUpdateError,
+    ContextWindowExceededError,
     ConversationBusyError,
     EmbeddingConfigRequiredError,
     HandleNotFoundError,
@@ -49,17 +51,28 @@ from letta.errors import (
     LettaUnsupportedFileUploadError,
     LettaUserNotFoundError,
     LLMAuthenticationError,
+    LLMBadRequestError,
     LLMError,
+    LLMInsufficientCreditsError,
     LLMProviderOverloaded,
     LLMRateLimitError,
     LLMTimeoutError,
+    MemoryRepoBusyError,
     NoActiveRunsToCancelError,
     PendingApprovalError,
 )
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pinecone, upsert_pinecone_indices
 from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
-from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.orm.errors import (
+    DatabaseDeadlockError,
+    DatabaseLockNotAvailableError,
+    DatabaseTimeoutError,
+    ForeignKeyConstraintViolationError,
+    NoResultFound,
+    UniqueConstraintViolationError,
+)
 from letta.otel.tracing import get_trace_id
 from letta.schemas.letta_message import create_letta_error_message_schema, create_letta_message_union_schema
 from letta.schemas.letta_message_content import (
@@ -69,7 +82,31 @@ from letta.schemas.letta_message_content import (
     create_letta_user_message_content_union_schema,
 )
 from letta.server.constants import REST_DEFAULT_PORT
-from letta.server.db import db_registry
+
+
+class SafeORJSONResponse(ORJSONResponse):
+    """ORJSONResponse that handles Python strings containing UTF-8 surrogates.
+
+    LLM responses or user input can occasionally contain surrogate characters
+    (U+D800–U+DFFF) which are valid in Python str but illegal in UTF-8.
+    Standard orjson serialisation rejects them with:
+        TypeError: str is not valid UTF-8: surrogates not allowed
+    This subclass catches that error, strips the surrogates, and retries.
+    """
+
+    def render(self, content) -> bytes:
+        try:
+            return super().render(content)
+        except TypeError as exc:
+            if "surrogates" not in str(exc):
+                raise
+            sanitized = sanitize_unicode_surrogates(content)
+            return orjson.dumps(
+                sanitized,
+                option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY,
+            )
+
+
 from letta.server.global_exception_handler import setup_global_exception_handlers
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
@@ -192,6 +229,16 @@ async def lifespan(app_: FastAPI):
     logger.info(f"[Worker {worker_id}] Starting scheduler with leader election")
     global server
     await server.init_async(init_with_default_org_and_user=not settings.no_default_actor)
+
+    # Set server instance for git HTTP endpoints
+    try:
+        from letta.server.rest_api.routers.v1.git_http import set_server_instance
+
+        set_server_instance(server)
+        logger.info(f"[Worker {worker_id}] Git HTTP server instance set")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to set git HTTP server instance: {e}")
+
     try:
         await start_scheduler_with_leader_election(server)
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
@@ -202,6 +249,15 @@ async def lifespan(app_: FastAPI):
 
     # Cleanup on shutdown
     logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
+
+    # Stop watchdog thread (important for clean test/worker shutdown)
+    try:
+        from letta.monitoring.event_loop_watchdog import stop_watchdog
+
+        stop_watchdog()
+        logger.info(f"[Worker {worker_id}] Event loop watchdog stopped")
+    except Exception as e:
+        logger.warning(f"[Worker {worker_id}] Failed to stop watchdog: {e}")
 
     try:
         from letta.jobs.scheduler import shutdown_scheduler_and_release_lock
@@ -349,7 +405,7 @@ def create_application() -> "FastAPI":
         version=letta_version,
         debug=debug_mode,  # if True, the stack trace will be printed in the response
         lifespan=lifespan,
-        default_response_class=ORJSONResponse,  # Use orjson for 10x faster JSON serialization
+        default_response_class=SafeORJSONResponse,  # Use orjson for 10x faster JSON serialization, with surrogate safety
     )
 
     # === Global Exception Handlers ===
@@ -358,6 +414,12 @@ def create_application() -> "FastAPI":
 
     # === Exception Handlers ===
     # TODO (cliandy): move to separate file
+
+    @app.exception_handler(anyio.BrokenResourceError)
+    @app.exception_handler(anyio.ClosedResourceError)
+    async def client_disconnect_handler(request: Request, exc: Exception):
+        logger.info(f"Client disconnected: {request.method} {request.url.path}")
+        return JSONResponse(status_code=499, content={"detail": "Client disconnected"})
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
@@ -487,6 +549,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(AgentFileImportError, _error_handler_400)
     app.add_exception_handler(EmbeddingConfigRequiredError, _error_handler_400)
     app.add_exception_handler(LettaImageFetchError, _error_handler_400)
+    app.add_exception_handler(ContextWindowExceededError, _error_handler_400)
     app.add_exception_handler(ValueError, _error_handler_400)
 
     # 404 Not Found errors
@@ -509,6 +572,7 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(IntegrityError, _error_handler_409)
     app.add_exception_handler(ConcurrentUpdateError, _error_handler_409)
     app.add_exception_handler(ConversationBusyError, _error_handler_409)
+    app.add_exception_handler(MemoryRepoBusyError, _error_handler_409)
     app.add_exception_handler(PendingApprovalError, _error_handler_409)
     app.add_exception_handler(NoActiveRunsToCancelError, _error_handler_409)
 
@@ -526,6 +590,44 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(OperationalError, _error_handler_503)
     app.add_exception_handler(LettaServiceUnavailableError, _error_handler_503)
     app.add_exception_handler(LLMProviderOverloaded, _error_handler_503)
+
+    @app.exception_handler(DatabaseLockNotAvailableError)
+    async def database_lock_not_available_handler(request: Request, exc: DatabaseLockNotAvailableError):
+        logger.warning(f"Lock not available: {exc}. Original exception: {exc.original_exception}")
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "The resource is currently locked by another operation. Please retry shortly."},
+            headers={"Retry-After": "1"},
+        )
+
+    @app.exception_handler(DatabaseDeadlockError)
+    async def database_deadlock_error_handler(request: Request, exc: DatabaseDeadlockError):
+        logger.error(f"Deadlock detected: {exc}. Original exception: {exc.original_exception}")
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "A database deadlock was detected. Please retry your request."},
+            headers={"Retry-After": "1"},
+        )
+
+    @app.exception_handler(DBAPIError)
+    async def dbapi_error_handler(request: Request, exc: DBAPIError):
+        from asyncpg.exceptions import DeadlockDetectedError
+
+        if isinstance(exc.orig, DeadlockDetectedError):
+            logger.error(f"Deadlock detected (DBAPIError wrapper): {exc}")
+            return JSONResponse(
+                status_code=409,
+                content={"detail": "A database deadlock was detected. Please retry your request."},
+                headers={"Retry-After": "1"},
+            )
+
+        logger.error(f"Unhandled DBAPIError: {exc}", exc_info=True)
+        if SENTRY_ENABLED:
+            sentry_sdk.capture_exception(exc)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "A database error occurred."},
+        )
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
@@ -583,12 +685,37 @@ def create_application() -> "FastAPI":
 
     @app.exception_handler(LLMRateLimitError)
     async def llm_rate_limit_error_handler(request: Request, exc: LLMRateLimitError):
+        is_byok = exc.details.get("is_byok") if isinstance(exc.details, dict) else None
+        if is_byok:
+            message = (
+                "Rate limit exceeded on your API key. Please check your provider's rate limits and billing, or reduce request frequency."
+            )
+        else:
+            message = "Rate limit exceeded for LLM model provider. Please wait before making another request."
         return JSONResponse(
             status_code=429,
             content={
                 "error": {
                     "type": "llm_rate_limit",
-                    "message": "Rate limit exceeded for LLM model provider. Please wait before making another request.",
+                    "message": message,
+                    "detail": str(exc),
+                }
+            },
+        )
+
+    @app.exception_handler(LLMInsufficientCreditsError)
+    async def llm_insufficient_credits_handler(request: Request, exc: LLMInsufficientCreditsError):
+        is_byok = exc.details.get("is_byok") if isinstance(exc.details, dict) else None
+        if is_byok:
+            message = "Insufficient credits on your API key. Please add credits with your LLM provider."
+        else:
+            message = "Insufficient credits for LLM request. Please check your account."
+        return JSONResponse(
+            status_code=402,
+            content={
+                "error": {
+                    "type": "llm_insufficient_credits",
+                    "message": message,
                     "detail": str(exc),
                 }
             },
@@ -615,6 +742,19 @@ def create_application() -> "FastAPI":
                 "error": {
                     "type": "mcp_connection_error",
                     "message": "Failed to connect to MCP server.",
+                    "detail": str(exc),
+                }
+            },
+        )
+
+    @app.exception_handler(LLMBadRequestError)
+    async def llm_bad_request_error_handler(request: Request, exc: LLMBadRequestError):
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "type": "llm_bad_request",
+                    "message": "The request to the LLM model provider was invalid.",
                     "detail": str(exc),
                 }
             },
@@ -748,7 +888,7 @@ def start_server(
             import uvloop
 
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    except:
+    except Exception:
         pass
 
     if (os.getenv("LOCAL_HTTPS") == "true") or "--localhttps" in sys.argv:

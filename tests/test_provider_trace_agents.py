@@ -198,6 +198,7 @@ class TestAdapterTelemetryAttributes:
         """Verify base LettaLLMAdapter has telemetry attributes."""
         from letta.adapters.letta_llm_adapter import LettaLLMAdapter
         from letta.llm_api.llm_client import LLMClient
+        from letta.schemas.enums import LLMCallType
 
         mock_client = LLMClient.create(provider_type="openai", put_inner_thoughts_first=True)
 
@@ -212,6 +213,7 @@ class TestAdapterTelemetryAttributes:
         adapter = TestAdapter(
             llm_client=mock_client,
             llm_config=mock_llm_config,
+            call_type=LLMCallType.agent_step,
             agent_id=agent_id,
             agent_tags=agent_tags,
             run_id=run_id,
@@ -220,11 +222,13 @@ class TestAdapterTelemetryAttributes:
         assert adapter.agent_id == agent_id
         assert adapter.agent_tags == agent_tags
         assert adapter.run_id == run_id
+        assert adapter.call_type == LLMCallType.agent_step
 
     def test_request_adapter_inherits_telemetry_attributes(self, mock_llm_config):
         """Verify LettaLLMRequestAdapter inherits telemetry attributes."""
         from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
         from letta.llm_api.llm_client import LLMClient
+        from letta.schemas.enums import LLMCallType
 
         mock_client = LLMClient.create(provider_type="openai", put_inner_thoughts_first=True)
 
@@ -235,6 +239,7 @@ class TestAdapterTelemetryAttributes:
         adapter = LettaLLMRequestAdapter(
             llm_client=mock_client,
             llm_config=mock_llm_config,
+            call_type=LLMCallType.agent_step,
             agent_id=agent_id,
             agent_tags=agent_tags,
             run_id=run_id,
@@ -248,6 +253,7 @@ class TestAdapterTelemetryAttributes:
         """Verify LettaLLMStreamAdapter inherits telemetry attributes."""
         from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
         from letta.llm_api.llm_client import LLMClient
+        from letta.schemas.enums import LLMCallType
 
         mock_client = LLMClient.create(provider_type="openai", put_inner_thoughts_first=True)
 
@@ -258,6 +264,7 @@ class TestAdapterTelemetryAttributes:
         adapter = LettaLLMStreamAdapter(
             llm_client=mock_client,
             llm_config=mock_llm_config,
+            call_type=LLMCallType.agent_step,
             agent_id=agent_id,
             agent_tags=agent_tags,
             run_id=run_id,
@@ -272,13 +279,14 @@ class TestAdapterTelemetryAttributes:
         from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
         from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
         from letta.llm_api.llm_client import LLMClient
+        from letta.schemas.enums import LLMCallType
 
         mock_client = LLMClient.create(provider_type="openai", put_inner_thoughts_first=True)
 
-        request_adapter = LettaLLMRequestAdapter(llm_client=mock_client, llm_config=mock_llm_config)
-        stream_adapter = LettaLLMStreamAdapter(llm_client=mock_client, llm_config=mock_llm_config)
+        request_adapter = LettaLLMRequestAdapter(llm_client=mock_client, llm_config=mock_llm_config, call_type=LLMCallType.agent_step)
+        stream_adapter = LettaLLMStreamAdapter(llm_client=mock_client, llm_config=mock_llm_config, call_type=LLMCallType.agent_step)
 
-        for attr in ["agent_id", "agent_tags", "run_id"]:
+        for attr in ["agent_id", "agent_tags", "run_id", "call_type"]:
             assert hasattr(request_adapter, attr), f"LettaLLMRequestAdapter missing {attr}"
             assert hasattr(stream_adapter, attr), f"LettaLLMStreamAdapter missing {attr}"
 

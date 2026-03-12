@@ -15,6 +15,7 @@ config = LettaConfig()
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization
+    from letta.orm.passage_tag import PassageTag
 
 
 class BasePassage(SqlalchemyBase, OrganizationMixin):

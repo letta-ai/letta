@@ -355,7 +355,7 @@ def compare_in_context_message_id_remapping(server, og_agent: AgentState, copy_a
     remapped IDs but identical relevant content and order.
     """
     # Serialize the original agent state
-    result = server.agent_manager.serialize(agent_id=og_agent.id, actor=og_user)
+    server.agent_manager.serialize(agent_id=og_agent.id, actor=og_user)
 
     # Retrieve the in-context messages for both the original and the copy
     # Corrected typo: agent_id instead of agent_id

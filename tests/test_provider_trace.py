@@ -14,7 +14,6 @@ import os
 import threading
 import time
 import uuid
-from unittest.mock import patch
 
 import pytest
 from dotenv import load_dotenv

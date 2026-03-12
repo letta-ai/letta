@@ -138,7 +138,6 @@ async def test_add_mcp_tool_accepts_non_strict_schemas():
 @pytest.mark.asyncio
 async def test_add_mcp_tool_rejects_invalid_schemas():
     """Test that adding MCP tools with invalid schemas is rejected."""
-    from fastapi import HTTPException
 
     from letta.server.rest_api.routers.v1.tools import add_mcp_tool
     from letta.settings import tool_settings
@@ -465,7 +464,6 @@ def test_mcp_schema_with_uuid_format_required_field():
 
 def test_mcp_schema_complex_nested_with_defs():
     """Test generating exact schema with nested Pydantic-like models using $defs."""
-    import json
 
     from letta.functions.mcp_client.types import MCPToolHealth
 

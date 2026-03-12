@@ -20,3 +20,21 @@ def is_context_window_overflow_message(msg: str) -> bool:
         or "context_length_exceeded" in msg
         or "Input tokens exceed the configured limit" in msg
     )
+
+
+def is_insufficient_credits_message(msg: str) -> bool:
+    """Best-effort detection for insufficient credits/quota/billing errors.
+
+    BYOK users on OpenRouter, OpenAI, etc. may exhaust their credits mid-stream
+    or get rejected pre-flight. We detect these so they map to 402 instead of 400/500.
+    """
+    lower = msg.lower()
+    return (
+        "insufficient credits" in lower
+        or "requires more credits" in lower
+        or "add more credits" in lower
+        or "exceeded your current quota" in lower
+        or "you've exceeded your budget" in lower
+        or ("billing" in lower and "hard limit" in lower)
+        or "can only afford" in lower
+    )

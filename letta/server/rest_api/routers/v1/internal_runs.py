@@ -8,7 +8,6 @@ from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.run import Run
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
-from letta.services.run_manager import RunManager
 
 router = APIRouter(prefix="/_internal_runs", tags=["_internal_runs"])
 

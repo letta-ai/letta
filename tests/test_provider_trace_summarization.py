@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from letta.schemas.agent import AgentState
-from letta.schemas.block import Block
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.llm_config import LLMConfig
@@ -210,6 +209,7 @@ class TestSummarizeSlidingWindowTelemetryContext:
             await summarizer_sliding_window.summarize_via_sliding_window(
                 actor=mock_actor,
                 llm_config=mock_llm_config,
+                agent_llm_config=mock_llm_config, # case where agent and summarizer have same config
                 summarizer_config=mock_compaction_settings,
                 in_context_messages=mock_messages,
                 agent_id=agent_id,

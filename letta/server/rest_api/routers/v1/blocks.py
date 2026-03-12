@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentRelationships, AgentState
-from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate, CreateBlock
+from letta.schemas.block import Block, BlockResponse, BlockUpdate, CreateBlock
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.utils import is_1_0_sdk_version

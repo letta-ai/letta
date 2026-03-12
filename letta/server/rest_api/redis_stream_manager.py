@@ -276,7 +276,7 @@ async def create_background_stream_processor(
                     maybe_stop_reason = json.loads(maybe_json_chunk) if maybe_json_chunk and maybe_json_chunk[0] == "{" else None
                     if maybe_stop_reason and maybe_stop_reason.get("message_type") == "stop_reason":
                         stop_reason = maybe_stop_reason.get("stop_reason")
-                except:
+                except Exception:
                     pass
 
         # Stream ended naturally - check if we got a proper terminal
@@ -313,7 +313,7 @@ async def create_background_stream_processor(
                 # Set a default stop_reason so run status can be mapped in finally
                 stop_reason = StopReasonType.error.value
 
-    except RunCancelledException as e:
+    except RunCancelledException:
         # Handle cancellation gracefully - don't write error chunk, cancellation event was already sent
         logger.info(f"Stream processing stopped due to cancellation for run {run_id}")
         # The cancellation event was already yielded by cancellation_aware_stream_wrapper
@@ -361,25 +361,10 @@ async def create_background_stream_processor(
 
         # Update run status to reflect terminal outcome
         if run_manager and actor and final_stop_reason:
-            # Map stop_reason to run status
-            if final_stop_reason in [
-                StopReasonType.error.value,
-                StopReasonType.llm_api_error.value,
-                StopReasonType.invalid_tool_call.value,
-                StopReasonType.invalid_llm_response.value,
-                StopReasonType.no_tool_call.value,
-            ]:
-                run_status = RunStatus.failed
-            elif final_stop_reason == StopReasonType.cancelled.value:
-                run_status = RunStatus.cancelled
-            elif final_stop_reason in [
-                StopReasonType.end_turn.value,
-                StopReasonType.max_steps.value,
-                StopReasonType.tool_rule.value,
-                StopReasonType.requires_approval.value,
-            ]:
-                run_status = RunStatus.completed
-            else:
+            # Resolve stop_reason using canonical enum mapping to avoid drift.
+            try:
+                run_status = StopReasonType(final_stop_reason).run_status
+            except ValueError:
                 logger.warning(f"Unknown stop_reason '{final_stop_reason}' for run {run_id}, defaulting to completed")
                 run_status = RunStatus.completed
 

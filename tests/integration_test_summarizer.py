@@ -13,20 +13,16 @@ from typing import List, Literal
 
 import pytest
 
-from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.config import LettaConfig
-from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import BlockUpdate, CreateBlock
+from letta.schemas.agent import CreateAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_message import EventMessage, SummaryMessage
 from letta.schemas.letta_message_content import TextContent, ToolCallContent, ToolReturnContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage, MessageCreate
-from letta.schemas.run import Run as PydanticRun
+from letta.schemas.message import Message as PydanticMessage
 from letta.server.server import SyncServer
-from letta.services.run_manager import RunManager
 from letta.services.summarizer.summarizer import simple_summary
 from letta.settings import model_settings
 
@@ -219,7 +215,7 @@ async def test_summarize_empty_message_buffer(server: SyncServer, actor, llm_con
 
     # Run summarization - this may fail with empty buffer, which is acceptable behavior
     try:
-        summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
+        _summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
         # If it succeeds, verify result
         assert isinstance(result, list)
 
@@ -312,7 +308,7 @@ async def test_summarize_initialization_messages_only(server: SyncServer, actor,
 
     # Run summarization - force=True with system messages only may fail
     try:
-        summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
+        _summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
 
         # Verify result
         assert isinstance(result, list)
@@ -368,7 +364,7 @@ async def test_summarize_small_conversation(server: SyncServer, actor, llm_confi
     # Run summarization with force=True
     # Note: force=True with clear=True can be very aggressive and may fail on small message sets
     try:
-        summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
+        _summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor, force=True)
 
         # Verify result
         assert isinstance(result, list)
@@ -461,7 +457,7 @@ async def test_summarize_large_tool_calls(server: SyncServer, actor, llm_config:
     assert total_content_size > 40000, f"Expected large messages, got {total_content_size} chars"
 
     # Run summarization
-    summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
+    _summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
 
     # Verify result
     assert isinstance(result, list)
@@ -565,7 +561,7 @@ async def test_summarize_multiple_large_tool_calls(server: SyncServer, actor, ll
     assert total_content_size > 40000, f"Expected large messages, got {total_content_size} chars"
 
     # Run summarization
-    summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
+    _summary, result, _ = await run_summarization(server, agent_state, in_context_messages, actor)
 
     # Verify result
     assert isinstance(result, list)
@@ -670,14 +666,24 @@ from unittest.mock import patch
 
 from letta.services.summarizer.summarizer_config import CompactionSettings
 
-# Test both summarizer modes: "all" summarizes entire history, "sliding_window" keeps recent messages
-SUMMARIZER_CONFIG_MODES: list[Literal["all", "sliding_window"]] = ["all", "sliding_window"]
+# Test all summarizer modes: "all" summarizes entire history, "sliding_window" keeps recent messages
+SUMMARIZER_CONFIG_MODES: list[Literal["all", "sliding_window", "self_compact_all", "self_compact_sliding_window"]] = [
+    "all",
+    "sliding_window",
+    "self_compact_all",
+    "self_compact_sliding_window",
+]
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", SUMMARIZER_CONFIG_MODES, ids=SUMMARIZER_CONFIG_MODES)
 @pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
-async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMConfig, mode: Literal["all", "sliding_window"]):
+async def test_summarize_with_mode(
+    server: SyncServer,
+    actor,
+    llm_config: LLMConfig,
+    mode: Literal["all", "sliding_window", "self_compact_all", "self_compact_sliding_window"],
+):
     """
     Test summarization with different CompactionSettings modes using LettaAgentV3.
 
@@ -725,7 +731,7 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
 
     agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
 
-    summary, result, _ = await agent_loop.compact(messages=in_context_messages)
+    _summary, result, summary_text = await agent_loop.compact(messages=in_context_messages)
 
     assert isinstance(result, list)
 
@@ -734,29 +740,178 @@ async def test_summarize_with_mode(server: SyncServer, actor, llm_config: LLMCon
         assert hasattr(msg, "role")
         assert hasattr(msg, "content")
 
+    # Verify the summary text (third return value) is a non-empty string.
+    # This is used by the agent loop to construct a SummaryMessage for clients.
+    assert isinstance(summary_text, str), f"Expected summary_text to be a string, got {type(summary_text)}"
+    assert len(summary_text) > 0, "Expected non-empty summary text"
+
     print()
     print(f"RESULTS {mode} ======")
     for msg in result:
         print(f"MSG: {msg}")
+    print(f"SUMMARY TEXT: {summary_text[:200]}...")
 
     print()
 
-    if mode == "all":
-        # For "all" mode, V3 keeps:
+    if mode == "all" or mode == "self_compact_all":
+        # For "all" or "self" mode, V3 keeps:
         #   1. System prompt
         #   2. A single user summary message (system_alert JSON)
         # and no remaining historical messages.
-        assert len(result) == 2, f"Expected 2 messages for 'all' mode (system + summary), got {len(result)}"
+        assert len(result) == 2, f"Expected 2 messages for {mode} mode (system + summary), got {len(result)}"
         assert result[0].role == MessageRole.system
         assert result[1].role == MessageRole.user
     else:
-        # For "sliding_window" mode, result should include:
+        # For "sliding_window" or "self_compact_sliding_window" mode, result should include:
         #   1. System prompt
         #   2. User summary message
         #   3+. Recent user/assistant messages inside the window.
-        assert len(result) > 2, f"Expected >2 messages for 'sliding_window' mode, got {len(result)}"
+        assert len(result) > 2, f"Expected >2 messages for {mode} mode, got {len(result)}"
         assert result[0].role == MessageRole.system
         assert result[1].role == MessageRole.user
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+async def test_compact_returns_valid_summary_message_and_event_message(server: SyncServer, actor, llm_config: LLMConfig):
+    """
+    Test that compact() return values can be used to construct valid SummaryMessage and EventMessage objects.
+
+    This validates the contract that _step() relies on: compact() returns
+    (summary_message_obj, compacted_messages, summary_text) where summary_text
+    is used to build a SummaryMessage and the metadata is used for an EventMessage.
+    """
+    import uuid
+
+    from letta.helpers.datetime_helpers import get_utc_time
+
+    # Create a conversation with enough messages to summarize
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        )
+    ]
+    for i in range(10):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}: Test message {i}.")],
+            )
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Assistant response {i}: Acknowledged message {i}.")],
+            )
+        )
+
+    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    agent_state.compaction_settings = CompactionSettings(model=handle, mode="all")
+
+    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+    summary_message_obj, _compacted_messages, summary_text = await agent_loop.compact(messages=in_context_messages)
+
+    # Verify we can construct a valid SummaryMessage from compact() return values
+    summary_msg = SummaryMessage(
+        id=summary_message_obj.id,
+        date=summary_message_obj.created_at,
+        summary=summary_text,
+        otid=PydanticMessage.generate_otid_from_id(summary_message_obj.id, 0),
+        step_id=None,
+        run_id=None,
+    )
+    assert summary_msg.message_type == "summary_message"
+    assert isinstance(summary_msg.summary, str)
+    assert len(summary_msg.summary) > 0
+    assert summary_msg.id == summary_message_obj.id
+
+    # Verify we can construct a valid EventMessage for compaction
+    event_msg = EventMessage(
+        id=str(uuid.uuid4()),
+        date=get_utc_time(),
+        event_type="compaction",
+        event_data={
+            "trigger": "post_step_context_check",
+            "context_token_estimate": 1000,
+            "context_window": agent_state.llm_config.context_window,
+        },
+        run_id=None,
+        step_id=None,
+    )
+    assert event_msg.message_type == "event_message"
+    assert event_msg.event_type == "compaction"
+    assert "trigger" in event_msg.event_data
+    assert "context_window" in event_msg.event_data
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+async def test_compact_with_use_summary_role_creates_summary_message_role(server: SyncServer, actor, llm_config: LLMConfig):
+    """
+    Test that compact() with use_summary_role=True creates a message with role=MessageRole.summary.
+
+    This validates that manual compaction endpoints (which pass use_summary_role=True)
+    will store summary messages with the dedicated 'summary' role instead of the legacy 'user' role.
+    """
+    # Create a conversation with enough messages to summarize
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        )
+    ]
+    for i in range(10):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}: Test message {i}.")],
+            )
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Assistant response {i}: Acknowledged message {i}.")],
+            )
+        )
+
+    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    agent_state.compaction_settings = CompactionSettings(model=handle, mode="all")
+
+    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+    # Call compact with use_summary_role=True (as the REST endpoints now do)
+    summary_message_obj, compacted_messages, summary_text = await agent_loop.compact(
+        messages=in_context_messages,
+        use_summary_role=True,
+    )
+
+    # Verify the summary message has role=summary (not user)
+    assert summary_message_obj.role == MessageRole.summary, (
+        f"Expected summary message to have role=summary when use_summary_role=True, got {summary_message_obj.role}"
+    )
+
+    # Verify the compacted messages list structure
+    assert len(compacted_messages) == 2, f"Expected 2 messages (system + summary), got {len(compacted_messages)}"
+    assert compacted_messages[0].role == MessageRole.system
+    assert compacted_messages[1].role == MessageRole.summary
+
+    # Verify summary text is non-empty
+    assert isinstance(summary_text, str)
+    assert len(summary_text) > 0
 
 
 @pytest.mark.asyncio
@@ -823,7 +978,7 @@ async def test_v3_compact_uses_compaction_settings_model_and_model_settings(serv
     # Patch simple_summary so we don't hit the real LLM and can inspect llm_config
     with patch.object(summarizer_all, "simple_summary", new=fake_simple_summary):
         agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
-        summary_msg, compacted, _ = await agent_loop.compact(messages=in_context_messages)
+        summary_msg, _compacted, _ = await agent_loop.compact(messages=in_context_messages)
 
     assert summary_msg is not None
     assert "value" in captured_llm_config
@@ -897,10 +1052,10 @@ async def test_v3_summarize_hard_eviction_when_still_over_threshold(
     # summarize_conversation_history to run and then hit the branch where the
     # *post*-summarization token count is still above the proactive
     # summarization threshold. We simulate that by patching the
-    # letta_agent_v3-level count_tokens helper to report an extremely large
+    # count_tokens_with_tools helper to report an extremely large
     # token count for the first call (post-summary) and a small count for the
     # second call (after hard eviction).
-    with patch("letta.agents.letta_agent_v3.count_tokens") as mock_count_tokens:
+    with patch("letta.services.summarizer.compact.count_tokens_with_tools") as mock_count_tokens:
         # First call: pretend the summarized context is still huge relative to
         # this model's context window so that we always trigger the
         # hard-eviction path. Second call: minimal context (system only) is
@@ -911,7 +1066,7 @@ async def test_v3_summarize_hard_eviction_when_still_over_threshold(
 
         caplog.set_level("ERROR")
 
-        summary, result, _ = await agent_loop.compact(
+        _summary, result, summary_text = await agent_loop.compact(
             messages=in_context_messages,
             trigger_threshold=context_limit,
         )
@@ -931,6 +1086,10 @@ async def test_v3_summarize_hard_eviction_when_still_over_threshold(
     assert len(result) == 2, f"Expected system + summary after hard eviction, got {len(result)} messages"
     assert result[0].role == MessageRole.system
     assert result[1].role == MessageRole.user
+
+    # Verify the summary text is returned (used to construct SummaryMessage in the agent loop)
+    assert isinstance(summary_text, str), f"Expected summary_text to be a string, got {type(summary_text)}"
+    assert len(summary_text) > 0, "Expected non-empty summary text after hard eviction"
 
 
 # ======================================================================================================================
@@ -1004,6 +1163,7 @@ async def test_sliding_window_cutoff_index_does_not_exceed_message_count(server:
         summary, remaining_messages = await summarize_via_sliding_window(
             actor=actor,
             llm_config=llm_config,
+            agent_llm_config=llm_config,  # case where agent and summarizer have same config
             summarizer_config=summarizer_config,
             in_context_messages=messages,
         )
@@ -1042,97 +1202,206 @@ async def test_sliding_window_cutoff_index_does_not_exceed_message_count(server:
     TESTED_LLM_CONFIGS,
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
-async def test_large_system_prompt_summarization(server: SyncServer, actor, llm_config: LLMConfig):
+async def test_self_sliding_window_cutoff_index_does_not_exceed_message_count(server: SyncServer, actor, llm_config: LLMConfig):
     """
-    Test edge case of large system prompt / memory blocks.
+    Test that the sliding window summarizer correctly calculates cutoff indices.
 
-    This test verifies that summarization handles the case where the system prompt
-    and memory blocks are very large, potentially consuming most of the context window.
-    The summarizer should gracefully handle this scenario without errors.
+    This test verifies the fix for a bug where the cutoff percentage was treated as
+    a whole number (10) instead of a decimal (0.10), causing:
+      message_cutoff_index = round(10 * 65) = 650
+    when there were only 65 messages, resulting in an empty range loop and the error:
+      "No assistant message found from indices 650 to 65"
+
+    The fix changed:
+      - max(..., 10) -> max(..., 0.10)
+      - += 10 -> += 0.10
+      - >= 100 -> >= 1.0
+
+    This test uses the real token counter (via create_token_counter) to verify
+    the sliding window logic works with actual token counting.
     """
+    from letta.llm_api.llm_client import LLMClient
+    from letta.schemas.agent import AgentType
+    from letta.services.summarizer.self_summarizer import self_summarize_sliding_window
+    from letta.services.summarizer.summarizer_config import CompactionSettings
+    from letta.services.telemetry_manager import TelemetryManager
 
-    # Override context window to be small so we trigger summarization
-    llm_config.context_window = 10000
+    # Create a real summarizer config using the default factory
+    # Override sliding_window_percentage to 0.3 for this test
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    summarizer_config = CompactionSettings(model=handle)
+    summarizer_config.sliding_window_percentage = 0.3
 
-    # Create agent with large system prompt and memory blocks
-    agent_name = f"test_agent_large_system_prompt_{llm_config.model}".replace(".", "_").replace("/", "_")
-    agent_create = CreateAgent(
-        name=agent_name,
-        llm_config=llm_config,
-        embedding_config=DEFAULT_EMBEDDING_CONFIG,
-        system="SYSTEM PROMPT " * 10000,  # Large system prompt
-        memory_blocks=[
-            CreateBlock(
-                label="human",
-                limit=200000,
-                value="NAME " * 10000,  # Large memory block
+    # Create 65 messages (similar to the failing case in the bug report)
+    # Pattern: system + alternating user/assistant messages
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        )
+    ]
+
+    # Add 64 more messages (32 user-assistant pairs)
+    for i in range(32):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}")],
             )
-        ],
-    )
-    agent_state = await server.agent_manager.create_agent_async(agent_create, actor=actor)
-
-    # Create a run for the agent using RunManager
-    run = PydanticRun(agent_id=agent_state.id)
-    run = await RunManager().create_run(pydantic_run=run, actor=actor)
-
-    # Create the agent loop using LettaAgentV3
-    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
-
-    # message the agent
-    input_message = MessageCreate(role=MessageRole.user, content="Hello")
-
-    # Call step on the agent - may trigger summarization due to large context
-    from letta.errors import SystemPromptTokenExceededError
-
-    with pytest.raises(SystemPromptTokenExceededError):
-        response = await agent_loop.step(
-            input_messages=[input_message],
-            run_id=run.id,
-            max_steps=3,
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Assistant response {i}")],
+            )
         )
 
-    # Repair the agent by shortening the memory blocks and system prompt
-    # Update system prompt to a shorter version
-    short_system_prompt = "You are a helpful assistant."
-    await server.agent_manager.update_agent_async(
-        agent_id=agent_state.id,
-        agent_update=UpdateAgent(system=short_system_prompt),
-        actor=actor,
-    )
+    assert len(messages) == 65, f"Expected 65 messages, got {len(messages)}"
 
-    # Update memory block to a shorter version
-    short_memory_value = "The user's name is Alice."
-    await server.agent_manager.modify_block_by_label_async(
-        agent_id=agent_state.id,
-        block_label="human",
-        block_update=BlockUpdate(value=short_memory_value),
-        actor=actor,
-    )
+    # This should NOT raise "No assistant message found from indices 650 to 65"
+    # With the fix, message_count_cutoff_percent starts at max(0.7, 0.10) = 0.7
+    # So message_cutoff_index = round(0.7 * 65) = 46, which is valid
+    try:
+        summary, remaining_messages = await self_summarize_sliding_window(
+            actor=actor,
+            agent_id="agent-test-self-sliding-window",
+            agent_llm_config=llm_config,
+            telemetry_manager=TelemetryManager(),
+            llm_client=LLMClient.create(llm_config),
+            agent_type=AgentType.letta_v1_agent,
+            messages=messages,
+            compaction_settings=summarizer_config,
+            timezone="UTC",
+        )
 
-    # Reload agent state after repairs
-    agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=agent_state.id, actor=actor)
-    print("REPAIRED AGENT STATE ======")
-    print(agent_state.system)
-    print(agent_state.blocks)
+        # Verify the summary was generated (actual LLM response)
+        assert summary is not None
+        assert len(summary) > 0
 
-    # Create a new run for the repaired agent
-    run = PydanticRun(agent_id=agent_state.id)
-    run = await RunManager().create_run(pydantic_run=run, actor=actor)
+        # Verify remaining messages is a valid subset
+        assert len(remaining_messages) < len(messages)
+        assert len(remaining_messages) > 0
 
-    # Create a new agent loop with the repaired agent state
-    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+        print(f"Successfully summarized {len(messages)} messages to {len(remaining_messages)} remaining")
+        print(f"Summary: {summary[:200]}..." if len(summary) > 200 else f"Summary: {summary}")
+        print(f"Using {llm_config.model_endpoint_type} token counter for model {llm_config.model}")
 
-    # Now the agent should be able to respond without context window errors
-    response = await agent_loop.step(
-        input_messages=[input_message],
-        run_id=run.id,
-        max_steps=3,
-    )
+    except ValueError as e:
+        if "No assistant message found from indices" in str(e):
+            # Extract the indices from the error message
+            import re
 
-    # Verify we got a valid response after repair
-    assert response is not None
-    assert response.messages is not None
-    print(f"Agent successfully responded after repair with {len(response.messages)} messages")
+            match = re.search(r"from indices (\d+) to (\d+)", str(e))
+            if match:
+                start_idx, end_idx = int(match.group(1)), int(match.group(2))
+                pytest.fail(
+                    f"Bug detected: cutoff index ({start_idx}) exceeds message count ({end_idx}). "
+                    f"This indicates the percentage calculation bug where 10 was used instead of 0.10. "
+                    f"Error: {e}"
+                )
+        raise
+
+
+### NOTE: removing edge case test where sys prompt is huge for now
+### because we no longer refresh the system prompt before compaction
+### in order to leverage caching (for self compaction)
+# @pytest.mark.asyncio
+# @pytest.mark.parametrize(
+#     "llm_config",
+#     TESTED_LLM_CONFIGS,
+#     ids=[c.model for c in TESTED_LLM_CONFIGS],
+# )
+# async def test_large_system_prompt_summarization(server: SyncServer, actor, llm_config: LLMConfig):
+#     """
+#     Test edge case of large system prompt / memory blocks.
+
+#     This test verifies that summarization handles the case where the system prompt
+#     and memory blocks are very large, potentially consuming most of the context window.
+#     The summarizer should gracefully handle this scenario without errors.
+#     """
+
+#     # Override context window to be small so we trigger summarization
+#     llm_config.context_window = 10000
+
+#     # Create agent with large system prompt and memory blocks
+#     agent_name = f"test_agent_large_system_prompt_{llm_config.model}".replace(".", "_").replace("/", "_")
+#     agent_create = CreateAgent(
+#         name=agent_name,
+#         llm_config=llm_config,
+#         embedding_config=DEFAULT_EMBEDDING_CONFIG,
+#         system="SYSTEM PROMPT " * 10000,  # Large system prompt
+#         memory_blocks=[
+#             CreateBlock(
+#                 label="human",
+#                 limit=200000,
+#                 value="NAME " * 10000,  # Large memory block
+#             )
+#         ],
+#     )
+#     agent_state = await server.agent_manager.create_agent_async(agent_create, actor=actor)
+
+#     # Create a run for the agent using RunManager
+#     run = PydanticRun(agent_id=agent_state.id)
+#     run = await RunManager().create_run(pydantic_run=run, actor=actor)
+
+#     # Create the agent loop using LettaAgentV3
+#     agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+#     # message the agent
+#     input_message = MessageCreate(role=MessageRole.user, content="Hello")
+
+#     # Call step on the agent - may trigger summarization due to large context
+#     from letta.errors import SystemPromptTokenExceededError
+
+#     with pytest.raises(SystemPromptTokenExceededError):
+#         response = await agent_loop.step(
+#             input_messages=[input_message],
+#             run_id=run.id,
+#             max_steps=3,
+#         )
+
+#     # Repair the agent by shortening the memory blocks and system prompt
+#     # Update system prompt to a shorter version
+#     short_system_prompt = "You are a helpful assistant."
+#     await server.agent_manager.update_agent_async(
+#         agent_id=agent_state.id,
+#         agent_update=UpdateAgent(system=short_system_prompt),
+#         actor=actor,
+#     )
+
+#     # Update memory block to a shorter version
+#     short_memory_value = "The user's name is Alice."
+#     await server.agent_manager.modify_block_by_label_async(
+#         agent_id=agent_state.id,
+#         block_label="human",
+#         block_update=BlockUpdate(value=short_memory_value),
+#         actor=actor,
+#     )
+
+#     # Reload agent state after repairs
+#     agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=agent_state.id, actor=actor)
+#     print("REPAIRED AGENT STATE ======")
+#     print(agent_state.system)
+#     print(agent_state.blocks)
+
+#     # Create a new run for the repaired agent
+#     run = PydanticRun(agent_id=agent_state.id)
+#     run = await RunManager().create_run(pydantic_run=run, actor=actor)
+
+#     # Create a new agent loop with the repaired agent state
+#     agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+#     # Now the agent should be able to respond without context window errors
+#     response = await agent_loop.step(
+#         input_messages=[input_message],
+#         run_id=run.id,
+#         max_steps=3,
+#     )
+
+#     # Verify we got a valid response after repair
+#     assert response is not None
+#     assert response.messages is not None
+#     print(f"Agent successfully responded after repair with {len(response.messages)} messages")
 
 
 # @pytest.mark.asyncio
@@ -1563,3 +1832,453 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     print(f"Successfully summarized {len(messages)} messages using 'all' mode")
     print(f"Summary: {summary[:200]}..." if len(summary) > 200 else f"Summary: {summary}")
     print(f"Using {llm_config.model_endpoint_type} for model {llm_config.model}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+async def test_summarize_self(server: SyncServer, actor, llm_config: LLMConfig):
+    """
+    Test the summarize_all function with real LLM calls.
+
+    This test verifies that the 'all' summarization mode works correctly,
+    summarizing the entire conversation into a single summary string.
+    """
+    from letta.llm_api.llm_client import LLMClient
+    from letta.schemas.agent import AgentType
+    from letta.services.summarizer.self_summarizer import self_summarize_all
+    from letta.services.summarizer.summarizer_config import CompactionSettings
+    from letta.services.telemetry_manager import TelemetryManager
+
+    # Create a summarizer config with "self" mode
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    summarizer_config = CompactionSettings(model=handle)
+    summarizer_config.mode = "self"
+
+    # Create test messages - a simple conversation
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        )
+    ]
+
+    # Add 10 user-assistant pairs
+    for i in range(10):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}: What is {i} + {i}?")],
+            )
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Assistant response {i}: {i} + {i} = {i * 2}.")],
+            )
+        )
+
+    assert len(messages) == 21, f"Expected 21 messages, got {len(messages)}"
+
+    # Call summarize_all with real LLM
+    summary, new_in_context_messages = await self_summarize_all(
+        actor=actor,
+        agent_id="agent-test-self-sliding-window",
+        agent_llm_config=llm_config,
+        telemetry_manager=TelemetryManager(),
+        llm_client=LLMClient.create(llm_config),
+        agent_type=AgentType.letta_v1_agent,
+        messages=messages,
+        compaction_settings=summarizer_config,
+        timezone="UTC",
+    )
+
+    # Verify the summary was generated
+    assert len(new_in_context_messages) == 1
+    assert summary is not None
+    assert len(summary) > 0
+    assert len(summary) <= 5000  # length should be less than 500 words, give some buffer in test
+
+    print(f"Successfully summarized {len(messages)} messages using 'self' mode")
+    print(f"Summary: {summary[:200]}..." if len(summary) > 200 else f"Summary: {summary}")
+    print(f"Using {llm_config.model_endpoint_type} for model {llm_config.model}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+async def test_self_mode_fallback(server: SyncServer, actor, llm_config: LLMConfig):
+    """If self summarize fails, it should have proper fallback."""
+    from unittest.mock import AsyncMock, patch
+
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        )
+    ]
+    for i in range(10):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}: Test message {i}.")],
+            )
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Assistant response {i}: Acknowledged message {i}.")],
+            )
+        )
+
+    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    agent_state.compaction_settings = CompactionSettings(model=handle, mode="self_compact_all")
+
+    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+    # Mock self_summarize_all to always fail
+    with patch(
+        "letta.services.summarizer.compact.self_summarize_all",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError("Simulated self_summarize_all failure"),
+    ):
+        summary_message, compacted_messages, summary_text = await agent_loop.compact(messages=in_context_messages)
+
+        assert summary_message is not None
+        assert summary_text is not None
+        assert len(summary_text) > 0
+        assert len(compacted_messages) < len(in_context_messages)
+        print(f"Fallback succeeded: {len(in_context_messages)} -> {len(compacted_messages)} messages")
+
+
+# =============================================================================
+# CompactionStats tests
+# =============================================================================
+
+
+def test_compaction_stats_embedding_in_packed_json():
+    """Test that compaction_stats are correctly embedded in the packed JSON by package_summarize_message_no_counts."""
+    from letta.system import package_summarize_message_no_counts
+
+    stats = {
+        "trigger": "post_step_context_check",
+        "context_tokens_before": 50000,
+        "context_tokens_after": 15000,
+        "context_window": 128000,
+        "messages_count_before": 45,
+        "messages_count_after": 12,
+    }
+
+    packed = package_summarize_message_no_counts(
+        summary="Test summary content",
+        timezone="UTC",
+        compaction_stats=stats,
+    )
+
+    # Parse the packed JSON
+    packed_json = json.loads(packed)
+
+    # Verify structure
+    assert "type" in packed_json
+    assert packed_json["type"] == "system_alert"
+    assert "message" in packed_json
+    assert "Test summary content" in packed_json["message"]
+    assert "compaction_stats" in packed_json
+
+    # Verify stats content
+    embedded_stats = packed_json["compaction_stats"]
+    assert embedded_stats["trigger"] == "post_step_context_check"
+    assert embedded_stats["context_tokens_before"] == 50000
+    assert embedded_stats["context_tokens_after"] == 15000
+    assert embedded_stats["context_window"] == 128000
+    assert embedded_stats["messages_count_before"] == 45
+    assert embedded_stats["messages_count_after"] == 12
+
+
+def test_compaction_stats_embedding_without_stats():
+    """Test that packed JSON works correctly when no stats are provided."""
+    from letta.system import package_summarize_message_no_counts
+
+    packed = package_summarize_message_no_counts(
+        summary="Test summary content",
+        timezone="UTC",
+        compaction_stats=None,
+    )
+
+    packed_json = json.loads(packed)
+
+    assert "type" in packed_json
+    assert "message" in packed_json
+    assert "compaction_stats" not in packed_json
+
+
+def test_extract_compaction_stats_from_packed_json():
+    """Test extracting CompactionStats from a packed JSON string."""
+    from letta.schemas.letta_message import CompactionStats, extract_compaction_stats_from_packed_json
+
+    packed_json = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Test summary",
+            "time": "2024-01-15T10:00:00",
+            "compaction_stats": {
+                "trigger": "context_window_exceeded",
+                "context_tokens_before": 100000,
+                "context_tokens_after": 30000,
+                "context_window": 128000,
+                "messages_count_before": 50,
+                "messages_count_after": 15,
+            },
+        }
+    )
+
+    stats = extract_compaction_stats_from_packed_json(packed_json)
+
+    assert stats is not None
+    assert isinstance(stats, CompactionStats)
+    assert stats.trigger == "context_window_exceeded"
+    assert stats.context_tokens_before == 100000
+    assert stats.context_tokens_after == 30000
+    assert stats.context_window == 128000
+    assert stats.messages_count_before == 50
+    assert stats.messages_count_after == 15
+
+
+def test_extract_compaction_stats_from_packed_json_without_stats():
+    """Test that extraction returns None when no stats are present (backward compatibility)."""
+    from letta.schemas.letta_message import extract_compaction_stats_from_packed_json
+
+    # Old format without compaction_stats
+    packed_json = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Test summary",
+            "time": "2024-01-15T10:00:00",
+        }
+    )
+
+    stats = extract_compaction_stats_from_packed_json(packed_json)
+
+    assert stats is None
+
+
+def test_extract_compaction_stats_from_packed_json_invalid_json():
+    """Test that extraction handles invalid JSON gracefully."""
+    from letta.schemas.letta_message import extract_compaction_stats_from_packed_json
+
+    stats = extract_compaction_stats_from_packed_json("not valid json")
+    assert stats is None
+
+    stats = extract_compaction_stats_from_packed_json("")
+    assert stats is None
+
+
+def test_extract_compaction_stats_from_packed_json_invalid_stats():
+    """Test that extraction handles invalid stats structure gracefully."""
+    from letta.schemas.letta_message import extract_compaction_stats_from_packed_json
+
+    # Missing required fields
+    packed_json = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Test summary",
+            "compaction_stats": {
+                "trigger": "test",
+                # Missing context_window, messages_count_before, messages_count_after
+            },
+        }
+    )
+
+    stats = extract_compaction_stats_from_packed_json(packed_json)
+    assert stats is None  # Should return None due to validation failure
+
+
+def test_extract_compaction_stats_from_message():
+    """Test extracting CompactionStats from a Message object."""
+    from letta.agents.letta_agent_v3 import extract_compaction_stats_from_message
+    from letta.schemas.letta_message import CompactionStats
+
+    packed_content = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Test summary",
+            "time": "2024-01-15T10:00:00",
+            "compaction_stats": {
+                "trigger": "post_step_context_check",
+                "context_tokens_before": 50000,
+                "context_tokens_after": 15000,
+                "context_window": 128000,
+                "messages_count_before": 45,
+                "messages_count_after": 12,
+            },
+        }
+    )
+
+    message = PydanticMessage(
+        role=MessageRole.summary,
+        content=[TextContent(type="text", text=packed_content)],
+    )
+
+    stats = extract_compaction_stats_from_message(message)
+
+    assert stats is not None
+    assert isinstance(stats, CompactionStats)
+    assert stats.trigger == "post_step_context_check"
+    assert stats.context_tokens_before == 50000
+    assert stats.messages_count_after == 12
+
+
+def test_extract_compaction_stats_from_message_without_stats():
+    """Test that Message extraction returns None when no stats are present."""
+    from letta.agents.letta_agent_v3 import extract_compaction_stats_from_message
+
+    packed_content = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Old format summary",
+            "time": "2024-01-15T10:00:00",
+        }
+    )
+
+    message = PydanticMessage(
+        role=MessageRole.summary,
+        content=[TextContent(type="text", text=packed_content)],
+    )
+
+    stats = extract_compaction_stats_from_message(message)
+    assert stats is None
+
+
+def test_message_to_summary_message_with_stats():
+    """Test that Message._convert_summary_message extracts compaction_stats."""
+    from letta.schemas.letta_message import CompactionStats
+
+    packed_content = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Summary of conversation",
+            "time": "2024-01-15T10:00:00",
+            "compaction_stats": {
+                "trigger": "context_window_exceeded",
+                "context_tokens_before": 80000,
+                "context_tokens_after": 25000,
+                "context_window": 128000,
+                "messages_count_before": 60,
+                "messages_count_after": 20,
+            },
+        }
+    )
+
+    message = PydanticMessage(
+        role=MessageRole.summary,
+        content=[TextContent(type="text", text=packed_content)],
+    )
+
+    # Convert to SummaryMessage (as_user_message=False)
+    summary_msg = message._convert_summary_message(as_user_message=False)
+
+    assert summary_msg.message_type == "summary_message"
+    assert summary_msg.compaction_stats is not None
+    assert isinstance(summary_msg.compaction_stats, CompactionStats)
+    assert summary_msg.compaction_stats.trigger == "context_window_exceeded"
+    assert summary_msg.compaction_stats.context_tokens_before == 80000
+
+
+def test_message_to_summary_message_backward_compatible():
+    """Test that old messages without compaction_stats still convert correctly."""
+    packed_content = json.dumps(
+        {
+            "type": "system_alert",
+            "message": "Old format summary without stats",
+            "time": "2024-01-15T10:00:00",
+        }
+    )
+
+    message = PydanticMessage(
+        role=MessageRole.summary,
+        content=[TextContent(type="text", text=packed_content)],
+    )
+
+    summary_msg = message._convert_summary_message(as_user_message=False)
+
+    assert summary_msg.message_type == "summary_message"
+    assert summary_msg.compaction_stats is None  # Should be None for old messages
+    assert "Old format summary" in summary_msg.summary
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+async def test_compact_with_stats_params_embeds_stats(server: SyncServer, actor, llm_config: LLMConfig):
+    """
+    Integration test: compact() with trigger/context_tokens_before/messages_count_before
+    embeds compaction_stats in the packed message content.
+    """
+    from letta.agents.letta_agent_v3 import extract_compaction_stats_from_message
+
+    # Create a conversation with enough messages to summarize
+    messages = [
+        PydanticMessage(
+            role=MessageRole.system,
+            content=[TextContent(type="text", text="You are a helpful assistant.")],
+        )
+    ]
+    for i in range(10):
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(type="text", text=f"User message {i}")],
+            )
+        )
+        messages.append(
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(type="text", text=f"Response {i}")],
+            )
+        )
+
+    agent_state, in_context_messages = await create_agent_with_messages(server, actor, llm_config, messages)
+
+    handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
+    agent_state.compaction_settings = CompactionSettings(model=handle, mode="all")
+
+    agent_loop = LettaAgentV3(agent_state=agent_state, actor=actor)
+
+    # Call compact with stats params
+    summary_message_obj, compacted_messages, _summary_text = await agent_loop.compact(
+        messages=in_context_messages,
+        use_summary_role=True,
+        trigger="post_step_context_check",
+        context_tokens_before=50000,
+        messages_count_before=len(in_context_messages),
+    )
+
+    # Extract stats from the message
+    stats = extract_compaction_stats_from_message(summary_message_obj)
+
+    assert stats is not None, "CompactionStats should be embedded in the message"
+    assert stats.trigger == "post_step_context_check"
+    assert stats.context_tokens_before == 50000
+    assert stats.messages_count_before == len(in_context_messages)
+    assert stats.context_tokens_after is not None  # Should be set by compact()
+    assert stats.messages_count_after == len(compacted_messages)  # final_messages already includes summary
+    assert stats.context_window == llm_config.context_window
+
+
+### basic self summarization
+
+
+### fallback chain
+
+### basic self sliding window summarization
+
+### self sliding window preserves recent msgs
+
+### self mode return compaction stats

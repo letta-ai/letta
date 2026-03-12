@@ -41,10 +41,10 @@ def _parse_clickhouse_endpoint(endpoint: str) -> tuple[str, int, bool]:
 @dataclass(frozen=True)
 class ClickhouseProviderTraceRow:
     created_at: Any
-    trace_id: str
+    id: str
     step_id: str
-    request_data: str | None
-    response_data: str | None
+    request_json: str | None
+    response_json: str | None
 
 
 @singleton
@@ -87,15 +87,15 @@ class ClickhouseProviderTraceReader:
         client = self._get_client()
         query = """
         SELECT
-            Timestamp AS created_at,
-            TraceId AS trace_id,
-            SpanAttributes['parameter.step_id'] AS step_id,
-            SpanAttributes['request_data'] AS request_data,
-            SpanAttributes['response_data'] AS response_data
-        FROM llm_provider_traces
-        WHERE SpanAttributes['parameter.step_id'] = %(step_id)s
-          AND position(SpanAttributes['parameter.actor'], %(org_match)s) > 0
-        ORDER BY Timestamp DESC
+            created_at,
+            id,
+            step_id,
+            request_json,
+            response_json
+        FROM llm_traces
+        WHERE step_id = %(step_id)s
+          AND organization_id = %(organization_id)s
+        ORDER BY created_at DESC
         LIMIT 1
         """
 
@@ -103,7 +103,7 @@ class ClickhouseProviderTraceReader:
             query,
             parameters={
                 "step_id": step_id,
-                "org_match": f"organization_id='{organization_id}'",
+                "organization_id": organization_id,
             },
         )
 
@@ -111,13 +111,12 @@ class ClickhouseProviderTraceReader:
             return None
 
         row = result.result_rows[0]
-        # Order matches SELECT above
         return ClickhouseProviderTraceRow(
             created_at=row[0],
-            trace_id=row[1],
+            id=row[1],
             step_id=row[2],
-            request_data=row[3],
-            response_data=row[4],
+            request_json=row[3],
+            response_json=row[4],
         )
 
     async def get_provider_trace_by_step_id_async(self, *, step_id: str, organization_id: str) -> ProviderTrace | None:
@@ -126,9 +125,9 @@ class ClickhouseProviderTraceReader:
             return None
 
         return ProviderTrace(
-            id=f"provider_trace-{row.trace_id}",
+            id=f"provider_trace-{row.id}",
             step_id=row.step_id,
-            request_json=_parse_json_maybe(row.request_data),
-            response_json=_parse_json_maybe(row.response_data),
+            request_json=_parse_json_maybe(row.request_json),
+            response_json=_parse_json_maybe(row.response_json),
             created_at=row.created_at,
         )

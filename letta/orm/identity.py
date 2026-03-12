@@ -1,5 +1,10 @@
 import uuid
-from typing import List
+from typing import TYPE_CHECKING, List
+
+if TYPE_CHECKING:
+    from letta.orm.agent import Agent
+    from letta.orm.block import Block
+    from letta.orm.organization import Organization
 
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSON

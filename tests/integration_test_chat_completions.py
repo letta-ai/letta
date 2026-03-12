@@ -1,7 +1,6 @@
 import os
 import threading
 import uuid
-from typing import List
 
 import pytest
 from dotenv import load_dotenv
@@ -12,7 +11,6 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import MessageCreate
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage as OpenAIUserMessage
 from letta.schemas.usage import LettaUsageStatistics
 from tests.utils import wait_for_server

@@ -1227,7 +1227,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     # }
                     try:
                         func_args = parse_json(function_call.function.arguments)
-                    except:
+                    except Exception:
                         func_args = function_call.function.arguments
                     # processed_chunk = {
                     #     "function_call": f"{function_call.function.name}({func_args})",
@@ -1262,7 +1262,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 else:
                     try:
                         func_args = parse_json(function_call.function.arguments)
-                    except:
+                    except Exception:
                         logger.warning(f"Failed to parse function arguments: {function_call.function.arguments}")
                         func_args = {}
 

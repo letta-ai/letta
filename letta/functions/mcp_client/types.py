@@ -98,6 +98,32 @@ class BaseServerConfig(BaseModel):
 
         return result
 
+    @staticmethod
+    def _sanitize_dict_key(key: str) -> str:
+        """Strip surrounding quotes and trailing colons from a dict key."""
+        key = key.strip()
+        for quote in ('"', "'"):
+            if key.startswith(quote) and key.endswith(quote):
+                key = key[1:-1]
+                break
+        key = key.rstrip(":")
+        return key.strip()
+
+    @staticmethod
+    def _sanitize_dict_value(value: str) -> str:
+        """Strip surrounding quotes from a dict value."""
+        value = value.strip()
+        for quote in ('"', "'"):
+            if value.startswith(quote) and value.endswith(quote):
+                value = value[1:-1]
+                break
+        return value
+
+    @classmethod
+    def _sanitize_dict(cls, d: Dict[str, str]) -> Dict[str, str]:
+        """Sanitize a string dict by stripping quotes from keys and values."""
+        return {cls._sanitize_dict_key(k): cls._sanitize_dict_value(v) for k, v in d.items()}
+
     def resolve_custom_headers(
         self, custom_headers: Optional[Dict[str, str]], environment_variables: Optional[Dict[str, str]] = None
     ) -> Optional[Dict[str, str]]:
@@ -113,6 +139,8 @@ class BaseServerConfig(BaseModel):
         """
         if custom_headers is None:
             return None
+
+        custom_headers = self._sanitize_dict(custom_headers)
 
         resolved_headers = {}
         for key, value in custom_headers.items():
@@ -164,8 +192,12 @@ class HTTPBasedServerConfig(BaseServerConfig):
         return None
 
     def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
-        if self.auth_token and super().is_templated_tool_variable(self.auth_token):
-            self.auth_token = super().get_tool_variable(self.auth_token, environment_variables)
+        if self.auth_header:
+            self.auth_header = self._sanitize_dict_key(self.auth_header)
+        if self.auth_token:
+            self.auth_token = self._sanitize_dict_value(self.auth_token)
+            if super().is_templated_tool_variable(self.auth_token):
+                self.auth_token = super().get_tool_variable(self.auth_token, environment_variables)
 
         self.custom_headers = super().resolve_custom_headers(self.custom_headers, environment_variables)
 
@@ -176,11 +208,11 @@ class HTTPBasedServerConfig(BaseServerConfig):
         Returns:
             Dictionary of headers or None if no headers are configured
         """
-        if self.custom_headers is not None or (self.auth_header is not None and self.auth_token is not None):
+        if self.custom_headers is not None or (self.auth_header and self.auth_token):
             headers = self.custom_headers.copy() if self.custom_headers else {}
 
-            # Add auth header if specified
-            if self.auth_header is not None and self.auth_token is not None:
+            # Add auth header if specified (skip if either is empty to avoid illegal header values)
+            if self.auth_header and self.auth_token:
                 headers[self.auth_header] = self.auth_token
 
             return headers

@@ -3,16 +3,14 @@ Local test for temporal metrics.
 Run with: uv run pytest tests/test_temporal_metrics_local.py -v -s
 """
 
-import asyncio
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from letta.agents.temporal.metrics import (
     ActivityMetrics,
     TemporalMetrics,
-    WorkerMetrics,
     WorkflowMetrics,
 )
 

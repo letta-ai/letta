@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -551,19 +550,39 @@ class BlockManager:
             result = await session.execute(query)
             blocks = result.scalars().all()
 
-            # Convert to Pydantic models
+            # Convert to Pydantic models and preserve caller-provided ID order
             pydantic_blocks = [block.to_pydantic() for block in blocks]
+            blocks_by_id = {b.id: b for b in pydantic_blocks}
+            ordered_blocks = [blocks_by_id.get(block_id) for block_id in block_ids]
 
-            # For backward compatibility, add None for missing blocks
+            # For backward compatibility, include None for missing blocks
             if len(pydantic_blocks) < len(block_ids):
-                {block.id for block in pydantic_blocks}
-                result_blocks = []
-                for block_id in block_ids:
-                    block = next((b for b in pydantic_blocks if b.id == block_id), None)
-                    result_blocks.append(block)
-                return result_blocks
+                return ordered_blocks
 
-            return pydantic_blocks
+            return ordered_blocks
+
+    @enforce_types
+    @trace_method
+    async def get_blocks_by_agent_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticBlock]:
+        """Retrieve all blocks attached to a specific agent."""
+        async with db_registry.async_session() as session:
+            query = (
+                select(BlockModel)
+                .join(BlocksAgents, BlockModel.id == BlocksAgents.block_id)
+                .where(
+                    BlocksAgents.agent_id == agent_id,
+                    BlockModel.organization_id == actor.organization_id,
+                )
+                .options(
+                    noload(BlockModel.agents),
+                    noload(BlockModel.identities),
+                    noload(BlockModel.groups),
+                    noload(BlockModel.tags),
+                )
+            )
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+            return [block.to_pydantic() for block in blocks]
 
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)

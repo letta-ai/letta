@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import Any, List, Optional
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
+
+INT32_MAX = 2147483647
 
 # block of the LLM context
 
@@ -47,6 +49,22 @@ class BaseBlock(LettaBase, validate_assignment=True):
     #     return len(self.value)
 
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
+
+    @field_validator("limit", mode="after")
+    @classmethod
+    def validate_limit_int32(cls, v: int) -> int:
+        """Ensure limit is within PostgreSQL INTEGER (int32) range."""
+        if v > INT32_MAX:
+            raise ValueError(f"limit must be <= {INT32_MAX} (int32 max), got {v}")
+        return v
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def sanitize_value_null_bytes(cls, v):
+        """Remove null bytes from value to prevent PostgreSQL encoding errors."""
+        if isinstance(v, str):
+            return v.replace("\x00", "")
+        return v
 
     @model_validator(mode="before")
     @classmethod

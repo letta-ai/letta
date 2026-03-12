@@ -96,6 +96,14 @@ class ProviderCategory(str, Enum):
     byok = "byok"
 
 
+class LLMCallType(str, Enum):
+    """Type of LLM call for telemetry tracking."""
+
+    agent_step = "agent_step"
+    summarization = "summarization"
+    tool_generation = "tool_generation"
+
+
 class MessageRole(str, Enum):
     assistant = "assistant"
     user = "user"
@@ -103,6 +111,7 @@ class MessageRole(str, Enum):
     function = "function"
     system = "system"
     approval = "approval"
+    summary = "summary"
 
 
 class MessageSourceType(str, Enum):

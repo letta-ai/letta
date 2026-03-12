@@ -72,7 +72,7 @@ def roll_dice_tool(client):
 
 @pytest.fixture()
 def rethink_tool(client):
-    def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> str:  # type: ignore
+    def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> str:  # type: ignore  # noqa: F821
         """
         Re-evaluate the memory in block_name, integrating new and updated facts.
         Replace outdated information with the most likely truths, avoiding redundancy with original memories.

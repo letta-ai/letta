@@ -20,7 +20,6 @@ from letta.server.rest_api.redis_stream_manager import redis_sse_stream_generato
 from letta.server.rest_api.streaming_response import (
     StreamingResponseWithStatusCode,
     add_keepalive_to_stream,
-    cancellation_aware_stream_wrapper,
 )
 from letta.server.server import SyncServer
 from letta.services.clickhouse_otel_traces import ClickhouseOtelTracesReader

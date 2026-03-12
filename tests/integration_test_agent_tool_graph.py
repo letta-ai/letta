@@ -4,11 +4,9 @@ import uuid
 
 import pytest
 
-from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.config import LettaConfig
 from letta.schemas.letta_message import ToolCallMessage
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import MessageCreate
 from letta.schemas.run import Run
 from letta.schemas.tool_rule import (
@@ -282,7 +280,7 @@ async def complex_child_tool(server):
         Returns:
             str: Summary string encoding the provided inputs.
         """
-        return f"ok:{text}:{num}:{flag}:{len(arr)}:{len(obj)}"
+        return f"ok:{text}:{num}:{flag}:{len(arr)}"
 
     actor = await server.user_manager.get_actor_or_default_async()
     tool = await server.tool_manager.create_or_update_tool_async(create_tool_from_func(func=complex_child), actor=actor)

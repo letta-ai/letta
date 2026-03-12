@@ -179,7 +179,7 @@ def _extract_pydantic_classes(tree: ast.AST, imports_map: Dict[str, Any]) -> Dic
                                             pass  # Field is required, no default
                                         else:
                                             field_kwargs["default"] = default_val
-                                    except:
+                                    except Exception:
                                         pass
 
                                 fields[field_name] = Field(**field_kwargs)
@@ -188,7 +188,7 @@ def _extract_pydantic_classes(tree: ast.AST, imports_map: Dict[str, Any]) -> Dic
                                 try:
                                     default_val = ast.literal_eval(stmt.value)
                                     fields[field_name] = default_val
-                                except:
+                                except Exception:
                                     pass
 
                 # Create the dynamic Pydantic model

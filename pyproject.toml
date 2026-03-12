@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.16.4"
+version = "0.16.6"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
@@ -66,7 +66,8 @@ dependencies = [
     "certifi>=2025.6.15",
     "markitdown[docx,pdf,pptx]>=0.1.2",
     "orjson>=3.11.1",
-    "ruff[dev]>=0.12.10",
+    "ruff>=0.12.10",
+    "ty>=0.0.17",
     "trafilatura",
     "readability-lxml",
     "google-genai>=1.52.0",
@@ -77,6 +78,7 @@ dependencies = [
     "clickhouse-connect>=0.10.0",
     "aiofiles>=24.1.0",
     "async-lru>=2.0.5",
+
 ]
 
 [project.scripts]
@@ -176,23 +178,41 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "RUF",  # ruff
+    "FAST", # fastapi
 ]
 ignore = [
-    "E501",  # line too long (handled by formatter)
-    "E402",  # module import not at top of file
-    "E711",  # none-comparison
-    "E712",  # true-false-comparison
-    "E722",  # bare except
-    "E721",  # type comparison
-    "F401",  # unused import
-    "F821",  # undefined name
-    "F811",  # redefined while unused
-    "F841",  # local variable assigned but never used
-    "W293",  # blank line contains whitespace
+    "E402",    # module level import not at top of file
+    "E501",    # line too long (handled by formatter)
+    "E711",    # comparison to None (SQLAlchemy requires ==)
+    "E712",    # comparison to True/False (SQLAlchemy requires ==)
+    "FAST002", # FastAPI dependency without Annotated (large migration)
+    "RUF001",  # ambiguous unicode character in string
+    "RUF002",  # ambiguous unicode character in docstring
+    "RUF003",  # ambiguous unicode character in comment
+    "RUF010",  # explicit conversion flag in f-string
+]
+
+[tool.ty.rules]
+all = "ignore"
+unresolved-reference = "error"
+unresolved-import = "ignore"
+
+[tool.ty.src]
+exclude = ["examples/", "tests/data/"]
+
+[tool.ty.analysis]
+allowed-unresolved-imports = [
+    "letta_client.**",
+    "cowsay",
+    "transformers",
+    "core.utils",
+    "core.menu",
+    "some_nonexistent_package",
 ]
 
 [tool.ruff.lint.isort]

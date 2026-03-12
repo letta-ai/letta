@@ -31,7 +31,7 @@ def get_support_status(passed_tests, feature_tests):
 
     # Filter out error tests when checking for support
     non_error_tests = [test for test in feature_tests if not test.endswith("_error")]
-    error_tests = [test for test in feature_tests if test.endswith("_error")]
+    [test for test in feature_tests if test.endswith("_error")]
 
     # Check which non-error tests passed
     passed_non_error_tests = [test for test in non_error_tests if test in passed_tests]
@@ -137,7 +137,7 @@ def get_github_repo_info():
                 else:
                     return None
                 return repo_path
-    except:
+    except Exception:
         pass
 
     # Default fallback
@@ -335,7 +335,7 @@ def process_model_sweep_report(input_file, output_file, config_file=None, debug=
                 # Format timestamp if it's a full ISO string
                 if "T" in str(last_scanned):
                     last_scanned = str(last_scanned).split("T")[0]  # Just the date part
-            except:
+            except Exception:
                 last_scanned = "Unknown"
 
             # Calculate support score for ranking

@@ -3,11 +3,19 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import OrmMetadataBase
+
+
+class BillingContext(BaseModel):
+    """Billing context for LLM request cost tracking."""
+
+    plan_type: Optional[str] = Field(None, description="Subscription tier")
+    cost_source: Optional[str] = Field(None, description="Cost source: 'quota' or 'credits'")
+    customer_id: Optional[str] = Field(None, description="Customer ID for billing records")
 
 
 class BaseProviderTrace(OrmMetadataBase):
@@ -52,6 +60,8 @@ class ProviderTrace(BaseProviderTrace):
     user_id: Optional[str] = Field(None, description="ID of the user who initiated the request")
     compaction_settings: Optional[Dict[str, Any]] = Field(None, description="Compaction/summarization settings (summarization calls only)")
     llm_config: Optional[Dict[str, Any]] = Field(None, description="LLM configuration used for this call (non-summarization calls only)")
+
+    billing_context: Optional[BillingContext] = Field(None, description="Billing context from request headers")
 
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 

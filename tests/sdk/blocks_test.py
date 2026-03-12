@@ -1,11 +1,11 @@
 from conftest import create_test_module
 from letta_client import UnprocessableEntityError
 
-from letta.constants import CORE_MEMORY_HUMAN_CHAR_LIMIT, CORE_MEMORY_PERSONA_CHAR_LIMIT
+from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
 
 BLOCKS_CREATE_PARAMS = [
-    ("human_block", {"label": "human", "value": "test"}, {"limit": CORE_MEMORY_HUMAN_CHAR_LIMIT}, None),
-    ("persona_block", {"label": "persona", "value": "test1"}, {"limit": CORE_MEMORY_PERSONA_CHAR_LIMIT}, None),
+    ("human_block", {"label": "human", "value": "test"}, {"limit": CORE_MEMORY_BLOCK_CHAR_LIMIT}, None),
+    ("persona_block", {"label": "persona", "value": "test1"}, {"limit": CORE_MEMORY_BLOCK_CHAR_LIMIT}, None),
 ]
 
 BLOCKS_UPDATE_PARAMS = [

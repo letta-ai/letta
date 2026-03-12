@@ -4,6 +4,7 @@ import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+import httpx
 import pytest
 from dotenv import load_dotenv
 from letta_client import APIError, Letta
@@ -59,7 +60,7 @@ def mock_openai_server():
             self.end_headers()
             self.wfile.write(body)
 
-        def do_GET(self):  # noqa: N802
+        def do_GET(self):
             # Support OpenAI model listing used during provider sync.
             if self.path in ("/v1/models", "/models"):
                 self._send_json(
@@ -77,7 +78,7 @@ def mock_openai_server():
 
             self._send_json(404, {"error": {"message": f"Not found: {self.path}"}})
 
-        def do_POST(self):  # noqa: N802
+        def do_POST(self):
             # Support embeddings endpoint
             if self.path not in ("/v1/embeddings", "/embeddings"):
                 self._send_json(404, {"error": {"message": f"Not found: {self.path}"}})
@@ -167,7 +168,7 @@ def agent(client: Letta):
     agent_state = client.agents.create(
         name="test_client",
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
@@ -183,7 +184,7 @@ def search_agent_one(client: Letta):
     agent_state = client.agents.create(
         name="Search Agent One",
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
@@ -199,7 +200,7 @@ def search_agent_two(client: Letta):
     agent_state = client.agents.create(
         name="Search Agent Two",
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
@@ -236,7 +237,7 @@ def test_add_and_manage_tags_for_agent(client: Letta):
     # Step 0: create an agent with no tags
     agent = client.agents.create(
         memory_blocks=[],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
     assert len(agent.tags) == 0
@@ -280,21 +281,21 @@ def test_agent_tags(client: Letta, clear_tables):
     agent1 = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
         tags=["test", "agent1", "production"],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
     agent2 = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
         tags=["test", "agent2", "development"],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
     agent3 = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
         tags=["test", "agent3", "production"],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
@@ -347,14 +348,14 @@ def test_shared_blocks(disable_e2b_api_key, client: Letta):
         name="agent1",
         memory_blocks=[{"label": "persona", "value": "you are agent 1"}],
         block_ids=[block.id],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
     agent_state2 = client.agents.create(
         name="agent2",
         memory_blocks=[{"label": "persona", "value": "you are agent 2"}],
         block_ids=[block.id],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
     )
 
@@ -373,7 +374,7 @@ def test_update_agent_memory_label(client: Letta):
     """Test that we can update the label of a block in an agent's memory"""
 
     agent = client.agents.create(
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
         memory_blocks=[{"label": "human", "value": ""}],
     )
@@ -425,7 +426,7 @@ def test_update_agent_memory_limit(client: Letta):
     """Test that we can update the limit of a block in an agent's memory"""
 
     agent = client.agents.create(
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
         memory_blocks=[
             {"label": "human", "value": "username: sarah", "limit": 1000},
@@ -484,7 +485,7 @@ def test_function_always_error(client: Letta):
 
     tool = client.tools.upsert_from_function(func=testing_method)
     agent = client.agents.create(
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
         memory_blocks=[
             {
@@ -686,7 +687,7 @@ def test_agent_creation(client: Letta):
             },
             {"label": "persona", "value": "you are an assistant"},
         ],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
         tool_ids=[tool1.id, tool2.id],
         include_base_tools=False,
@@ -725,7 +726,7 @@ def test_initial_sequence(client: Letta):
     # create an agent
     agent = client.agents.create(
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
         initial_message_sequence=[
             MessageCreateParam(
@@ -738,7 +739,7 @@ def test_initial_sequence(client: Letta):
 
     # list messages
     messages = client.agents.messages.list(agent_id=agent.id).items
-    response = client.agents.messages.create(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreateParam(
@@ -757,7 +758,7 @@ def test_initial_sequence(client: Letta):
 # def test_timezone(client: Letta):
 #     agent = client.agents.create(
 #         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-#         model="anthropic/claude-haiku-4-5-20251001",
+#         model="anthropic/claude-haiku-4-5",
 #         embedding="openai/text-embedding-3-small",
 #         timezone="America/Los_Angeles",
 #     )
@@ -792,7 +793,7 @@ def test_initial_sequence(client: Letta):
 def test_attach_sleeptime_block(client: Letta):
     agent = client.agents.create(
         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="anthropic/claude-haiku-4-5-20251001",
+        model="anthropic/claude-haiku-4-5",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
     )
@@ -802,7 +803,7 @@ def test_attach_sleeptime_block(client: Letta):
     group_id = agent.multi_agent_group.id
     group = client.groups.retrieve(group_id=group_id)
     agent_ids = group.agent_ids
-    sleeptime_id = [id for id in agent_ids if id != agent.id][0]
+    sleeptime_id = next(id for id in agent_ids if id != agent.id)
 
     # attach a new block
     block = client.blocks.create(label="test", value="test")  # , project_id="test")
@@ -820,3 +821,207 @@ def test_attach_sleeptime_block(client: Letta):
 
     # cleanup
     client.agents.delete(agent.id)
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Agent Generate Endpoint Tests
+# --------------------------------------------------------------------------------------------------------------------
+
+
+def test_agent_generate_basic(client: Letta, agent: AgentState):
+    """Test basic generate endpoint with simple prompt."""
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={"prompt": "What is 2+2?"},
+        timeout=30.0,
+    )
+
+    # Verify successful response
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+
+    response_data = response.json()
+
+    # Verify response structure
+    assert response_data is not None
+    assert "content" in response_data
+    assert "model" in response_data
+    assert "usage" in response_data
+
+    # Verify content is returned
+    assert response_data["content"] is not None
+    assert len(response_data["content"]) > 0
+    assert isinstance(response_data["content"], str)
+
+    # Verify model is set
+    assert response_data["model"] is not None
+    assert isinstance(response_data["model"], str)
+
+    # Verify usage statistics
+    assert response_data["usage"] is not None
+    assert response_data["usage"]["total_tokens"] > 0
+    assert response_data["usage"]["prompt_tokens"] > 0
+    assert response_data["usage"]["completion_tokens"] > 0
+
+
+def test_agent_generate_with_system_prompt(client: Letta, agent: AgentState):
+    """Test generate endpoint with system prompt."""
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={
+            "prompt": "What is your role?",
+            "system_prompt": "You are a helpful math tutor who always responds with exactly 5 words.",
+        },
+        timeout=30.0,
+    )
+
+    # Verify successful response
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+
+    response_data = response.json()
+
+    # Verify response
+    assert response_data is not None
+    assert response_data["content"] is not None
+    assert len(response_data["content"]) > 0
+
+    # Verify usage includes system prompt tokens
+    assert response_data["usage"]["prompt_tokens"] > 10  # Should include system prompt tokens
+
+
+def test_agent_generate_with_model_override(client: Letta, agent: AgentState):
+    """Test generate endpoint with model override."""
+    # Get the agent's current model
+
+    # Use OpenAI model (more likely to be available in test environment)
+    override_model_handle = "openai/gpt-4o-mini"
+
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={
+            "prompt": "Say hello",
+            "override_model": override_model_handle,
+        },
+        timeout=30.0,
+    )
+
+    # Verify successful response
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+
+    response_data = response.json()
+
+    # Verify response
+    assert response_data is not None
+    assert response_data["content"] is not None
+
+    # Verify the override model was used (model name should be different from original)
+    # Note: The actual model name in response might be the full model name, not the handle
+    assert response_data["model"] is not None
+
+
+def test_agent_generate_empty_prompt_error(client: Letta, agent: AgentState):
+    """Test that empty prompt returns validation error."""
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={"prompt": ""},  # Empty prompt should fail validation
+        timeout=30.0,
+    )
+
+    # Verify it's a validation error (422)
+    assert response.status_code == 422, f"Expected 422, got {response.status_code}: {response.text}"
+
+
+def test_agent_generate_whitespace_prompt_error(client: Letta, agent: AgentState):
+    """Test that whitespace-only prompt returns validation error."""
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={"prompt": "   \n\t  "},  # Whitespace-only prompt should fail validation
+        timeout=30.0,
+    )
+
+    # Verify it's a validation error (422)
+    assert response.status_code == 422, f"Expected 422, got {response.status_code}: {response.text}"
+
+
+def test_agent_generate_invalid_agent_id(client: Letta):
+    """Test that invalid agent ID returns 404."""
+    # Use properly formatted agent ID that doesn't exist
+    fake_agent_id = "agent-00000000-0000-4000-8000-000000000000"
+
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{fake_agent_id}/generate",
+        json={"prompt": "Hello"},
+        timeout=30.0,
+    )
+
+    # Verify it's a not found error (404)
+    assert response.status_code == 404, f"Expected 404, got {response.status_code}: {response.text}"
+    assert "not found" in response.text.lower()
+
+
+def test_agent_generate_invalid_model_override(client: Letta, agent: AgentState):
+    """Test that invalid model override returns 404."""
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={
+            "prompt": "Hello",
+            "override_model": "invalid/model-that-does-not-exist",
+        },
+        timeout=30.0,
+    )
+
+    # Verify it's a not found error (404)
+    assert response.status_code == 404, f"Expected 404, got {response.status_code}: {response.text}"
+    assert "not found" in response.text.lower() or "not accessible" in response.text.lower()
+
+
+def test_agent_generate_long_prompt(client: Letta, agent: AgentState):
+    """Test generate endpoint with a longer prompt."""
+    # Create a longer prompt
+    long_prompt = " ".join(["This is a test sentence."] * 50)
+
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={"prompt": long_prompt},
+        timeout=30.0,
+    )
+
+    # Verify successful response
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+
+    response_data = response.json()
+
+    # Verify response
+    assert response_data is not None
+    assert response_data["content"] is not None
+
+    # Verify token usage reflects the longer prompt
+    assert response_data["usage"]["prompt_tokens"] > 100  # Should have substantial prompt tokens
+
+
+def test_agent_generate_no_persistence(client: Letta, agent: AgentState):
+    """Test that generate endpoint does not persist messages to agent."""
+    # Get initial message count
+    initial_messages = client.agents.messages.list(agent_id=agent.id).items
+    initial_count = len(initial_messages)
+
+    # Make a generate request
+    response = httpx.post(
+        f"{client._client._base_url}/v1/agents/{agent.id}/generate",
+        json={"prompt": "This should not be saved to agent memory"},
+        timeout=30.0,
+    )
+
+    # Verify successful response
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+
+    response_data = response.json()
+
+    # Verify response was generated
+    assert response_data is not None
+    assert response_data["content"] is not None
+
+    # Verify no new messages were added to the agent
+    final_messages = client.agents.messages.list(agent_id=agent.id).items
+    final_count = len(final_messages)
+
+    assert final_count == initial_count, "Generate endpoint should not persist messages"

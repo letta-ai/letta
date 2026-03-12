@@ -90,7 +90,6 @@ class Provider(ProviderBase):
     def list_llm_models(self) -> list[LLMConfig]:
         """List available LLM models (deprecated: use list_llm_models_async)"""
         import asyncio
-        import warnings
 
         logger.warning("list_llm_models is deprecated, use list_llm_models_async instead", stacklevel=2)
 
@@ -115,7 +114,6 @@ class Provider(ProviderBase):
     def list_embedding_models(self) -> list[EmbeddingConfig]:
         """List available embedding models (deprecated: use list_embedding_models_async)"""
         import asyncio
-        import warnings
 
         logger.warning("list_embedding_models is deprecated, use list_embedding_models_async instead", stacklevel=2)
 
@@ -263,6 +261,11 @@ class ProviderCreate(ProviderBase):
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
 
+    @field_validator("api_key", "access_key", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
+
 
 class ProviderUpdate(ProviderBase):
     api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
@@ -270,6 +273,11 @@ class ProviderUpdate(ProviderBase):
     region: str | None = Field(None, description="Region used for requests to the provider.")
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
+
+    @field_validator("api_key", "access_key", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
 
 
 class ProviderCheck(BaseModel):
@@ -279,3 +287,8 @@ class ProviderCheck(BaseModel):
     region: str | None = Field(None, description="Region used for requests to the provider.")
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
+
+    @field_validator("api_key", "access_key", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v

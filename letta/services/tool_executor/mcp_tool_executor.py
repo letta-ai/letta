@@ -65,12 +65,20 @@ class ExternalMCPToolExecutor(ToolExecutor):
             # Check if this is an expected MCP error (ToolError, McpError)
             # These are user-facing errors from the external MCP server (e.g., "No connected account found")
             # We handle them gracefully instead of letting them propagate as exceptions
-            if e.__class__.__name__ in MCP_EXPECTED_ERROR_CLASSES:
-                logger.info(f"MCP tool '{function_name}' returned expected error: {str(e)}")
+
+            # Handle ExceptionGroup wrapping (Python 3.11+ async TaskGroup can wrap exceptions)
+            exception_to_check = e
+            if hasattr(e, "exceptions") and e.exceptions:
+                # If it's an ExceptionGroup with a single wrapped exception, unwrap it
+                if len(e.exceptions) == 1:
+                    exception_to_check = e.exceptions[0]
+
+            if exception_to_check.__class__.__name__ in MCP_EXPECTED_ERROR_CLASSES:
+                logger.info(f"MCP tool '{function_name}' returned expected error: {str(exception_to_check)}")
                 error_message = get_friendly_error_msg(
                     function_name=function_name,
-                    exception_name=e.__class__.__name__,
-                    exception_message=str(e),
+                    exception_name=exception_to_check.__class__.__name__,
+                    exception_message=str(exception_to_check),
                 )
                 return ToolExecutionResult(
                     status="error",

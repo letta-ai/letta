@@ -16,7 +16,6 @@ from letta_client.types.tool_return_message import ToolReturnMessage
 from letta.functions.mcp_client.types import StdioServerConfig
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 
 # ------------------------------

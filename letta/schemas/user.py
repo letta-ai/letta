@@ -6,6 +6,7 @@ from pydantic import Field
 from letta.constants import DEFAULT_ORG_ID
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
+from letta.validators import UserId
 
 
 class UserBase(LettaBase):
@@ -29,6 +30,6 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(UserBase):
-    id: str = Field(..., description="The id of the user to update.")
+    id: UserId = Field(..., description="The id of the user to update.")
     name: Optional[str] = Field(None, description="The new name of the user.")
     organization_id: Optional[str] = Field(None, description="The new organization id of the user.")

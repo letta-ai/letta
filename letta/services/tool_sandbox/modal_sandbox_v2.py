@@ -192,7 +192,7 @@ class AsyncToolSandboxModalV2(AsyncToolSandboxBase):
                 log_event("modal_v2_deploy_already_exists", {"app_name": app_full_name, "version": version})
                 # Return the created app with the function attached
                 return app
-            except:
+            except Exception:
                 # App doesn't exist, need to deploy
                 pass
 

@@ -20,6 +20,7 @@ from letta.errors import (
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
+    LLMInsufficientCreditsError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMRateLimitError,
@@ -27,7 +28,8 @@ from letta.errors import (
     LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
-from letta.llm_api.error_utils import is_context_window_overflow_message
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
+from letta.llm_api.error_utils import is_context_window_overflow_message, is_insufficient_credits_message
 from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
@@ -39,13 +41,13 @@ from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import (
     ChatCompletionRequest,
     FunctionCall as ToolFunctionChoiceFunctionCall,
-    FunctionSchema,
     Tool as OpenAITool,
     ToolFunctionChoice,
     cast_message_to_subtype,
@@ -56,7 +58,6 @@ from letta.schemas.openai.chat_completion_response import (
     FunctionCall,
     Message as ChoiceMessage,
     ToolCall,
-    UsageStatistics,
 )
 from letta.schemas.openai.responses_request import ResponsesRequest
 from letta.schemas.response_format import JsonSchemaResponseFormat
@@ -87,7 +88,7 @@ def supports_none_reasoning_effort(model: str) -> bool:
 
     Currently, GPT-5.1 and GPT-5.2 models support the 'none' reasoning effort level.
     """
-    return model.startswith("gpt-5.1") or model.startswith("gpt-5.2")
+    return model.startswith("gpt-5.1") or model.startswith("gpt-5.2") or model.startswith("gpt-5.3")
 
 
 def is_openai_5_model(model: str) -> bool:
@@ -105,7 +106,7 @@ def accepts_developer_role(model: str) -> bool:
 
     See: https://community.openai.com/t/developer-role-not-accepted-for-o1-o1-mini-o3-mini/1110750/7
     """
-    if is_openai_reasoning_model(model) and "o1-mini" not in model or "o1-preview" in model:
+    if (is_openai_reasoning_model(model) and "o1-mini" not in model) or "o1-preview" in model:
         return True
     else:
         return False
@@ -244,6 +245,64 @@ class OpenAIClient(LLMClientBase):
     def supports_structured_output(self, llm_config: LLMConfig) -> bool:
         return supports_structured_output(llm_config)
 
+    def _is_openrouter_request(self, llm_config: LLMConfig) -> bool:
+        return (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (llm_config.provider_name == "openrouter")
+
+    def _is_true_openai_request(self, llm_config: LLMConfig) -> bool:
+        if llm_config.model_endpoint_type != "openai":
+            return False
+
+        if self._is_openrouter_request(llm_config):
+            return False
+
+        # Keep Letta inference endpoint behavior unchanged.
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+            return False
+
+        # If provider_name is explicitly set and not openai, don't apply OpenAI-specific prompt caching fields.
+        if llm_config.provider_name and llm_config.provider_name != "openai":
+            return False
+
+        return True
+
+    def _normalize_model_name(self, model: Optional[str]) -> Optional[str]:
+        if not model:
+            return None
+        return model.split("/", 1)[-1]
+
+    def _supports_extended_prompt_cache_retention(self, model: Optional[str]) -> bool:
+        normalized_model = self._normalize_model_name(model)
+        if not normalized_model:
+            return False
+
+        # Per OpenAI docs: extended retention is available on gpt-4.1 and gpt-5 family models.
+        # gpt-5-mini is excluded (not listed in docs).
+        return normalized_model == "gpt-4.1" or (normalized_model.startswith("gpt-5") and normalized_model != "gpt-5-mini")
+
+    def _apply_prompt_cache_settings(
+        self,
+        llm_config: LLMConfig,
+        model: Optional[str],
+        messages: List[PydanticMessage],
+        request_obj: Any,
+    ) -> None:
+        """Apply OpenAI prompt cache settings to the request.
+
+        We intentionally do NOT set prompt_cache_key. OpenAI's default routing
+        (based on a hash of the first ~256 tokens of the prompt) already provides
+        good cache affinity for Letta agents, since each agent has a unique system
+        prompt. Setting an explicit key can disrupt existing warm caches and reduce
+        hit rates.
+
+        We only set prompt_cache_retention to "24h" for models that support extended
+        retention, which keeps cached prefixes active longer (up to 24h vs 5-10min).
+        """
+        if not self._is_true_openai_request(llm_config):
+            return
+
+        if self._supports_extended_prompt_cache_retention(model):
+            request_obj.prompt_cache_retention = "24h"
+
     @trace_method
     def build_request_data_responses(
         self,
@@ -330,13 +389,16 @@ class OpenAIClient(LLMClientBase):
             input=openai_messages_list,
             tools=responses_tools,
             tool_choice=tool_choice,
-            max_output_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
             parallel_tool_calls=llm_config.parallel_tool_calls if tools and supports_parallel_tool_calling(model) else False,
         )
 
         # Handle text configuration (verbosity and response format)
         text_config_kwargs = {}
+
+        # Only set max_output_tokens if explicitly configured
+        if llm_config.max_tokens is not None:
+            data.max_output_tokens = llm_config.max_tokens
 
         # Add verbosity control for GPT-5 models
         if supports_verbosity_control(model) and llm_config.verbosity:
@@ -384,8 +446,14 @@ class OpenAIClient(LLMClientBase):
 
             data.model = "memgpt-openai"
 
+        self._apply_prompt_cache_settings(
+            llm_config=llm_config,
+            model=model,
+            messages=messages,
+            request_obj=data,
+        )
+
         request_data = data.model_dump(exclude_unset=True, exclude_none=True)
-        # print("responses request data", request_data)
         return request_data
 
     @trace_method
@@ -452,13 +520,11 @@ class OpenAIClient(LLMClientBase):
             model = None
 
         # TODO: we may need to extend this to more models using proxy?
-        is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
-            llm_config.provider_name == "openrouter"
-        )
+        is_openrouter = self._is_openrouter_request(llm_config)
         if is_openrouter:
             try:
                 model = llm_config.handle.split("/", 1)[-1]
-            except:
+            except Exception:
                 # don't raise error since this isn't robust against edge cases
                 pass
 
@@ -468,7 +534,12 @@ class OpenAIClient(LLMClientBase):
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
             if force_tool_call is not None:
-                tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
+                # OpenRouter proxies to providers that may not support object-format tool_choice
+                # Use "required" instead which achieves similar effect
+                if is_openrouter:
+                    tool_choice = "required"
+                else:
+                    tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
             elif requires_subsequent_tool_call:
                 tool_choice = "required"
             elif self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.letta_v1_agent:
@@ -504,6 +575,12 @@ class OpenAIClient(LLMClientBase):
 
         if llm_config.frequency_penalty is not None:
             data.frequency_penalty = llm_config.frequency_penalty
+
+        # Add logprobs configuration for RL training
+        if llm_config.return_logprobs:
+            data.logprobs = True
+            if llm_config.top_logprobs is not None:
+                data.top_logprobs = llm_config.top_logprobs
 
         if tools and supports_parallel_tool_calling(model):
             data.parallel_tool_calls = False
@@ -546,6 +623,13 @@ class OpenAIClient(LLMClientBase):
                     new_tools.append(tool.model_copy(deep=True))
                 data.tools = new_tools
 
+        self._apply_prompt_cache_settings(
+            llm_config=llm_config,
+            model=model,
+            messages=messages,
+            request_obj=data,
+        )
+
         # Note: Tools are already processed by enable_strict_mode() in the workflow/agent code
         # (temporal_letta_v1_agent_workflow.py or letta_agent_v3.py) before reaching here.
         # enable_strict_mode() handles: strict flag, additionalProperties, required array, nullable fields
@@ -557,12 +641,31 @@ class OpenAIClient(LLMClientBase):
                     tool.function.strict = False
         request_data = data.model_dump(exclude_unset=True, exclude_none=True)
 
+        # Fireworks uses strict validation (additionalProperties: false) and rejects
+        # reasoning fields that are not in their schema.
+        is_fireworks = llm_config.model_endpoint and "fireworks.ai" in llm_config.model_endpoint
+        if is_fireworks and "messages" in request_data:
+            for message in request_data["messages"]:
+                for field in ("reasoning_content_signature", "redacted_reasoning_content", "omitted_reasoning_content"):
+                    message.pop(field, None)
+
         # If Ollama
         # if llm_config.handle.startswith("ollama/") and llm_config.enable_reasoner:
         # Sadly, reasoning via the OpenAI proxy on Ollama only works for Harmony/gpt-oss
         # Ollama's OpenAI layer simply looks for the presence of 'reasoining' or 'reasoning_effort'
         # If set, then in the backend "medium" thinking is turned on
         # request_data["reasoning_effort"] = "medium"
+
+        # Add OpenRouter reasoning configuration via extra_body
+        if is_openrouter and llm_config.enable_reasoner:
+            reasoning_config = {}
+            if llm_config.reasoning_effort:
+                reasoning_config["effort"] = llm_config.reasoning_effort
+            if llm_config.max_reasoning_tokens and llm_config.max_reasoning_tokens > 0:
+                reasoning_config["max_tokens"] = llm_config.max_reasoning_tokens
+            if not reasoning_config:
+                reasoning_config = {"enabled": True}
+            request_data["extra_body"] = {"reasoning": reasoning_config}
 
         return request_data
 
@@ -571,29 +674,51 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
-        if "input" in request_data and "messages" not in request_data:
-            resp = client.responses.create(**request_data)
-            return resp.model_dump()
-        else:
-            response: ChatCompletion = client.chat.completions.create(**request_data)
-            return response.model_dump()
+        try:
+            if "input" in request_data and "messages" not in request_data:
+                resp = client.responses.create(**request_data)
+                return resp.model_dump()
+            else:
+                response: ChatCompletion = client.chat.completions.create(**request_data)
+                return response.model_dump()
+        except json.JSONDecodeError as e:
+            logger.error(f"[OpenAI] Failed to parse API response as JSON: {e}")
+            raise LLMServerError(
+                message=f"OpenAI API returned invalid JSON response (likely an HTML error page): {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"json_error": str(e), "error_position": f"line {e.lineno} column {e.colno}"},
+            )
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
-        if "input" in request_data and "messages" not in request_data:
-            resp = await client.responses.create(**request_data)
-            return resp.model_dump()
-        else:
-            response: ChatCompletion = await client.chat.completions.create(**request_data)
-            return response.model_dump()
+        try:
+            if "input" in request_data and "messages" not in request_data:
+                resp = await client.responses.create(**request_data)
+                return resp.model_dump()
+            else:
+                response: ChatCompletion = await client.chat.completions.create(**request_data)
+                return response.model_dump()
+        except json.JSONDecodeError as e:
+            logger.error(f"[OpenAI] Failed to parse API response as JSON: {e}")
+            raise LLMServerError(
+                message=f"OpenAI API returned invalid JSON response (likely an HTML error page): {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"json_error": str(e), "error_position": f"line {e.lineno} column {e.colno}"},
+            )
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return is_openai_reasoning_model(llm_config.model)
@@ -669,6 +794,12 @@ class OpenAIClient(LLMClientBase):
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
+        if isinstance(response_data, str):
+            raise LLMServerError(
+                message="LLM endpoint returned a raw string instead of a JSON object. This usually indicates the endpoint URL is incorrect or returned an error page.",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"raw_response": response_data[:500]},
+            )
         if "object" in response_data and response_data["object"] == "response":
             # Map Responses API shape to Chat Completions shape
             # See example payload in tests/integration_test_send_message_v2.py
@@ -696,7 +827,6 @@ class OpenAIClient(LLMClientBase):
                 finish_reason = None
 
             # Optionally capture reasoning presence
-            found_reasoning = False
             for out in outputs:
                 out_type = (out or {}).get("type")
                 if out_type == "message":
@@ -707,7 +837,6 @@ class OpenAIClient(LLMClientBase):
                             if text_val:
                                 assistant_text_parts.append(text_val)
                 elif out_type == "reasoning":
-                    found_reasoning = True
                     reasoning_summary_parts = [part.get("text") for part in out.get("summary")]
                     reasoning_content_signature = out.get("encrypted_content")
                 elif out_type == "function_call":
@@ -765,12 +894,12 @@ class OpenAIClient(LLMClientBase):
         ):
             if "choices" in response_data and len(response_data["choices"]) > 0:
                 choice_data = response_data["choices"][0]
-                if "message" in choice_data and "reasoning_content" in choice_data["message"]:
-                    reasoning_content = choice_data["message"]["reasoning_content"]
-                    if reasoning_content:
-                        chat_completion_response.choices[0].message.reasoning_content = reasoning_content
-
-                        chat_completion_response.choices[0].message.reasoning_content_signature = None
+                message_data = choice_data.get("message", {})
+                # Check for reasoning_content (standard) or reasoning (OpenRouter)
+                reasoning_content = message_data.get("reasoning_content") or message_data.get("reasoning")
+                if reasoning_content:
+                    chat_completion_response.choices[0].message.reasoning_content = reasoning_content
+                    chat_completion_response.choices[0].message.reasoning_content_signature = None
 
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
@@ -789,6 +918,9 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
 
@@ -820,6 +952,9 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
         response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(**request_data, stream=True)
@@ -958,10 +1093,11 @@ class OpenAIClient(LLMClientBase):
         return results
 
     @trace_method
-    def handle_llm_error(self, e: Exception) -> Exception:
+    def handle_llm_error(self, e: Exception, llm_config: Optional[LLMConfig] = None) -> Exception:
         """
         Maps OpenAI-specific errors to common LLMError types.
         """
+        is_byok = (llm_config.provider_category == ProviderCategory.byok) if llm_config else None
         if isinstance(e, openai.APITimeoutError):
             timeout_duration = getattr(e, "timeout", "unknown")
             logger.warning(f"[OpenAI] Request timeout after {timeout_duration} seconds: {e}")
@@ -971,6 +1107,7 @@ class OpenAIClient(LLMClientBase):
                 details={
                     "timeout_duration": timeout_duration,
                     "cause": str(e.__cause__) if e.__cause__ else None,
+                    "is_byok": is_byok,
                 },
             )
 
@@ -979,7 +1116,7 @@ class OpenAIClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Failed to connect to OpenAI: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx.RemoteProtocolError which can occur during streaming
@@ -990,7 +1127,7 @@ class OpenAIClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Connection error during OpenAI streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx network errors which can occur during streaming
@@ -1000,37 +1137,47 @@ class OpenAIClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Network error during OpenAI streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.RateLimitError):
             logger.warning(f"[OpenAI] Rate limited (429). Consider backoff. Error: {e}")
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMRateLimitError(
                 message=f"Rate limited by OpenAI: {str(e)}",
                 code=ErrorCode.RATE_LIMIT_EXCEEDED,
-                details=e.body,  # Include body which often has rate limit details
+                details={**body_details, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.BadRequestError):
             logger.warning(f"[OpenAI] Bad request (400): {str(e)}")
-            # BadRequestError can signify different issues (e.g., invalid args, context length)
-            # Check for context_length_exceeded error code in the error body
+            error_str = str(e)
+
+            if "<html" in error_str.lower() or (e.body and isinstance(e.body, str) and "<html" in e.body.lower()):
+                logger.warning("[OpenAI] Received HTML error response from upstream endpoint (likely ALB or reverse proxy)")
+                return LLMBadRequestError(
+                    message="Upstream endpoint returned HTML error (400 Bad Request). This usually indicates the configured API endpoint is not an OpenAI-compatible API or the request was rejected by a load balancer.",
+                    code=ErrorCode.INVALID_ARGUMENT,
+                    details={"raw_body_preview": error_str[:500]},
+                )
+
             error_code = None
             if e.body and isinstance(e.body, dict):
                 error_details = e.body.get("error", {})
                 if isinstance(error_details, dict):
                     error_code = error_details.get("code")
 
-            # Check both the error code and message content for context length issues
-            if error_code == "context_length_exceeded" or is_context_window_overflow_message(str(e)):
+            if error_code == "context_length_exceeded" or is_context_window_overflow_message(error_str):
                 return ContextWindowExceededError(
-                    message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
+                    message=f"Bad request to OpenAI (context window exceeded): {error_str}",
+                    details={"is_byok": is_byok},
                 )
             else:
+                body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
                 return LLMBadRequestError(
-                    message=f"Bad request to OpenAI: {str(e)}",
-                    code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
-                    details=e.body,
+                    message=f"Bad request to OpenAI-compatible endpoint: {str(e)}",
+                    code=ErrorCode.INVALID_ARGUMENT,
+                    details={**body_details, "is_byok": is_byok},
                 )
 
         # NOTE: The OpenAI Python SDK may raise a generic `openai.APIError` while *iterating*
@@ -1040,46 +1187,91 @@ class OpenAIClient(LLMClientBase):
         #
         # Example message:
         #   "Your input exceeds the context window of this model. Please adjust your input and try again."
-        if isinstance(e, openai.APIError):
+        if isinstance(e, openai.APIError) and not isinstance(e, openai.APIStatusError):
             msg = str(e)
             if is_context_window_overflow_message(msg):
                 return ContextWindowExceededError(
                     message=f"OpenAI request exceeded the context window: {msg}",
                     details={
                         "provider_exception_type": type(e).__name__,
-                        # Best-effort extraction (may not exist on APIError)
                         "body": getattr(e, "body", None),
+                        "is_byok": is_byok,
                     },
                 )
+            if is_insufficient_credits_message(msg):
+                return LLMInsufficientCreditsError(
+                    message=f"Insufficient credits (BYOK): {msg}" if is_byok else f"Insufficient credits: {msg}",
+                    code=ErrorCode.PAYMENT_REQUIRED,
+                    details={
+                        "provider_exception_type": type(e).__name__,
+                        "body": getattr(e, "body", None),
+                        "is_byok": is_byok,
+                    },
+                )
+            return LLMBadRequestError(
+                message=f"OpenAI API error: {msg}",
+                code=ErrorCode.INVALID_ARGUMENT,
+                details={
+                    "provider_exception_type": type(e).__name__,
+                    "body": getattr(e, "body", None),
+                    "is_byok": is_byok,
+                },
+            )
 
         if isinstance(e, openai.AuthenticationError):
             logger.error(f"[OpenAI] Authentication error (401): {str(e)}")  # More severe log level
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMAuthenticationError(
-                message=f"Authentication failed with OpenAI: {str(e)}", code=ErrorCode.UNAUTHENTICATED, details=e.body
+                message=f"Authentication failed with OpenAI: {str(e)}",
+                code=ErrorCode.UNAUTHENTICATED,
+                details={**body_details, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.PermissionDeniedError):
             logger.error(f"[OpenAI] Permission denied (403): {str(e)}")  # More severe log level
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMPermissionDeniedError(
-                message=f"Permission denied by OpenAI: {str(e)}", code=ErrorCode.PERMISSION_DENIED, details=e.body
+                message=f"Permission denied by OpenAI: {str(e)}",
+                code=ErrorCode.PERMISSION_DENIED,
+                details={**body_details, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.NotFoundError):
             logger.warning(f"[OpenAI] Resource not found (404): {str(e)}")
             # Could be invalid model name, etc.
-            return LLMNotFoundError(message=f"Resource not found in OpenAI: {str(e)}", code=ErrorCode.NOT_FOUND, details=e.body)
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
+            return LLMNotFoundError(
+                message=f"Resource not found in OpenAI: {str(e)}",
+                code=ErrorCode.NOT_FOUND,
+                details={**body_details, "is_byok": is_byok},
+            )
 
         if isinstance(e, openai.UnprocessableEntityError):
             logger.warning(f"[OpenAI] Unprocessable entity (422): {str(e)}")
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMUnprocessableEntityError(
                 message=f"Invalid request content for OpenAI: {str(e)}",
-                code=ErrorCode.INVALID_ARGUMENT,  # Usually validation errors
-                details=e.body,
+                code=ErrorCode.INVALID_ARGUMENT,
+                details={**body_details, "is_byok": is_byok},
             )
 
         # General API error catch-all
         if isinstance(e, openai.APIStatusError):
             logger.warning(f"[OpenAI] API status error ({e.status_code}): {str(e)}")
+            # Handle 413 Request Entity Too Large - request payload exceeds size limits
+            if e.status_code == 413:
+                return ContextWindowExceededError(
+                    message=f"Request too large for OpenAI (413): {str(e)}",
+                    details={"is_byok": is_byok},
+                )
+            # Handle 402 Payment Required or credit-related messages
+            if e.status_code == 402 or is_insufficient_credits_message(str(e)):
+                msg = str(e)
+                return LLMInsufficientCreditsError(
+                    message=f"Insufficient credits (BYOK): {msg}" if is_byok else f"Insufficient credits: {msg}",
+                    code=ErrorCode.PAYMENT_REQUIRED,
+                    details={"status_code": e.status_code, "body": e.body, "is_byok": is_byok},
+                )
             # Map based on status code potentially
             if e.status_code >= 500:
                 error_cls = LLMServerError
@@ -1096,11 +1288,12 @@ class OpenAIClient(LLMClientBase):
                     "status_code": e.status_code,
                     "response": str(e.response),
                     "body": e.body,
+                    "is_byok": is_byok,
                 },
             )
 
         # Fallback for unexpected errors
-        return super().handle_llm_error(e)
+        return super().handle_llm_error(e, llm_config=llm_config)
 
 
 def fill_image_content_in_messages(openai_message_list: List[dict], pydantic_message_list: List[PydanticMessage]) -> List[dict]:

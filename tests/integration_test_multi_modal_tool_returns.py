@@ -15,7 +15,7 @@ import uuid
 
 import pytest
 from letta_client import Letta
-from letta_client.types.agents import ApprovalRequestMessage, AssistantMessage, ToolCallMessage
+from letta_client.types.agents import ApprovalRequestMessage, AssistantMessage
 
 # ------------------------------
 # Constants

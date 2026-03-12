@@ -325,7 +325,6 @@ async def test_sleeptime_agent_new_block_attachment(client):
         assert main_agent.id in [agent.id for agent in agents]
 
     # 4. Create a new block after agent creation
-    from letta.schemas.block import Block as PydanticBlock
 
     new_block = client.blocks.create(
         label="preferences",

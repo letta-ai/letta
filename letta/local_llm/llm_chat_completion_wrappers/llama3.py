@@ -142,9 +142,9 @@ class LLaMA3InnerMonologueWrapper(LLMChatCompletionWrapper):
 
         # need to add the function call if there was one
         inner_thoughts = message["content"]
-        if "function_call" in message and message["function_call"]:
+        if message.get("function_call"):
             prompt += f"\n{self._compile_function_call(message['function_call'], inner_thoughts=inner_thoughts)}"
-        elif "tool_calls" in message and message["tool_calls"]:
+        elif message.get("tool_calls"):
             for tool_call in message["tool_calls"]:
                 prompt += f"\n{self._compile_function_call(tool_call['function'], inner_thoughts=inner_thoughts)}"
         else:
@@ -162,7 +162,7 @@ class LLaMA3InnerMonologueWrapper(LLMChatCompletionWrapper):
             try:
                 user_msg_json = json_loads(message["content"])
                 user_msg_str = user_msg_json["message"]
-            except:
+            except Exception:
                 user_msg_str = message["content"]
         else:
             # Otherwise just dump the full json
@@ -172,7 +172,7 @@ class LLaMA3InnerMonologueWrapper(LLMChatCompletionWrapper):
                     user_msg_json,
                     indent=self.json_indent,
                 )
-            except:
+            except Exception:
                 user_msg_str = message["content"]
 
         prompt += user_msg_str
@@ -190,7 +190,7 @@ class LLaMA3InnerMonologueWrapper(LLMChatCompletionWrapper):
                 function_return_dict,
                 indent=self.json_indent,
             )
-        except:
+        except Exception:
             function_return_str = message["content"]
 
         prompt += function_return_str
@@ -223,7 +223,7 @@ class LLaMA3InnerMonologueWrapper(LLMChatCompletionWrapper):
                         msg_json = json_loads(message["content"])
                         if msg_json["type"] != "user_message":
                             role_str = "system"
-                    except:
+                    except Exception:
                         pass
                 prompt += f"\n<|start_header_id|>{role_str}<|end_header_id|>\n\n{msg_str.strip()}<|eot_id|>"
 

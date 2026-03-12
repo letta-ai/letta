@@ -24,7 +24,7 @@ from letta.errors import LLMAuthenticationError
 from letta.llm_api.anthropic_client import AnthropicClient
 from letta.llm_api.google_ai_client import GoogleAIClient
 from letta.llm_api.openai_client import OpenAIClient
-from letta.schemas.enums import AgentType, MessageRole
+from letta.schemas.enums import AgentType, LLMCallType, MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
@@ -156,6 +156,7 @@ async def test_openai_usage_via_adapter():
     adapter = SimpleLLMRequestAdapter(
         llm_client=client,
         llm_config=llm_config,
+        call_type=LLMCallType.agent_step,
     )
 
     messages = _build_simple_messages("Say hello in exactly 5 words.")
@@ -199,7 +200,7 @@ async def test_anthropic_usage_via_adapter():
 
     client = AnthropicClient()
     llm_config = LLMConfig(
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5-20251001",
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
         context_window=200000,
@@ -209,6 +210,7 @@ async def test_anthropic_usage_via_adapter():
     adapter = SimpleLLMRequestAdapter(
         llm_client=client,
         llm_config=llm_config,
+        call_type=LLMCallType.agent_step,
     )
 
     # Anthropic requires a system message first
@@ -262,6 +264,7 @@ async def test_gemini_usage_via_adapter():
     adapter = SimpleLLMRequestAdapter(
         llm_client=client,
         llm_config=llm_config,
+        call_type=LLMCallType.agent_step,
     )
 
     messages = _build_simple_messages("Say hello in exactly 5 words.")
@@ -307,7 +310,7 @@ async def test_openai_prefix_caching_via_adapter():
     llm_config = LLMConfig.default_config("gpt-4o-mini")
 
     # First request - should populate the cache
-    adapter1 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config)
+    adapter1 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config, call_type=LLMCallType.agent_step)
     messages1 = [
         Message(role=MessageRole.system, content=[TextContent(text=LARGE_SYSTEM_PROMPT)]),
         Message(role=MessageRole.user, content=[TextContent(text="What is 2+2?")]),
@@ -323,7 +326,7 @@ async def test_openai_prefix_caching_via_adapter():
     print(f"Request 1 - prompt={adapter1.usage.prompt_tokens}, cached={adapter1.usage.cached_input_tokens}")
 
     # Second request - same system prompt, should hit cache
-    adapter2 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config)
+    adapter2 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config, call_type=LLMCallType.agent_step)
     messages2 = [
         Message(role=MessageRole.system, content=[TextContent(text=LARGE_SYSTEM_PROMPT)]),
         Message(role=MessageRole.user, content=[TextContent(text="What is 3+3?")]),
@@ -360,7 +363,7 @@ async def test_anthropic_prefix_caching_via_adapter():
 
     client = AnthropicClient()
     llm_config = LLMConfig(
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5-20251001",
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
         context_window=200000,
@@ -368,7 +371,7 @@ async def test_anthropic_prefix_caching_via_adapter():
     )
 
     # First request
-    adapter1 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config)
+    adapter1 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config, call_type=LLMCallType.agent_step)
     messages1 = [
         Message(role=MessageRole.system, content=[TextContent(text=LARGE_SYSTEM_PROMPT)]),
         Message(role=MessageRole.user, content=[TextContent(text="What is 2+2?")]),
@@ -386,7 +389,7 @@ async def test_anthropic_prefix_caching_via_adapter():
     )
 
     # Second request
-    adapter2 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config)
+    adapter2 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config, call_type=LLMCallType.agent_step)
     messages2 = [
         Message(role=MessageRole.system, content=[TextContent(text=LARGE_SYSTEM_PROMPT)]),
         Message(role=MessageRole.user, content=[TextContent(text="What is 3+3?")]),
@@ -435,7 +438,7 @@ async def test_gemini_prefix_caching_via_adapter():
     )
 
     # First request
-    adapter1 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config)
+    adapter1 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config, call_type=LLMCallType.agent_step)
     messages1 = [
         Message(role=MessageRole.system, content=[TextContent(text=LARGE_SYSTEM_PROMPT)]),
         Message(role=MessageRole.user, content=[TextContent(text="What is 2+2?")]),
@@ -451,7 +454,7 @@ async def test_gemini_prefix_caching_via_adapter():
     print(f"Request 1 - prompt={adapter1.usage.prompt_tokens}, cached={adapter1.usage.cached_input_tokens}")
 
     # Second request
-    adapter2 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config)
+    adapter2 = SimpleLLMRequestAdapter(llm_client=client, llm_config=llm_config, call_type=LLMCallType.agent_step)
     messages2 = [
         Message(role=MessageRole.system, content=[TextContent(text=LARGE_SYSTEM_PROMPT)]),
         Message(role=MessageRole.user, content=[TextContent(text="What is 3+3?")]),

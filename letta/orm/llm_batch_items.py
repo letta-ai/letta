@@ -1,5 +1,10 @@
 import uuid
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from letta.orm.agent import Agent
+    from letta.orm.llm_batch_job import LLMBatchJob
+    from letta.orm.organization import Organization
 
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse
 from sqlalchemy import ForeignKey, Index, String

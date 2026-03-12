@@ -5,11 +5,8 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.schemas.group import Group, GroupBase, GroupCreate, GroupUpdate, ManagerType
+from letta.schemas.group import Group, GroupCreate, GroupUpdate, ManagerType
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
-from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import BaseMessage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.validators import GroupId, MessageId
@@ -126,77 +123,6 @@ async def delete_group(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.group_manager.delete_group_async(group_id=group_id, actor=actor)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Group id={group_id} successfully deleted"})
-
-
-@router.post(
-    "/{group_id}/messages",
-    response_model=LettaResponse,
-    operation_id="send_group_message",
-    deprecated=True,
-)
-async def send_group_message(
-    group_id: GroupId,
-    server: SyncServer = Depends(get_letta_server),
-    request: LettaRequest = Body(...),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Process a user message and return the group's response.
-    This endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    result = await server.send_group_message_to_agent(
-        group_id=group_id,
-        actor=actor,
-        input_messages=request.messages,
-        stream_steps=False,
-        stream_tokens=False,
-        # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-    )
-    return result
-
-
-@router.post(
-    "/{group_id}/messages/stream",
-    response_model=None,
-    operation_id="send_group_message_streaming",
-    deprecated=True,
-    responses={
-        200: {
-            "description": "Successful response",
-            "content": {
-                "text/event-stream": {"description": "Server-Sent Events stream"},
-            },
-        }
-    },
-)
-async def send_group_message_streaming(
-    group_id: GroupId,
-    server: SyncServer = Depends(get_letta_server),
-    request: LettaStreamingRequest = Body(...),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Process a user message and return the group's responses.
-    This endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.
-    It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    result = await server.send_group_message_to_agent(
-        group_id=group_id,
-        actor=actor,
-        input_messages=request.messages,
-        stream_steps=True,
-        stream_tokens=request.stream_tokens,
-        # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-    )
-    return result
 
 
 GroupMessagesResponse = Annotated[

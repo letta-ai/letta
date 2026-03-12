@@ -36,6 +36,8 @@ TOKEN_REFRESH_BUFFER_SECONDS = 300
 # Model list based on opencode-openai-codex-auth plugin presets
 # Reasoning effort levels are configured via llm_config.reasoning_effort
 CHATGPT_MODELS = [
+    # GPT-5.3 codex
+    {"name": "gpt-5.3-codex", "context_window": 272000},
     # GPT-5.2 models (supports none/low/medium/high/xhigh reasoning)
     {"name": "gpt-5.2", "context_window": 272000},
     {"name": "gpt-5.2-codex", "context_window": 272000},
@@ -308,15 +310,21 @@ class ChatGPTOAuthProvider(Provider):
             )
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
-        """Get the default max output tokens for ChatGPT models."""
+        """Get the default max output tokens for ChatGPT models.
+
+        References:
+        - https://developers.openai.com/api/docs/models/gpt-5
+        - https://developers.openai.com/api/docs/models/gpt-5-codex
+        - https://developers.openai.com/api/docs/models/gpt-5.1-codex-max
+        """
+        # GPT-5 family (gpt-5, gpt-5.x, codex variants): 128k max output tokens
+        if "gpt-5" in model_name:
+            return 128000
         # Reasoning models (o-series) have higher limits
         if model_name.startswith("o1") or model_name.startswith("o3") or model_name.startswith("o4"):
             return 100000
-        # GPT-5.x models
-        elif "gpt-5" in model_name:
-            return 16384
         # GPT-4 models
-        elif "gpt-4" in model_name:
+        if "gpt-4" in model_name:
             return 16384
         return 4096
 

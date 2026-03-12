@@ -18,7 +18,6 @@ from letta.schemas.organization import Organization
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.sandbox_config import LocalSandboxConfig, ModalSandboxConfig, SandboxConfigCreate
 from letta.schemas.user import User
-from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager

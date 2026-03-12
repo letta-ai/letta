@@ -6,8 +6,13 @@ from typing import Optional
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Load config file and apply to environment before settings are created
+# This allows YAML config values to be picked up by pydantic-settings
+from letta.config_file import apply_config_to_env
 from letta.schemas.enums import SandboxType
 from letta.services.summarizer.enums import SummarizationMode
+
+apply_config_to_env()
 
 # Define constants here to avoid circular import with letta.log
 DEFAULT_WRAPPER_NAME = "chatml"
@@ -109,7 +114,7 @@ class SummarizerSettings(BaseSettings):
 class ModelSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    global_max_context_window_limit: int = 32000
+    global_max_context_window_limit: int = 128000
 
     inner_thoughts_kwarg: str | None = Field(default=INNER_THOUGHTS_KWARG, description="Key used for passing in inner thoughts.")
 
@@ -165,12 +170,22 @@ class ModelSettings(BaseSettings):
     anthropic_sonnet_1m: bool = Field(
         default=False,
         description=(
-            "Enable 1M-token context window for Claude Sonnet 4/4.5. When true, adds the"
+            "Enable 1M-token context window for Claude Sonnet 4/4.5/4.6. When true, adds the"
             " 'context-1m-2025-08-07' beta to Anthropic requests and sets model context_window"
             " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
             " to all orgs; once GA, this flag can be removed and behavior can default to on."
         ),
         alias="ANTHROPIC_SONNET_1M",
+    )
+    anthropic_opus_1m: bool = Field(
+        default=False,
+        description=(
+            "Enable 1M-token context window for Claude Opus 4.6. When true, adds the"
+            " 'context-1m-2025-08-07' beta to Anthropic requests and sets model context_window"
+            " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
+            " to all orgs; once GA, this flag can be removed and behavior can default to on."
+        ),
+        alias="ANTHROPIC_OPUS_1M",
     )
 
     # ollama
@@ -189,6 +204,7 @@ class ModelSettings(BaseSettings):
     gemini_base_url: str = "https://generativelanguage.googleapis.com/"
     gemini_force_minimum_thinking_budget: bool = False
     gemini_max_retries: int = 5
+    gemini_timeout_seconds: float = 600.0
 
     # google vertex
     google_cloud_project: Optional[str] = None
@@ -260,7 +276,7 @@ class Settings(BaseSettings):
 
     # SSE Streaming keepalive settings
     enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")
-    keepalive_interval: float = Field(50.0, description="Seconds between keepalive messages (default: 50)")
+    keepalive_interval: float = Field(20.0, description="Seconds between keepalive messages (default: 20)")
 
     # SSE Streaming cancellation settings
     enable_cancellation_aware_streaming: bool = Field(True, description="Enable cancellation aware streaming")
@@ -290,6 +306,33 @@ class Settings(BaseSettings):
     redis_port: Optional[int] = Field(default=6379, description="Port for Redis instance")
 
     plugin_register: Optional[str] = None
+
+    # Object storage (used for git-backed memory repos)
+    #
+    # Prefer configuring a single URI rather than multiple provider-specific env vars.
+    # Example:
+    #   LETTA_OBJECT_STORE_URI="gs://my-bucket/repository?project=my-gcp-project"
+    object_store_uri: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LETTA_OBJECT_STORE_URI"),
+        description="Object store URI for memory repositories (e.g., gs://bucket/prefix?project=...).",
+    )
+
+    # Optional overrides for URI query params. These are primarily useful for deployments
+    # where you want to keep the URI stable but inject environment-specific settings.
+    object_store_project: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LETTA_OBJECT_STORE_PROJECT"),
+        description="Optional project override for object store clients (e.g., GCS project).",
+    )
+
+    # memfs service URL - when set, git memory operations are proxied to the memfs service
+    # instead of running locally. This enables separating git/GCS operations into a dedicated service.
+    memfs_service_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LETTA_MEMFS_SERVICE_URL"),
+        description="URL of the memfs service (e.g., http://memfs-py:8285). When set, git memory operations use this service.",
+    )
 
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
@@ -330,6 +373,13 @@ class Settings(BaseSettings):
     track_stop_reason: bool = Field(default=True, description="Enable tracking stop reason on steps.")
     track_agent_run: bool = Field(default=True, description="Enable tracking agent run with cancellation support")
     track_provider_trace: bool = Field(default=True, description="Enable tracking raw llm request and response at each step")
+
+    # LLM trace storage for analytics (direct ClickHouse, bypasses OTEL for large payloads)
+    # TTL is configured in the ClickHouse DDL (default 90 days)
+    store_llm_traces: bool = Field(
+        default=False,
+        description="Enable storing LLM traces in ClickHouse for cost analytics",
+    )
 
     # FastAPI Application Settings
     uvicorn_workers: int = 1

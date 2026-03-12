@@ -5,10 +5,10 @@ Simple MCP test server with basic and complex tools for testing purposes.
 
 import json
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from mcp.server.fastmcp import FastMCP
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 # Configure logging to stderr (not stdout for STDIO servers)
 logging.basicConfig(level=logging.INFO)

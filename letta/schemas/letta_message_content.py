@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Annotated, List, Literal, Optional, Union
 
-from openai.types import Reasoning
 from pydantic import BaseModel, Field
 
 

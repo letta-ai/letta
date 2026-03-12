@@ -2,8 +2,16 @@ import asyncio
 from functools import wraps
 from typing import Any, Dict, List, Optional, Set, Union
 
-from letta.constants import CONVERSATION_LOCK_PREFIX, CONVERSATION_LOCK_TTL_SECONDS, REDIS_EXCLUDE, REDIS_INCLUDE, REDIS_SET_DEFAULT_VAL
-from letta.errors import ConversationBusyError
+from letta.constants import (
+    CONVERSATION_LOCK_PREFIX,
+    CONVERSATION_LOCK_TTL_SECONDS,
+    MEMORY_REPO_LOCK_PREFIX,
+    MEMORY_REPO_LOCK_TTL_SECONDS,
+    REDIS_EXCLUDE,
+    REDIS_INCLUDE,
+    REDIS_SET_DEFAULT_VAL,
+)
+from letta.errors import ConversationBusyError, MemoryRepoBusyError
 from letta.log import get_logger
 from letta.settings import settings
 
@@ -141,7 +149,7 @@ class AsyncRedisClient:
         try:
             client = await self.get_client()
             return await client.get(key)
-        except:
+        except Exception:
             return default
 
     @with_retry()
@@ -230,6 +238,64 @@ class AsyncRedisClient:
             logger.warning(f"Failed to release conversation lock for conversation {conversation_id}: {e}")
             return False
 
+    async def acquire_memory_repo_lock(
+        self,
+        agent_id: str,
+        token: str,
+    ) -> Optional["Lock"]:
+        """
+        Acquire a distributed lock for a memory repository.
+
+        Prevents concurrent modifications to an agent's git-based memory.
+
+        Args:
+            agent_id: The agent ID whose memory is being modified
+            token: Unique identifier for the lock holder (for debugging/tracing)
+
+        Returns:
+            Lock object if acquired, raises MemoryRepoBusyError if in use
+        """
+        if Lock is None:
+            return None
+        client = await self.get_client()
+        lock_key = f"{MEMORY_REPO_LOCK_PREFIX}{agent_id}"
+        lock = Lock(
+            client,
+            lock_key,
+            timeout=MEMORY_REPO_LOCK_TTL_SECONDS,
+            blocking=False,
+            thread_local=False,
+            raise_on_release_error=False,
+        )
+
+        if await lock.acquire(token=token):
+            return lock
+
+        lock_holder_token = await client.get(lock_key)
+        raise MemoryRepoBusyError(
+            agent_id=agent_id,
+            lock_holder_token=lock_holder_token,
+        )
+
+    async def release_memory_repo_lock(self, agent_id: str) -> bool:
+        """
+        Release a memory repo lock by agent_id.
+
+        Args:
+            agent_id: The agent ID to release the lock for
+
+        Returns:
+            True if lock was released, False if release failed
+        """
+        try:
+            client = await self.get_client()
+            lock_key = f"{MEMORY_REPO_LOCK_PREFIX}{agent_id}"
+            await client.delete(lock_key)
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to release memory repo lock for agent {agent_id}: {e}")
+            return False
+
     @with_retry()
     async def exists(self, *keys: str) -> int:
         """Check if keys exist."""
@@ -254,7 +320,7 @@ class AsyncRedisClient:
             client = await self.get_client()
             result = await client.smismember(key, values)
             return result if isinstance(values, list) else result[0]
-        except:
+        except Exception:
             return [0] * len(values) if isinstance(values, list) else 0
 
     async def srem(self, key: str, *members: Union[str, int, float]) -> int:
@@ -462,6 +528,16 @@ class NoopAsyncRedisClient(AsyncRedisClient):
         return None
 
     async def release_conversation_lock(self, conversation_id: str) -> bool:
+        return False
+
+    async def acquire_memory_repo_lock(
+        self,
+        agent_id: str,
+        token: str,
+    ) -> Optional["Lock"]:
+        return None
+
+    async def release_memory_repo_lock(self, agent_id: str) -> bool:
         return False
 
     async def check_inclusion_and_exclusion(self, member: str, group: str) -> bool:

@@ -24,13 +24,6 @@ from .xai import XAIProvider
 from .zai import ZAIProvider
 
 __all__ = [
-    # Base classes
-    "Provider",
-    "ProviderBase",
-    "ProviderCreate",
-    "ProviderUpdate",
-    "ProviderCheck",
-    # Provider implementations
     "AnthropicProvider",
     "AzureProvider",
     "BedrockProvider",
@@ -40,16 +33,21 @@ __all__ = [
     "GoogleAIProvider",
     "GoogleVertexProvider",
     "GroqProvider",
-    "LettaProvider",
     "LMStudioOpenAIProvider",
+    "LettaProvider",
     "MiniMaxProvider",
     "MistralProvider",
     "OllamaProvider",
     "OpenAIProvider",
-    "TogetherProvider",
-    "VLLMProvider",  # Replaces ChatCompletions and Completions
+    "OpenRouterProvider",
+    "Provider",
+    "ProviderBase",
+    "ProviderCheck",
+    "ProviderCreate",
+    "ProviderUpdate",
     "SGLangProvider",
+    "TogetherProvider",
+    "VLLMProvider",
     "XAIProvider",
     "ZAIProvider",
-    "OpenRouterProvider",
 ]

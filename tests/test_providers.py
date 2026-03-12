@@ -19,8 +19,14 @@ from letta.schemas.providers import (
     VLLMProvider,
     ZAIProvider,
 )
+from letta.schemas.providers.chatgpt_oauth import CHATGPT_MODELS
 from letta.schemas.secret import Secret
 from letta.settings import model_settings
+
+
+def test_chatgpt_oauth_model_allowlist_includes_gpt_5_3_codex():
+    model_names = {model["name"] for model in CHATGPT_MODELS}
+    assert "gpt-5.3-codex" in model_names
 
 
 def test_openai():
@@ -138,14 +144,15 @@ async def test_minimax():
     provider = MiniMaxProvider(name="minimax")
     models = await provider.list_llm_models_async()
 
-    # Should have exactly 3 models: M2.1, M2.1-lightning, M2
-    assert len(models) == 3
+    # Should have exactly 3 models: M2.1, M2.1-lightning, M2, M2.5
+    assert len(models) == 4
 
     # Verify model properties
     model_names = {m.model for m in models}
     assert "MiniMax-M2.1" in model_names
     assert "MiniMax-M2.1-lightning" in model_names
     assert "MiniMax-M2" in model_names
+    assert "MiniMax-M2.5" in model_names
 
     # Verify handle format
     for model in models:
@@ -225,6 +232,21 @@ async def test_vllm():
 
     embedding_models = await provider.list_embedding_models_async()
     assert len(embedding_models) == 0  # embedding models currently not supported by vLLM
+
+
+@pytest.mark.skipif(model_settings.lmstudio_base_url is None, reason="Only run if LMSTUDIO_BASE_URL is set.")
+@pytest.mark.asyncio
+async def test_lmstudio():
+    from letta.schemas.providers.lmstudio import LMStudioOpenAIProvider
+
+    provider = LMStudioOpenAIProvider(name="lmstudio_openai", base_url=model_settings.lmstudio_base_url)
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 @pytest.mark.skipif(model_settings.sglang_api_base is None, reason="Only run if SGLANG_API_BASE is set.")

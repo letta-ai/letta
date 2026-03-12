@@ -17,11 +17,10 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import wraps
 from logging import Logger
-from typing import Any, Callable, Coroutine, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints
+from typing import Any, Callable, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints  # type: ignore[attr-defined]
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
-import tiktoken
 from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename
 from sqlalchemy import text
 
@@ -489,6 +488,25 @@ def get_tool_call_id() -> str:
     # e.g. OpenAI: "call_xlIfzR1HqAW7xJPa3ExJSg3C"
     # or similar to agents: "call-xlIfzR1HqAW7xJPa3ExJSg3C"
     return str(uuid.uuid4())[:TOOL_CALL_ID_MAX_LEN]
+
+
+# Pattern for valid tool_call_id (required by Anthropic: ^[a-zA-Z0-9_-]+$)
+TOOL_CALL_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def sanitize_tool_call_id(tool_id: str) -> str:
+    """Ensure tool_call_id matches cross-provider requirements:
+    - Anthropic: pattern ^[a-zA-Z0-9_-]+$
+    - OpenAI: max length 29 characters
+
+    Some models (e.g. Kimi via OpenRouter) generate IDs like 'Read:93' which
+    contain invalid characters. This sanitizes them for cross-provider compatibility.
+    """
+    # Replace invalid characters with underscores
+    if not TOOL_CALL_ID_PATTERN.match(tool_id):
+        tool_id = re.sub(r"[^a-zA-Z0-9_-]", "_", tool_id)
+    # Truncate to max length
+    return tool_id[:TOOL_CALL_ID_MAX_LEN]
 
 
 def assistant_function_to_tool(assistant_message: dict) -> dict:
@@ -1365,7 +1383,6 @@ def fire_and_forget(coro, task_name: Optional[str] = None, error_callback: Optio
     Returns:
         The created asyncio Task object
     """
-    import traceback
 
     task = asyncio.create_task(coro)
 

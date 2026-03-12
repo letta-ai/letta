@@ -12,6 +12,13 @@ from letta.otel.tracing import trace_method
 from letta.schemas.memory import Memory
 
 
+class PreserveMapping(dict):
+    """Used to preserve (do not modify) undefined variables in the system prompt"""
+
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
 class PromptGenerator:
     # TODO: This code is kind of wonky and deserves a rewrite
     @trace_method
@@ -32,7 +39,7 @@ class PromptGenerator:
         is available through its tools.
 
         Args:
-            memory_edit_timestamp: When memory blocks were last modified
+            memory_edit_timestamp: When the system prompt was last recompiled
             timezone: The timezone to use for formatting timestamps (e.g., 'America/Los_Angeles')
             previous_message_count: Number of messages in recall memory (conversation history)
             archival_memory_size: Number of items in archival memory (long-term storage)
@@ -44,7 +51,7 @@ class PromptGenerator:
         Example Output:
             <memory_metadata>
             - The current time is: 2024-01-15 10:30 AM PST
-            - Memory blocks were last modified: 2024-01-15 09:00 AM PST
+            - System prompt last recompiled: 2024-01-15 09:00 AM PST
             - 42 previous messages between you and the user are stored in recall memory (use tools to access them)
             - 156 total memories you created are stored in archival memory (use tools to access them)
             - Available archival memory tags: project_x, meeting_notes, research, ideas
@@ -57,7 +64,7 @@ class PromptGenerator:
         metadata_lines = [
             "<memory_metadata>",
             f"- The current system date is: {get_local_time_fast(timezone)}",
-            f"- Memory blocks were last modified: {timestamp_str}",
+            f"- System prompt last recompiled: {timestamp_str}",
             f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
         ]
 

@@ -1,105 +1,27 @@
-import json
-import logging
-import os
-import random
-import re
-import string
-import time
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from _pytest.python_api import approx
-from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 
 # Import shared fixtures and constants from conftest
-from conftest import (
-    CREATE_DELAY_SQLITE,
-    DEFAULT_EMBEDDING_CONFIG,
-    USING_SQLITE,
-)
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.orm.exc import StaleDataError
 
-from letta.config import LettaConfig
-from letta.constants import (
-    BASE_MEMORY_TOOLS,
-    BASE_SLEEPTIME_TOOLS,
-    BASE_TOOLS,
-    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
-    BASE_VOICE_SLEEPTIME_TOOLS,
-    BUILTIN_TOOLS,
-    DEFAULT_ORG_ID,
-    DEFAULT_ORG_NAME,
-    FILES_TOOLS,
-    LETTA_TOOL_EXECUTION_DIR,
-    LETTA_TOOL_SET,
-    LOCAL_ONLY_MULTI_AGENT_TOOLS,
-    MCP_TOOL_TAG_NAME_PREFIX,
-    MULTI_AGENT_TOOLS,
-)
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
-from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.functions.mcp_client.types import MCPTool
-from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer
-from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
-from letta.orm import Base, Block
-from letta.orm.block_history import BlockHistory
-from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
-from letta.schemas.embedding_config import EmbeddingConfig
+from letta.errors import LettaInvalidArgumentError
+from letta.orm.errors import NoResultFound
 from letta.schemas.enums import (
-    ActorType,
-    AgentStepStatus,
-    FileProcessingStatus,
-    JobStatus,
-    JobType,
     MessageRole,
-    ProviderType,
     RunStatus,
-    SandboxType,
-    StepStatus,
-    TagMatchMode,
-    ToolType,
-    VectorDBProvider,
 )
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
-from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import Job as PydanticJob, LettaRequestConfig
-from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
+from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate, ToolReturn
+from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.message import Message, Message as PydanticMessage, ToolReturn
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
-from letta.schemas.passage import Passage as PydanticPassage
-from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun, RunUpdate
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.source import Source as PydanticSource, SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser, UserUpdate
-from letta.server.db import db_registry
+from letta.schemas.user import User as PydanticUser
 from letta.server.server import SyncServer
-from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
-from letta.settings import settings, tool_settings
-from letta.utils import calculate_file_defaults_based_on_context_window
-from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
-from tests.utils import random_string
 
 # ======================================================================================================================
 # RunManager Tests
@@ -239,8 +161,7 @@ async def test_update_run_updates_agent_last_stop_reason(server: SyncServer, sar
     """Test that completing a run updates the agent's last_stop_reason."""
 
     # Verify agent starts with no last_stop_reason
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
-    initial_stop_reason = agent.last_stop_reason
+    await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
 
     # Create a run
     run_data = PydanticRun(agent_id=sarah_agent.id)
@@ -945,7 +866,7 @@ async def test_run_messages_ordering(server: SyncServer, default_run, default_us
             created_at=created_at,
             run_id=run.id,
         )
-        msg = await server.message_manager.create_many_messages_async([message], actor=default_user)
+        await server.message_manager.create_many_messages_async([message], actor=default_user)
 
     # Verify messages are returned in chronological order
     returned_messages = await server.message_manager.list_messages(
@@ -1093,7 +1014,7 @@ async def test_get_run_messages(server: SyncServer, default_user: PydanticUser, 
                 )
             )
 
-    created_msg = await server.message_manager.create_many_messages_async(messages, actor=default_user)
+    await server.message_manager.create_many_messages_async(messages, actor=default_user)
 
     # Get messages and verify they're converted correctly
     result = await server.message_manager.list_messages(run_id=run.id, actor=default_user)
@@ -1166,7 +1087,7 @@ async def test_get_run_messages_with_assistant_message(server: SyncServer, defau
                 )
             )
 
-    created_msg = await server.message_manager.create_many_messages_async(messages, actor=default_user)
+    await server.message_manager.create_many_messages_async(messages, actor=default_user)
 
     # Get messages and verify they're converted correctly
     result = await server.message_manager.list_messages(run_id=run.id, actor=default_user)
@@ -1447,7 +1368,7 @@ async def test_run_metrics_duration_calculation(server: SyncServer, sarah_agent,
     await asyncio.sleep(0.1)  # Wait 100ms
 
     # Update the run to completed
-    updated_run = await server.run_manager.update_run_by_id_async(
+    await server.run_manager.update_run_by_id_async(
         created_run.id, RunUpdate(status=RunStatus.completed, stop_reason=StopReasonType.end_turn), actor=default_user
     )
 
@@ -1741,7 +1662,7 @@ def test_convert_statuses_to_enum_with_invalid_status():
 async def test_list_runs_with_multiple_statuses(server: SyncServer, sarah_agent, default_user):
     """Test listing runs with multiple status filters."""
     # Create runs with different statuses
-    run_created = await server.run_manager.create_run(
+    await server.run_manager.create_run(
         pydantic_run=PydanticRun(
             status=RunStatus.created,
             agent_id=sarah_agent.id,
@@ -1749,7 +1670,7 @@ async def test_list_runs_with_multiple_statuses(server: SyncServer, sarah_agent,
         ),
         actor=default_user,
     )
-    run_running = await server.run_manager.create_run(
+    await server.run_manager.create_run(
         pydantic_run=PydanticRun(
             status=RunStatus.running,
             agent_id=sarah_agent.id,
@@ -1757,7 +1678,7 @@ async def test_list_runs_with_multiple_statuses(server: SyncServer, sarah_agent,
         ),
         actor=default_user,
     )
-    run_completed = await server.run_manager.create_run(
+    await server.run_manager.create_run(
         pydantic_run=PydanticRun(
             status=RunStatus.completed,
             agent_id=sarah_agent.id,
@@ -1765,7 +1686,7 @@ async def test_list_runs_with_multiple_statuses(server: SyncServer, sarah_agent,
         ),
         actor=default_user,
     )
-    run_failed = await server.run_manager.create_run(
+    await server.run_manager.create_run(
         pydantic_run=PydanticRun(
             status=RunStatus.failed,
             agent_id=sarah_agent.id,

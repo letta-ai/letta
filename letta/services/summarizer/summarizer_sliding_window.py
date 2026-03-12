@@ -1,19 +1,17 @@
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from letta.helpers.message_helper import convert_message_creates_to_messages
+if TYPE_CHECKING:
+    from letta.schemas.tool import Tool
+
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message
 from letta.schemas.user import User
 from letta.services.context_window_calculator.token_counter import create_token_counter
-from letta.services.message_manager import MessageManager
 from letta.services.summarizer.summarizer import simple_summary
 from letta.services.summarizer.summarizer_config import CompactionSettings
-from letta.system import package_summarize_message_no_counts
 
 logger = get_logger(__name__)
 
@@ -42,12 +40,67 @@ async def count_tokens(actor: User, llm_config: LLMConfig, messages: List[Messag
     return tokens
 
 
+async def count_tokens_with_tools(
+    actor: User,
+    llm_config: LLMConfig,
+    messages: List[Message],
+    tools: Optional[List["Tool"]] = None,
+) -> int:
+    """Count tokens in messages AND tool definitions.
+
+    This provides a more accurate context token count by including tool definitions,
+    which are sent to the LLM but not included in the messages list.
+
+    Args:
+        actor: The user making the request.
+        llm_config: The LLM configuration for selecting the appropriate tokenizer.
+        messages: The in-context messages (including system message).
+        tools: Optional list of Tool objects. If provided, their schemas are counted.
+
+    Returns:
+        Total token count for messages + tools.
+    """
+    # Delegate message counting to existing function
+    message_tokens = await count_tokens(actor, llm_config, messages)
+
+    if not tools:
+        return message_tokens
+
+    # Count tools
+    from openai.types.beta.function_tool import FunctionTool as OpenAITool
+
+    from letta.services.context_window_calculator.token_counter import ApproxTokenCounter
+
+    token_counter = create_token_counter(
+        model_endpoint_type=llm_config.model_endpoint_type,
+        model=llm_config.model,
+        actor=actor,
+    )
+
+    # Tools can be either Tool objects (with .json_schema) or dicts (json schemas directly)
+    # For compatibility with how tools need to be passed in for self compaction
+    tool_definitions = [
+        OpenAITool(type="function", function=t.json_schema if hasattr(t, "json_schema") else t)
+        for t in tools
+        if (hasattr(t, "json_schema") and t.json_schema) or (isinstance(t, dict) and t)
+    ]
+    tool_tokens = await token_counter.count_tool_tokens(tool_definitions) if tool_definitions else 0
+
+    # Apply safety margin for approximate counting (message_tokens already has margin applied)
+    if isinstance(token_counter, ApproxTokenCounter):
+        tool_tokens = int(tool_tokens * APPROX_TOKEN_SAFETY_MARGIN)
+
+    return message_tokens + tool_tokens
+
+
 @trace_method
 async def summarize_via_sliding_window(
     # Required to tag LLM calls
     actor: User,
-    # Actual summarization configuration
+    # LLM config for the summarizer model (used to generate the summary)
     llm_config: LLMConfig,
+    # LLM config for the agent model (used to determine context window cutoff for eviction)
+    agent_llm_config: LLMConfig,
     summarizer_config: CompactionSettings,
     in_context_messages: List[Message],
     # Telemetry context
@@ -60,10 +113,10 @@ async def summarize_via_sliding_window(
     If the total tokens is greater than the context window limit (or force=True),
     then summarize and rearrange the in-context messages (with the summary in front).
 
-    Finding the summarization cutoff point (target of final post-summarize count is N% of configured context window):
+    Finding the summarization cutoff point (target of final post-summarize count is N% of agent's context window):
     1. Start at a message index cutoff (1-N%)
     2. Count tokens with system prompt, prior summary (if it exists), and messages past cutoff point (messages[0] + messages[cutoff:])
-    3. Is count(post_sum_messages) <= N% of configured context window?
+    3. Is count(post_sum_messages) <= N% of agent's context window?
       3a. Yes -> create new summary with [prior summary, cutoff:], and safety truncate summary with char count
       3b. No -> increment cutoff by 10%, and repeat
 
@@ -80,23 +133,31 @@ async def summarize_via_sliding_window(
     else:
         maximum_message_index = total_message_count - 1
 
-    # Starts at N% (eg 70%), and increments up until 100%
-    message_count_cutoff_percent = max(
-        1 - summarizer_config.sliding_window_percentage, 0.10
-    )  # Some arbitrary minimum value (10%) to avoid negatives from badly configured summarizer percentage
-    eviction_percentage = summarizer_config.sliding_window_percentage
-    assert summarizer_config.sliding_window_percentage <= 1.0, "Sliding window percentage must be less than or equal to 1.0"
-    assistant_message_index = None
-    approx_token_count = llm_config.context_window
-    # valid_cutoff_roles = {MessageRole.assistant, MessageRole.approval}
-    valid_cutoff_roles = {MessageRole.assistant}
-
     # simple version: summarize(in_context[1:round(summarizer_config.sliding_window_percentage * len(in_context_messages))])
     # this evicts 30% of the messages (via summarization) and keeps the remaining 70%
     # problem: we need the cutoff point to be an assistant message, so will grow the cutoff point until we find an assistant message
     # also need to grow the cutoff point until the token count is less than the target token count
 
-    while approx_token_count >= (1 - summarizer_config.sliding_window_percentage) * llm_config.context_window and eviction_percentage < 1.0:
+    # Starts at N% (eg 70%), and increments up until 100%
+    max(
+        1 - summarizer_config.sliding_window_percentage, 0.10
+    )  # Some arbitrary minimum value (10%) to avoid negatives from badly configured summarizer percentage
+    eviction_percentage = summarizer_config.sliding_window_percentage
+    assert summarizer_config.sliding_window_percentage <= 1.0, "Sliding window percentage must be less than or equal to 1.0"
+    assistant_message_index = None
+
+    goal_tokens = (1 - summarizer_config.sliding_window_percentage) * agent_llm_config.context_window
+    approx_token_count = agent_llm_config.context_window
+
+    # allow approvals to be cutoffs (for headless agents) but ensure proper grouping with tool calls
+    def is_valid_cutoff(message: Message):
+        if message.role == MessageRole.assistant:
+            return True
+        if message.role == MessageRole.approval:
+            return message.tool_calls is not None and len(message.tool_calls) > 0
+        return False
+
+    while approx_token_count >= goal_tokens and eviction_percentage < 1.0:
         # more eviction percentage
         eviction_percentage += 0.10
 
@@ -108,20 +169,22 @@ async def summarize_via_sliding_window(
             (
                 i
                 for i in reversed(range(1, message_cutoff_index + 1))
-                if i < len(in_context_messages) and in_context_messages[i].role in valid_cutoff_roles
+                if i < len(in_context_messages) and is_valid_cutoff(in_context_messages[i])
             ),
             None,
         )
         if assistant_message_index is None:
-            logger.warning(f"No assistant message found for evicting up to index {message_cutoff_index}, incrementing eviction percentage")
+            logger.warning(
+                f"No assistant/approval message found for evicting up to index {message_cutoff_index}, incrementing eviction percentage"
+            )
             continue
 
         # update token count
         logger.info(f"Attempting to compact messages index 1:{assistant_message_index} messages")
-        post_summarization_buffer = [system_prompt] + in_context_messages[assistant_message_index:]
-        approx_token_count = await count_tokens(actor, llm_config, post_summarization_buffer)
+        post_summarization_buffer = [system_prompt, *in_context_messages[assistant_message_index:]]
+        approx_token_count = await count_tokens(actor, agent_llm_config, post_summarization_buffer)
         logger.info(
-            f"Compacting messages index 1:{assistant_message_index} messages resulted in {approx_token_count} tokens, goal is {(1 - summarizer_config.sliding_window_percentage) * llm_config.context_window}"
+            f"Compacting messages index 1:{assistant_message_index} messages resulted in {approx_token_count} tokens, goal is {goal_tokens}"
         )
 
     if assistant_message_index is None or eviction_percentage >= 1.0:
@@ -155,9 +218,11 @@ async def summarize_via_sliding_window(
         },
     )
 
+    logger.info(f"\n==================\nSummary message string: {summary_message_str[:100]}...\n==================\n")
+
     if summarizer_config.clip_chars is not None and len(summary_message_str) > summarizer_config.clip_chars:
         logger.warning(f"Summary length {len(summary_message_str)} exceeds clip length {summarizer_config.clip_chars}. Truncating.")
         summary_message_str = summary_message_str[: summarizer_config.clip_chars] + "... [summary truncated to fit]"
 
     updated_in_context_messages = in_context_messages[assistant_message_index:]
-    return summary_message_str, [system_prompt] + updated_in_context_messages
+    return summary_message_str, [system_prompt, *updated_in_context_messages]

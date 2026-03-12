@@ -217,7 +217,7 @@ class LettaAgentBatch(BaseAgent):
 
         if batch_items:
             log_event(name="bulk_create_batch_items")
-            batch_items_persisted = await self.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=self.actor)
+            await self.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=self.actor)
 
         log_event(name="return_batch_response")
         return LettaBatchResponse(

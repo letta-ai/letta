@@ -14,7 +14,7 @@ from letta.functions.functions import derive_openai_json_schema
 from letta.functions.schema_generator import validate_google_style_docstring
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.llm_api.helpers import convert_to_structured_output
-from letta.schemas.tool import MCP_TOOL_METADATA_SCHEMA_STATUS, Tool, ToolCreate
+from letta.schemas.tool import MCP_TOOL_METADATA_SCHEMA_STATUS, Tool
 
 
 def _clean_diff(d1, d2):
@@ -115,7 +115,7 @@ def test_derive_openai_json_schema():
     # Collect results and check for failures
     for schema_name, result in results:
         try:
-            schema_name_result, success = result.get(timeout=60)  # Wait for the result with timeout
+            _schema_name_result, success = result.get(timeout=60)  # Wait for the result with timeout
             assert success, f"Test for {schema_name} failed"
             print(f"Test for {schema_name} passed")
         except Exception as e:

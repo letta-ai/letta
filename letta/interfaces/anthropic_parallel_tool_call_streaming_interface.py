@@ -3,7 +3,12 @@ import json
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
+    from letta.schemas.usage import LettaUsageStatistics
 
 from anthropic import AsyncStream
 from anthropic.types.beta import (
@@ -274,7 +279,13 @@ class SimpleAnthropicStreamingInterface:
                     attributes={"stop_reason": StopReasonType.error.value, "error": str(e), "stacktrace": traceback.format_exc()},
                 )
             yield LettaStopReason(stop_reason=StopReasonType.error)
-            raise e
+
+            # Transform Anthropic errors into our custom error types for consistent handling
+            from letta.llm_api.anthropic_client import AnthropicClient
+
+            client = AnthropicClient()
+            transformed_error = client.handle_llm_error(e)
+            raise transformed_error
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")
 
@@ -316,6 +327,7 @@ class SimpleAnthropicStreamingInterface:
                         id=decrement_message_uuid(self.letta_message_id),
                         # Do not emit placeholder arguments here to avoid UI duplicates
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id),
+                        tool_calls=ToolCallDelta(name=name, tool_call_id=call_id),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         run_id=self.run_id,
@@ -421,6 +433,7 @@ class SimpleAnthropicStreamingInterface:
                     tool_call_msg = ApprovalRequestMessage(
                         id=decrement_message_uuid(self.letta_message_id),
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
+                        tool_calls=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         run_id=self.run_id,

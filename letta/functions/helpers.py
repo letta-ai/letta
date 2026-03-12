@@ -3,7 +3,17 @@ import json
 import logging
 import threading
 from random import uniform
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+
+if TYPE_CHECKING:
+    from letta.agents.letta_agent import LettaAgent as Agent
+    from letta.schemas.agent import AgentState
+    from letta.server.server import SyncServer
+
+    try:
+        from langchain.tools.base import BaseTool as LangChainBaseTool
+    except ImportError:
+        LangChainBaseTool = None
 
 import humps
 from pydantic import BaseModel, Field, create_model
@@ -21,6 +31,8 @@ from letta.server.rest_api.dependencies import get_letta_server
 from letta.settings import settings
 from letta.utils import safe_create_task
 
+_background_tasks: set[asyncio.Task] = set()
+
 
 # TODO needed?
 def generate_mcp_tool_wrapper(mcp_tool_name: str) -> tuple[str, str]:
@@ -36,7 +48,8 @@ def {mcp_tool_name}(**kwargs):
 
 
 def generate_langchain_tool_wrapper(
-    tool: "LangChainBaseTool", additional_imports_module_attr_map: dict[str, str] = None
+    tool: "LangChainBaseTool",
+    additional_imports_module_attr_map: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     tool_name = tool.__class__.__name__
     import_statement = f"from langchain_community.tools import {tool_name}"
@@ -428,15 +441,18 @@ def fire_and_forget_send_to_agent(
     # 4) Try to schedule the coroutine in an existing loop, else spawn a thread
     try:
         loop = asyncio.get_running_loop()
-        # If we get here, a loop is running; schedule the coroutine in background
-        loop.create_task(background_task())
+        task = loop.create_task(background_task())
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
     except RuntimeError:
-        # Means no event loop is running in this thread
         run_in_background_thread(background_task())
 
 
 async def _send_message_to_agents_matching_tags_async(
-    sender_agent: "Agent", server: "SyncServer", messages: List[MessageCreate], matching_agents: List["AgentState"]
+    sender_agent: "Agent",
+    server: "SyncServer",
+    messages: List[MessageCreate],
+    matching_agents: List["AgentState"],
 ) -> List[str]:
     async def _send_single(agent_state):
         return await _async_send_message_with_retries(
@@ -464,9 +480,7 @@ async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", mess
     server = get_letta_server()
 
     augmented_message = (
-        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - to reply to this message, "
-        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
-        f"{message}"
+        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - your response will be delivered to the sender] {message}"
     )
 
     worker_agents_ids = sender_agent.agent_state.multi_agent_group.agent_ids
@@ -520,7 +534,9 @@ def generate_model_from_args_json_schema(schema: Dict[str, Any]) -> Type[BaseMod
     return _create_model_from_schema(schema.get("title", "DynamicModel"), schema, nested_models)
 
 
-def _create_model_from_schema(name: str, model_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Type[BaseModel]:
+def _create_model_from_schema(
+    name: str, model_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] | None = None
+) -> Type[BaseModel]:
     fields = {}
     for field_name, field_schema in model_schema["properties"].items():
         field_type = _get_field_type(field_schema, nested_models)
@@ -531,7 +547,7 @@ def _create_model_from_schema(name: str, model_schema: Dict[str, Any], nested_mo
     return create_model(name, **fields)
 
 
-def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Any:
+def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] | None = None) -> Any:
     """Helper to convert JSON schema types to Python types."""
     if field_schema.get("type") == "string":
         return str

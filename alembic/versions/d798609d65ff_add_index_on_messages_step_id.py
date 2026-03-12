@@ -8,8 +8,6 @@ Create Date: 2025-11-07 15:43:59.446292
 
 from typing import Sequence, Union
 
-import sqlalchemy as sa
-
 from alembic import op
 from letta.settings import settings
 

@@ -55,7 +55,7 @@
         "provider_name": "openai",
         "provider_category": "base",
         "model_wrapper": null,
-        "context_window": 32000,
+        "context_window": 128000,
         "put_inner_thoughts_in_kwargs": true,
         "handle": "openai/gpt-4.1-mini",
         "temperature": 1.0,
@@ -574,7 +574,7 @@
     {
       "id": "tool-6",
       "tool_type": "letta_sleeptime_core",
-      "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
+      "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_string=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_string=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
       "source_type": "python",
       "name": "memory_insert",
       "tags": [
@@ -583,7 +583,7 @@
       "source_code": null,
       "json_schema": {
         "name": "memory_insert",
-        "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
+        "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_string=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_string=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -591,7 +591,7 @@
               "type": "string",
               "description": "Section of the memory to be edited, identified by its label."
             },
-            "new_str": {
+            "new_string": {
               "type": "string",
               "description": "The text to insert. Do not include line number prefixes."
             },
@@ -602,7 +602,7 @@
           },
           "required": [
             "label",
-            "new_str"
+            "new_string"
           ]
         }
       },
@@ -618,7 +618,7 @@
     {
       "id": "tool-1",
       "tool_type": "letta_sleeptime_core",
-      "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_str=\"- [ ] Step 5: Search the web\", new_str=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_str=\"Line 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_str=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
+      "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_string=\"Their name is Alice\", new_string=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_string=\"- [ ] Step 5: Search the web\", new_string=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_string=\"Their name is Alice\", new_string=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_string=\"Line 1: Their name is Alice\", new_string=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_string=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_string=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_string=\"Their name is Alice\", new_string=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
       "source_type": "python",
       "name": "memory_replace",
       "tags": [
@@ -627,7 +627,7 @@
       "source_code": null,
       "json_schema": {
         "name": "memory_replace",
-        "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_str=\"- [ ] Step 5: Search the web\", new_str=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_str=\"Line 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_str=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
+        "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_string=\"Their name is Alice\", new_string=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_string=\"- [ ] Step 5: Search the web\", new_string=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_string=\"Their name is Alice\", new_string=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_string=\"Line 1: Their name is Alice\", new_string=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_string=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_string=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_string=\"Their name is Alice\", new_string=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
         "parameters": {
           "type": "object",
           "properties": {
@@ -635,19 +635,19 @@
               "type": "string",
               "description": "Section of the memory to be edited, identified by its label."
             },
-            "old_str": {
+            "old_string": {
               "type": "string",
               "description": "The text to replace (must match exactly, including whitespace and indentation)."
             },
-            "new_str": {
+            "new_string": {
               "type": "string",
               "description": "The new text to insert in place of the old text. Do not include line number prefixes."
             }
           },
           "required": [
             "label",
-            "old_str",
-            "new_str"
+            "old_string",
+            "new_string"
           ]
         }
       },

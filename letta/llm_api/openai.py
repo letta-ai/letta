@@ -59,7 +59,7 @@ async def openai_get_model_list_async(
     url = smart_urljoin(url, "models")
 
     headers = {"Content-Type": "application/json"}
-    if api_key is not None:
+    if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     if "openrouter.ai" in url:
         if model_settings.openrouter_referer:
@@ -86,7 +86,7 @@ async def openai_get_model_list_async(
         # Handle HTTP errors (e.g., response 4XX, 5XX)
         try:
             error_response = http_err.response.json()
-        except:
+        except Exception:
             error_response = {"status_code": http_err.response.status_code, "text": http_err.response.text}
         logger.debug(f"Got HTTPError, exception={http_err}, response={error_response}")
         raise http_err
@@ -478,7 +478,7 @@ def openai_chat_completions_request_stream(
 
     data = prepare_openai_payload(chat_completion_request)
     data["stream"] = True
-    kwargs = {"api_key": api_key, "base_url": url, "max_retries": 0}
+    kwargs = {"api_key": api_key or "DUMMY_API_KEY", "base_url": url, "max_retries": 0}
     if "openrouter.ai" in url:
         headers = {}
         if model_settings.openrouter_referer:
@@ -511,7 +511,7 @@ def openai_chat_completions_request(
     https://platform.openai.com/docs/guides/text-generation?lang=curl
     """
     data = prepare_openai_payload(chat_completion_request)
-    kwargs = {"api_key": api_key, "base_url": url, "max_retries": 0}
+    kwargs = {"api_key": api_key or "DUMMY_API_KEY", "base_url": url, "max_retries": 0}
     if "openrouter.ai" in url:
         headers = {}
         if model_settings.openrouter_referer:
@@ -524,7 +524,17 @@ def openai_chat_completions_request(
     log_event(name="llm_request_sent", attributes=data)
     chat_completion = client.chat.completions.create(**data)
     log_event(name="llm_response_received", attributes=chat_completion.model_dump())
-    return ChatCompletionResponse(**chat_completion.model_dump())
+    response = ChatCompletionResponse(**chat_completion.model_dump())
+
+    # Override tool_call IDs to ensure cross-provider compatibility (matches streaming path behavior)
+    # Some models (e.g. Kimi via OpenRouter) generate IDs like 'Read:93' which violate Anthropic's pattern
+    for choice in response.choices:
+        if choice.message.tool_calls:
+            for tool_call in choice.message.tool_calls:
+                if tool_call.id is not None:
+                    tool_call.id = get_tool_call_id()
+
+    return response
 
 
 def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):

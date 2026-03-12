@@ -158,7 +158,7 @@ class Dolphin21MistralWrapper(LLMChatCompletionWrapper):
                         content_simple = content_json["message"]
                         prompt += f"\n{IM_START_TOKEN}user\n{content_simple}{IM_END_TOKEN}"
                         # prompt += f"\nUSER: {content_simple}"
-                    except:
+                    except Exception:
                         prompt += f"\n{IM_START_TOKEN}user\n{message['content']}{IM_END_TOKEN}"
                         # prompt += f"\nUSER: {message['content']}"
             elif message["role"] == "assistant":
@@ -167,7 +167,7 @@ class Dolphin21MistralWrapper(LLMChatCompletionWrapper):
                     prompt += f"\n{message['content']}"
                 # prompt += f"\nASSISTANT: {message['content']}"
                 # need to add the function call if there was one
-                if "function_call" in message and message["function_call"]:
+                if message.get("function_call"):
                     prompt += f"\n{create_function_call(message['function_call'])}"
                 prompt += f"{IM_END_TOKEN}"
             elif message["role"] in ["function", "tool"]:

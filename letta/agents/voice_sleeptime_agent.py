@@ -1,4 +1,9 @@
-from typing import AsyncGenerator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, AsyncGenerator, List, Optional, Tuple, Union
+
+if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
+    from letta.schemas.tool_execution_result import ToolExecutionResult
 
 from letta.agents.helpers import _create_letta_response, serialize_message_history
 from letta.agents.letta_agent import LettaAgent
@@ -89,7 +94,7 @@ class VoiceSleeptimeAgent(LettaAgent):
         current_in_context_messages, new_in_context_messages, stop_reason, usage = await super()._step(
             agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
         )
-        new_in_context_messages, updated = await self.summarizer.summarize(
+        new_in_context_messages, _updated = await self.summarizer.summarize(
             in_context_messages=current_in_context_messages, new_letta_messages=new_in_context_messages
         )
         self.agent_manager.set_in_context_messages(

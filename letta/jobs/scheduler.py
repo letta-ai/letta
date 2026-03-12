@@ -94,7 +94,7 @@ async def _try_acquire_lock_and_start_scheduler(server: SyncServer) -> bool:
         if scheduler.running:
             try:
                 scheduler.shutdown(wait=False)
-            except:
+            except Exception:
                 pass
         return False
     finally:

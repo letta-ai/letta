@@ -1,105 +1,18 @@
-import json
-import logging
-import os
-import random
-import re
-import string
-import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import List
-from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from _pytest.python_api import approx
-from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 
 # Import shared fixtures and constants from conftest
-from conftest import (
-    CREATE_DELAY_SQLITE,
-    DEFAULT_EMBEDDING_CONFIG,
-    USING_SQLITE,
-)
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.orm.exc import StaleDataError
 
-from letta.config import LettaConfig
-from letta.constants import (
-    BASE_MEMORY_TOOLS,
-    BASE_SLEEPTIME_TOOLS,
-    BASE_TOOLS,
-    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
-    BASE_VOICE_SLEEPTIME_TOOLS,
-    BUILTIN_TOOLS,
-    DEFAULT_ORG_ID,
-    DEFAULT_ORG_NAME,
-    FILES_TOOLS,
-    LETTA_TOOL_EXECUTION_DIR,
-    LETTA_TOOL_SET,
-    LOCAL_ONLY_MULTI_AGENT_TOOLS,
-    MCP_TOOL_TAG_NAME_PREFIX,
-    MULTI_AGENT_TOOLS,
-)
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
-from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.functions.mcp_client.types import MCPTool
-from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer
-from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
-from letta.orm import Base, Block
-from letta.orm.block_history import BlockHistory
-from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
-from letta.schemas.embedding_config import EmbeddingConfig
+from letta.orm.errors import UniqueConstraintViolationError
 from letta.schemas.enums import (
-    ActorType,
-    AgentStepStatus,
-    FileProcessingStatus,
-    JobStatus,
-    JobType,
     MessageRole,
-    ProviderType,
-    SandboxType,
-    StepStatus,
-    TagMatchMode,
-    ToolType,
-    VectorDBProvider,
 )
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
-from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import BatchJob, Job, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
-from letta.schemas.passage import Passage as PydanticPassage
-from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.run import Run as PydanticRun
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.source import Source as PydanticSource, SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser, UserUpdate
-from letta.server.db import db_registry
+from letta.schemas.message import Message as PydanticMessage, MessageUpdate
 from letta.server.server import SyncServer
-from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
-from letta.services.step_manager import FeedbackType
-from letta.settings import settings, tool_settings
-from letta.utils import calculate_file_defaults_based_on_context_window
-from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
-from tests.utils import random_string
 
 # ======================================================================================================================
 # AgentManager Tests - Messages Relationship
@@ -301,10 +214,10 @@ async def test_modify_letta_message(server: SyncServer, sarah_agent, default_use
     messages = await server.message_manager.list_messages(agent_id=sarah_agent.id, actor=default_user)
     letta_messages = PydanticMessage.to_letta_messages_from_list(messages=messages)
 
-    system_message = [msg for msg in letta_messages if msg.message_type == "system_message"][0]
-    assistant_message = [msg for msg in letta_messages if msg.message_type == "assistant_message"][0]
-    user_message = [msg for msg in letta_messages if msg.message_type == "user_message"][0]
-    reasoning_message = [msg for msg in letta_messages if msg.message_type == "reasoning_message"][0]
+    system_message = next(msg for msg in letta_messages if msg.message_type == "system_message")
+    assistant_message = next(msg for msg in letta_messages if msg.message_type == "assistant_message")
+    user_message = next(msg for msg in letta_messages if msg.message_type == "user_message")
+    reasoning_message = next(msg for msg in letta_messages if msg.message_type == "reasoning_message")
 
     # user message
     update_user_message = UpdateUserMessage(content="Hello, Sarah!")
@@ -849,7 +762,6 @@ async def test_create_many_messages_async_with_turbopuffer(server: SyncServer, s
 @pytest.mark.asyncio
 async def test_convert_tool_call_messages_no_assistant_mode(server: SyncServer, sarah_agent, default_user):
     """Test that when assistant mode is off, all tool calls go into a single ToolCallMessage"""
-    from letta.schemas.letta_message import ToolCall
 
     # create a message with multiple tool calls
     tool_calls = [

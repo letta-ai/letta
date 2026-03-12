@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from letta.errors import LettaInvalidArgumentError
 from letta.schemas.enums import JobStatus
-from letta.schemas.job import Job, JobBase
+from letta.schemas.job import Job
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings

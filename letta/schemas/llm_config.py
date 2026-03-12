@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
+import re
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -82,9 +83,9 @@ class LLMConfig(BaseModel):
         0,
         description="Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
     )
-    effort: Optional[Literal["low", "medium", "high"]] = Field(
+    effort: Optional[Literal["low", "medium", "high", "max"]] = Field(
         None,
-        description="The effort level for Anthropic Opus 4.5 model (controls token spending). Not setting this gives similar performance to 'high'.",
+        description="The effort level for Anthropic models that support it (Opus 4.5, Opus 4.6). Controls token spending and thinking behavior. Not setting this gives similar performance to 'high'.",
     )
     frequency_penalty: Optional[float] = Field(
         None,  # Can also deafult to 0.0?
@@ -112,6 +113,19 @@ class LLMConfig(BaseModel):
         False,
         description="Enable strict mode for tool calling. When true, tool schemas include strict: true and additionalProperties: false, guaranteeing tool outputs match JSON schemas.",
     )
+    return_logprobs: bool = Field(
+        False,
+        description="Whether to return log probabilities of the output tokens. Useful for RL training.",
+    )
+    top_logprobs: Optional[int] = Field(
+        None,
+        description="Number of most likely tokens to return at each position (0-20). Requires return_logprobs=True.",
+    )
+    return_token_ids: bool = Field(
+        False,
+        description="Whether to return token IDs for all LLM generations via SGLang native endpoint. "
+        "Required for multi-turn RL training with loss masking. Only works with SGLang provider.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -124,13 +138,14 @@ class LLMConfig(BaseModel):
         if model is None:
             return values
 
-        # Set max_tokens defaults based on model
-        if values.get("max_tokens") is None:
-            if model.startswith("gpt-5"):  # Covers both gpt-5 and gpt-5.1
+        # Set max_tokens defaults based on model (only if not explicitly provided)
+        if "max_tokens" not in values:
+            if re.match(r"^gpt-5\.[23]", model) and "-chat" not in model:
+                values["max_tokens"] = 128000
+            elif model.startswith("gpt-5"):
                 values["max_tokens"] = 16384
             elif model == "gpt-4.1":
                 values["max_tokens"] = 8192
-            # For other models, the field default of 4096 will be used
 
         # Set context_window defaults if not provided
         if values.get("context_window") is None:
@@ -190,6 +205,7 @@ class LLMConfig(BaseModel):
             or model.startswith("claude-opus-4")
             or model.startswith("claude-haiku-4-5")
             or model.startswith("claude-opus-4-5")
+            or model.startswith("claude-opus-4-6")
         ):
             values["put_inner_thoughts_in_kwargs"] = False
 
@@ -286,7 +302,7 @@ class LLMConfig(BaseModel):
                 context_window=272000,
                 reasoning_effort="none",  # Default to "none" for GPT-5.2
                 verbosity="medium",
-                max_tokens=16384,
+                max_tokens=128000,
             )
         elif model_name == "letta":
             return cls(
@@ -346,6 +362,7 @@ class LLMConfig(BaseModel):
                 thinking=AnthropicThinking(type=thinking_type, budget_tokens=self.max_reasoning_tokens or 1024),
                 verbosity=self.verbosity,
                 strict=self.strict,
+                effort=self.effort,
             )
         elif self.model_endpoint_type == "google_ai":
             return GoogleAIModelSettings(
@@ -374,9 +391,13 @@ class LLMConfig(BaseModel):
                 temperature=self.temperature,
             )
         elif self.model_endpoint_type == "zai":
+            from letta.schemas.model import ZAIThinking
+
+            thinking_type = "enabled" if self.enable_reasoner else "disabled"
             return ZAIModelSettings(
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
+                thinking=ZAIThinking(type=thinking_type, clear_thinking=False),
             )
         elif self.model_endpoint_type == "groq":
             return GroqModelSettings(
@@ -437,6 +458,7 @@ class LLMConfig(BaseModel):
             or config.model.startswith("claude-3-7-sonnet")
             or config.model.startswith("claude-haiku-4-5")
             or config.model.startswith("claude-opus-4-5")
+            or config.model.startswith("claude-opus-4-6")
         )
 
     @classmethod
@@ -450,6 +472,48 @@ class LLMConfig(BaseModel):
         return config.model_endpoint_type == "google_ai" and (
             config.model.startswith("gemini-2.5-flash") or config.model.startswith("gemini-2.5-pro")
         )
+
+    @classmethod
+    def is_zai_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "zai" and (
+            config.model.startswith("glm-4.5")
+            or config.model.startswith("glm-4.6")
+            or config.model.startswith("glm-4.7")
+            or config.model.startswith("glm-5")
+        )
+
+    @classmethod
+    def is_openrouter_reasoning_model(cls, config: "LLMConfig") -> bool:
+        """Check if this is an OpenRouter model that supports reasoning.
+
+        OpenRouter model names include provider prefix, e.g.:
+        - anthropic/claude-sonnet-4
+        - openai/o3-mini
+        - moonshotai/kimi-k2-thinking
+        - deepseek/deepseek-r1
+        """
+        if config.model_endpoint_type != "openrouter":
+            return False
+        model = config.model.lower()
+        # OpenAI reasoning models
+        if "/o1" in model or "/o3" in model or "/o4" in model or "/gpt-5" in model:
+            return True
+        # Anthropic Claude reasoning models
+        if "claude-3-7-sonnet" in model or "claude-sonnet-4" in model or "claude-opus-4" in model or "claude-haiku-4" in model:
+            return True
+        # Google Gemini reasoning models
+        if "gemini" in model:
+            return True
+        # ZAI GLM reasoning models
+        if "glm-4.5" in model or "glm-4.6" in model or "glm-4.7" in model or "glm-5" in model:
+            return True
+        # DeepSeek reasoning models
+        if "deepseek-r1" in model or "deepseek-reasoner" in model:
+            return True
+        # Moonshot Kimi reasoning models
+        if "kimi" in model:
+            return True
+        return False
 
     @classmethod
     def supports_verbosity(cls, config: "LLMConfig") -> bool:
@@ -500,9 +564,25 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.enable_reasoner and config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
-                # Set default effort level for Claude Opus 4.5
-                if config.model.startswith("claude-opus-4-5") and config.effort is None:
+                # Set default effort level for Claude Opus 4.5 and Opus 4.6
+                if (
+                    config.model.startswith("claude-opus-4-5")
+                    or config.model.startswith("claude-opus-4-6")
+                    or config.model.startswith("claude-sonnet-4-6")
+                ) and config.effort is None:
                     config.effort = "medium"
+                return config
+
+            # ZAI GLM-4.5+ models: toggle honored (similar to Anthropic)
+            if cls.is_zai_reasoning_model(config):
+                config.enable_reasoner = bool(reasoning)
+                config.put_inner_thoughts_in_kwargs = False
+                return config
+
+            # OpenRouter reasoning models: toggle honored
+            if cls.is_openrouter_reasoning_model(config):
+                config.enable_reasoner = bool(reasoning)
+                config.put_inner_thoughts_in_kwargs = False
                 return config
 
             # Google Gemini 2.5 Pro and Gemini 3: not possible to disable
@@ -557,14 +637,22 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
-                # Set default effort level for Claude Opus 4.5
-                if config.model.startswith("claude-opus-4-5") and config.effort is None:
+                # Set default effort level for Claude Opus 4.5 and Opus 4.6
+                if (
+                    config.model.startswith("claude-opus-4-5")
+                    or config.model.startswith("claude-opus-4-6")
+                    or config.model.startswith("claude-sonnet-4-6")
+                ) and config.effort is None:
                     config.effort = "medium"
             elif cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config):
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
+            elif cls.is_zai_reasoning_model(config):
+                config.put_inner_thoughts_in_kwargs = False
+            elif cls.is_openrouter_reasoning_model(config):
+                config.put_inner_thoughts_in_kwargs = False
             elif cls.is_openai_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:

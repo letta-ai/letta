@@ -1,4 +1,7 @@
-from typing import Dict, Iterator, List, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, List, Tuple
+
+if TYPE_CHECKING:
+    from letta.schemas.user import User
 
 import typer
 
@@ -143,7 +146,13 @@ async def load_data(connector: DataConnector, source: Source, passage_manager: P
 
 
 class DirectoryConnector(DataConnector):
-    def __init__(self, input_files: List[str] = None, input_directory: str = None, recursive: bool = False, extensions: List[str] = None):
+    def __init__(
+        self,
+        input_files: List[str] | None = None,
+        input_directory: str | None = None,
+        recursive: bool = False,
+        extensions: List[str] | None = None,
+    ):
         """
         Connector for reading text data from a directory of files.
 

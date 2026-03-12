@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
@@ -20,45 +20,195 @@ class ContextWindowCalculator:
     """Handles context window calculations with different token counting strategies"""
 
     @staticmethod
-    def extract_system_components(system_message: str) -> Tuple[str, str, str]:
+    def _extract_tag_content(text: str, tag_name: str) -> Optional[str]:
+        """
+        Extract content between XML-style opening and closing tags.
+
+        Args:
+            text: The text to search in
+            tag_name: The name of the tag (without < >)
+
+        Returns:
+            The content between tags (inclusive of tags), or None if not found
+
+        Note:
+            If duplicate tags exist, only the first occurrence is extracted.
+        """
+        start_tag = f"<{tag_name}>"
+        end_tag = f"</{tag_name}>"
+
+        start_idx = text.find(start_tag)
+        if start_idx == -1:
+            return None
+
+        end_idx = text.find(end_tag, start_idx)
+        if end_idx == -1:
+            return None
+
+        return text[start_idx : end_idx + len(end_tag)]
+
+    @staticmethod
+    def _extract_system_prompt(system_message: str) -> Optional[str]:
+        """
+        Extract the system prompt / base instructions from a system message.
+
+        First tries to find an explicit <base_instructions> tag. If not present
+        (e.g. custom system prompts from Letta Code agents), falls back to
+        extracting everything before the first known section tag.
+
+        Returns:
+            The system prompt text, or None if the message is empty.
+
+        Note:
+            The returned value is semantically different depending on agent type:
+            - Standard agents: includes the <base_instructions>...</base_instructions> tags
+            - Custom prompt agents (e.g. Letta Code): raw preamble text without any tags
+        """
+        _extract = ContextWindowCalculator._extract_tag_content
+
+        # Preferred: explicit <base_instructions> wrapper
+        tagged = _extract(system_message, "base_instructions")
+        if tagged is not None:
+            return tagged
+
+        # Fallback: everything before the first known section tag
+        section_tags = ["<memory_blocks>", "<memory_filesystem>", "<tool_usage_rules>", "<directories>", "<memory_metadata>"]
+        first_section_pos = len(system_message)
+        for tag in section_tags:
+            pos = system_message.find(tag)
+            if pos != -1 and pos < first_section_pos:
+                first_section_pos = pos
+
+        prompt = system_message[:first_section_pos].strip()
+        return prompt if prompt else None
+
+    @staticmethod
+    def _extract_top_level_tag(system_message: str, tag_name: str, container_tag: str = "memory_blocks") -> Optional[str]:
+        """
+        Extract a tag only if it appears outside a container tag.
+
+        This prevents extracting tags that are nested inside <memory_blocks> as
+        memory block labels (e.g. a block named "memory_filesystem" rendered as
+        <memory_filesystem> inside <memory_blocks>) from being confused with
+        top-level sections.
+
+        Handles the case where a tag appears both nested (inside the container)
+        and at top-level — scans all occurrences to find one outside the container.
+
+        Args:
+            system_message: The full system message text
+            tag_name: The tag to extract
+            container_tag: The container tag to check nesting against
+
+        Returns:
+            The tag content if found at top level, None otherwise.
+        """
+        _extract = ContextWindowCalculator._extract_tag_content
+
+        start_tag = f"<{tag_name}>"
+        end_tag = f"</{tag_name}>"
+
+        # Find the container boundaries
+        container_start = system_message.find(f"<{container_tag}>")
+        container_end = system_message.find(f"</{container_tag}>")
+        has_container = container_start != -1 and container_end != -1
+
+        # Scan all occurrences of the tag to find one outside the container
+        search_start = 0
+        while True:
+            tag_start = system_message.find(start_tag, search_start)
+            if tag_start == -1:
+                return None
+
+            # Check if this occurrence is nested inside the container
+            if has_container and container_start < tag_start < container_end:
+                # Skip past this nested occurrence
+                search_start = tag_start + len(start_tag)
+                continue
+
+            # Found a top-level occurrence — extract it
+            tag_end = system_message.find(end_tag, tag_start)
+            if tag_end == -1:
+                return None
+            return system_message[tag_start : tag_end + len(end_tag)]
+
+    @staticmethod
+    def _extract_git_core_memory(system_message: str) -> Optional[str]:
+        """
+        Extract bare file blocks for git-enabled agents.
+
+        Git-enabled agents render individual memory blocks as bare tags like
+        <system/human.md>...</system/human.md> WITHOUT any container tag.
+        These appear after </memory_filesystem> and before the next known
+        section tag (<tool_usage_rules>, <directories>, or <memory_metadata>).
+
+        Returns:
+            The text containing all bare file blocks, or None if not found.
+        """
+        end_marker = "</memory_filesystem>"
+        end_pos = system_message.find(end_marker)
+        if end_pos == -1:
+            return None
+
+        start = end_pos + len(end_marker)
+
+        # Find the next known section tag
+        next_section_tags = ["<tool_usage_rules>", "<directories>", "<memory_metadata>"]
+        next_section_pos = len(system_message)
+        for tag in next_section_tags:
+            pos = system_message.find(tag, start)
+            if pos != -1 and pos < next_section_pos:
+                next_section_pos = pos
+
+        content = system_message[start:next_section_pos].strip()
+        return content if content else None
+
+    @staticmethod
+    def extract_system_components(system_message: str) -> Dict[str, Optional[str]]:
         """
         Extract structured components from a formatted system message.
 
-        Parses the system message to extract three distinct sections marked by XML-style tags:
-        - base_instructions: The core system prompt and agent instructions
-        - memory_blocks: The agent's core memory (persistent context)
-        - memory_metadata: Metadata about external memory systems
+        Parses the system message to extract sections marked by XML-style tags using
+        proper end-tag matching. Handles all agent types including:
+        - Standard agents with <base_instructions> wrapper
+        - Custom system prompts without <base_instructions> (e.g. Letta Code agents)
+        - Git-enabled agents with top-level <memory_filesystem> and bare file blocks
+        - React/workflow agents that don't render <memory_blocks>
 
         Args:
             system_message: A formatted system message containing XML-style section markers
 
         Returns:
-            A tuple of (system_prompt, core_memory, external_memory_summary)
-            Each component will be an empty string if its section is not found
-
-        Note:
-            This method assumes a specific format with sections delimited by:
-            <base_instructions>, <memory_blocks>, and <memory_metadata> tags.
-            The extraction is position-based and expects sections in this order.
+            A dictionary with the following keys (value is None if section not found):
+            - system_prompt: The base instructions section (or text before first section tag)
+            - core_memory: The memory blocks section. For standard agents this is the
+              <memory_blocks>...</memory_blocks> content. For git-enabled agents (no
+              <memory_blocks> but top-level <memory_filesystem>), this captures the bare
+              file blocks (e.g. <system/human.md>) that follow </memory_filesystem>.
+            - memory_filesystem: Top-level memory filesystem (git-enabled agents only, NOT
+              the memory_filesystem block nested inside <memory_blocks>)
+            - tool_usage_rules: The tool usage rules section
+            - directories: The directories section (when sources are attached)
+            - external_memory_summary: The memory metadata section
         """
-        base_start = system_message.find("<base_instructions>")
-        memory_blocks_start = system_message.find("<memory_blocks>")
-        metadata_start = system_message.find("<memory_metadata>")
+        _extract = ContextWindowCalculator._extract_tag_content
+        _extract_top = ContextWindowCalculator._extract_top_level_tag
 
-        system_prompt = ""
-        core_memory = ""
-        external_memory_summary = ""
+        core_memory = _extract(system_message, "memory_blocks")
+        memory_filesystem = _extract_top(system_message, "memory_filesystem")
 
-        if base_start != -1 and memory_blocks_start != -1:
-            system_prompt = system_message[base_start:memory_blocks_start].strip()
+        # Git-enabled agents: no <memory_blocks>, but bare file blocks after </memory_filesystem>
+        if core_memory is None and memory_filesystem is not None:
+            core_memory = ContextWindowCalculator._extract_git_core_memory(system_message)
 
-        if memory_blocks_start != -1 and metadata_start != -1:
-            core_memory = system_message[memory_blocks_start:metadata_start].strip()
-
-        if metadata_start != -1:
-            external_memory_summary = system_message[metadata_start:].strip()
-
-        return system_prompt, core_memory, external_memory_summary
+        return {
+            "system_prompt": ContextWindowCalculator._extract_system_prompt(system_message),
+            "core_memory": core_memory,
+            "memory_filesystem": memory_filesystem,
+            "tool_usage_rules": _extract_top(system_message, "tool_usage_rules"),
+            "directories": _extract_top(system_message, "directories"),
+            "external_memory_summary": _extract(system_message, "memory_metadata"),
+        }
 
     @staticmethod
     def extract_summary_memory(messages: List[Any]) -> Tuple[Optional[str], int]:
@@ -116,7 +266,7 @@ class ContextWindowCalculator:
         # Use provided message_ids or fall back to agent_state.message_ids[1:]
         effective_message_ids = message_ids if message_ids is not None else agent_state.message_ids[1:]
         messages = await message_manager.get_messages_by_ids_async(message_ids=effective_message_ids, actor=actor)
-        in_context_messages = [system_message_compiled] + messages
+        in_context_messages = [system_message_compiled, *messages]
 
         # Filter out None messages (can occur when system message is missing)
         original_count = len(in_context_messages)
@@ -131,9 +281,14 @@ class ContextWindowCalculator:
         converted_messages = token_counter.convert_messages(in_context_messages)
 
         # Extract system components
-        system_prompt = ""
-        core_memory = ""
-        external_memory_summary = ""
+        components: Dict[str, Optional[str]] = {
+            "system_prompt": None,
+            "core_memory": None,
+            "memory_filesystem": None,
+            "tool_usage_rules": None,
+            "directories": None,
+            "external_memory_summary": None,
+        }
 
         if (
             in_context_messages
@@ -143,10 +298,15 @@ class ContextWindowCalculator:
             and isinstance(in_context_messages[0].content[0], TextContent)
         ):
             system_message = in_context_messages[0].content[0].text
-            system_prompt, core_memory, external_memory_summary = self.extract_system_components(system_message)
+            components = self.extract_system_components(system_message)
 
-        # System prompt
-        system_prompt = system_prompt or agent_state.system
+        # Extract each component with fallbacks
+        system_prompt = components.get("system_prompt") or agent_state.system or ""
+        core_memory = components.get("core_memory") or ""
+        memory_filesystem = components.get("memory_filesystem") or ""
+        tool_usage_rules = components.get("tool_usage_rules") or ""
+        directories = components.get("directories") or ""
+        external_memory_summary = components.get("external_memory_summary") or ""
 
         # Extract summary memory
         summary_memory, message_start_index = self.extract_summary_memory(in_context_messages)
@@ -156,11 +316,14 @@ class ContextWindowCalculator:
         if agent_state.tools:
             available_functions_definitions = [OpenAITool(type="function", function=f.json_schema) for f in agent_state.tools]
 
-        # Count tokens concurrently
+        # Count tokens concurrently for all sections, skipping empty ones
         token_counts = await asyncio.gather(
             token_counter.count_text_tokens(system_prompt),
-            token_counter.count_text_tokens(core_memory),
-            token_counter.count_text_tokens(external_memory_summary),
+            token_counter.count_text_tokens(core_memory) if core_memory else asyncio.sleep(0, result=0),
+            token_counter.count_text_tokens(memory_filesystem) if memory_filesystem else asyncio.sleep(0, result=0),
+            token_counter.count_text_tokens(tool_usage_rules) if tool_usage_rules else asyncio.sleep(0, result=0),
+            token_counter.count_text_tokens(directories) if directories else asyncio.sleep(0, result=0),
+            token_counter.count_text_tokens(external_memory_summary) if external_memory_summary else asyncio.sleep(0, result=0),
             token_counter.count_text_tokens(summary_memory) if summary_memory else asyncio.sleep(0, result=0),
             (
                 token_counter.count_message_tokens(converted_messages[message_start_index:])
@@ -177,6 +340,9 @@ class ContextWindowCalculator:
         (
             num_tokens_system,
             num_tokens_core_memory,
+            num_tokens_memory_filesystem,
+            num_tokens_tool_usage_rules,
+            num_tokens_directories,
             num_tokens_external_memory_summary,
             num_tokens_summary_memory,
             num_tokens_messages,
@@ -200,6 +366,14 @@ class ContextWindowCalculator:
             system_prompt=system_prompt,
             num_tokens_core_memory=num_tokens_core_memory,
             core_memory=core_memory,
+            # New sections
+            num_tokens_memory_filesystem=num_tokens_memory_filesystem,
+            memory_filesystem=memory_filesystem if memory_filesystem else None,
+            num_tokens_tool_usage_rules=num_tokens_tool_usage_rules,
+            tool_usage_rules=tool_usage_rules if tool_usage_rules else None,
+            num_tokens_directories=num_tokens_directories,
+            directories=directories if directories else None,
+            # Summary and messages
             num_tokens_summary_memory=num_tokens_summary_memory,
             summary_memory=summary_memory,
             num_tokens_messages=num_tokens_messages,

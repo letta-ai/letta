@@ -1,18 +1,17 @@
 """Unit tests for provider trace backends."""
 
-import asyncio
 import json
 import os
 import socket
 import tempfile
 import threading
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.user import User
-from letta.services.provider_trace_backends.base import ProviderTraceBackend, ProviderTraceBackendClient
+from letta.services.provider_trace_backends.base import ProviderTraceBackend
 from letta.services.provider_trace_backends.socket import SocketProviderTraceBackend
 
 
@@ -288,8 +287,8 @@ class TestSocketProviderTraceBackend:
         assert captured_records[0]["error"] == "Rate limit exceeded"
         assert captured_records[0]["response"] is None
 
-    def test_record_includes_v2_protocol_fields(self):
-        """Test that v2 protocol fields are included in the socket record."""
+    def test_record_includes_v3_protocol_fields(self):
+        """Test that v3 protocol fields are included in the socket record."""
         trace = ProviderTrace(
             request_json={"model": "gpt-4"},
             response_json={"id": "test"},
@@ -312,7 +311,7 @@ class TestSocketProviderTraceBackend:
 
         assert len(captured_records) == 1
         record = captured_records[0]
-        assert record["protocol_version"] == 2
+        assert record["protocol_version"] == 3
         assert record["org_id"] == "org-456"
         assert record["user_id"] == "user-456"
         assert record["compaction_settings"] == {"mode": "sliding_window"}
@@ -341,7 +340,6 @@ class TestBackendFactory:
 
     def test_get_multiple_backends(self):
         """Test getting multiple backends via environment."""
-        import os
 
         from letta.services.provider_trace_backends.factory import (
             get_provider_trace_backends,

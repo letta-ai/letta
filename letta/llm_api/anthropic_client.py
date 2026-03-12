@@ -19,6 +19,9 @@ from letta.errors import (
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
+    LLMEmptyResponseError,
+    LLMError,
+    LLMInsufficientCreditsError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMProviderOverloaded,
@@ -29,13 +32,16 @@ from letta.errors import (
 )
 from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.decorators import deprecated
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.anthropic_constants import ANTHROPIC_MAX_STRICT_TOOLS, ANTHROPIC_STRICT_MODE_ALLOWLIST
+from letta.llm_api.error_utils import is_insufficient_credits_message
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
@@ -45,9 +51,7 @@ from letta.schemas.openai.chat_completion_response import (
     FunctionCall,
     Message as ChoiceMessage,
     ToolCall,
-    UsageStatistics,
 )
-from letta.schemas.response_format import JsonSchemaResponseFormat
 from letta.schemas.usage import LettaUsageStatistics
 from letta.settings import model_settings
 
@@ -62,10 +66,16 @@ class AnthropicClient(LLMClientBase):
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(llm_config, async_client=False)
         betas: list[str] = []
-        # Interleaved thinking for reasoner (sync path parity)
+
+        # Opus 4.6 / Sonnet 4.6 Auto Thinking
         if llm_config.enable_reasoner:
-            betas.append("interleaved-thinking-2025-05-14")
-        # 1M context beta for Sonnet 4/4.5 when enabled
+            if llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6"):
+                betas.append("adaptive-thinking-2026-01-28")
+            # Interleaved thinking for other reasoners (sync path parity)
+            else:
+                betas.append("interleaved-thinking-2025-05-14")
+
+        # 1M context beta for Sonnet 4/4.5 or Opus 4.6 when enabled
         try:
             from letta.settings import model_settings
 
@@ -73,12 +83,23 @@ class AnthropicClient(LLMClientBase):
                 llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
             ):
                 betas.append("context-1m-2025-08-07")
+            elif model_settings.anthropic_opus_1m and llm_config.model.startswith("claude-opus-4-6"):
+                betas.append("context-1m-2025-08-07")
         except Exception:
             pass
 
-        # Opus 4.5 effort parameter - to extend to other models, modify the model check
-        if llm_config.model.startswith("claude-opus-4-5") and llm_config.effort is not None:
+        # Effort parameter for Opus 4.5, Opus 4.6, and Sonnet 4.6 - to extend to other models, modify the model check
+        if (
+            llm_config.model.startswith("claude-opus-4-5")
+            or llm_config.model.startswith("claude-opus-4-6")
+            or llm_config.model.startswith("claude-sonnet-4-6")
+        ) and llm_config.effort is not None:
             betas.append("effort-2025-11-24")
+            # Max effort beta for Opus 4.6 / Sonnet 4.6
+            if (
+                llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6")
+            ) and llm_config.effort == "max":
+                betas.append("max-effort-2026-01-24")
 
         # Context management for Opus 4.5 to preserve thinking blocks (improves cache hits)
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
@@ -88,21 +109,46 @@ class AnthropicClient(LLMClientBase):
         if llm_config.strict and _supports_structured_outputs(llm_config.model):
             betas.append("structured-outputs-2025-11-13")
 
-        if betas:
-            response = client.beta.messages.create(**request_data, betas=betas)
-        else:
-            response = client.beta.messages.create(**request_data)
-        return response.model_dump()
+        try:
+            if betas:
+                response = client.beta.messages.create(**request_data, betas=betas)
+            else:
+                response = client.beta.messages.create(**request_data)
+            return response.model_dump()
+        except ValueError as e:
+            # Anthropic SDK raises ValueError when streaming is required for long-running operations
+            # See: https://github.com/anthropics/anthropic-sdk-python#streaming
+            if "streaming is required" in str(e).lower():
+                logger.warning(
+                    "[Anthropic] Non-streaming request rejected due to potential long duration. Error: %s. "
+                    "Note: Synchronous fallback to streaming is not supported. Use async API instead.",
+                    str(e),
+                )
+                # Re-raise as LLMBadRequestError (maps to 502 Bad Gateway) since this is a downstream provider constraint
+                raise LLMBadRequestError(
+                    message="This operation may take longer than 10 minutes and requires streaming. "
+                    "Please use the async API (request_async) instead of the deprecated sync API. "
+                    f"Original error: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                ) from e
+            raise
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
+        request_data = sanitize_unicode_surrogates(request_data)
+
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
         betas: list[str] = []
-        # interleaved thinking for reasoner
-        if llm_config.enable_reasoner:
-            betas.append("interleaved-thinking-2025-05-14")
 
-        # 1M context beta for Sonnet 4/4.5 when enabled
+        # Opus 4.6 / Sonnet 4.6 Auto Thinking
+        if llm_config.enable_reasoner:
+            if llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6"):
+                betas.append("adaptive-thinking-2026-01-28")
+            # Interleaved thinking for other reasoners (sync path parity)
+            else:
+                betas.append("interleaved-thinking-2025-05-14")
+
+        # 1M context beta for Sonnet 4/4.5 or Opus 4.6 when enabled
         try:
             from letta.settings import model_settings
 
@@ -110,12 +156,23 @@ class AnthropicClient(LLMClientBase):
                 llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
             ):
                 betas.append("context-1m-2025-08-07")
+            elif model_settings.anthropic_opus_1m and llm_config.model.startswith("claude-opus-4-6"):
+                betas.append("context-1m-2025-08-07")
         except Exception:
             pass
 
-        # Opus 4.5 effort parameter - to extend to other models, modify the model check
-        if llm_config.model.startswith("claude-opus-4-5") and llm_config.effort is not None:
+        # Effort parameter for Opus 4.5, Opus 4.6, and Sonnet 4.6 - to extend to other models, modify the model check
+        if (
+            llm_config.model.startswith("claude-opus-4-5")
+            or llm_config.model.startswith("claude-opus-4-6")
+            or llm_config.model.startswith("claude-sonnet-4-6")
+        ) and llm_config.effort is not None:
             betas.append("effort-2025-11-24")
+            # Max effort beta for Opus 4.6 / Sonnet 4.6
+            if (
+                llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6")
+            ) and llm_config.effort == "max":
+                betas.append("max-effort-2026-01-24")
 
         # Context management for Opus 4.5 to preserve thinking blocks (improves cache hits)
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
@@ -254,6 +311,8 @@ class AnthropicClient(LLMClientBase):
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
+        request_data = sanitize_unicode_surrogates(request_data)
+
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
         request_data["stream"] = True
 
@@ -262,12 +321,15 @@ class AnthropicClient(LLMClientBase):
         # See: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/fine-grained-streaming
         betas = ["fine-grained-tool-streaming-2025-05-14"]
 
-        # If extended thinking, turn on interleaved header
-        # https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#interleaved-thinking
+        # Opus 4.6 / Sonnet 4.6 Auto Thinking
         if llm_config.enable_reasoner:
-            betas.append("interleaved-thinking-2025-05-14")
+            if llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6"):
+                betas.append("adaptive-thinking-2026-01-28")
+            # Interleaved thinking for other reasoners (sync path parity)
+            else:
+                betas.append("interleaved-thinking-2025-05-14")
 
-        # 1M context beta for Sonnet 4/4.5 when enabled
+        # 1M context beta for Sonnet 4/4.5 or Opus 4.6 when enabled
         try:
             from letta.settings import model_settings
 
@@ -275,12 +337,23 @@ class AnthropicClient(LLMClientBase):
                 llm_config.model.startswith("claude-sonnet-4") or llm_config.model.startswith("claude-sonnet-4-5")
             ):
                 betas.append("context-1m-2025-08-07")
+            elif model_settings.anthropic_opus_1m and llm_config.model.startswith("claude-opus-4-6"):
+                betas.append("context-1m-2025-08-07")
         except Exception:
             pass
 
-        # Opus 4.5 effort parameter - to extend to other models, modify the model check
-        if llm_config.model.startswith("claude-opus-4-5") and llm_config.effort is not None:
+        # Effort parameter for Opus 4.5, Opus 4.6, and Sonnet 4.6 - to extend to other models, modify the model check
+        if (
+            llm_config.model.startswith("claude-opus-4-5")
+            or llm_config.model.startswith("claude-opus-4-6")
+            or llm_config.model.startswith("claude-sonnet-4-6")
+        ) and llm_config.effort is not None:
             betas.append("effort-2025-11-24")
+            # Max effort beta for Opus 4.6 / Sonnet 4.6
+            if (
+                llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6")
+            ) and llm_config.effort == "max":
+                betas.append("max-effort-2026-01-24")
 
         # Context management for Opus 4.5 to preserve thinking blocks (improves cache hits)
         if llm_config.model.startswith("claude-opus-4-5") and llm_config.enable_reasoner:
@@ -335,7 +408,7 @@ class AnthropicClient(LLMClientBase):
                 for agent_id in agent_messages_mapping
             }
 
-            client = await self._get_anthropic_client_async(list(agent_llm_config_mapping.values())[0], async_client=True)
+            client = await self._get_anthropic_client_async(next(iter(agent_llm_config_mapping.values())), async_client=True)
 
             anthropic_requests = [
                 Request(custom_id=agent_id, params=MessageCreateParamsNonStreaming(**params)) for agent_id, params in requests.items()
@@ -461,25 +534,43 @@ class AnthropicClient(LLMClientBase):
         }
 
         # Extended Thinking
-        if self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
-            thinking_budget = max(llm_config.max_reasoning_tokens, 1024)
-            if thinking_budget != llm_config.max_reasoning_tokens:
-                logger.warning(
-                    f"Max reasoning tokens must be at least 1024 for Claude. Setting max_reasoning_tokens to 1024 for model {llm_config.model}."
-                )
-            data["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget,
-            }
+        # Note: Anthropic does not allow thinking when forcing tool use with split_thread_agent
+        should_enable_thinking = (
+            self.is_reasoning_model(llm_config)
+            and llm_config.enable_reasoner
+            and not (agent_type == AgentType.split_thread_agent and force_tool_call is not None)
+        )
+
+        if should_enable_thinking:
+            # Opus 4.6 / Sonnet 4.6 uses Auto Thinking (no budget tokens)
+            if llm_config.model.startswith("claude-opus-4-6") or llm_config.model.startswith("claude-sonnet-4-6"):
+                data["thinking"] = {
+                    "type": "adaptive",
+                }
+            else:
+                # Traditional extended thinking with budget tokens
+                thinking_budget = max(llm_config.max_reasoning_tokens, 1024)
+                if thinking_budget != llm_config.max_reasoning_tokens:
+                    logger.warning(
+                        f"Max reasoning tokens must be at least 1024 for Claude. Setting max_reasoning_tokens to 1024 for model {llm_config.model}."
+                    )
+                data["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": thinking_budget,
+                }
             # `temperature` may only be set to 1 when thinking is enabled. Please consult our documentation at https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking'
             data["temperature"] = 1.0
 
             # Silently disable prefix_fill for now
             prefix_fill = False
 
-        # Effort configuration for Opus 4.5 (controls token spending)
+        # Effort configuration for Opus 4.5, Opus 4.6, and Sonnet 4.6 (controls token spending)
         # To extend to other models, modify the model check
-        if llm_config.model.startswith("claude-opus-4-5") and llm_config.effort is not None:
+        if (
+            llm_config.model.startswith("claude-opus-4-5")
+            or llm_config.model.startswith("claude-opus-4-6")
+            or llm_config.model.startswith("claude-sonnet-4-6")
+        ) and llm_config.effort is not None:
             data["output_config"] = {"effort": llm_config.effort}
 
         # Context management for Opus 4.5 to preserve thinking blocks and improve cache hits
@@ -510,11 +601,16 @@ class AnthropicClient(LLMClientBase):
             # Special case for summarization path
             tools_for_request = None
             tool_choice = None
-        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner or agent_type == AgentType.letta_v1_agent:
+        elif (self.is_reasoning_model(llm_config) and llm_config.enable_reasoner) or agent_type == AgentType.letta_v1_agent:
             # NOTE: reasoning models currently do not allow for `any`
-            # NOTE: react agents should always have auto on, since the precense/absense of tool calls controls chaining
-            tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
-            tools_for_request = [OpenAITool(function=f) for f in tools]
+            # NOTE: react agents should always have at least auto on, since the precense/absense of tool calls controls chaining
+            if agent_type == AgentType.split_thread_agent and force_tool_call is not None:
+                tool_choice = {"type": "tool", "name": force_tool_call, "disable_parallel_tool_use": True}
+                # When forcing a specific tool, only include that tool
+                tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
+            else:
+                tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
+                tools_for_request = [OpenAITool(function=f) for f in tools]
         elif force_tool_call is not None:
             tool_choice = {"type": "tool", "name": force_tool_call, "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools if f["name"] == force_tool_call]
@@ -691,7 +787,9 @@ class AnthropicClient(LLMClientBase):
 
         return data
 
-    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
+    async def count_tokens(
+        self, messages: List[dict] | None = None, model: str | None = None, tools: List[OpenAITool] | None = None
+    ) -> int:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         # Use the default client; token counting is lightweight and does not require BYOK overrides
         client = anthropic.AsyncAnthropic()
@@ -811,6 +909,8 @@ class AnthropicClient(LLMClientBase):
                     and (model.startswith("claude-sonnet-4") or model.startswith("claude-sonnet-4-5"))
                 ):
                     betas.append("context-1m-2025-08-07")
+                elif model and model_settings.anthropic_opus_1m and model.startswith("claude-opus-4-6"):
+                    betas.append("context-1m-2025-08-07")
             except Exception:
                 pass
 
@@ -851,10 +951,21 @@ class AnthropicClient(LLMClientBase):
             or llm_config.model.startswith("claude-haiku-4-5")
             # Opus 4.5 support - to extend effort parameter to other models, modify this check
             or llm_config.model.startswith("claude-opus-4-5")
+            # Opus 4.6 support - uses Auto Thinking
+            or llm_config.model.startswith("claude-opus-4-6")
+            # Sonnet 4.6 support - same API as Opus 4.6
+            or llm_config.model.startswith("claude-sonnet-4-6")
         )
 
     @trace_method
-    def handle_llm_error(self, e: Exception) -> Exception:
+    def handle_llm_error(self, e: Exception, llm_config: Optional[LLMConfig] = None) -> Exception:
+        # Pass through errors that are already LLMError instances unchanged
+        # This preserves specific error types like LLMEmptyResponseError
+        if isinstance(e, LLMError):
+            return e
+
+        is_byok = (llm_config.provider_category == ProviderCategory.byok) if llm_config else None
+
         # make sure to check for overflow errors, regardless of error type
         error_str = str(e).lower()
         if (
@@ -869,6 +980,7 @@ class AnthropicClient(LLMClientBase):
             logger.warning(f"[Anthropic] Context window exceeded: {str(e)}")
             return ContextWindowExceededError(
                 message=f"Context window exceeded for Anthropic: {str(e)}",
+                details={"is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.APITimeoutError):
@@ -876,7 +988,7 @@ class AnthropicClient(LLMClientBase):
             return LLMTimeoutError(
                 message=f"Request to Anthropic timed out: {str(e)}",
                 code=ErrorCode.TIMEOUT,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.APIConnectionError):
@@ -884,7 +996,7 @@ class AnthropicClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Failed to connect to Anthropic: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx.RemoteProtocolError which can occur during streaming
@@ -895,7 +1007,7 @@ class AnthropicClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Connection error during Anthropic streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx network errors which can occur during streaming
@@ -905,7 +1017,7 @@ class AnthropicClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Network error during Anthropic streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__, "is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.RateLimitError):
@@ -913,6 +1025,7 @@ class AnthropicClient(LLMClientBase):
             return LLMRateLimitError(
                 message=f"Rate limited by Anthropic: {str(e)}",
                 code=ErrorCode.RATE_LIMIT_EXCEEDED,
+                details={"is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.BadRequestError):
@@ -930,11 +1043,13 @@ class AnthropicClient(LLMClientBase):
                 # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'input length and `max_tokens` exceed context limit: 173298 + 32000 > 200000, decrease input length or `max_tokens` and try again'}}
                 return ContextWindowExceededError(
                     message=f"Bad request to Anthropic (context window exceeded): {str(e)}",
+                    details={"is_byok": is_byok},
                 )
             else:
                 return LLMBadRequestError(
                     message=f"Bad request to Anthropic: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
                 )
 
         if isinstance(e, anthropic.AuthenticationError):
@@ -942,6 +1057,7 @@ class AnthropicClient(LLMClientBase):
             return LLMAuthenticationError(
                 message=f"Authentication failed with Anthropic: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.PermissionDeniedError):
@@ -949,6 +1065,7 @@ class AnthropicClient(LLMClientBase):
             return LLMPermissionDeniedError(
                 message=f"Permission denied by Anthropic: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.NotFoundError):
@@ -956,6 +1073,7 @@ class AnthropicClient(LLMClientBase):
             return LLMNotFoundError(
                 message=f"Resource not found in Anthropic: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
             )
 
         if isinstance(e, anthropic.UnprocessableEntityError):
@@ -963,23 +1081,29 @@ class AnthropicClient(LLMClientBase):
             return LLMUnprocessableEntityError(
                 message=f"Invalid request content for Anthropic: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
             )
 
-        if isinstance(e, anthropic.APIStatusError):
-            logger.warning(f"[Anthropic] API status error: {str(e)}")
-            # Handle 413 Request Entity Too Large - request payload exceeds size limits
-            if hasattr(e, "status_code") and e.status_code == 413:
-                logger.warning(f"[Anthropic] Request too large (413): {str(e)}")
-                return ContextWindowExceededError(
-                    message=f"Request too large for Anthropic (413): {str(e)}",
+        if isinstance(e, anthropic.InternalServerError):
+            error_str = str(e).lower()
+            if "overflow" in error_str or "upstream connect error" in error_str:
+                logger.warning(f"[Anthropic] Upstream infrastructure error (transient): {str(e)}")
+                return LLMServerError(
+                    message=f"Anthropic upstream infrastructure error (transient, may resolve on retry): {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "status_code": e.status_code if hasattr(e, "status_code") else None,
+                        "transient": True,
+                    },
                 )
-            if "overloaded" in str(e).lower():
+            if "overloaded" in error_str:
                 return LLMProviderOverloaded(
                     message=f"Anthropic API is overloaded: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
                 )
+            logger.warning(f"[Anthropic] Internal server error: {str(e)}")
             return LLMServerError(
-                message=f"Anthropic API error: {str(e)}",
+                message=f"Anthropic internal server error: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
                 details={
                     "status_code": e.status_code if hasattr(e, "status_code") else None,
@@ -987,7 +1111,38 @@ class AnthropicClient(LLMClientBase):
                 },
             )
 
-        return super().handle_llm_error(e)
+        if isinstance(e, anthropic.APIStatusError):
+            logger.warning(f"[Anthropic] API status error: {str(e)}")
+            if (hasattr(e, "status_code") and e.status_code == 402) or is_insufficient_credits_message(str(e)):
+                msg = str(e)
+                return LLMInsufficientCreditsError(
+                    message=f"Insufficient credits (BYOK): {msg}" if is_byok else f"Insufficient credits: {msg}",
+                    code=ErrorCode.PAYMENT_REQUIRED,
+                    details={"status_code": getattr(e, "status_code", None), "is_byok": is_byok},
+                )
+            if hasattr(e, "status_code") and e.status_code == 413:
+                logger.warning(f"[Anthropic] Request too large (413): {str(e)}")
+                return ContextWindowExceededError(
+                    message=f"Request too large for Anthropic (413): {str(e)}",
+                    details={"is_byok": is_byok},
+                )
+            if "overloaded" in str(e).lower():
+                return LLMProviderOverloaded(
+                    message=f"Anthropic API is overloaded: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
+                )
+            return LLMServerError(
+                message=f"Anthropic API error: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={
+                    "status_code": e.status_code if hasattr(e, "status_code") else None,
+                    "response": str(e.response) if hasattr(e, "response") else None,
+                    "is_byok": is_byok,
+                },
+            )
+
+        return super().handle_llm_error(e, llm_config=llm_config)
 
     def extract_usage_statistics(self, response_data: dict | None, llm_config: LLMConfig) -> LettaUsageStatistics:
         """Extract usage statistics from Anthropic response and return as LettaUsageStatistics."""
@@ -1027,6 +1182,11 @@ class AnthropicClient(LLMClientBase):
         input_messages: List[PydanticMessage],
         llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
+        if isinstance(response_data, str):
+            raise LLMServerError(
+                message="Anthropic endpoint returned a raw string instead of a JSON object. This usually indicates the endpoint URL is incorrect or returned an error page.",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+            )
         """
         Example response from Claude 3:
         response.json = {
@@ -1096,7 +1256,7 @@ class AnthropicClient(LLMClientBase):
                             args_json = json.loads(arguments)
                             if not isinstance(args_json, dict):
                                 raise LLMServerError("Expected parseable json object for arguments")
-                        except:
+                        except Exception:
                             arguments = str(tool_input["function"]["arguments"])
                     else:
                         arguments = json.dumps(tool_input, indent=2)
@@ -1117,7 +1277,23 @@ class AnthropicClient(LLMClientBase):
                     redacted_reasoning_content = content_part.data
 
         else:
-            raise RuntimeError("Unexpected empty content in response")
+            # Log the full response for debugging
+            logger.error(
+                "[Anthropic] Received response with empty content. Response ID: %s, Model: %s, Stop reason: %s, Full response: %s",
+                response.id,
+                response.model,
+                response.stop_reason,
+                json.dumps(response_data),
+            )
+            raise LLMEmptyResponseError(
+                message=f"LLM provider returned empty content in response (ID: {response.id}, model: {response.model}, stop_reason: {response.stop_reason})",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={
+                    "response_id": response.id,
+                    "model": response.model,
+                    "stop_reason": response.stop_reason,
+                },
+            )
 
         assert response.role == "assistant"
         choice = Choice(
@@ -1372,7 +1548,7 @@ def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
 
     try:
         message_json = json.loads(message["content"])
-    except:
+    except Exception:
         return False
 
     # Check if message_json is a dict (not int, str, list, etc.)

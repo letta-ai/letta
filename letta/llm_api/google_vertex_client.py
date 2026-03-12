@@ -1,9 +1,11 @@
 import base64
+import copy
 import json
 import uuid
 from typing import AsyncIterator, List, Optional
 
 import httpx
+import pydantic_core
 from google.genai import Client, errors
 from google.genai.types import (
     FunctionCallingConfig,
@@ -21,6 +23,7 @@ from letta.errors import (
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
+    LLMInsufficientCreditsError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMRateLimitError,
@@ -29,12 +32,14 @@ from letta.errors import (
     LLMUnprocessableEntityError,
 )
 from letta.helpers.datetime_helpers import get_utc_time_int
-from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.helpers.json_helpers import json_dumps, json_loads, sanitize_unicode_surrogates
+from letta.llm_api.error_utils import is_insufficient_credits_message
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool
@@ -50,8 +55,31 @@ class GoogleVertexClient(LLMClientBase):
     MAX_RETRIES = model_settings.gemini_max_retries
     provider_label = "Google Vertex"
 
-    def _get_client(self):
+    def _get_client(self, llm_config: Optional[LLMConfig] = None):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
+        if llm_config:
+            api_key, _, _ = self.get_byok_overrides(llm_config)
+            if api_key:
+                return Client(
+                    api_key=api_key,
+                    http_options=HttpOptions(timeout=timeout_ms),
+                )
+        return Client(
+            vertexai=True,
+            project=model_settings.google_cloud_project,
+            location=model_settings.google_cloud_location,
+            http_options=HttpOptions(api_version="v1", timeout=timeout_ms),
+        )
+
+    async def _get_client_async(self, llm_config: Optional[LLMConfig] = None):
+        timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
+        if llm_config:
+            api_key, _, _ = await self.get_byok_overrides_async(llm_config)
+            if api_key:
+                return Client(
+                    api_key=api_key,
+                    http_options=HttpOptions(timeout=timeout_ms),
+                )
         return Client(
             vertexai=True,
             project=model_settings.google_cloud_project,
@@ -71,22 +99,36 @@ class GoogleVertexClient(LLMClientBase):
         Performs underlying request to llm and returns raw response.
         """
         try:
-            client = self._get_client()
+            client = self._get_client(llm_config)
             response = client.models.generate_content(
                 model=llm_config.model,
                 contents=request_data["contents"],
                 config=request_data["config"],
             )
             return response.model_dump()
+        except pydantic_core._pydantic_core.ValidationError as e:
+            # Handle Pydantic validation errors from the Google SDK
+            # This occurs when tool schemas contain unsupported fields
+            logger.error(
+                f"Pydantic validation error when calling {self._provider_name()} API. Tool schema contains unsupported fields. Error: {e}"
+            )
+            raise LLMBadRequestError(
+                message=f"Invalid tool schema for {self._provider_name()}: Tool parameters contain unsupported fields. "
+                f"Common issues: 'const', 'default', 'additionalProperties' are not supported by Google AI. "
+                f"Please check your tool definitions. Error: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+            )
         except Exception as e:
-            raise self.handle_llm_error(e)
+            raise self.handle_llm_error(e, llm_config=llm_config)
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
         """
-        client = self._get_client()
+        request_data = sanitize_unicode_surrogates(request_data)
+
+        client = await self._get_client_async(llm_config)
 
         # Gemini 2.5 models will often return MALFORMED_FUNCTION_CALL, force a retry
         # https://github.com/googleapis/python-aiplatform/issues/4472
@@ -100,17 +142,30 @@ class GoogleVertexClient(LLMClientBase):
                     contents=request_data["contents"],
                     config=request_data["config"],
                 )
+            except pydantic_core._pydantic_core.ValidationError as e:
+                # Handle Pydantic validation errors from the Google SDK
+                # This occurs when tool schemas contain unsupported fields
+                logger.error(
+                    f"Pydantic validation error when calling {self._provider_name()} API. "
+                    f"Tool schema contains unsupported fields. Error: {e}"
+                )
+                raise LLMBadRequestError(
+                    message=f"Invalid tool schema for {self._provider_name()}: Tool parameters contain unsupported fields. "
+                    f"Common issues: 'const', 'default', 'additionalProperties' are not supported by Google AI. "
+                    f"Please check your tool definitions. Error: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
             except errors.APIError as e:
                 # Retry on 503 and 500 errors as well, usually ephemeral from Gemini
                 if e.code == 503 or e.code == 500 or e.code == 504:
                     logger.warning(f"Received {e}, retrying {retry_count}/{self.MAX_RETRIES}")
                     retry_count += 1
                     if retry_count > self.MAX_RETRIES:
-                        raise self.handle_llm_error(e)
+                        raise self.handle_llm_error(e, llm_config=llm_config)
                     continue
-                raise self.handle_llm_error(e)
+                raise self.handle_llm_error(e, llm_config=llm_config)
             except Exception as e:
-                raise self.handle_llm_error(e)
+                raise self.handle_llm_error(e, llm_config=llm_config)
             response_data = response.model_dump()
             is_malformed_function_call = self.is_malformed_function_call(response_data)
             if is_malformed_function_call:
@@ -148,7 +203,9 @@ class GoogleVertexClient(LLMClientBase):
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncIterator[GenerateContentResponse]:
-        client = self._get_client()
+        request_data = sanitize_unicode_surrogates(request_data)
+
+        client = await self._get_client_async(llm_config)
 
         try:
             response = await client.aio.models.generate_content_stream(
@@ -156,13 +213,35 @@ class GoogleVertexClient(LLMClientBase):
                 contents=request_data["contents"],
                 config=request_data["config"],
             )
+        except pydantic_core._pydantic_core.ValidationError as e:
+            # Handle Pydantic validation errors from the Google SDK
+            # This occurs when tool schemas contain unsupported fields
+            logger.error(
+                f"Pydantic validation error when calling {self._provider_name()} API. Tool schema contains unsupported fields. Error: {e}"
+            )
+            raise LLMBadRequestError(
+                message=f"Invalid tool schema for {self._provider_name()}: Tool parameters contain unsupported fields. "
+                f"Common issues: 'const', 'default', 'additionalProperties' are not supported by Google AI. "
+                f"Please check your tool definitions. Error: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+            )
+        except errors.APIError as e:
+            raise self.handle_llm_error(e)
         except Exception as e:
             logger.error(f"Error streaming {self._provider_name()} request: {e} with request data: {json.dumps(request_data)}")
             raise e
         # Direct yield - keeps response alive in generator's local scope throughout iteration
         # This is required because the SDK's connection lifecycle is tied to the response object
-        async for chunk in response:
-            yield chunk
+        try:
+            async for chunk in response:
+                yield chunk
+        except errors.ClientError as e:
+            if e.code == 499:
+                logger.info(f"{self._provider_prefix()} Stream cancelled by client (499): {e}")
+                return
+            raise self.handle_llm_error(e, llm_config=llm_config)
+        except errors.APIError as e:
+            raise self.handle_llm_error(e, llm_config=llm_config)
 
     @staticmethod
     def add_dummy_model_messages(messages: List[dict]) -> List[dict]:
@@ -196,7 +275,7 @@ class GoogleVertexClient(LLMClientBase):
         # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
         # * Only a subset of the OpenAPI schema is supported.
         # * Supported parameter types in Python are limited.
-        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum", "additionalProperties", "$schema"]
+        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum", "additionalProperties", "$schema", "const", "$ref"]
         keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
         for key_to_remove in keys_to_remove_at_this_level:
             logger.debug(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
@@ -222,6 +301,49 @@ class GoogleVertexClient(LLMClientBase):
             if key in schema_part and isinstance(schema_part[key], list):
                 for item_schema in schema_part[key]:
                     self._clean_google_ai_schema_properties(item_schema)
+
+    def _resolve_json_schema_refs(self, schema: dict, defs: dict | None = None) -> dict:
+        """
+        Recursively resolve $ref in JSON schema by inlining definitions.
+        Google GenAI SDK does not support $ref.
+        """
+        if defs is None:
+            # Look for definitions at the top level
+            defs = schema.get("$defs") or schema.get("definitions") or {}
+
+        if not isinstance(schema, dict):
+            return schema
+
+        # If this is a ref, resolve it
+        if "$ref" in schema:
+            ref = schema["$ref"]
+            if isinstance(ref, str):
+                for prefix in ("#/$defs/", "#/definitions/"):
+                    if ref.startswith(prefix):
+                        ref_name = ref.split("/")[-1]
+                        if ref_name in defs:
+                            resolved = defs[ref_name].copy()
+                            return self._resolve_json_schema_refs(resolved, defs)
+                        break
+
+            logger.warning(f"Could not resolve $ref '{ref}' in schema — will be stripped by schema cleaner")
+
+        # Recursively process children
+        new_schema = schema.copy()
+
+        # We need to remove $defs/definitions from the output schema as Google doesn't support them
+        if "$defs" in new_schema:
+            del new_schema["$defs"]
+        if "definitions" in new_schema:
+            del new_schema["definitions"]
+
+        for k, v in new_schema.items():
+            if isinstance(v, dict):
+                new_schema[k] = self._resolve_json_schema_refs(v, defs)
+            elif isinstance(v, list):
+                new_schema[k] = [self._resolve_json_schema_refs(i, defs) if isinstance(i, dict) else i for i in v]
+
+        return new_schema
 
     def convert_tools_to_google_ai_format(self, tools: List[Tool], llm_config: LLMConfig) -> List[dict]:
         """
@@ -273,7 +395,8 @@ class GoogleVertexClient(LLMClientBase):
             dict(
                 name=t.function.name,
                 description=t.function.description,
-                parameters=t.function.parameters,  # TODO need to unpack
+                # Deep copy parameters to avoid modifying the original Tool object
+                parameters=copy.deepcopy(t.function.parameters) if t.function.parameters else {},
             )
             for t in tools
         ]
@@ -284,6 +407,8 @@ class GoogleVertexClient(LLMClientBase):
 
             # Google AI API only supports a subset of OpenAPI 3.0, so unsupported params must be cleaned
             if "parameters" in func and isinstance(func["parameters"], dict):
+                # Resolve $ref in schema because Google AI SDK doesn't support them
+                func["parameters"] = self._resolve_json_schema_refs(func["parameters"])
                 self._clean_google_ai_schema_properties(func["parameters"])
 
             # Add inner thoughts
@@ -549,6 +674,9 @@ class GoogleVertexClient(LLMClientBase):
                                 content=inner_thoughts,
                                 tool_calls=[tool_call],
                             )
+                            if response_message.thought_signature:
+                                thought_signature = base64.b64encode(response_message.thought_signature).decode("utf-8")
+                                openai_response_message.reasoning_content_signature = thought_signature
                         else:
                             openai_response_message.content = inner_thoughts
                             if openai_response_message.tool_calls is None:
@@ -670,6 +798,7 @@ class GoogleVertexClient(LLMClientBase):
             #     "candidatesTokenCount": 27,
             #     "totalTokenCount": 36
             #   }
+            usage = None
             if response.usage_metadata:
                 # Extract usage via centralized method
                 from letta.schemas.enums import ProviderType
@@ -750,54 +879,80 @@ class GoogleVertexClient(LLMClientBase):
         return False
 
     @trace_method
-    def handle_llm_error(self, e: Exception) -> Exception:
+    def handle_llm_error(self, e: Exception, llm_config: Optional[LLMConfig] = None) -> Exception:
+        is_byok = (llm_config.provider_category == ProviderCategory.byok) if llm_config else None
+
         # Handle Google GenAI specific errors
         if isinstance(e, errors.ClientError):
+            if e.code == 499:
+                logger.info(f"{self._provider_prefix()} Request cancelled by client (499): {e}")
+                return LLMConnectionError(
+                    message=f"Request to {self._provider_name()} was cancelled (client disconnected): {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"status_code": 499, "cause": "client_cancelled", "is_byok": is_byok},
+                )
+
             logger.warning(f"{self._provider_prefix()} Client error ({e.code}): {e}")
 
             # Handle specific error codes
             if e.code == 400:
                 error_str = str(e).lower()
-                if "context" in error_str and ("exceed" in error_str or "limit" in error_str or "too long" in error_str):
+                if ("context" in error_str or "token count" in error_str or "tokens allowed" in error_str) and (
+                    "exceed" in error_str or "limit" in error_str or "too long" in error_str
+                ):
                     return ContextWindowExceededError(
                         message=f"Bad request to {self._provider_name()} (context window exceeded): {str(e)}",
+                        details={"is_byok": is_byok},
                     )
                 else:
                     return LLMBadRequestError(
                         message=f"Bad request to {self._provider_name()}: {str(e)}",
-                        code=ErrorCode.INTERNAL_SERVER_ERROR,
+                        code=ErrorCode.INVALID_ARGUMENT,
+                        details={"is_byok": is_byok},
                     )
             elif e.code == 401:
                 return LLMAuthenticationError(
                     message=f"Authentication failed with {self._provider_name()}: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
                 )
             elif e.code == 403:
                 return LLMPermissionDeniedError(
                     message=f"Permission denied by {self._provider_name()}: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
                 )
             elif e.code == 404:
                 return LLMNotFoundError(
                     message=f"Resource not found in {self._provider_name()}: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
                 )
             elif e.code == 408:
                 return LLMTimeoutError(
                     message=f"Request to {self._provider_name()} timed out: {str(e)}",
                     code=ErrorCode.TIMEOUT,
-                    details={"cause": str(e.__cause__) if e.__cause__ else None},
+                    details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
+                )
+            elif e.code == 402 or is_insufficient_credits_message(str(e)):
+                msg = str(e)
+                return LLMInsufficientCreditsError(
+                    message=f"Insufficient credits (BYOK): {msg}" if is_byok else f"Insufficient credits: {msg}",
+                    code=ErrorCode.PAYMENT_REQUIRED,
+                    details={"status_code": e.code, "is_byok": is_byok},
                 )
             elif e.code == 422:
                 return LLMUnprocessableEntityError(
                     message=f"Invalid request content for {self._provider_name()}: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
                 )
             elif e.code == 429:
                 logger.warning(f"{self._provider_prefix()} Rate limited (429). Consider backoff.")
                 return LLMRateLimitError(
                     message=f"Rate limited by {self._provider_name()}: {str(e)}",
                     code=ErrorCode.RATE_LIMIT_EXCEEDED,
+                    details={"is_byok": is_byok},
                 )
             else:
                 return LLMServerError(
@@ -806,6 +961,7 @@ class GoogleVertexClient(LLMClientBase):
                     details={
                         "status_code": e.code,
                         "response_json": getattr(e, "response_json", None),
+                        "is_byok": is_byok,
                     },
                 )
 
@@ -820,13 +976,14 @@ class GoogleVertexClient(LLMClientBase):
                     details={
                         "status_code": e.code,
                         "response_json": getattr(e, "response_json", None),
+                        "is_byok": is_byok,
                     },
                 )
             elif e.code == 502:
                 return LLMConnectionError(
                     message=f"Bad gateway from {self._provider_name()}: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
-                    details={"cause": str(e.__cause__) if e.__cause__ else None},
+                    details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
                 )
             elif e.code == 503:
                 return LLMServerError(
@@ -835,13 +992,14 @@ class GoogleVertexClient(LLMClientBase):
                     details={
                         "status_code": e.code,
                         "response_json": getattr(e, "response_json", None),
+                        "is_byok": is_byok,
                     },
                 )
             elif e.code == 504:
                 return LLMTimeoutError(
                     message=f"Gateway timeout from {self._provider_name()}: {str(e)}",
                     code=ErrorCode.TIMEOUT,
-                    details={"cause": str(e.__cause__) if e.__cause__ else None},
+                    details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
                 )
             else:
                 return LLMServerError(
@@ -850,6 +1008,7 @@ class GoogleVertexClient(LLMClientBase):
                     details={
                         "status_code": e.code,
                         "response_json": getattr(e, "response_json", None),
+                        "is_byok": is_byok,
                     },
                 )
 
@@ -861,6 +1020,7 @@ class GoogleVertexClient(LLMClientBase):
                 details={
                     "status_code": e.code,
                     "response_json": getattr(e, "response_json", None),
+                    "is_byok": is_byok,
                 },
             )
 
@@ -872,7 +1032,7 @@ class GoogleVertexClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Connection error during {self._provider_name()} streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx network errors which can occur during streaming
@@ -882,7 +1042,7 @@ class GoogleVertexClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Network error during {self._provider_name()} streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__, "is_byok": is_byok},
             )
 
         # Handle connection-related errors
@@ -891,13 +1051,15 @@ class GoogleVertexClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Failed to connect to {self._provider_name()}: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Fallback to base implementation for other errors
-        return super().handle_llm_error(e)
+        return super().handle_llm_error(e, llm_config=llm_config)
 
-    async def count_tokens(self, messages: List[dict] = None, model: str = None, tools: List[OpenAITool] = None) -> int:
+    async def count_tokens(
+        self, messages: List[dict] | None = None, model: str | None = None, tools: List[OpenAITool] | None = None
+    ) -> int:
         """
         Count tokens for the given messages and tools using the Gemini token counting API.
 

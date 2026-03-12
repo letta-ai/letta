@@ -9,7 +9,6 @@ from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
 from letta.agents.base_agent_v2 import BaseAgentV2
-from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
     _load_last_function_response,
@@ -20,7 +19,7 @@ from letta.agents.helpers import (
     generate_step_id,
 )
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
-from letta.errors import ContextWindowExceededError, LLMError
+from letta.errors import ContextWindowExceededError, InsufficientCreditsError, LLMError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.reasoning_helper import scrub_inner_thoughts_from_messages
@@ -31,7 +30,7 @@ from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus, StepStatus
+from letta.schemas.enums import AgentType, LLMCallType, MessageStreamStatus, RunStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_request import ClientToolSchema
@@ -45,6 +44,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatisticsCompletionTokenDetails,
     UsageStatisticsPromptTokenDetails,
 )
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.step import Step, StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool import Tool
@@ -58,6 +58,7 @@ from letta.server.rest_api.utils import (
 from letta.services.agent_manager import AgentManager
 from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager
+from letta.services.credit_verification_service import CreditVerificationService
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -67,10 +68,10 @@ from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
-from letta.settings import model_settings, settings, summarizer_settings
+from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
 from letta.types import JsonDict
-from letta.utils import log_telemetry, safe_create_task, united_diff, validate_function_response
+from letta.utils import log_telemetry, safe_create_task, safe_create_task_with_return, united_diff, validate_function_response
 
 
 class LettaAgentV2(BaseAgentV2):
@@ -106,6 +107,7 @@ class LettaAgentV2(BaseAgentV2):
         self.passage_manager = PassageManager()
         self.step_manager = StepManager()
         self.telemetry_manager = TelemetryManager()
+        self.credit_verification_service = CreditVerificationService()
 
         ## TODO: Expand to more
         # if summarizer_settings.enable_summarization and model_settings.openai_api_key:
@@ -158,6 +160,8 @@ class LettaAgentV2(BaseAgentV2):
             llm_adapter=LettaLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
+                agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
                 org_id=self.actor.organization_id,
                 user_id=self.actor.id,
@@ -181,6 +185,8 @@ class LettaAgentV2(BaseAgentV2):
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
+        billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -193,6 +199,7 @@ class LettaAgentV2(BaseAgentV2):
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
             client_tools: Optional list of client-side tools (not used in V2, for API compatibility)
+            include_compaction_messages: Not used in V2, but accepted for API compatibility.
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
@@ -205,8 +212,17 @@ class LettaAgentV2(BaseAgentV2):
         )
         in_context_messages = in_context_messages + input_messages_to_persist
         response_letta_messages = []
+        credit_task = None
         for i in range(max_steps):
             remaining_turns = max_steps - i - 1
+
+            # Await credit check from previous iteration before running next step
+            if credit_task is not None:
+                if not await credit_task:
+                    self.should_continue = False
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.insufficient_credits)
+                    break
+                credit_task = None
 
             response = self._step(
                 messages=in_context_messages + self.response_messages,
@@ -214,6 +230,7 @@ class LettaAgentV2(BaseAgentV2):
                 llm_adapter=LettaLLMRequestAdapter(
                     llm_client=self.llm_client,
                     llm_config=self.agent_state.llm_config,
+                    call_type=LLMCallType.agent_step,
                     agent_id=self.agent_state.id,
                     agent_tags=self.agent_state.tags,
                     run_id=run_id,
@@ -232,6 +249,9 @@ class LettaAgentV2(BaseAgentV2):
 
             if not self.should_continue:
                 break
+
+            # Fire credit check to run in parallel with loop overhead / next step setup
+            credit_task = safe_create_task_with_return(self._check_credits())
 
             input_messages_to_persist = []
 
@@ -271,6 +291,8 @@ class LettaAgentV2(BaseAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
         client_tools: list[ClientToolSchema] | None = None,
+        include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
+        billing_context: BillingContext | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -289,6 +311,7 @@ class LettaAgentV2(BaseAgentV2):
             include_return_message_types: Filter for which message types to return
             request_start_timestamp_ns: Start time for tracking request duration
             client_tools: Optional list of client-side tools (not used in V2, for API compatibility)
+            include_compaction_messages: Not used in V2, but accepted for API compatibility.
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
@@ -301,6 +324,7 @@ class LettaAgentV2(BaseAgentV2):
             llm_adapter = LettaLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
                 run_id=run_id,
@@ -311,6 +335,7 @@ class LettaAgentV2(BaseAgentV2):
             llm_adapter = LettaLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
                 run_id=run_id,
@@ -323,7 +348,16 @@ class LettaAgentV2(BaseAgentV2):
                 input_messages, self.agent_state, self.message_manager, self.actor, run_id
             )
             in_context_messages = in_context_messages + input_messages_to_persist
+            credit_task = None
             for i in range(max_steps):
+                # Await credit check from previous iteration before running next step
+                if credit_task is not None:
+                    if not await credit_task:
+                        self.should_continue = False
+                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.insufficient_credits)
+                        break
+                    credit_task = None
+
                 response = self._step(
                     messages=in_context_messages + self.response_messages,
                     input_messages_to_persist=input_messages_to_persist,
@@ -341,6 +375,9 @@ class LettaAgentV2(BaseAgentV2):
 
                 if not self.should_continue:
                     break
+
+                # Fire credit check to run in parallel with loop overhead / next step setup
+                credit_task = safe_create_task_with_return(self._check_credits())
 
                 input_messages_to_persist = []
 
@@ -420,8 +457,9 @@ class LettaAgentV2(BaseAgentV2):
             raise AssertionError("run_id is required when enforce_run_id_set is True")
 
         step_progression = StepProgression.START
+        caught_exception = None
         # TODO(@caren): clean this up
-        tool_call, reasoning_content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
+        tool_call, reasoning_content, agent_step_span, first_chunk, step_id, logged_step, _step_start_ns, step_metrics = (
             None,
             None,
             None,
@@ -580,6 +618,7 @@ class LettaAgentV2(BaseAgentV2):
                 )
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
+            caught_exception = e
             self.logger.warning(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
 
@@ -615,8 +654,8 @@ class LettaAgentV2(BaseAgentV2):
                         await self.step_manager.update_step_error_async(
                             actor=self.actor,
                             step_id=step_id,  # Use original step_id for telemetry
-                            error_type=type(e).__name__ if "e" in locals() else "Unknown",
-                            error_message=str(e) if "e" in locals() else "Unknown error",
+                            error_type=type(caught_exception).__name__ if caught_exception is not None else "Unknown",
+                            error_message=str(caught_exception) if caught_exception is not None else "Unknown error",
                             error_traceback=traceback.format_exc(),
                             stop_reason=self.stop_reason,
                         )
@@ -667,6 +706,17 @@ class LettaAgentV2(BaseAgentV2):
         self.last_function_response = None
         self.response_messages = []
 
+    async def _check_credits(self) -> bool:
+        """Check if the organization still has credits. Returns True if OK or not configured."""
+        try:
+            await self.credit_verification_service.verify_credits(self.actor.organization_id, self.agent_state.id)
+            return True
+        except InsufficientCreditsError:
+            self.logger.warning(
+                f"Insufficient credits for organization {self.actor.organization_id}, agent {self.agent_state.id}, stopping agent loop"
+            )
+            return False
+
     @trace_method
     async def _check_run_cancellation(self, run_id) -> bool:
         try:
@@ -678,20 +728,37 @@ class LettaAgentV2(BaseAgentV2):
             return False
 
     @trace_method
-    async def _refresh_messages(self, in_context_messages: list[Message]):
-        num_messages = await self.message_manager.size_async(
-            agent_id=self.agent_state.id,
-            actor=self.actor,
-        )
-        num_archival_memories = await self.passage_manager.agent_passage_size_async(
-            agent_id=self.agent_state.id,
-            actor=self.actor,
-        )
-        in_context_messages = await self._rebuild_memory(
-            in_context_messages,
-            num_messages=num_messages,
-            num_archival_memories=num_archival_memories,
-        )
+    async def _refresh_messages(self, in_context_messages: list[Message], force_system_prompt_refresh: bool = False):
+        """Refresh in-context messages.
+
+        This performs two tasks:
+        1) Rebuild the *system prompt* only if the memory/tool-rules/directories section has changed.
+           This avoids rebuilding the system prompt on every step due to dynamic metadata (e.g. message counts),
+           which can bust prefix caching.
+        2) Scrub inner thoughts from messages.
+
+        Args:
+            in_context_messages: Current in-context messages
+            force_system_prompt_refresh: If True, forces evaluation of whether the system prompt needs to be rebuilt.
+                (The rebuild will still be skipped if memory/tool-rules/directories haven't changed.)
+
+        Returns:
+            Refreshed in-context messages.
+        """
+        # Only rebuild when explicitly forced (e.g., after compaction).
+        # Normal turns should not trigger system prompt recompilation.
+        if force_system_prompt_refresh:
+            try:
+                in_context_messages = await self._rebuild_memory(
+                    in_context_messages,
+                    num_messages=None,
+                    num_archival_memories=None,
+                    force=True,
+                )
+            except Exception:
+                raise
+
+        # Always scrub inner thoughts regardless of system prompt refresh
         in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, self.agent_state.llm_config)
         return in_context_messages
 
@@ -699,8 +766,9 @@ class LettaAgentV2(BaseAgentV2):
     async def _rebuild_memory(
         self,
         in_context_messages: list[Message],
-        num_messages: int,
-        num_archival_memories: int,
+        num_messages: int | None,
+        num_archival_memories: int | None,
+        force: bool = False,
     ):
         agent_state = await self.agent_manager.refresh_memory_async(agent_state=self.agent_state, actor=self.actor)
 
@@ -721,49 +789,26 @@ class LettaAgentV2(BaseAgentV2):
         else:
             archive_tags = None
 
-        # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
         curr_system_message = in_context_messages[0]
         curr_system_message_text = curr_system_message.content[0].text
-
-        # Extract the memory section that includes <memory_blocks>, tool rules, and directories.
-        # This avoids timestamp comparison issues in <memory_metadata>, which is dynamic.
-        def extract_memory_section(text: str) -> str:
-            # Primary pattern: everything from <memory_blocks> up to <memory_metadata>
-            mem_start = text.find("<memory_blocks>")
-            meta_start = text.find("<memory_metadata>")
-            if mem_start != -1:
-                if meta_start != -1 and meta_start > mem_start:
-                    return text[mem_start:meta_start]
-                return text[mem_start:]
-
-            # Fallback pattern used in some legacy prompts: between </base_instructions> and <memory_metadata>
-            base_end = text.find("</base_instructions>")
-            if base_end != -1:
-                if meta_start != -1 and meta_start > base_end:
-                    return text[base_end + len("</base_instructions>") : meta_start]
-                return text[base_end + len("</base_instructions>") :]
-
-            # Last resort: return full text
-            return text
-
-        curr_memory_section = extract_memory_section(curr_system_message_text)
 
         # refresh files
         agent_state = await self.agent_manager.refresh_file_blocks(agent_state=agent_state, actor=self.actor)
 
-        # generate just the memory string with current state for comparison
+        # generate memory string with current state
         curr_memory_str = agent_state.memory.compile(
             tool_usage_rules=tool_constraint_block,
             sources=agent_state.sources,
             max_files_open=agent_state.max_files_open,
             llm_config=agent_state.llm_config,
         )
-        new_memory_section = extract_memory_section(curr_memory_str)
 
-        # compare just the memory sections (memory blocks, tool rules, directories)
-        if curr_memory_section.strip() == new_memory_section.strip():
+        # Skip rebuild unless explicitly forced and unless system/memory content actually changed.
+        system_prompt_changed = agent_state.system not in curr_system_message_text
+        memory_changed = curr_memory_str not in curr_system_message_text
+        if (not force) and (not system_prompt_changed) and (not memory_changed):
             self.logger.debug(
-                f"Memory and sources haven't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
+                f"Memory, sources, and system prompt haven't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
             )
             return in_context_messages
 
@@ -793,7 +838,7 @@ class LettaAgentV2(BaseAgentV2):
             new_system_message = await self.message_manager.update_message_by_id_async(
                 curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
             )
-            return [new_system_message] + in_context_messages[1:]
+            return [new_system_message, *in_context_messages[1:]]
 
         else:
             return in_context_messages
@@ -864,6 +909,7 @@ class LettaAgentV2(BaseAgentV2):
             step_id=step_id,
             project_id=self.agent_state.project_id,
             status=StepStatus.PENDING,
+            model_handle=self.agent_state.llm_config.handle,
         )
 
         # Also create step metrics early and update at the end of the step
@@ -1279,7 +1325,7 @@ class LettaAgentV2(BaseAgentV2):
                     self.logger.warning(
                         f"Total tokens {total_tokens} exceeds configured max tokens {self.agent_state.llm_config.context_window}, forcefully clearing message history."
                     )
-                    new_in_context_messages, updated = await self.summarizer.summarize(
+                    new_in_context_messages, _updated = await self.summarizer.summarize(
                         in_context_messages=in_context_messages,
                         new_letta_messages=new_letta_messages,
                         force=True,
@@ -1292,7 +1338,7 @@ class LettaAgentV2(BaseAgentV2):
                     self.logger.info(
                         f"Total tokens {total_tokens} does not exceed configured max tokens {self.agent_state.llm_config.context_window}, passing summarizing w/o force."
                     )
-                    new_in_context_messages, updated = await self.summarizer.summarize(
+                    new_in_context_messages, _updated = await self.summarizer.summarize(
                         in_context_messages=in_context_messages,
                         new_letta_messages=new_letta_messages,
                         run_id=run_id,

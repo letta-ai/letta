@@ -1,7 +1,9 @@
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
+from letta.errors import LLMError
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.schemas.enums import LLMCallType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
 from letta.schemas.usage import normalize_cache_tokens, normalize_reasoning_tokens
@@ -45,15 +47,18 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
             agent_id=self.agent_id,
             agent_tags=self.agent_tags,
             run_id=self.run_id,
-            call_type="agent_step",
+            call_type=LLMCallType.agent_step,
             org_id=self.org_id,
             user_id=self.user_id,
             llm_config=self.llm_config.model_dump() if self.llm_config else None,
+            billing_context=self.billing_context,
         )
         try:
             self.response_data = await self.llm_client.request_async_with_telemetry(request_data, self.llm_config)
         except Exception as e:
-            raise self.llm_client.handle_llm_error(e)
+            if isinstance(e, LLMError):
+                raise
+            raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
 
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
@@ -80,7 +85,12 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         if self.chat_completions_response.choices[0].message.content:
             # NOTE: big difference - 'content' goes into 'content'
             # Reasoning placed into content for legacy reasons
-            self.content = [TextContent(text=self.chat_completions_response.choices[0].message.content)]
+            # Carry thought_signature on TextContent when ReasoningContent doesn't exist to hold it
+            # (e.g. Gemini 2.5 Flash with include_thoughts=False still returns thought_signature)
+            orphan_sig = (
+                self.chat_completions_response.choices[0].message.reasoning_content_signature if not self.reasoning_content else None
+            )
+            self.content = [TextContent(text=self.chat_completions_response.choices[0].message.content, signature=orphan_sig)]
         else:
             self.content = None
 
@@ -92,6 +102,9 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         tool_calls = self.chat_completions_response.choices[0].message.tool_calls or []
         self.tool_calls = list(tool_calls)
         self.tool_call = self.tool_calls[0] if self.tool_calls else None
+
+        # Extract logprobs if present
+        self.logprobs = self.chat_completions_response.choices[0].logprobs
 
         # Extract usage statistics
         self.usage.step_count = 1

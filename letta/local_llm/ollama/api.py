@@ -3,7 +3,6 @@ from urllib.parse import urljoin
 from letta.errors import LocalLLMError
 from letta.local_llm.settings.settings import get_completions_settings
 from letta.local_llm.utils import post_json_auth_request
-from letta.utils import count_tokens
 
 OLLAMA_API_SUFFIX = "/api/generate"
 
@@ -12,7 +11,8 @@ def get_ollama_completion(endpoint, auth_type, auth_key, model, prompt, context_
     """See https://github.com/jmorganca/ollama/blob/main/docs/api.md for instructions on how to run the LLM web server"""
     from letta.utils import printd
 
-    prompt_tokens = count_tokens(prompt)
+    # Approximate token count: bytes / 4
+    prompt_tokens = len(prompt.encode("utf-8")) // 4
     if prompt_tokens > context_window:
         raise Exception(f"Request exceeds maximum context length ({prompt_tokens} > {context_window} tokens)")
 

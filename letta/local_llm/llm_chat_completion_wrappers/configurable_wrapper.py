@@ -141,9 +141,9 @@ class ConfigurableJSONWrapper(LLMChatCompletionWrapper):
 
         # need to add the function call if there was one
         inner_thoughts = message["content"]
-        if "function_call" in message and message["function_call"]:
+        if message.get("function_call"):
             prompt += f"\n{self._compile_function_call(message['function_call'], inner_thoughts=inner_thoughts)}"
-        elif "tool_calls" in message and message["tool_calls"]:
+        elif message.get("tool_calls"):
             for tool_call in message["tool_calls"]:
                 prompt += f"\n{self._compile_function_call(tool_call['function'], inner_thoughts=inner_thoughts)}"
         else:
@@ -161,14 +161,14 @@ class ConfigurableJSONWrapper(LLMChatCompletionWrapper):
             try:
                 user_msg_json = json_loads(message["content"])
                 user_msg_str = user_msg_json["message"]
-            except:
+            except Exception:
                 user_msg_str = message["content"]
         else:
             # Otherwise just dump the full json
             try:
                 user_msg_json = json_loads(message["content"])
                 user_msg_str = json_dumps(user_msg_json, indent=self.json_indent)
-            except:
+            except Exception:
                 user_msg_str = message["content"]
 
         prompt += user_msg_str
@@ -183,7 +183,7 @@ class ConfigurableJSONWrapper(LLMChatCompletionWrapper):
             # indent the function replies
             function_return_dict = json_loads(message["content"])
             function_return_str = json_dumps(function_return_dict, indent=0)
-        except:
+        except Exception:
             function_return_str = message["content"]
 
         prompt += function_return_str

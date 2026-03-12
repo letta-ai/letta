@@ -202,7 +202,7 @@ class AsyncToolSandboxBase(ABC):
             lines.append("import asyncio")
 
         if inject_agent_state:
-            lines.extend(["import letta", "from letta import *"])  # noqa: F401
+            lines.extend(["import letta", "from letta import *"])
 
         # Import Letta client if available (wrapped in try/except for sandboxes without letta_client installed)
         if inject_letta_client:
@@ -438,7 +438,7 @@ class AsyncToolSandboxBase(ABC):
                 if isinstance(node, ast.AsyncFunctionDef) and node.name == self.tool.name:
                     return True
             return False
-        except:
+        except Exception:
             return False
 
     def use_top_level_await(self) -> bool:

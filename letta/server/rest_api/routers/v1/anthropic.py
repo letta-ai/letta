@@ -1,5 +1,4 @@
 import asyncio
-import json
 
 import httpx
 from fastapi import APIRouter, Depends, Request
@@ -21,6 +20,8 @@ from letta.server.rest_api.proxy_helpers import (
 from letta.server.server import SyncServer
 
 logger = get_logger(__name__)
+
+_background_tasks: set[asyncio.Task] = set()
 
 router = APIRouter(prefix="/anthropic", tags=["anthropic"])
 
@@ -173,7 +174,7 @@ async def anthropic_messages_proxy(
                         # This prevents race conditions where multiple requests persist the same message
                         user_messages_to_persist = await check_for_duplicate_message(server, agent, actor, user_messages, PROXY_NAME)
 
-                        asyncio.create_task(
+                        task = asyncio.create_task(
                             persist_messages_background(
                                 server=server,
                                 agent=agent,
@@ -184,6 +185,8 @@ async def anthropic_messages_proxy(
                                 proxy_name=PROXY_NAME,
                             )
                         )
+                        _background_tasks.add(task)
+                        task.add_done_callback(_background_tasks.discard)
 
         return StreamingResponse(
             stream_response(),
@@ -227,7 +230,7 @@ async def anthropic_messages_proxy(
                             # Check for duplicate user messages before creating background task
                             user_messages_to_persist = await check_for_duplicate_message(server, agent, actor, user_messages, PROXY_NAME)
 
-                            asyncio.create_task(
+                            task = asyncio.create_task(
                                 persist_messages_background(
                                     server=server,
                                     agent=agent,
@@ -238,6 +241,8 @@ async def anthropic_messages_proxy(
                                     proxy_name=PROXY_NAME,
                                 )
                             )
+                            _background_tasks.add(task)
+                            task.add_done_callback(_background_tasks.discard)
                 except Exception as e:
                     logger.warning(f"[{PROXY_NAME}] Failed to extract assistant response for logging: {e}")
 

@@ -1,0 +1,13 @@
+{
+  "handle": "zai/glm-5",
+  "model_settings": {
+    "provider_type": "zai",
+    "temperature": 1.0,
+    "max_output_tokens": 4096,
+    "parallel_tool_calls": false,
+    "thinking": {
+      "type": "enabled",
+      "clear_thinking": false
+    }
+  }
+}

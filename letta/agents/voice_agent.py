@@ -1,9 +1,12 @@
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional
 
 import openai
+
+if TYPE_CHECKING:
+    from letta.schemas.tool_execution_result import ToolExecutionResult
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.exceptions import IncompatibleAgentType
@@ -250,7 +253,6 @@ class VoiceAgent(BaseAgent):
                 agent_state=agent_state,
             )
             tool_result = tool_execution_result.func_return
-            success_flag = tool_execution_result.success_flag
 
             # 3. Provide function_call response back into the conversation
             # TODO: fix this tool format
@@ -292,7 +294,7 @@ class VoiceAgent(BaseAgent):
         new_letta_messages = await self.message_manager.create_many_messages_async(letta_message_db_queue, actor=self.actor)
 
         # TODO: Make this more general and configurable, less brittle
-        new_in_context_messages, updated = await summarizer.summarize(
+        new_in_context_messages, _updated = await summarizer.summarize(
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 

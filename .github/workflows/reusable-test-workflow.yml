@@ -381,6 +381,10 @@ jobs:
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
 
+          # Real object store (required for git-backed memory integration test)
+          # Use DEV bucket/prefix variable to avoid prod resources.
+          LETTA_OBJECT_STORE_URI: ${{ vars.LETTA_OBJECT_STORE_URI_DEV }}
+
           # Feature flags (shared across all test types)
           LETTA_ENABLE_BATCH_JOB_POLLING: true
 

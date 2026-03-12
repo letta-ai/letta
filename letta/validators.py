@@ -45,28 +45,34 @@ PATH_VALIDATORS = {primitive_type.value: _create_path_validator_factory(primitiv
 
 
 def _create_conversation_id_or_default_path_validator_factory():
-    """Conversation IDs accept the usual primitive format or the special value 'default'."""
+    """Conversation IDs with support for 'default' and agent IDs (backwards compatibility)."""
 
-    primitive = PrimitiveType.CONVERSATION.value
-    prefix_pattern = PRIMITIVE_ID_PATTERNS[primitive].pattern
-    # Make the full regex accept either the primitive ID format or 'default'.
-    # `prefix_pattern` already contains the ^...$ anchors.
-    conversation_or_default_pattern = f"^(default|{prefix_pattern[1:-1]})$"
+    conversation_primitive = PrimitiveType.CONVERSATION.value
+    agent_primitive = PrimitiveType.AGENT.value
+    conversation_pattern = PRIMITIVE_ID_PATTERNS[conversation_primitive].pattern
+    agent_pattern = PRIMITIVE_ID_PATTERNS[agent_primitive].pattern
+    # Make the full regex accept: conversation ID, agent ID, or 'default'.
+    # Patterns already contain ^...$ anchors, so strip them for the alternation.
+    conversation_or_agent_or_default_pattern = f"^(default|{conversation_pattern[1:-1]}|{agent_pattern[1:-1]})$"
 
     def factory():
         return Path(
-            description=(f"The conversation identifier. Either the special value 'default' or an ID in the format '{primitive}-<uuid4>'"),
-            pattern=conversation_or_default_pattern,
-            examples=["default", f"{primitive}-123e4567-e89b-42d3-8456-426614174000"],
+            description=(
+                f"The conversation identifier. Can be a conversation ID ('{conversation_primitive}-<uuid4>'), "
+                f"'default' for agent-direct mode (with agent_id parameter), "
+                f"or an agent ID ('{agent_primitive}-<uuid4>') for backwards compatibility (deprecated)."
+            ),
+            pattern=conversation_or_agent_or_default_pattern,
+            examples=[
+                "default",
+                f"{conversation_primitive}-123e4567-e89b-42d3-8456-426614174000",
+                f"{agent_primitive}-123e4567-e89b-42d3-8456-426614174000",
+            ],
             min_length=1,
-            max_length=len(primitive) + 1 + 36,
+            max_length=max(len(conversation_primitive), len(agent_primitive)) + 1 + 36,
         )
 
     return factory
-
-
-# Override conversation ID path validation to also allow the special value 'default'.
-PATH_VALIDATORS[PrimitiveType.CONVERSATION.value] = _create_conversation_id_or_default_path_validator_factory()
 
 
 # Type aliases for common ID types
@@ -88,6 +94,10 @@ SandboxConfigId = Annotated[str, PATH_VALIDATORS[PrimitiveType.SANDBOX_CONFIG.va
 StepId = Annotated[str, PATH_VALIDATORS[PrimitiveType.STEP.value]()]
 IdentityId = Annotated[str, PATH_VALIDATORS[PrimitiveType.IDENTITY.value]()]
 ConversationId = Annotated[str, PATH_VALIDATORS[PrimitiveType.CONVERSATION.value]()]
+
+# Conversation ID with support for 'default' and agent IDs (for agent-direct mode endpoints)
+# Backwards compatible - agent-* will be deprecated in favor of conversation_id='default' + agent_id param
+ConversationIdOrDefault = Annotated[str, _create_conversation_id_or_default_path_validator_factory()()]
 
 # Infrastructure types
 McpServerId = Annotated[str, PATH_VALIDATORS[PrimitiveType.MCP_SERVER.value]()]

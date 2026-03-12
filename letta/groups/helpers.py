@@ -98,7 +98,7 @@ def stringify_message(message: Message, use_assistant_name: bool = False) -> str
                 elif isinstance(content, ImageContent):
                     messages.append(f"{message.name or 'user'}: [Image Here]")
             return "\n".join(messages)
-        except:
+        except Exception:
             if message.content and len(message.content) > 0:
                 return f"{message.name or 'user'}: {message.content[0].text}"
             return None

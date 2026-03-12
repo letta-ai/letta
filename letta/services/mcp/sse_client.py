@@ -37,7 +37,9 @@ class AsyncSSEMCPClient(AsyncBaseMCPClient):
         # Pass timeout to prevent httpx.ReadTimeout errors on slow connections
         timeout = tool_settings.mcp_connect_to_server_timeout
         if self.oauth_provider:
-            sse_cm = sse_client(url=server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider, timeout=timeout)
+            sse_cm = sse_client(
+                url=server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider, timeout=timeout
+            )
         else:
             sse_cm = sse_client(url=server_config.server_url, headers=headers if headers else None, timeout=timeout)
 

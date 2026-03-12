@@ -1,11 +1,12 @@
 import asyncio
 import json
 import uuid
-from typing import Any, AsyncGenerator, Dict, Literal, Optional
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from opentelemetry.trace import Span
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
+from letta.adapters.sglang_native_adapter import SGLangNativeAdapter
 from letta.adapters.simple_llm_request_adapter import SimpleLLMRequestAdapter
 from letta.adapters.simple_llm_stream_adapter import SimpleLLMStreamAdapter
 from letta.agents.helpers import (
@@ -19,28 +20,35 @@ from letta.agents.helpers import (
     merge_and_validate_prefilled_args,
 )
 from letta.agents.letta_agent_v2 import LettaAgentV2
-from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM, SUMMARIZATION_TRIGGER_MULTIPLIER
-from letta.errors import ContextWindowExceededError, LLMError, SystemPromptTokenExceededError
+from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
+from letta.errors import ContextWindowExceededError, LLMEmptyResponseError, LLMError, SystemPromptTokenExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
-from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import ApprovalReturn, LettaErrorMessage, LettaMessage, MessageType
+from letta.schemas.enums import LLMCallType
+from letta.schemas.letta_message import (
+    ApprovalReturn,
+    CompactionStats,
+    EventMessage,
+    LettaErrorMessage,
+    LettaMessage,
+    MessageType,
+    SummaryMessage,
+    extract_compaction_stats_from_packed_json,
+)
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_request import ClientToolSchema
-from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_response import LettaResponse, TurnTokenData
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate, ToolReturn
-from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall, ToolCallDenial, UsageStatistics
+from letta.schemas.openai.chat_completion_response import ChoiceLogprobs, ToolCall, ToolCallDenial, UsageStatistics
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
-from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.utils import (
     create_approval_request_message_from_llm_response,
@@ -50,15 +58,31 @@ from letta.server.rest_api.utils import (
 )
 from letta.services.conversation_manager import ConversationManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
-from letta.services.summarizer.summarizer_all import summarize_all
+from letta.services.summarizer.compact import compact_messages
 from letta.services.summarizer.summarizer_config import CompactionSettings
-from letta.services.summarizer.summarizer_sliding_window import (
-    count_tokens,
-    summarize_via_sliding_window,
-)
+from letta.services.summarizer.summarizer_sliding_window import count_tokens
 from letta.settings import settings, summarizer_settings
-from letta.system import package_function_response, package_summarize_message_no_counts
-from letta.utils import log_telemetry, validate_function_response
+from letta.system import package_function_response
+from letta.utils import safe_create_task_with_return, validate_function_response
+
+
+def extract_compaction_stats_from_message(message: Message) -> CompactionStats | None:
+    """
+    Extract CompactionStats from a Message object's packed content.
+
+    Args:
+        message: Message object with packed JSON content
+
+    Returns:
+        CompactionStats if found and valid, None otherwise
+    """
+    try:
+        if message.content and len(message.content) == 1:
+            text_content = message.content[0].text
+            return extract_compaction_stats_from_packed_json(text_content)
+    except AttributeError:
+        pass
+    return None
 
 
 class LettaAgentV3(LettaAgentV2):
@@ -96,6 +120,11 @@ class LettaAgentV3(LettaAgentV2):
         self.conversation_id: str | None = None
         # Client-side tools passed in the request (executed by client, not server)
         self.client_tools: list[ClientToolSchema] = []
+        # Log probabilities from the most recent LLM call (for RL training)
+        self.logprobs: ChoiceLogprobs | None = None
+        # Multi-turn token tracking for RL training (accumulated across all LLM calls)
+        self.turns: list[TurnTokenData] = []
+        self.return_token_ids: bool = False
 
     def _compute_tool_return_truncation_chars(self) -> int:
         """Compute a dynamic cap for tool returns in requests.
@@ -120,6 +149,8 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        include_compaction_messages: bool = False,
+        billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -134,6 +165,8 @@ class LettaAgentV3(LettaAgentV2):
             conversation_id: Optional conversation ID for conversation-scoped messaging
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
+            include_compaction_messages: Whether to include SummaryMessage/EventMessage in response
+                and use role=summary for stored summary messages.
 
         Returns:
             LettaResponse: Complete response with all messages and metadata
@@ -168,29 +201,66 @@ class LettaAgentV3(LettaAgentV2):
             input_messages_to_persist = [input_messages_to_persist[0]]
 
         self.in_context_messages = curr_in_context_messages
+
+        # Check if we should use SGLang native adapter for multi-turn RL training
+        use_sglang_native = (
+            self.agent_state.llm_config.return_token_ids
+            and self.agent_state.llm_config.handle
+            and self.agent_state.llm_config.handle.startswith("sglang/")
+        )
+        self.return_token_ids = use_sglang_native
+
+        if use_sglang_native:
+            # Use SGLang native adapter for multi-turn RL training
+            llm_adapter = SGLangNativeAdapter(
+                llm_client=self.llm_client,
+                llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
+                agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
+                run_id=run_id,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
+            )
+            # Reset turns tracking for this step
+            self.turns = []
+        else:
+            llm_adapter = SimpleLLMRequestAdapter(
+                llm_client=self.llm_client,
+                llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
+                agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
+                run_id=run_id,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
+                billing_context=billing_context,
+            )
+
+        credit_task = None
         for i in range(max_steps):
             if i == 1 and follow_up_messages:
                 input_messages_to_persist = follow_up_messages
                 follow_up_messages = []
 
+            # Await credit check from previous iteration before running next step
+            if credit_task is not None:
+                if not await credit_task:
+                    self.should_continue = False
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.insufficient_credits)
+                    break
+                credit_task = None
+
             response = self._step(
                 # we append input_messages_to_persist since they aren't checkpointed as in-context until the end of the step (may be rolled back)
                 messages=list(self.in_context_messages + input_messages_to_persist),
                 input_messages_to_persist=input_messages_to_persist,
-                # TODO need to support non-streaming adapter too
-                llm_adapter=SimpleLLMRequestAdapter(
-                    llm_client=self.llm_client,
-                    llm_config=self.agent_state.llm_config,
-                    agent_id=self.agent_state.id,
-                    agent_tags=self.agent_state.tags,
-                    run_id=run_id,
-                    org_id=self.actor.organization_id,
-                    user_id=self.actor.id,
-                ),
+                llm_adapter=llm_adapter,
                 run_id=run_id,
                 # use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
+                include_compaction_messages=include_compaction_messages,
             )
             input_messages_to_persist = []  # clear after first step
 
@@ -228,6 +298,9 @@ class LettaAgentV3(LettaAgentV2):
             if not self.should_continue:
                 break
 
+            # Fire credit check to run in parallel with loop overhead / next step setup
+            credit_task = safe_create_task_with_return(self._check_credits())
+
             # input_messages_to_persist = []
 
             if i == max_steps - 1 and self.stop_reason is None:
@@ -260,7 +333,15 @@ class LettaAgentV3(LettaAgentV2):
         )
         if include_return_message_types:
             response_letta_messages = [m for m in response_letta_messages if m.message_type in include_return_message_types]
-        result = LettaResponse(messages=response_letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+        # Set context_tokens to expose actual context window usage (vs accumulated prompt_tokens)
+        self.usage.context_tokens = self.context_token_estimate
+        result = LettaResponse(
+            messages=response_letta_messages,
+            stop_reason=self.stop_reason,
+            usage=self.usage,
+            logprobs=self.logprobs,
+            turns=self.turns if self.return_token_ids and self.turns else None,
+        )
         if run_id:
             if self.job_update_metadata is None:
                 self.job_update_metadata = {}
@@ -283,6 +364,8 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        include_compaction_messages: bool = False,
+        billing_context: BillingContext | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -322,25 +405,52 @@ class LettaAgentV3(LettaAgentV2):
                 actor=self.actor,
             )
 
+        # Check if we should use SGLang native adapter for multi-turn RL training
+        use_sglang_native = (
+            self.agent_state.llm_config.return_token_ids
+            and self.agent_state.llm_config.handle
+            and self.agent_state.llm_config.handle.startswith("sglang/")
+        )
+        self.return_token_ids = use_sglang_native
+
         if stream_tokens:
             llm_adapter = SimpleLLMStreamAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
                 run_id=run_id,
                 org_id=self.actor.organization_id,
                 user_id=self.actor.id,
+                billing_context=billing_context,
             )
+        elif use_sglang_native:
+            # Use SGLang native adapter for multi-turn RL training
+            llm_adapter = SGLangNativeAdapter(
+                llm_client=self.llm_client,
+                llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
+                agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
+                run_id=run_id,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
+                billing_context=billing_context,
+            )
+            # Reset turns tracking for this step
+            self.turns = []
         else:
             llm_adapter = SimpleLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
                 run_id=run_id,
                 org_id=self.actor.organization_id,
                 user_id=self.actor.id,
+                billing_context=billing_context,
             )
 
         try:
@@ -359,10 +469,20 @@ class LettaAgentV3(LettaAgentV2):
                 input_messages_to_persist = [input_messages_to_persist[0]]
 
             self.in_context_messages = in_context_messages
+            credit_task = None
             for i in range(max_steps):
                 if i == 1 and follow_up_messages:
                     input_messages_to_persist = follow_up_messages
                     follow_up_messages = []
+
+                # Await credit check from previous iteration before running next step
+                if credit_task is not None:
+                    if not await credit_task:
+                        self.should_continue = False
+                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.insufficient_credits)
+                        break
+                    credit_task = None
+
                 response = self._step(
                     # we append input_messages_to_persist since they aren't checkpointed as in-context until the end of the step (may be rolled back)
                     messages=list(self.in_context_messages + input_messages_to_persist),
@@ -372,12 +492,26 @@ class LettaAgentV3(LettaAgentV2):
                     # use_assistant_message=use_assistant_message,
                     include_return_message_types=include_return_message_types,
                     request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_compaction_messages=include_compaction_messages,
                 )
                 input_messages_to_persist = []  # clear after first step
                 async for chunk in response:
                     response_letta_messages.append(chunk)
                     if first_chunk:
                         request_span = self._request_checkpoint_ttft(request_span, request_start_timestamp_ns)
+
+                    # Log chunks with missing id or otid for debugging.
+                    # Compaction EventMessage is intentionally metadata-only and may omit otid.
+                    is_compaction_event = isinstance(chunk, EventMessage) and chunk.event_type == "compaction"
+                    if isinstance(chunk, LettaMessage) and (not chunk.id or not chunk.otid) and not is_compaction_event:
+                        self.logger.warning(
+                            "Streaming chunk missing id or otid: message_type=%s id=%s otid=%s step_id=%s",
+                            chunk.message_type,
+                            chunk.id,
+                            chunk.otid,
+                            chunk.step_id,
+                        )
+
                     yield f"data: {chunk.model_dump_json()}\n\n"
                     first_chunk = False
 
@@ -390,6 +524,9 @@ class LettaAgentV3(LettaAgentV2):
 
                 if not self.should_continue:
                     break
+
+                # Fire credit check to run in parallel with loop overhead / next step setup
+                credit_task = safe_create_task_with_return(self._check_credits())
 
                 if i == max_steps - 1 and self.stop_reason is None:
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
@@ -446,10 +583,19 @@ class LettaAgentV3(LettaAgentV2):
 
         # Cleanup and finalize (only runs if no exception occurred)
         try:
+            # Set context_tokens to expose actual context window usage (vs accumulated prompt_tokens)
+            self.usage.context_tokens = self.context_token_estimate
+
             if run_id:
                 # Filter out LettaStopReason from messages (only valid in LettaStreamingResponse, not LettaResponse)
                 filtered_messages = [m for m in response_letta_messages if not isinstance(m, LettaStopReason)]
-                result = LettaResponse(messages=filtered_messages, stop_reason=self.stop_reason, usage=self.usage)
+                result = LettaResponse(
+                    messages=filtered_messages,
+                    stop_reason=self.stop_reason,
+                    usage=self.usage,
+                    logprobs=self.logprobs,
+                    turns=self.turns if self.return_token_ids and self.turns else None,
+                )
                 if self.job_update_metadata is None:
                     self.job_update_metadata = {}
                 self.job_update_metadata["result"] = result.model_dump(mode="json")
@@ -518,7 +664,7 @@ class LettaAgentV3(LettaAgentV2):
             message.conversation_id = self.conversation_id
 
         # persist the new message objects - ONLY place where messages are persisted
-        persisted_messages = await self.message_manager.create_many_messages_async(
+        await self.message_manager.create_many_messages_async(
             new_messages,
             actor=self.actor,
             run_id=run_id,
@@ -556,6 +702,82 @@ class LettaAgentV3(LettaAgentV2):
 
         self.in_context_messages = in_context_messages  # update in-memory state
 
+    def _create_compaction_event_message(
+        self,
+        step_id: str | None,
+        run_id: str | None,
+        trigger: str,
+    ) -> EventMessage:
+        """
+        Create an EventMessage to notify the client that compaction is starting.
+
+        Args:
+            step_id: The current step ID
+            run_id: The current run ID
+            trigger: The trigger that caused compaction (e.g., "context_window_exceeded", "post_step_context_check")
+
+        Returns:
+            EventMessage to yield before compaction starts
+        """
+        return EventMessage(
+            id=str(uuid.uuid4()),
+            date=get_utc_time(),
+            event_type="compaction",
+            event_data={
+                "trigger": trigger,
+                "context_token_estimate": self.context_token_estimate,
+                "context_window": self.agent_state.llm_config.context_window,
+            },
+            run_id=run_id,
+            step_id=step_id,
+        )
+
+    def _create_summary_result_message(
+        self,
+        summary_message: Message,
+        summary_text: str,
+        step_id: str | None,
+        run_id: str | None,
+        include_compaction_messages: bool,
+    ) -> list[LettaMessage]:
+        """
+        Create the summary message to yield to the client after compaction completes.
+
+        Args:
+            summary_message: The persisted summary Message object
+            summary_text: The raw summary text (unpacked)
+            step_id: The current step ID
+            run_id: The current run ID
+            include_compaction_messages: If True, return SummaryMessage; if False, return UserMessage
+
+        Returns:
+            List of LettaMessage objects to yield to the client
+        """
+        if include_compaction_messages:
+            # Extract compaction_stats from the packed message content if available
+            compaction_stats = extract_compaction_stats_from_message(summary_message)
+
+            # New behavior: structured SummaryMessage
+            return [
+                SummaryMessage(
+                    id=summary_message.id,
+                    date=summary_message.created_at,
+                    summary=summary_text,
+                    otid=Message.generate_otid_from_id(summary_message.id, 0),
+                    step_id=step_id,
+                    run_id=run_id,
+                    compaction_stats=compaction_stats,
+                ),
+            ]
+        else:
+            # Old behavior: UserMessage with packed JSON
+            messages = list(Message.to_letta_messages(summary_message))
+            # Set otid on returned messages (summary Message doesn't have otid set at creation)
+            for i, msg in enumerate(messages):
+                if not msg.otid:
+                    msg.otid = Message.generate_otid_from_id(summary_message.id, i)
+            return messages
+
     @trace_method
     async def _step(
         self,
@@ -569,6 +791,7 @@ class LettaAgentV3(LettaAgentV2):
         remaining_turns: int = -1,
         dry_run: bool = False,
         enforce_run_id_set: bool = True,
+        include_compaction_messages: bool = False,
     ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
@@ -599,8 +822,9 @@ class LettaAgentV3(LettaAgentV2):
             self.logger.warning("Context token estimate is not set")
 
         step_progression = StepProgression.START
+        caught_exception = None
         # TODO(@caren): clean this up
-        tool_calls, content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
+        tool_calls, content, agent_step_span, _first_chunk, step_id, logged_step, _step_start_ns, step_metrics = (
             None,
             None,
             None,
@@ -622,13 +846,11 @@ class LettaAgentV3(LettaAgentV2):
                     self.logger.info("switching to unconstrained mode (allowing non-tool responses)")
             self._require_tool_call = require_tool_call
 
-            # Always refresh messages at the start of each step to pick up external inputs
-            # (e.g., approval responses submitted by the client while this stream is running)
+            # Refresh messages at the start of each step to scrub inner thoughts.
+            # NOTE: We skip system prompt refresh during normal steps to preserve prefix caching.
+            # The system prompt is only rebuilt after compaction or message reset.
             try:
-                # TODO: cleanup and de-dup
-                # updates the system prompt with the latest blocks / message histories
-                messages = await self._refresh_messages(messages)
-
+                messages = await self._refresh_messages(messages, force_system_prompt_refresh=False)
             except Exception as e:
                 self.logger.warning(f"Failed to refresh messages at step start: {e}")
 
@@ -722,8 +944,8 @@ class LettaAgentV3(LettaAgentV2):
                                 or len([t for t in self.agent_state.tool_rules if t.type != "requires_approval"]) == 0
                             )
 
-                            # Anthropic/Bedrock parallel tool use
-                            if self.agent_state.llm_config.model_endpoint_type in ["anthropic", "bedrock"]:
+                            # Anthropic/Bedrock/MiniMax parallel tool use (MiniMax uses Anthropic-compatible API)
+                            if self.agent_state.llm_config.model_endpoint_type in ["anthropic", "bedrock", "minimax"]:
                                 if (
                                     isinstance(request_data.get("tool_choice"), dict)
                                     and "disable_parallel_tool_use" in request_data["tool_choice"]
@@ -774,11 +996,13 @@ class LettaAgentV3(LettaAgentV2):
                         async for chunk in invocation:
                             if llm_adapter.supports_token_streaming():
                                 if include_return_message_types is None or chunk.message_type in include_return_message_types:
-                                    first_chunk = True
                                     yield chunk
                         # If you've reached this point without an error, break out of retry loop
                         break
                     except ValueError as e:
+                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
+                        raise e
+                    except LLMEmptyResponseError as e:
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
                         raise e
                     except LLMError as e:
@@ -790,34 +1014,77 @@ class LettaAgentV3(LettaAgentV2):
                             self.logger.info(
                                 f"Context window exceeded (error {e}), trying to compact messages attempt {llm_request_attempt + 1} of {summarizer_settings.max_summarizer_retries + 1}"
                             )
-                            # checkpoint summarized messages
-                            # TODO: might want to delay this checkpoint in case of corrupated state
                             try:
-                                summary_message, messages, _ = await self.compact(
+                                # Capture pre-compaction state for metadata
+                                context_tokens_before = self.context_token_estimate
+                                messages_count_before = len(messages)
+
+                                # Yield event notification before compaction starts
+                                if include_compaction_messages:
+                                    yield self._create_compaction_event_message(
+                                        step_id=step_id,
+                                        run_id=run_id,
+                                        trigger="context_window_exceeded",
+                                    )
+
+                                # Ensure system prompt is recompiled before summarization so compaction
+                                # operates on the latest system+memory state (including recent repairs).
+                                # NOTE: we no longer refresh the system prompt before compaction so we can leverage cache for self mode
+                                # messages = await self._refresh_messages(messages, force_system_prompt_refresh=True)
+
+                                summary_message, messages, summary_text = await self.compact(
                                     messages,
                                     trigger_threshold=self.agent_state.llm_config.context_window,
                                     run_id=run_id,
                                     step_id=step_id,
+                                    use_summary_role=include_compaction_messages,
+                                    trigger="context_window_exceeded",
+                                    context_tokens_before=context_tokens_before,
+                                    messages_count_before=messages_count_before,
                                 )
+
+                                # Recompile the persisted system prompt after compaction so subsequent
+                                # turns load the repaired system+memory state from message_ids[0].
+                                await self.agent_manager.rebuild_system_prompt_async(
+                                    agent_id=self.agent_state.id,
+                                    actor=self.actor,
+                                    force=True,
+                                    update_timestamp=True,
+                                )
+                                # Force system prompt rebuild after compaction to update memory blocks and timestamps
+                                messages = await self._refresh_messages(messages, force_system_prompt_refresh=True)
                                 self.logger.info("Summarization succeeded, continuing to retry LLM request")
+
+                                # Persist the summary message
+                                self.response_messages.append(summary_message)
+                                await self._checkpoint_messages(
+                                    run_id=run_id,
+                                    step_id=step_id,
+                                    new_messages=[summary_message],
+                                    in_context_messages=messages,
+                                )
+
+                                # Yield summary result message to client
+                                for msg in self._create_summary_result_message(
+                                    summary_message=summary_message,
+                                    summary_text=summary_text,
+                                    step_id=step_id,
+                                    run_id=run_id,
+                                    include_compaction_messages=include_compaction_messages,
+                                ):
+                                    yield msg
+
                                 continue
                             except SystemPromptTokenExceededError:
+                                self.should_continue = False
                                 self.stop_reason = LettaStopReason(
                                     stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value
                                 )
-                                raise e
+                                raise
                             except Exception as e:
                                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                                 self.logger.error(f"Unknown error occured for summarization run {run_id}: {e}")
                                 raise e
-
-                            # update the messages
-                            await self._checkpoint_messages(
-                                run_id=run_id,
-                                step_id=step_id,
-                                new_messages=[summary_message],
-                                in_context_messages=messages,
-                            )
 
                         else:
                             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
@@ -831,6 +1098,23 @@ class LettaAgentV3(LettaAgentV2):
                 self._update_global_usage_stats(llm_adapter.usage)
                 self.context_token_estimate = llm_adapter.usage.total_tokens
                 self.logger.info(f"Context token estimate after LLM request: {self.context_token_estimate}")
+
+                # Extract logprobs if present (for RL training)
+                if llm_adapter.logprobs is not None:
+                    self.logprobs = llm_adapter.logprobs
+
+                # Track turn data for multi-turn RL training (SGLang native mode)
+                if self.return_token_ids and hasattr(llm_adapter, "output_ids") and llm_adapter.output_ids:
+                    self.turns.append(
+                        TurnTokenData(
+                            role="assistant",
+                            output_ids=llm_adapter.output_ids,
+                            output_token_logprobs=llm_adapter.output_token_logprobs,
+                            content=llm_adapter.chat_completions_response.choices[0].message.content
+                            if llm_adapter.chat_completions_response
+                            else None,
+                        )
+                    )
 
                 # Handle the AI response with the extracted data (supports multiple tool calls)
                 # Gather tool calls - check for multi-call API first, then fall back to single
@@ -878,6 +1162,36 @@ class LettaAgentV3(LettaAgentV2):
             self.response_messages.extend(new_messages)
             messages.extend(new_messages)
 
+            # Track tool return turns for multi-turn RL training
+            if self.return_token_ids:
+                for msg in new_messages:
+                    if msg.role == "tool":
+                        # Get tool return content
+                        tool_content = None
+                        tool_name = None
+                        if hasattr(msg, "tool_returns") and msg.tool_returns:
+                            # Aggregate all tool returns into content (func_response is the actual content)
+                            parts = []
+                            for tr in msg.tool_returns:
+                                if hasattr(tr, "func_response") and tr.func_response:
+                                    if isinstance(tr.func_response, str):
+                                        parts.append(tr.func_response)
+                                    else:
+                                        parts.append(str(tr.func_response))
+                            tool_content = "\n".join(parts)
+                        elif hasattr(msg, "content") and msg.content:
+                            tool_content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                        if hasattr(msg, "name"):
+                            tool_name = msg.name
+                        if tool_content:
+                            self.turns.append(
+                                TurnTokenData(
+                                    role="tool",
+                                    content=tool_content,
+                                    tool_name=tool_name,
+                                )
+                            )
+
             # step(...) has successfully completed! now we can persist messages and update the in-context messages + save metrics
             # persistence needs to happen before streaming to minimize chances of agent getting into an inconsistent state
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
@@ -919,30 +1233,86 @@ class LettaAgentV3(LettaAgentV2):
                 self.logger.info(
                     f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
                 )
-                summary_message, messages, _ = await self.compact(
-                    messages,
-                    trigger_threshold=self.agent_state.llm_config.context_window,
-                    run_id=run_id,
-                    step_id=step_id,
-                )
-                # TODO: persist + return the summary message
-                # TODO: convert this to a SummaryMessage
-                self.response_messages.append(summary_message)
-                for message in Message.to_letta_messages(summary_message):
-                    yield message
-                await self._checkpoint_messages(
-                    run_id=run_id,
-                    step_id=step_id,
-                    new_messages=[summary_message],
-                    in_context_messages=messages,
-                )
+
+                # Capture pre-compaction state for metadata
+                context_tokens_before = self.context_token_estimate
+                messages_count_before = len(messages)
+
+                # Yield event notification before compaction starts
+                if include_compaction_messages:
+                    yield self._create_compaction_event_message(
+                        step_id=step_id,
+                        run_id=run_id,
+                        trigger="post_step_context_check",
+                    )
+
+                try:
+                    # Ensure system prompt is recompiled before summarization so compaction
+                    # operates on the latest system+memory state (including recent repairs).
+                    # NOTE: we no longer refresh the system prompt before compaction so we can leverage cache for self mode
+                    # messages = await self._refresh_messages(messages, force_system_prompt_refresh=True)
+
+                    summary_message, messages, summary_text = await self.compact(
+                        messages,
+                        trigger_threshold=self.agent_state.llm_config.context_window,
+                        run_id=run_id,
+                        step_id=step_id,
+                        use_summary_role=include_compaction_messages,
+                        trigger="post_step_context_check",
+                        context_tokens_before=context_tokens_before,
+                        messages_count_before=messages_count_before,
+                    )
+
+                    # Recompile the persisted system prompt after compaction so subsequent
+                    # turns load the repaired system+memory state from message_ids[0].
+                    await self.agent_manager.rebuild_system_prompt_async(
+                        agent_id=self.agent_state.id,
+                        actor=self.actor,
+                        force=True,
+                        update_timestamp=True,
+                    )
+                    # Force system prompt rebuild after compaction to update memory blocks and timestamps
+                    messages = await self._refresh_messages(messages, force_system_prompt_refresh=True)
+                    # TODO: persist + return the summary message
+                    # TODO: convert this to a SummaryMessage
+                    self.response_messages.append(summary_message)
+
+                    # Yield summary result message to client
+                    for msg in self._create_summary_result_message(
+                        summary_message=summary_message,
+                        summary_text=summary_text,
+                        step_id=step_id,
+                        run_id=run_id,
+                        include_compaction_messages=include_compaction_messages,
+                    ):
+                        yield msg
+
+                    await self._checkpoint_messages(
+                        run_id=run_id,
+                        step_id=step_id,
+                        new_messages=[summary_message],
+                        in_context_messages=messages,
+                    )
+                except SystemPromptTokenExceededError:
+                    self.should_continue = False
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value)
+                    raise
 
         except Exception as e:
+            caught_exception = e
             # NOTE: message persistence does not happen in the case of an exception (rollback to previous state)
             # Use repr() if str() is empty (happens with Exception() with no args)
             error_detail = str(e) or repr(e)
             self.logger.warning(f"Error during step processing: {error_detail}")
             self.job_update_metadata = {"error": error_detail}
+
+            # Stop the agent loop on any exception to prevent wasteful retry loops
+            # (e.g., if post-step compaction fails, we don't want to keep retrying)
+            self.should_continue = False
+            self.logger.warning(
+                f"Agent loop stopped due to exception (step_progression={step_progression.name}, "
+                f"exception_type={type(e).__name__}): {error_detail}"
+            )
 
             # This indicates we failed after we decided to stop stepping, which indicates a bug with our flow.
             if not self.stop_reason:
@@ -980,8 +1350,8 @@ class LettaAgentV3(LettaAgentV2):
                         await self.step_manager.update_step_error_async(
                             actor=self.actor,
                             step_id=step_id,  # Use original step_id for telemetry
-                            error_type=type(e).__name__ if "e" in locals() else "Unknown",
-                            error_message=str(e) if "e" in locals() else "Unknown error",
+                            error_type=type(caught_exception).__name__ if caught_exception is not None else "Unknown",
+                            error_message=str(caught_exception) if caught_exception is not None else "Unknown error",
                             error_traceback=traceback.format_exc(),
                             stop_reason=self.stop_reason,
                         )
@@ -1318,10 +1688,10 @@ class LettaAgentV3(LettaAgentV2):
             # Decide continuation for this tool
             if has_prefill_error:
                 cont = False
-                hb_reason = None
+                _hb_reason = None
                 sr = LettaStopReason(stop_reason=StopReasonType.invalid_tool_call.value)
             else:
-                cont, hb_reason, sr = self._decide_continuation(
+                cont, _hb_reason, sr = self._decide_continuation(
                     agent_state=self.agent_state,
                     tool_call_name=spec["name"],
                     tool_rule_violated=spec["violated"],
@@ -1501,6 +1871,10 @@ class LettaAgentV3(LettaAgentV2):
         compaction_settings: Optional["CompactionSettings"] = None,
         run_id: Optional[str] = None,
         step_id: Optional[str] = None,
+        use_summary_role: bool = False,
+        trigger: Optional[str] = None,
+        context_tokens_before: Optional[int] = None,
+        messages_count_before: Optional[int] = None,
     ) -> tuple[Message, list[Message], str]:
         """Compact the current in-context messages for this agent.
 
@@ -1508,223 +1882,41 @@ class LettaAgentV3(LettaAgentV2):
         ``compaction_settings.model`` when provided. This mirrors how agent
         creation derives defaults from provider-specific ModelSettings, but is
         localized to summarization.
+
+        Args:
+            use_summary_role: If True, the summary message will be created with
+                role=summary instead of role=user. This enables first-class
+                summary message handling in the database and API responses.
+            trigger: What triggered the compaction (e.g., "context_window_exceeded", "post_step_context_check").
+            context_tokens_before: Token count before compaction (for stats).
+            messages_count_before: Message count before compaction (for stats).
         """
 
-        # Use the passed-in compaction_settings first, then agent's compaction_settings if set,
-        # otherwise fall back to global defaults based on the agent's model handle.
-        if compaction_settings is not None:
-            summarizer_config = compaction_settings
-        elif self.agent_state.compaction_settings is not None:
-            summarizer_config = self.agent_state.compaction_settings
-        else:
-            # Prefer the new handle field if set, otherwise derive from llm_config
-            if self.agent_state.model is not None:
-                handle = self.agent_state.model
-            else:
-                llm_cfg = self.agent_state.llm_config
-                handle = llm_cfg.handle or f"{llm_cfg.model_endpoint_type}/{llm_cfg.model}"
+        # Determine compaction settings: passed-in > agent's > global defaults
+        effective_compaction_settings = compaction_settings or self.agent_state.compaction_settings
 
-            summarizer_config = CompactionSettings(model=handle)
-
-        # Build the LLMConfig used for summarization
-        summarizer_llm_config = await self._build_summarizer_llm_config(
-            agent_llm_config=self.agent_state.llm_config,
-            summarizer_config=summarizer_config,
-        )
-
-        summarization_mode_used = summarizer_config.mode
-        if summarizer_config.mode == "all":
-            summary, compacted_messages = await summarize_all(
-                actor=self.actor,
-                llm_config=summarizer_llm_config,
-                summarizer_config=summarizer_config,
-                in_context_messages=messages,
-                agent_id=self.agent_state.id,
-                agent_tags=self.agent_state.tags,
-                run_id=run_id,
-                step_id=step_id,
-            )
-        elif summarizer_config.mode == "sliding_window":
-            try:
-                summary, compacted_messages = await summarize_via_sliding_window(
-                    actor=self.actor,
-                    llm_config=summarizer_llm_config,
-                    summarizer_config=summarizer_config,
-                    in_context_messages=messages,
-                    agent_id=self.agent_state.id,
-                    agent_tags=self.agent_state.tags,
-                    run_id=run_id,
-                    step_id=step_id,
-                )
-            except Exception as e:
-                self.logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
-                summary, compacted_messages = await summarize_all(
-                    actor=self.actor,
-                    llm_config=summarizer_llm_config,
-                    summarizer_config=summarizer_config,
-                    in_context_messages=messages,
-                    agent_id=self.agent_state.id,
-                    agent_tags=self.agent_state.tags,
-                    run_id=run_id,
-                    step_id=step_id,
-                )
-                summarization_mode_used = "all"
-        else:
-            raise ValueError(f"Invalid summarizer mode: {summarizer_config.mode}")
-
-        # update the token count
-        self.context_token_estimate = await count_tokens(
-            actor=self.actor, llm_config=self.agent_state.llm_config, messages=compacted_messages
-        )
-        self.logger.info(f"Context token estimate after summarization: {self.context_token_estimate}")
-
-        # if the trigger_threshold is provided, we need to make sure that the new token count is below it
-        if trigger_threshold is not None and self.context_token_estimate is not None and self.context_token_estimate >= trigger_threshold:
-            # If even after summarization the context is still at or above
-            # the proactive summarization threshold, treat this as a hard
-            # failure: log loudly and evict all prior conversation state
-            # (keeping only the system message) to avoid getting stuck in
-            # repeated summarization loops.
-            self.logger.error(
-                "Summarization failed to sufficiently reduce context size: "
-                f"post-summarization tokens={self.context_token_estimate}, "
-                f"threshold={trigger_threshold}, context_window={self.context_token_estimate}. "
-                "Evicting all prior messages without a summary to break potential loops.",
-            )
-
-            # if we used the sliding window mode, try to summarize again with the all mode
-            if summarization_mode_used == "sliding_window":
-                # try to summarize again with the all mode
-                summary, compacted_messages = await summarize_all(
-                    actor=self.actor,
-                    llm_config=self.agent_state.llm_config,
-                    summarizer_config=summarizer_config,
-                    in_context_messages=compacted_messages,
-                    agent_id=self.agent_state.id,
-                    agent_tags=self.agent_state.tags,
-                    run_id=run_id,
-                    step_id=step_id,
-                )
-                summarization_mode_used = "all"
-
-            self.context_token_estimate = await count_tokens(
-                actor=self.actor, llm_config=self.agent_state.llm_config, messages=compacted_messages
-            )
-
-            # final edge case: the system prompt is the cause of the context overflow (raise error)
-            if self.context_token_estimate is not None and self.context_token_estimate >= trigger_threshold:
-                await self._check_for_system_prompt_overflow(compacted_messages[0])
-
-                # raise an error if this is STILL not the problem
-                # do not throw an error, since we don't want to brick the agent
-                self.logger.error(
-                    f"Failed to summarize messages after hard eviction and checking the system prompt token estimate: {self.context_token_estimate} > {trigger_threshold}"
-                )
-            else:
-                self.logger.info(
-                    f"Summarization fallback succeeded in bringing the context size below the trigger threshold: {self.context_token_estimate} < {trigger_threshold}"
-                )
-
-        # Persist the summary message to DB
-        summary_message_str_packed = package_summarize_message_no_counts(
-            summary=summary,
-            timezone=self.agent_state.timezone,
-        )
-        summary_messages = await convert_message_creates_to_messages(
-            message_creates=[
-                MessageCreate(
-                    role=MessageRole.user,
-                    content=[TextContent(text=summary_message_str_packed)],
-                )
-            ],
+        result = await compact_messages(
+            actor=self.actor,
             agent_id=self.agent_state.id,
+            agent_llm_config=self.agent_state.llm_config,
+            telemetry_manager=self.telemetry_manager,
+            llm_client=self.llm_client,
+            agent_type=self.agent_state.agent_type,
+            messages=messages,
             timezone=self.agent_state.timezone,
-            # We already packed, don't pack again
-            wrap_user_message=False,
-            wrap_system_message=False,
-            run_id=None,  # TODO: add this
+            compaction_settings=effective_compaction_settings,
+            agent_tags=self.agent_state.tags,
+            tools=await self._get_valid_tools(),  # Pass json schemas including client tools for cache compatibility (for self compaction)
+            trigger_threshold=trigger_threshold,
+            run_id=run_id,
+            step_id=step_id,
+            use_summary_role=use_summary_role,
+            trigger=trigger,
+            context_tokens_before=context_tokens_before,
+            messages_count_before=messages_count_before,
         )
-        if not len(summary_messages) == 1:
-            self.logger.error(f"Expected only one summary message, got {len(summary_messages)} in {summary_messages}")
-        summary_message_obj = summary_messages[0]
 
-        # final messages: inject summarization message at the beginning
-        final_messages = [compacted_messages[0]] + [summary_message_obj]
-        if len(compacted_messages) > 1:
-            final_messages += compacted_messages[1:]
+        # Update the agent's context token estimate
+        self.context_token_estimate = result.context_token_estimate
 
-        return summary_message_obj, final_messages, summary
-
-    async def _build_summarizer_llm_config(
-        self,
-        agent_llm_config: LLMConfig,
-        summarizer_config: CompactionSettings,
-    ) -> LLMConfig:
-        """Derive an LLMConfig for summarization from a model handle.
-
-        This mirrors the agent-creation path: start from the agent's LLMConfig,
-        override provider/model/handle from ``compaction_settings.model``, and
-        then apply any explicit ``compaction_settings.model_settings`` via
-        ``_to_legacy_config_params``.
-        """
-
-        # If no summarizer model handle is provided, fall back to the agent's config
-        if not summarizer_config.model:
-            return agent_llm_config
-
-        try:
-            # Parse provider/model from the handle, falling back to the agent's
-            # provider type when only a model name is given.
-            if "/" in summarizer_config.model:
-                provider_name, model_name = summarizer_config.model.split("/", 1)
-            else:
-                provider_name = agent_llm_config.provider_name
-                model_name = summarizer_config.model
-
-            # Start from the agent's config and override model + provider_name + handle
-            # Check if the summarizer's provider matches the agent's provider
-            # If they match, we can safely use the agent's config as a base
-            # If they don't match, we need to load the default config for the new provider
-            from letta.schemas.enums import ProviderType
-
-            provider_matches = False
-            try:
-                # Check if provider_name is a valid ProviderType that matches agent's endpoint type
-                provider_type = ProviderType(provider_name)
-                provider_matches = provider_type.value == agent_llm_config.model_endpoint_type
-            except ValueError:
-                # provider_name is a custom label - check if it matches agent's provider_name
-                provider_matches = provider_name == agent_llm_config.provider_name
-
-            if provider_matches:
-                # Same provider - use agent's config as base and override model/handle
-                base = agent_llm_config.model_copy()
-                base.model = model_name
-                base.handle = summarizer_config.model
-            else:
-                # Different provider - load default config for this handle
-                from letta.services.provider_manager import ProviderManager
-
-                provider_manager = ProviderManager()
-                try:
-                    base = await provider_manager.get_llm_config_from_handle(
-                        handle=summarizer_config.model,
-                        actor=self.actor,
-                    )
-                except Exception as e:
-                    self.logger.warning(
-                        f"Failed to load LLM config for summarizer handle '{summarizer_config.model}': {e}. "
-                        f"Falling back to agent's LLM config."
-                    )
-                    return agent_llm_config
-
-            # If explicit model_settings are provided for the summarizer, apply
-            # them just like server.create_agent_async does for agents.
-            if summarizer_config.model_settings is not None:
-                update_params = summarizer_config.model_settings._to_legacy_config_params()
-                return base.model_copy(update=update_params)
-
-            return base
-        except Exception:
-            # On any error, do not break the agent – just fall back
-            return agent_llm_config
+        return result.summary_message, result.compacted_messages, result.summary_text

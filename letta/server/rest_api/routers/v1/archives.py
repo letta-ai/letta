@@ -1,19 +1,17 @@
-from datetime import datetime
 from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel, Field
 
 from letta import AgentState
-from letta.errors import LettaInvalidArgumentError
 from letta.schemas.agent import AgentRelationships
-from letta.schemas.archive import Archive as PydanticArchive, ArchiveBase
+from letta.schemas.archive import Archive as PydanticArchive
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.passage import Passage
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
-from letta.validators import AgentId, ArchiveId, PassageId
+from letta.validators import ArchiveId, PassageId
 
 router = APIRouter(prefix="/archives", tags=["archives"])
 

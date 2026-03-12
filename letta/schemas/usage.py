@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Uni
 
 from pydantic import BaseModel, Field
 
-from letta.schemas.message import Message
-
 if TYPE_CHECKING:
+    from letta.schemas.enums import ProviderType
     from letta.schemas.openai.chat_completion_response import (
+        UsageStatistics,
         UsageStatisticsCompletionTokenDetails,
         UsageStatisticsPromptTokenDetails,
     )
@@ -125,6 +125,12 @@ class LettaUsageStatistics(BaseModel):
     # None means provider didn't report this data, 0 means provider reported 0
     reasoning_tokens: Optional[int] = Field(
         None, description="The number of reasoning/thinking tokens generated. None if not reported by provider."
+    )
+
+    # Context window tracking
+    context_tokens: Optional[int] = Field(
+        None,
+        description="Estimate of tokens currently in the context window.",
     )
 
     def to_usage(self, provider_type: Optional["ProviderType"] = None) -> "UsageStatistics":

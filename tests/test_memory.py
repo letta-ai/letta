@@ -25,9 +25,9 @@ def test_chat_memory_init_and_utils(chat_memory: Memory):
 
 def test_memory_limit_validation(chat_memory: Memory):
     with pytest.raises(ValueError):
-        ChatMemory(persona="x " * 50000, human="y " * 50000)
+        ChatMemory(persona="x " * 60000, human="y " * 60000)
     with pytest.raises(ValueError):
-        chat_memory.get_block("persona").value = "x " * 50000
+        chat_memory.get_block("persona").value = "x " * 60000
 
 
 def test_get_block_not_found(chat_memory: Memory):
@@ -223,3 +223,134 @@ def test_current_files_open_counts_truthy_only():
     m = Memory(agent_type=AgentType.react_agent, blocks=[], file_blocks=[fb1, fb2, fb3])
     out = m.compile(sources=[src], max_files_open=10)
     assert "- current_files_open=1" in out
+
+
+def test_compile_git_memory_filesystem_handles_leaf_directory_collisions():
+    """Git memory filesystem rendering should tolerate label prefix collisions.
+
+    Example collisions:
+    - leaf at "system" and children under "system/..."
+    - leaf at "system/human" and children under "system/human/..."
+
+    These occur naturally in git-backed memory where both index-like blocks and
+    nested blocks can exist.
+    """
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system", value="root", limit=100),
+            Block(label="system/human", value="human index", limit=100),
+            Block(label="system/human/context", value="context", limit=100),
+        ],
+    )
+
+    out = m.compile()
+
+    # Should include the filesystem view and not raise.
+    assert "<memory_filesystem>" in out
+    assert "system/" in out
+    assert "system.md" in out
+    assert "human.md" in out
+
+
+def test_compile_git_memory_filesystem_renders_descriptions_for_non_system_files():
+    """Files outside system/ should render their description in the filesystem tree.
+
+    e.g. `reference/api.md (Contains API specifications)`
+    System files should NOT render descriptions in the tree.
+    """
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100, description="The human block"),
+            Block(label="system/persona", value="persona data", limit=100, description="The persona block"),
+            Block(label="reference/api", value="api specs", limit=100, description="Contains API specifications"),
+            Block(label="notes", value="my notes", limit=100, description="Personal notes and reminders"),
+        ],
+    )
+
+    out = m.compile()
+
+    # Filesystem tree should exist
+    assert "<memory_filesystem>" in out
+
+    # Non-system files should have descriptions rendered
+    assert "api.md (Contains API specifications)" in out
+    assert "notes.md (Personal notes and reminders)" in out
+
+    # System files should NOT have descriptions in the tree
+    assert "human.md (The human block)" not in out
+    assert "persona.md (The persona block)" not in out
+    # But they should still be in the tree (without description)
+    assert "human.md" in out
+    assert "persona.md" in out
+
+
+def test_compile_git_memory_filesystem_no_description_when_empty():
+    """Files outside system/ with no description should render without parentheses."""
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(label="notes", value="my notes", limit=100),
+            Block(label="reference/api", value="api specs", limit=100, description="API docs"),
+        ],
+    )
+
+    out = m.compile()
+
+    # notes.md has no description, so no parentheses
+    assert "notes.md\n" in out or "notes.md\n" in out
+    # reference/api.md has a description
+    assert "api.md (API docs)" in out
+
+
+def test_compile_git_memory_filesystem_condenses_skills_to_top_level_entries():
+    """skills/ should render as top-level skill entries with description.
+
+    We intentionally avoid showing nested files under skills/ in the system
+    prompt tree to keep context concise.
+    """
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(
+                label="skills/searching-messages",
+                value="# searching messages",
+                limit=100,
+                description="Search past messages to recall context.",
+            ),
+            Block(
+                label="skills/creating-skills",
+                value="# creating skills",
+                limit=100,
+                description="Guide for creating effective skills.",
+            ),
+            Block(
+                label="skills/creating-skills/references/workflows",
+                value="nested docs",
+                limit=100,
+                description="Nested workflow docs (should not appear)",
+            ),
+        ],
+    )
+
+    out = m.compile()
+
+    # Condensed top-level skill entries with descriptions.
+    assert "searching-messages (Search past messages to recall context.)" in out
+    assert "creating-skills (Guide for creating effective skills.)" in out
+
+    # Do not show .md suffixes or nested skill docs in tree.
+    assert "searching-messages.md" not in out
+    assert "creating-skills.md" not in out
+    assert "references/workflows" not in out

@@ -1,4 +1,3 @@
-import asyncio
 import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
@@ -40,7 +39,9 @@ class DuplicateFileError(Exception):
 class FileManager:
     """Manager class to handle business logic related to files."""
 
-    async def _invalidate_file_caches(self, file_id: str, actor: PydanticUser, original_filename: str = None, source_id: str = None):
+    async def _invalidate_file_caches(
+        self, file_id: str, actor: PydanticUser, original_filename: str | None = None, source_id: str | None = None
+    ):
         """Invalidate all caches related to a file."""
         # TEMPORARILY DISABLED - caching is disabled
         # # invalidate file content cache (all variants)
@@ -701,7 +702,7 @@ class FileManager:
 
         async with db_registry.async_session() as session:
             # We need to import FileAgent here to avoid circular imports
-            from letta.orm.file_agent import FileAgent as FileAgentModel
+            from letta.orm.files_agents import FileAgent as FileAgentModel
 
             # Join through file-agent relationships
             query = (

@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from datetime import datetime
 from enum import Enum
@@ -5,8 +6,9 @@ from functools import wraps
 from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from asyncpg.exceptions import QueryCanceledError
+from asyncpg.exceptions import DeadlockDetectedError, LockNotAvailableError as AsyncpgLockNotAvailableError, QueryCanceledError
 from sqlalchemy import Sequence, String, and_, delete, func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column
@@ -16,14 +18,40 @@ from sqlalchemy.orm.interfaces import ORMOption
 from letta.errors import ConcurrentUpdateError
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
-from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.orm.errors import (
+    DatabaseDeadlockError,
+    DatabaseLockNotAvailableError,
+    DatabaseTimeoutError,
+    ForeignKeyConstraintViolationError,
+    NoResultFound,
+    UniqueConstraintViolationError,
+)
 from letta.settings import DatabaseChoice
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
+    from sqlalchemy import Select
+
+    from letta.schemas.user import User
 
 
 logger = get_logger(__name__)
+
+_DEADLOCK_MAX_RETRIES = 3
+_DEADLOCK_BASE_DELAY = 0.1
+
+
+def _is_deadlock_error(exc: Exception) -> bool:
+    """Check if an exception is a database deadlock error (PostgreSQL error code 40P01)."""
+    orig = getattr(exc, "orig", exc)
+    if isinstance(orig, DeadlockDetectedError):
+        return True
+    if hasattr(orig, "pgcode") and getattr(orig, "pgcode", None) == "40P01":
+        return True
+    if hasattr(orig, "args") and orig.args and isinstance(orig.args[0], dict):
+        if orig.args[0].get("C") == "40P01":
+            return True
+    return False
 
 
 def handle_db_timeout(func):
@@ -521,24 +549,52 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         actor: Optional["User"] = None,
         no_commit: bool = False,
         no_refresh: bool = False,
-    ) -> "SqlalchemyBase":
-        """Async version of create function"""
+        ignore_conflicts: bool = False,
+    ) -> Optional["SqlalchemyBase"]:
+        """Async version of create function
+
+        Args:
+            ignore_conflicts: If True, uses INSERT ... ON CONFLICT DO NOTHING and returns
+                            None if a conflict occurred (no exception raised).
+        """
         logger.debug(f"Creating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
 
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
-        try:
-            db_session.add(self)
-            if no_commit:
-                await db_session.flush()  # no commit, just flush to get PK
-            else:
-                await db_session.commit()
 
-            if not no_refresh:
-                await db_session.refresh(self)
-            return self
-        except (DBAPIError, IntegrityError) as e:
-            self._handle_dbapi_error(e)
+        if ignore_conflicts:
+            values = {
+                col.name: getattr(self, col.key)
+                for col in self.__table__.columns
+                if not (getattr(self, col.key) is None and col.server_default is not None)
+            }
+            stmt = pg_insert(self.__table__).values(**values).on_conflict_do_nothing()
+            result = await db_session.execute(stmt)
+            if not no_commit:
+                await db_session.commit()
+            return self if result.rowcount > 0 else None
+
+        for attempt in range(_DEADLOCK_MAX_RETRIES):
+            try:
+                db_session.add(self)
+                if no_commit:
+                    await db_session.flush()
+                else:
+                    await db_session.commit()
+
+                if not no_refresh:
+                    await db_session.refresh(self)
+                return self
+            except (DBAPIError, IntegrityError) as e:
+                if _is_deadlock_error(e) and attempt < _DEADLOCK_MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Deadlock detected in {self.__class__.__name__}.create_async "
+                        f"(attempt {attempt + 1}/{_DEADLOCK_MAX_RETRIES}), retrying..."
+                    )
+                    await db_session.rollback()
+                    await asyncio.sleep(_DEADLOCK_BASE_DELAY * (2**attempt))
+                    continue
+                self._handle_dbapi_error(e)
 
     @classmethod
     @handle_db_timeout
@@ -567,31 +623,38 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if not items:
             return []
 
-        # Set created/updated by fields if actor is provided
         if actor:
             for item in items:
                 item._set_created_and_updated_by_fields(actor.id)
 
-        try:
-            db_session.add_all(items)
-            if no_commit:
-                await db_session.flush()
-            else:
-                await db_session.commit()
+        for attempt in range(_DEADLOCK_MAX_RETRIES):
+            try:
+                db_session.add_all(items)
+                if no_commit:
+                    await db_session.flush()
+                else:
+                    await db_session.commit()
 
-            if no_refresh:
-                return items
-            else:
-                # Re-query the objects to get them with relationships loaded
-                item_ids = [item.id for item in items]
-                query = select(cls).where(cls.id.in_(item_ids))
-                if hasattr(cls, "created_at"):
-                    query = query.order_by(cls.created_at)
+                if no_refresh:
+                    return items
+                else:
+                    item_ids = [item.id for item in items]
+                    query = select(cls).where(cls.id.in_(item_ids))
+                    if hasattr(cls, "created_at"):
+                        query = query.order_by(cls.created_at)
 
-                result = await db_session.execute(query)
-                return list(result.scalars())
-        except (DBAPIError, IntegrityError) as e:
-            cls._handle_dbapi_error(e)
+                    result = await db_session.execute(query)
+                    return list(result.scalars())
+            except (DBAPIError, IntegrityError) as e:
+                if _is_deadlock_error(e) and attempt < _DEADLOCK_MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Deadlock detected in {cls.__name__}.batch_create_async "
+                        f"(attempt {attempt + 1}/{_DEADLOCK_MAX_RETRIES}), retrying..."
+                    )
+                    await db_session.rollback()
+                    await asyncio.sleep(_DEADLOCK_BASE_DELAY * (2**attempt))
+                    continue
+                cls._handle_dbapi_error(e)
 
     @handle_db_timeout
     async def delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> "SqlalchemyBase":
@@ -607,18 +670,26 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     @handle_db_timeout
     async def hard_delete_async(self, db_session: "AsyncSession", actor: Optional["User"] = None) -> None:
         """Permanently removes the record from the database asynchronously."""
-        # Capture ID before deletion attempt to avoid lazy loading in exception handler
         obj_id = self.id
         obj_class = self.__class__.__name__
         logger.debug(f"Hard deleting {obj_class} with ID: {obj_id} with actor={actor} (async)")
 
-        try:
-            await db_session.delete(self)
-            await db_session.commit()
-        except Exception as e:
-            await db_session.rollback()
-            logger.exception(f"Failed to hard delete {obj_class} with ID {obj_id}")
-            raise ValueError(f"Failed to hard delete {obj_class} with ID {obj_id}: {e}")
+        for attempt in range(_DEADLOCK_MAX_RETRIES):
+            try:
+                await db_session.delete(self)
+                await db_session.commit()
+                return
+            except Exception as e:
+                if _is_deadlock_error(e) and attempt < _DEADLOCK_MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Deadlock detected in {obj_class}.hard_delete_async (attempt {attempt + 1}/{_DEADLOCK_MAX_RETRIES}), retrying..."
+                    )
+                    await db_session.rollback()
+                    await asyncio.sleep(_DEADLOCK_BASE_DELAY * (2**attempt))
+                    continue
+                await db_session.rollback()
+                logger.exception(f"Failed to hard delete {obj_class} with ID {obj_id}")
+                raise ValueError(f"Failed to hard delete {obj_class} with ID {obj_id}: {e}")
 
     @classmethod
     @handle_db_timeout
@@ -637,21 +708,35 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             logger.debug(f"No identifiers provided for {cls.__name__}, nothing to delete")
             return
 
-        query = delete(cls)
-        query = query.where(cls.id.in_(identifiers))
-        query = cls.apply_access_predicate(query, actor, access, access_type)
-        try:
-            result = await db_session.execute(query)
-            await db_session.commit()
-            logger.debug(f"Successfully deleted {result.rowcount} {cls.__name__} records")
-        except Exception as e:
-            await db_session.rollback()
-            logger.exception(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}")
-            raise ValueError(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}: {e}")
+        for attempt in range(_DEADLOCK_MAX_RETRIES):
+            query = delete(cls)
+            query = query.where(cls.id.in_(identifiers))
+            query = cls.apply_access_predicate(query, actor, access, access_type)
+            try:
+                result = await db_session.execute(query)
+                await db_session.commit()
+                logger.debug(f"Successfully deleted {result.rowcount} {cls.__name__} records")
+                return
+            except Exception as e:
+                if _is_deadlock_error(e) and attempt < _DEADLOCK_MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Deadlock detected in {cls.__name__}.bulk_hard_delete_async "
+                        f"(attempt {attempt + 1}/{_DEADLOCK_MAX_RETRIES}), retrying..."
+                    )
+                    await db_session.rollback()
+                    await asyncio.sleep(_DEADLOCK_BASE_DELAY * (2**attempt))
+                    continue
+                await db_session.rollback()
+                logger.exception(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}")
+                raise ValueError(f"Failed to hard delete {cls.__name__} with identifiers {identifiers}: {e}")
 
     @handle_db_timeout
     async def update_async(
-        self, db_session: "AsyncSession", actor: Optional["User"] = None, no_commit: bool = False, no_refresh: bool = False
+        self,
+        db_session: "AsyncSession",
+        actor: Optional["User"] = None,
+        no_commit: bool = False,
+        no_refresh: bool = False,
     ) -> "SqlalchemyBase":
         """Async version of update function"""
         logger.debug(f"Updating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
@@ -660,30 +745,36 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             self._set_created_and_updated_by_fields(actor.id)
         self.set_updated_at()
 
-        # Capture id before try block to avoid accessing expired attributes after rollback
         object_id = self.id
         class_name = self.__class__.__name__
 
-        try:
-            db_session.add(self)
-            if no_commit:
-                await db_session.flush()
-            else:
-                await db_session.commit()
+        # Snapshot column values before commit so they survive rollback's expire-on-rollback behavior
+        _col_snapshot = {c.key: self.__dict__[c.key] for c in self.__class__.__table__.columns if c.key in self.__dict__}
 
-            if not no_refresh:
-                await db_session.refresh(self)
-            return self
-        except StaleDataError as e:
-            # This can occur when using optimistic locking (version_id_col) and:
-            # 1. The row doesn't exist (0 rows matched)
-            # 2. The version has changed (concurrent update)
-            # In practice, case 1 is rare (blocks aren't frequently deleted), so we always
-            # return 409 ConcurrentUpdateError. If it was actually deleted, the retry will get 404.
-            # Not worth performing another db query to check if the row exists.
-            raise ConcurrentUpdateError(resource_type=class_name, resource_id=object_id) from e
-        except (DBAPIError, IntegrityError) as e:
-            self._handle_dbapi_error(e)
+        for attempt in range(_DEADLOCK_MAX_RETRIES):
+            try:
+                db_session.add(self)
+                if no_commit:
+                    await db_session.flush()
+                else:
+                    await db_session.commit()
+
+                if not no_refresh:
+                    await db_session.refresh(self)
+                return self
+            except StaleDataError as e:
+                raise ConcurrentUpdateError(resource_type=class_name, resource_id=object_id) from e
+            except (DBAPIError, IntegrityError) as e:
+                if _is_deadlock_error(e) and attempt < _DEADLOCK_MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Deadlock detected in {class_name}.update_async (attempt {attempt + 1}/{_DEADLOCK_MAX_RETRIES}), retrying..."
+                    )
+                    await db_session.rollback()
+                    for key, value in _col_snapshot.items():
+                        setattr(self, key, value)
+                    await asyncio.sleep(_DEADLOCK_BASE_DELAY * (2**attempt))
+                    continue
+                self._handle_dbapi_error(e)
 
     @classmethod
     def _size_preprocess(
@@ -810,6 +901,18 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             logger.error(f"Query canceled (statement timeout) for {cls.__name__}: {e}")
             raise DatabaseTimeoutError(message=f"Query canceled due to statement timeout for {cls.__name__}.", original_exception=e) from e
 
+        if isinstance(orig, DeadlockDetectedError):
+            logger.error(f"Deadlock detected for {cls.__name__}: {e}")
+            raise DatabaseDeadlockError(message=f"A database deadlock was detected for {cls.__name__}.", original_exception=e) from e
+
+        # Handle asyncpg LockNotAvailableError (wrapped in DBAPIError)
+        # This occurs when a SELECT ... FOR UPDATE NOWAIT or similar fails to acquire a lock
+        if isinstance(orig, AsyncpgLockNotAvailableError):
+            logger.warning(f"Lock not available for {cls.__name__}: {e}")
+            raise DatabaseLockNotAvailableError(
+                message=f"Could not acquire lock for {cls.__name__}. Another operation is in progress.", original_exception=e
+            ) from e
+
         # Handle SQLite-specific errors
         if "UNIQUE constraint failed" in error_message:
             raise UniqueConstraintViolationError(
@@ -842,6 +945,18 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if error_code == "23503":
             raise ForeignKeyConstraintViolationError(
                 f"A foreign key constraint was violated for {cls.__name__}. Check your input for missing or invalid references: {e}"
+            ) from e
+
+        # Handle deadlock detected
+        if error_code == "40P01":
+            logger.error(f"Deadlock detected for {cls.__name__}: {e}")
+            raise DatabaseDeadlockError(message=f"A database deadlock was detected for {cls.__name__}.", original_exception=e) from e
+
+        # Handle lock not available (e.g. NOWAIT or lock_timeout exceeded)
+        if error_code == "55P03":
+            logger.warning(f"Lock not available for {cls.__name__}: {e}")
+            raise DatabaseLockNotAvailableError(
+                message=f"Could not acquire lock for {cls.__name__}. Another operation is in progress.", original_exception=e
             ) from e
 
         # Re-raise for other unhandled DBAPI errors

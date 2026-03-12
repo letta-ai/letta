@@ -79,4 +79,4 @@ async def summarize_all(
         logger.warning(f"Summary length {len(summary_message_str)} exceeds clip length {summarizer_config.clip_chars}. Truncating.")
         summary_message_str = summary_message_str[: summarizer_config.clip_chars] + "... [summary truncated to fit]"
 
-    return summary_message_str, [in_context_messages[0]] + protected_messages
+    return summary_message_str, [in_context_messages[0], *protected_messages]

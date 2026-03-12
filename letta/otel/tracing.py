@@ -4,7 +4,6 @@ import itertools
 import json
 import re
 import time
-import traceback
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
@@ -340,7 +339,7 @@ def trace_method(func):
                         try:
                             # Test if str() works (some objects have broken __str__)
                             try:
-                                test_str = str(value)
+                                str(value)
                                 # If str() works and is reasonable, use repr
                                 str_value = repr(value)
                             except Exception:

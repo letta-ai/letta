@@ -1,15 +1,21 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole, PrimitiveType
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
-from letta.schemas.group import Group, GroupCreate
+from letta.schemas.group import (
+    Group,
+    GroupCreate,
+    ManagerConfig,
+    ManagerType,
+    RoundRobinManager,
+)
 from letta.schemas.letta_message import ApprovalReturn
 from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message, MessageCreate, ToolReturn
@@ -129,6 +135,12 @@ class AgentSchema(CreateAgent):
     files_agents: List[FileAgentSchema] = Field(default_factory=list, description="List of file-agent relationships for this agent")
     group_ids: List[str] = Field(default_factory=list, description="List of groups that the agent manages")
 
+    tool_ids: Optional[List[str]] = Field(None, description="The ids of the tools used by the agent.")
+    source_ids: Optional[List[str]] = Field(None, description="The ids of the sources used by the agent.")
+    folder_ids: Optional[List[str]] = Field(None, description="The ids of the folders used by the agent.")
+    block_ids: Optional[List[str]] = Field(None, description="The ids of the blocks used by the agent.")
+    identity_ids: Optional[List[str]] = Field(None, description="The ids of the identities associated with this agent.")
+
     @classmethod
     async def from_agent_state(
         cls, agent_state: AgentState, message_manager: MessageManager, files_agents: List[FileAgent], actor: User
@@ -179,7 +191,14 @@ class AgentSchema(CreateAgent):
             per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
         )
 
-        messages = await message_manager.list_messages(agent_id=agent_state.id, actor=actor, limit=50)  # TODO: Expand to get more messages
+        # If agent_state.message_ids is set (e.g., from conversation export), fetch those specific messages
+        # Otherwise fall back to listing messages by agent_id
+        if agent_state.message_ids:
+            messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
+        else:
+            messages = await message_manager.list_messages(
+                agent_id=agent_state.id, actor=actor, limit=50
+            )  # TODO: Expand to get more messages
 
         # Convert messages to MessageSchema objects
         message_schemas = [MessageSchema.from_message(msg) for msg in messages]
@@ -195,11 +214,51 @@ class AgentSchema(CreateAgent):
         )
 
 
+# Agentfile-specific manager configs that use plain str instead of validated AgentId
+# These allow importing agentfiles with simple IDs like "agent-0"
+
+
+class SupervisorManagerSchema(ManagerConfig):
+    manager_type: Literal[ManagerType.supervisor] = Field(ManagerType.supervisor, description="")
+    manager_agent_id: str = Field(..., description="")
+
+
+class DynamicManagerSchema(ManagerConfig):
+    manager_type: Literal[ManagerType.dynamic] = Field(ManagerType.dynamic, description="")
+    manager_agent_id: str = Field(..., description="")
+    termination_token: Optional[str] = Field("DONE!", description="")
+    max_turns: Optional[int] = Field(None, description="")
+
+
+class SleeptimeManagerSchema(ManagerConfig):
+    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_agent_id: str = Field(..., description="")
+    sleeptime_agent_frequency: Optional[int] = Field(None, description="")
+
+
+class VoiceSleeptimeManagerSchema(ManagerConfig):
+    manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
+    manager_agent_id: str = Field(..., description="")
+    max_message_buffer_length: Optional[int] = Field(None, description="")
+    min_message_buffer_length: Optional[int] = Field(None, description="")
+
+
+ManagerConfigSchemaUnion = Annotated[
+    Union[RoundRobinManager, SupervisorManagerSchema, DynamicManagerSchema, SleeptimeManagerSchema, VoiceSleeptimeManagerSchema],
+    Field(discriminator="manager_type"),
+]
+
+
 class GroupSchema(GroupCreate):
     """Group with human-readable ID for agent file"""
 
     __id_prefix__ = PrimitiveType.GROUP.value
     id: str = Field(..., description="Human-readable identifier for this group in the file")
+
+    # Override validated ID fields from GroupCreate to accept simple IDs like "agent-0"
+    agent_ids: List[str] = Field(..., description="List of agent IDs in this group")
+    shared_block_ids: List[str] = Field([], description="List of shared block IDs")
+    manager_config: ManagerConfigSchemaUnion = Field(RoundRobinManager(), description="")
 
     @classmethod
     def from_group(cls, group: Group) -> "GroupSchema":
@@ -308,6 +367,37 @@ class ToolSchema(Tool):
         return cls(**tool.model_dump())
 
 
+class SkillSchema(BaseModel):
+    """Skill schema for agent files.
+
+    Skills are folders of instructions, scripts, and resources that agents can load.
+    Either files (with SKILL.md) or source_url must be provided:
+    - files with SKILL.md: inline skill content
+    - source_url: reference to resolve later (e.g., 'letta:slack')
+    - both: inline content with provenance tracking
+    """
+
+    name: str = Field(..., description="Skill name, also serves as unique identifier (e.g., 'slack', 'pdf')")
+    files: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Skill files as path -> content mapping. Must include 'SKILL.md' key if provided.",
+    )
+    source_url: Optional[str] = Field(
+        default=None,
+        description="Source URL for skill resolution (e.g., 'letta:slack', 'anthropic:pdf', 'owner/repo/path')",
+    )
+
+    @model_validator(mode="after")
+    def check_files_or_source_url(self) -> "SkillSchema":
+        """Ensure either files (with SKILL.md) or source_url is provided."""
+        has_files = self.files and "SKILL.md" in self.files
+        has_source_url = self.source_url is not None
+
+        if not has_files and not has_source_url:
+            raise ValueError("Either files (with 'SKILL.md') or source_url must be provided")
+        return self
+
+
 class MCPServerSchema(BaseModel):
     """MCP server schema for agent files with remapped ID."""
 
@@ -348,6 +438,7 @@ class AgentFileSchema(BaseModel):
     sources: List[SourceSchema] = Field(..., description="List of sources in this agent file")
     tools: List[ToolSchema] = Field(..., description="List of tools in this agent file")
     mcp_servers: List[MCPServerSchema] = Field(..., description="List of MCP servers in this agent file")
+    skills: List[SkillSchema] = Field(default_factory=list, description="List of skills in this agent file")
     metadata: Dict[str, str] = Field(
         default_factory=dict, description="Metadata for this agent file, including revision_id and other export information."
     )

@@ -14,7 +14,6 @@ from letta.schemas.tool import Tool as PydanticTool, ToolCreate
 from letta.schemas.user import User
 from letta.server.server import SyncServer
 from letta.services.organization_manager import OrganizationManager
-from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
 from letta.services.user_manager import UserManager

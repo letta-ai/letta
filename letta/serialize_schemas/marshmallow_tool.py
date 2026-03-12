@@ -34,4 +34,4 @@ class SerializedToolSchema(BaseSchema):
 
     class Meta(BaseSchema.Meta):
         model = Tool
-        exclude = BaseSchema.Meta.exclude + ("is_deleted", "organization")
+        exclude = (*BaseSchema.Meta.exclude, "is_deleted", "organization")

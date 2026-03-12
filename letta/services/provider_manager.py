@@ -3,7 +3,6 @@ from typing import List, Optional, Tuple, Union
 from sqlalchemy import and_, select
 
 from letta.log import get_logger
-from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -410,7 +409,7 @@ class ProviderManager:
             try:
                 provider_model = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
                 return provider_model.to_pydantic()
-            except:
+            except Exception:
                 # If not found, try to get as global provider (organization_id=NULL)
                 from sqlalchemy import select
 
@@ -675,7 +674,7 @@ class ProviderManager:
             for llm_config in llm_models:
                 logger.info(f"  Checking LLM model: {llm_config.handle} (name: {llm_config.model})")
 
-                # Check if model already exists (excluding soft-deleted ones)
+                # Check if model already exists by handle (excluding soft-deleted ones)
                 existing = await ProviderModelORM.list_async(
                     db_session=session,
                     limit=1,
@@ -686,6 +685,19 @@ class ProviderManager:
                         "model_type": "llm",  # Must check model_type since handle can be same for LLM and embedding
                     },
                 )
+
+                # Also check by name+provider_id (covers unique_model_per_provider_and_type constraint)
+                if not existing:
+                    existing = await ProviderModelORM.list_async(
+                        db_session=session,
+                        limit=1,
+                        check_is_deleted=True,
+                        **{
+                            "name": llm_config.model,
+                            "provider_id": provider.id,
+                            "model_type": "llm",
+                        },
+                    )
 
                 if not existing:
                     logger.info(f"    Creating new LLM model {llm_config.handle}")
@@ -710,19 +722,12 @@ class ProviderManager:
                         f"org_id={pydantic_model.organization_id}"
                     )
 
-                    # Convert to ORM
                     model = ProviderModelORM(**pydantic_model.model_dump(to_orm=True))
-                    try:
-                        await model.create_async(session)
-                        logger.info(f"    ✓ Successfully created LLM model {llm_config.handle} with ID {model.id}")
-                    except Exception as e:
-                        logger.info(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
-                        # Log the full error details
-                        import traceback
-
-                        logger.info(f"    Full traceback: {traceback.format_exc()}")
-                        # Roll back the session to clear the failed transaction
-                        await session.rollback()
+                    result = await model.create_async(session, ignore_conflicts=True)
+                    if result:
+                        logger.info(f"    ✓ Successfully created LLM model {llm_config.handle}")
+                    else:
+                        logger.info(f"    LLM model {llm_config.handle} already exists (concurrent insert), skipping")
                 else:
                     # Check if max_context_window or model_endpoint_type needs to be updated
                     existing_model = existing[0]
@@ -754,7 +759,7 @@ class ProviderManager:
             for embedding_config in embedding_models:
                 logger.info(f"  Checking embedding model: {embedding_config.handle} (name: {embedding_config.embedding_model})")
 
-                # Check if model already exists (excluding soft-deleted ones)
+                # Check if model already exists by handle (excluding soft-deleted ones)
                 existing = await ProviderModelORM.list_async(
                     db_session=session,
                     limit=1,
@@ -765,6 +770,19 @@ class ProviderManager:
                         "model_type": "embedding",  # Must check model_type since handle can be same for LLM and embedding
                     },
                 )
+
+                # Also check by name+provider_id (covers unique_model_per_provider_and_type constraint)
+                if not existing:
+                    existing = await ProviderModelORM.list_async(
+                        db_session=session,
+                        limit=1,
+                        check_is_deleted=True,
+                        **{
+                            "name": embedding_config.embedding_model,
+                            "provider_id": provider.id,
+                            "model_type": "embedding",
+                        },
+                    )
 
                 if not existing:
                     logger.info(f"    Creating new embedding model {embedding_config.handle}")
@@ -787,19 +805,12 @@ class ProviderManager:
                         f"org_id={pydantic_model.organization_id}"
                     )
 
-                    # Convert to ORM
                     model = ProviderModelORM(**pydantic_model.model_dump(to_orm=True))
-                    try:
-                        await model.create_async(session)
-                        logger.info(f"    ✓ Successfully created embedding model {embedding_config.handle} with ID {model.id}")
-                    except Exception as e:
-                        logger.error(f"    ✗ Failed to create embedding model {embedding_config.handle}: {e}")
-                        # Log the full error details
-                        import traceback
-
-                        logger.error(f"    Full traceback: {traceback.format_exc()}")
-                        # Roll back the session to clear the failed transaction
-                        await session.rollback()
+                    result = await model.create_async(session, ignore_conflicts=True)
+                    if result:
+                        logger.info(f"    ✓ Successfully created embedding model {embedding_config.handle}")
+                    else:
+                        logger.info(f"    Embedding model {embedding_config.handle} already exists (concurrent insert), skipping")
                 else:
                     # Check if model_endpoint_type needs to be updated
                     existing_model = existing[0]
@@ -979,10 +990,13 @@ class ProviderManager:
         # Get the default max_output_tokens from the provider (provider-specific logic)
         max_tokens = typed_provider.get_default_max_output_tokens(model.name)
 
-        # Determine the model endpoint - use provider's base_url if set,
-        # otherwise use provider-specific defaults
+        # Determine the model endpoint - use provider's OpenAI-compatible base_url if available,
+        # otherwise fall back to raw base_url or provider-specific defaults
 
-        if typed_provider.base_url:
+        if hasattr(typed_provider, "openai_compat_base_url"):
+            # For providers like ollama/vllm/lmstudio that need /v1 appended for OpenAI compatibility
+            model_endpoint = typed_provider.openai_compat_base_url
+        elif typed_provider.base_url:
             model_endpoint = typed_provider.base_url
         elif provider.provider_type == ProviderType.chatgpt_oauth:
             # ChatGPT OAuth uses the ChatGPT backend API, not a generic endpoint pattern
@@ -1034,7 +1048,7 @@ class ProviderManager:
             # Model not in DB - check if it's from a BYOK provider
             # Handle format is "provider_name/model_name"
             if "/" in handle:
-                provider_name, model_name = handle.split("/", 1)
+                provider_name, _model_name = handle.split("/", 1)
                 byok_providers = await self.list_providers_async(
                     actor=actor,
                     name=provider_name,

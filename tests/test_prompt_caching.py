@@ -221,12 +221,12 @@ CACHING_TEST_CONFIGS = [
     # The docs say "Implicit caching is enabled by default for all Gemini 2.5 models"
     # This suggests 3 Pro Preview may require explicit caching instead
     pytest.param(
-        "google_ai/gemini-3-pro-preview",
+        "google_ai/gemini-3.1-pro-preview",
         {},
         2048,  # Min tokens for 3 Pro Preview
         "cached_tokens",  # Field name (normalized from cached_content_token_count)
         None,  # No separate write field
-        id="gemini-3-pro-preview-implicit",
+        id="gemini-3.1-pro-preview-implicit",
         marks=pytest.mark.xfail(reason="Gemini 3 Pro Preview doesn't have implicit caching (only 2.5 models do)"),
     ),
 ]
@@ -542,7 +542,7 @@ async def test_prompt_caching_cache_invalidation_on_memory_update(
 
     try:
         # Message 1: Establish cache
-        response1 = await async_client.agents.messages.create(
+        await async_client.agents.messages.create(
             agent_id=agent.id,
             messages=[MessageCreateParam(role="user", content="Hello!")],
         )
@@ -682,7 +682,7 @@ async def test_anthropic_system_prompt_stability(async_client: AsyncLetta):
             logger.info(diff_output[:2000])  # Truncate if too long
             logger.info("=" * 80)
 
-            if "Memory blocks were last modified" in diff_output:
+            if "System prompt last recompiled" in diff_output:
                 logger.error("⚠️  TIMESTAMP IS CHANGING IN ACTUAL REQUESTS!")
                 logger.error("   → This is the root cause of cache misses")
 
@@ -702,8 +702,6 @@ async def test_anthropic_inspect_raw_request(async_client: AsyncLetta):
     agent = await create_agent_with_large_memory(async_client, model, {}, "anthropic-debug")
 
     try:
-        import json
-
         # Message 1
         response1 = await async_client.agents.messages.create(
             agent_id=agent.id,
@@ -926,7 +924,7 @@ async def test_gemini_3_pro_preview_implicit_caching(async_client: AsyncLetta):
     Since implicit caching is stochastic (depends on routing, timing, etc.), we send
     multiple messages in quick succession and check if ANY of them hit the cache.
     """
-    model = "google_ai/gemini-3-pro-preview"
+    model = "google_ai/gemini-3.1-pro-preview"
     agent = await create_agent_with_large_memory(async_client, model, {}, "gemini-3-pro")
 
     try:
@@ -1054,7 +1052,7 @@ async def test_gemini_request_prefix_stability(async_client: AsyncLetta):
                 lineterm="",
             )
             diff_output = "\n".join(diff)
-            if "Memory blocks were last modified" in diff_output or "timestamp" in diff_output.lower():
+            if "System prompt last recompiled" in diff_output or "timestamp" in diff_output.lower():
                 logger.error("⚠️  TIMESTAMP IN SYSTEM INSTRUCTION IS CHANGING!")
                 logger.error("   → This breaks Gemini implicit caching (prefix must match)")
         else:

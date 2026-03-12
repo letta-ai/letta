@@ -8,7 +8,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.prompts.gpt_system import get_system_text
 from letta.schemas.block import Block, BlockUpdate
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import LLMCallType, MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
@@ -79,7 +79,7 @@ class EphemeralSummaryAgent(BaseAgent):
             content=[TextContent(text=get_system_text("summary_system_prompt"))],
         )
         messages = await convert_message_creates_to_messages(
-            message_creates=[system_message_create] + input_messages,
+            message_creates=[system_message_create, *input_messages],
             agent_id=self.agent_id,
             timezone=agent_state.timezone,
             run_id=None,  # TODO: add this
@@ -92,7 +92,7 @@ class EphemeralSummaryAgent(BaseAgent):
             telemetry_manager=TelemetryManager(),
             agent_id=self.agent_id,
             agent_tags=agent_state.tags,
-            call_type="summarization",
+            call_type=LLMCallType.summarization,
         )
         response_data = await llm_client.request_async_with_telemetry(request_data, agent_state.llm_config)
         response = await llm_client.convert_response_to_chat_completion(response_data, messages, agent_state.llm_config)

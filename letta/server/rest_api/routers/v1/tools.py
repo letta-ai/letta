@@ -1,20 +1,20 @@
+import asyncio
 import json
+import traceback
 from collections.abc import AsyncGenerator
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from httpx import ConnectError, HTTPStatusError
+from mcp.shared.exceptions import McpError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
-from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE, MAX_TOOL_NAME_LENGTH
+from letta.constants import DEFAULT_GENERATE_TOOL_MODEL_HANDLE
 from letta.errors import (
     LettaInvalidArgumentError,
-    LettaInvalidMCPSchemaError,
     LettaMCPConnectionError,
     LettaMCPTimeoutError,
-    LettaToolCreateError,
-    LettaToolNameConflictError,
     LLMError,
 )
 from letta.functions.functions import derive_openai_json_schema
@@ -23,25 +23,22 @@ from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServ
 from letta.helpers.decorators import deprecated
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
-from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.prompts.gpt_system import get_system_text
-from letta.schemas.enums import AgentType, MessageRole, ToolType
+from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ToolType
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
 from letta.schemas.message import Message
 from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.tool import BaseTool, Tool, ToolCreate, ToolRunFromSource, ToolSearchRequest, ToolSearchResult, ToolUpdate
+from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolSearchRequest, ToolSearchResult, ToolUpdate
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
 from letta.server.server import SyncServer
 from letta.services.mcp.oauth_utils import MCPOAuthSession, drill_down_exception, oauth_stream_event
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.types import OauthStreamEvent
-from letta.services.summarizer.summarizer import traceback
 from letta.settings import tool_settings
-from letta.utils import asyncio
 from letta.validators import ToolId
 
 router = APIRouter(prefix="/tools", tags=["tools"])
@@ -641,7 +638,9 @@ async def test_mcp_server(
         tools = await client.list_tools()
 
         return {"status": "success", "tools": tools}
-    except ConnectionError as e:
+    except (ConnectionError, LettaMCPConnectionError) as e:
+        if isinstance(e, LettaMCPConnectionError):
+            raise
         raise LettaMCPConnectionError(str(e), server_name=request.server_name)
     except MCPTimeoutError as e:
         raise LettaMCPTimeoutError(f"MCP server connection timed out: {str(e)}", server_name=request.server_name)
@@ -703,8 +702,7 @@ async def connect_mcp_server(
                 tools = await client.list_tools(serialize=True)
                 yield oauth_stream_event(OauthStreamEvent.SUCCESS, tools=tools)
                 return
-            except ConnectionError as e:
-                # Only trigger OAuth flow on explicit unauthorized failures
+            except (ConnectionError, LettaMCPConnectionError) as e:
                 unauthorized = False
                 if isinstance(e.__cause__, HTTPStatusError):
                     unauthorized = e.__cause__.response.status_code == 401
@@ -740,6 +738,13 @@ async def connect_mcp_server(
                 async for event in server.mcp_manager.handle_oauth_flow(request=request, actor=actor, http_request=http_request):
                     yield event
             return
+        except ExceptionGroup as eg:
+            # Handle ExceptionGroup wrapping (Python 3.11+ async TaskGroup can wrap exceptions)
+            # Unwrap and handle the first exception in the group
+            exception_to_handle = eg.exceptions[0] if eg.exceptions else eg
+            detailed_error = drill_down_exception(exception_to_handle)
+            logger.error(f"Error in OAuth stream (ExceptionGroup):\n{detailed_error}")
+            yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"Internal error: {detailed_error}")
         except Exception as e:
             detailed_error = drill_down_exception(e)
             logger.error(f"Error in OAuth stream:\n{detailed_error}")
@@ -819,7 +824,23 @@ async def execute_mcp_tool(
         await client.connect_to_server()
 
         # Execute the tool
-        result, success = await client.execute_tool(tool_name, request.args)
+        try:
+            result, success = await client.execute_tool(tool_name, request.args)
+        except Exception as e:
+            # Handle ExceptionGroup wrapping (Python 3.11+ async TaskGroup can wrap exceptions)
+            exception_to_check = e
+            if hasattr(e, "exceptions") and e.exceptions:
+                if len(e.exceptions) == 1:
+                    exception_to_check = e.exceptions[0]
+
+            # Check by class name to handle both fastmcp.exceptions.ToolError and potential module variations
+            if exception_to_check.__class__.__name__ == "ToolError":
+                raise LettaInvalidArgumentError(
+                    f"Invalid arguments for MCP tool '{tool_name}': {str(exception_to_check)}", argument_name="args"
+                )
+            elif isinstance(exception_to_check, McpError):
+                raise LettaMCPConnectionError(f"MCP tool execution failed: {str(exception_to_check)}", server_name=tool_name)
+            raise
 
         return {
             "result": result,
@@ -956,7 +977,7 @@ async def generate_tool_from_prompt(
 
     llm_client.set_telemetry_context(
         telemetry_manager=TelemetryManager(),
-        call_type="tool_generation",
+        call_type=LLMCallType.tool_generation,
     )
     response_data = await llm_client.request_async_with_telemetry(request_data, llm_config)
     response = await llm_client.convert_response_to_chat_completion(response_data, input_messages, llm_config)

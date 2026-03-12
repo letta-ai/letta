@@ -1,6 +1,9 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from letta.orm.sqlalchemy_base import SqlalchemyBase
 
 from openai import AsyncOpenAI
 from sqlalchemy import func, select
@@ -23,7 +26,6 @@ from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
-from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -351,7 +353,7 @@ class PassageManager:
             return passage.to_pydantic()
 
     @trace_method
-    def _preprocess_passage_for_creation(self, pydantic_passage: PydanticPassage) -> "SqlAlchemyBase":
+    def _preprocess_passage_for_creation(self, pydantic_passage: PydanticPassage) -> "SqlalchemyBase":
         data = pydantic_passage.model_dump(to_orm=True)
         common_fields = {
             "id": data.get("id"),
@@ -365,13 +367,13 @@ class PassageManager:
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
 
-        if "archive_id" in data and data["archive_id"]:
+        if data.get("archive_id"):
             assert not data.get("source_id"), "Passage cannot have both archive_id and source_id"
             agent_fields = {
                 "archive_id": data["archive_id"],
             }
             passage = ArchivalPassage(**common_fields, **agent_fields)
-        elif "source_id" in data and data["source_id"]:
+        elif data.get("source_id"):
             assert not data.get("archive_id"), "Passage cannot have both archive_id and source_id"
             source_fields = {
                 "source_id": data["source_id"],
@@ -496,7 +498,6 @@ class PassageManager:
     @trace_method
     def create_many_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """DEPRECATED: Use create_many_agent_passages() or create_many_source_passages() instead."""
-        import warnings
 
         logger.warning(
             "create_many_passages is deprecated. Use create_many_agent_passages() or create_many_source_passages() instead.",
@@ -508,7 +509,6 @@ class PassageManager:
     @trace_method
     async def create_many_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """DEPRECATED: Use create_many_agent_passages_async() or create_many_source_passages_async() instead."""
-        import warnings
 
         logger.warning(
             "create_many_passages_async is deprecated. Use create_many_agent_passages_async() or create_many_source_passages_async() instead.",
@@ -696,7 +696,7 @@ class PassageManager:
                 setattr(curr_passage, "tags", new_tags)
 
             # Pad embeddings if needed (only when using Postgres as vector DB)
-            if "embedding" in update_data and update_data["embedding"]:
+            if update_data.get("embedding"):
                 import numpy as np
 
                 from letta.helpers.tpuf_client import should_use_tpuf
@@ -741,7 +741,7 @@ class PassageManager:
             update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # Pad embeddings if needed (only when using Postgres as vector DB)
-            if "embedding" in update_data and update_data["embedding"]:
+            if update_data.get("embedding"):
                 import numpy as np
 
                 from letta.helpers.tpuf_client import should_use_tpuf
@@ -814,7 +814,6 @@ class PassageManager:
     @trace_method
     async def delete_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> bool:
         """DEPRECATED: Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead."""
-        import warnings
 
         logger.warning(
             "delete_passage_by_id_async is deprecated. Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead.",
@@ -927,7 +926,6 @@ class PassageManager:
         passages: List[PydanticPassage],
     ) -> bool:
         """DEPRECATED: Use delete_agent_passages() or delete_source_passages() instead."""
-        import warnings
 
         logger.warning(
             "delete_passages is deprecated. Use delete_agent_passages() or delete_source_passages() instead.",
@@ -948,7 +946,6 @@ class PassageManager:
         agent_id: Optional[str] = None,
     ) -> int:
         """DEPRECATED: Use agent_passage_size() instead (this only counted agent passages anyway)."""
-        import warnings
 
         logger.warning("size is deprecated. Use agent_passage_size() instead.", stacklevel=2)
         return self.agent_passage_size(actor=actor, agent_id=agent_id)

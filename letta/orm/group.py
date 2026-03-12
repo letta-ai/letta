@@ -1,5 +1,10 @@
 import uuid
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+if TYPE_CHECKING:
+    from letta.orm.agent import Agent
+    from letta.orm.block import Block
+    from letta.orm.organization import Organization
 
 from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship

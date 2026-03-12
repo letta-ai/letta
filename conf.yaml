@@ -1,0 +1,413 @@
+# Letta Configuration File
+# Place at ~/.letta/conf.yaml, ./conf.yaml, or set LETTA_CONFIG_PATH
+# Environment variables take precedence over config file values
+#
+# Top-level keys and their env var mappings:
+#   letta:   -> LETTA_*
+#   model:   -> Provider-prefixed (OPENAI_*, ANTHROPIC_*, etc.)
+#   tool:    -> Prefix-based (E2B_*, MCP_*, TOOL_*, etc.)
+#   datadog: -> DD_*
+
+letta:
+  # =============================================================================
+  # Core Settings (LETTA_*)
+  # =============================================================================
+  debug: false
+  # environment: ""
+
+  # Default handles
+  # default_llm_handle: ""
+  # default_embedding_handle: ""
+
+  # SSE Streaming
+  enable_keepalive: true
+  keepalive_interval: 50.0
+  enable_cancellation_aware_streaming: true
+
+  # =============================================================================
+  # PostgreSQL (LETTA_PG_*)
+  # =============================================================================
+  pg:
+    # db: ""
+    # user: ""
+    # password: ""
+    # host: ""
+    # port: ""
+    # uri: ""
+    pool_size: 25
+    max_overflow: 10
+    pool_timeout: 30
+    pool_recycle: 1800
+    echo: false
+
+  # Connection pool settings (LETTA_POOL_*)
+  pool:
+    pre_ping: true
+    use_lifo: true
+
+  # Database settings (LETTA_DB_*)
+  # db:
+  #   max_concurrent_sessions: ""
+
+  disable_sqlalchemy_pooling: true
+  enable_db_pool_monitoring: true
+  db_pool_monitoring_interval: 30
+
+  # =============================================================================
+  # Redis (LETTA_REDIS_*)
+  # =============================================================================
+  redis:
+    # host: ""
+    port: 6379
+
+  # =============================================================================
+  # Multi-Agent (LETTA_MULTI_AGENT_*)
+  # =============================================================================
+  multi_agent:
+    send_message_max_retries: 3
+    send_message_timeout: 1200
+    concurrent_sends: 50
+
+  # =============================================================================
+  # OTEL / Observability (LETTA_OTEL_*, LETTA_CLICKHOUSE_*)
+  # =============================================================================
+  otel:
+    # exporter_otlp_endpoint: ""
+    preferred_temporality: 1
+
+  clickhouse:
+    # endpoint: ""
+    database: otel
+    username: default
+    # password: ""
+
+  disable_tracing: false
+  llm_api_logging: true
+  track_last_agent_run: false
+  track_errored_messages: true
+  track_stop_reason: true
+  track_agent_run: true
+  track_provider_trace: true
+
+  # =============================================================================
+  # Uvicorn (LETTA_UVICORN_*)
+  # =============================================================================
+  uvicorn:
+    workers: 1
+    reload: false
+    timeout_keep_alive: 5
+
+  # Runtime settings
+  use_uvloop: false
+  use_granian: false
+  sqlalchemy_tracing: false
+  event_loop_threadpool_max_workers: 43
+
+  # =============================================================================
+  # Experimental
+  # =============================================================================
+  use_vertex_structured_outputs_experimental: false
+  use_asyncio_shield: true
+
+  # =============================================================================
+  # Lettuce (LETTA_USE_LETTUCE_*)
+  # =============================================================================
+  use_lettuce_for_file_uploads: false
+
+  # =============================================================================
+  # Batch Job Polling (LETTA_POLL_*, LETTA_BATCH_*)
+  # =============================================================================
+  enable_batch_job_polling: false
+  poll_running_llm_batches_interval_seconds: 300
+  poll_lock_retry_interval_seconds: 480
+  batch_job_polling_lookback_weeks: 2
+  # batch_job_polling_batch_size: ""
+
+  # =============================================================================
+  # LLM Timeouts (LETTA_LLM_*)
+  # =============================================================================
+  llm:
+    request_timeout_seconds: 60.0
+    stream_timeout_seconds: 600.0
+
+  # =============================================================================
+  # Pinecone (LETTA_PINECONE_*, LETTA_ENABLE_PINECONE, LETTA_UPSERT_PINECONE_INDICES)
+  # =============================================================================
+  enable_pinecone: false
+  upsert_pinecone_indices: false
+  pinecone:
+    # api_key: ""
+    source_index: sources
+    agent_index: recall
+
+  # =============================================================================
+  # Turbopuffer (LETTA_TPUF_*, LETTA_USE_TPUF, LETTA_EMBED_*)
+  # =============================================================================
+  use_tpuf: false
+  embed_all_messages: false
+  embed_tools: false
+  tpuf:
+    # api_key: ""
+    region: gcp-us-central1
+
+  # =============================================================================
+  # File Processing (LETTA_FILE_PROCESSING_*)
+  # =============================================================================
+  file_processing:
+    timeout_minutes: 30
+    timeout_error_message: "File processing timed out after {} minutes. Please try again."
+
+  # =============================================================================
+  # Letta Client (LETTA_DEFAULT_*)
+  # =============================================================================
+  default_base_url: http://localhost:8283
+  # default_token: ""
+
+  # =============================================================================
+  # Agent Architecture
+  # =============================================================================
+  use_letta_v1_agent: false
+  archival_memory_token_limit: 8192
+
+  # =============================================================================
+  # Security
+  # =============================================================================
+  no_default_actor: false
+  # encryption_key: ""
+
+  # =============================================================================
+  # OCR
+  # =============================================================================
+  # mistral_api_key: ""
+
+  # =============================================================================
+  # Summarizer (LETTA_SUMMARIZER_*)
+  # =============================================================================
+  summarizer:
+    mode: partial_evict_message_buffer_mode
+    message_buffer_limit: 60
+    message_buffer_min: 15
+    enable_summarization: true
+    max_summarization_retries: 3
+    partial_evict_summarizer_percentage: 0.30
+    evict_all_messages: false
+    max_summarizer_retries: 3
+    memory_warning_threshold: 0.75
+    send_memory_warning_message: false
+    desired_memory_token_pressure: 0.3
+    keep_last_n_messages: 0
+
+  # =============================================================================
+  # Logging (LETTA_LOGGING_*)
+  # =============================================================================
+  logging:
+    debug: false
+    json_logging: false
+    log_level: WARNING
+    verbose_telemetry_logging: false
+
+  # =============================================================================
+  # Telemetry (LETTA_TELEMETRY_*)
+  # =============================================================================
+  telemetry:
+    enable_datadog: false
+    provider_trace_backend: postgres
+    socket_path: /var/run/telemetry/telemetry.sock
+    provider_trace_pg_metadata_only: false
+    # source: ""
+
+    # Datadog settings (LETTA_TELEMETRY_DATADOG_*)
+    datadog:
+      agent_host: localhost
+      agent_port: 8126
+      service_name: letta-server
+      profiling_enabled: false
+      profiling_memory_enabled: false
+      profiling_heap_enabled: false
+      # git_repository_url: ""
+      # git_commit_sha: ""
+      main_package: letta
+
+# =============================================================================
+# Model Settings (-> OPENAI_*, ANTHROPIC_*, AWS_*, etc.)
+# =============================================================================
+model:
+  # Global settings
+  global_max_context_window_limit: 32000
+  inner_thoughts_kwarg: thinking
+  default_prompt_formatter: chatml
+
+  # OpenAI (-> OPENAI_*)
+  openai:
+    # api_key: ""
+    api_base: https://api.openai.com/v1
+
+  # Anthropic (-> ANTHROPIC_*)
+  anthropic:
+    # api_key: ""
+    max_retries: 3
+    sonnet_1m: false
+
+  # Azure OpenAI (-> AZURE_*)
+  azure:
+    # api_key: ""
+    # base_url: ""
+    api_version: "2024-09-01-preview"
+
+  # Google Gemini (-> GEMINI_*)
+  gemini:
+    # api_key: ""
+    base_url: https://generativelanguage.googleapis.com/
+    force_minimum_thinking_budget: false
+    max_retries: 5
+    timeout_seconds: 600.0
+
+  # Google Vertex (-> GOOGLE_CLOUD_*)
+  # google_cloud:
+  #   project: ""
+  #   location: ""
+
+  # AWS Bedrock (-> AWS_*, BEDROCK_*)
+  aws:
+    # access_key_id: ""
+    # secret_access_key: ""
+    default_region: us-east-1
+
+  bedrock:
+    anthropic_version: bedrock-2023-05-31
+
+  # OpenRouter (-> OPENROUTER_*)
+  # openrouter:
+  #   api_key: ""
+  #   referer: ""
+  #   title: ""
+  #   handle_base: ""
+
+  # Groq (-> GROQ_*)
+  # groq:
+  #   api_key: ""
+
+  # Together (-> TOGETHER_*)
+  # together:
+  #   api_key: ""
+
+  # DeepSeek (-> DEEPSEEK_*)
+  # deepseek:
+  #   api_key: ""
+
+  # xAI/Grok (-> XAI_*)
+  # xai:
+  #   api_key: ""
+
+  # Z.ai/ZhipuAI (-> ZAI_*)
+  zai:
+    # api_key: ""
+    base_url: https://api.z.ai/api/paas/v4/
+
+  # MiniMax (-> MINIMAX_*)
+  # minimax:
+  #   api_key: ""
+
+  # Ollama (-> OLLAMA_*)
+  # ollama:
+  #   base_url: ""
+
+  # vLLM (-> VLLM_*)
+  # vllm:
+  #   api_base: ""
+  #   handle_base: ""
+
+  # SGLang (-> SGLANG_*)
+  # sglang:
+  #   api_base: ""
+  #   handle_base: ""
+
+  # LM Studio (-> LMSTUDIO_*)
+  # lmstudio:
+  #   base_url: ""
+
+  # OpenLLM (-> OPENLLM_*)
+  # openllm:
+  #   auth_type: ""
+  #   api_key: ""
+
+# =============================================================================
+# Tool Settings (-> E2B_*, MCP_*, MODAL_*, TOOL_*, etc.)
+# =============================================================================
+tool:
+  # E2B Sandbox (-> E2B_*)
+  # e2b:
+  #   api_key: ""
+  #   sandbox_template_id: ""
+
+  # Modal Sandbox (-> MODAL_*)
+  # modal:
+  #   token_id: ""
+  #   token_secret: ""
+
+  # Search Providers (-> TAVILY_*, EXA_*)
+  # tavily:
+  #   api_key: ""
+
+  # exa:
+  #   api_key: ""
+
+  # Local Sandbox (-> TOOL_*)
+  tool:
+    # exec_dir: ""
+    sandbox_timeout: 180
+    # exec_venv_name: ""
+    exec_autoreload_venv: true
+
+  # MCP (-> MCP_*)
+  mcp:
+    connect_to_server_timeout: 30.0
+    list_tools_timeout: 30.0
+    execute_tool_timeout: 60.0
+    read_from_config: false
+    disable_stdio: true
+
+# =============================================================================
+# Datadog Agent Settings (-> DD_*)
+# =============================================================================
+# datadog:
+#   site: ""
+#   service: ""
+#   version: ""
+#
+#   trace:
+#     enabled: false
+#     agent_url: ""
+#     health_metrics_enabled: false
+#
+#   dogstatsd:
+#     url: ""
+#
+#   logs:
+#     injection: false
+#
+#   runtime:
+#     metrics_enabled: false
+#
+#   appsec:
+#     enabled: false
+#     sca_enabled: false
+#
+#   iast:
+#     enabled: false
+#
+#   exception:
+#     replay_enabled: false
+#
+#   llmobs:
+#     enabled: false
+#     ml_app: ""
+#
+#   instrumentation:
+#     install_type: ""
+#
+#   git:
+#     repository_url: ""
+#     commit_sha: ""
+#
+#   main_package: ""

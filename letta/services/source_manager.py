@@ -1,4 +1,3 @@
-import asyncio
 from typing import List, Optional, Union
 
 from sqlalchemy import and_, exists, select

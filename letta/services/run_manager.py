@@ -1,26 +1,21 @@
 from datetime import datetime
-from multiprocessing import Value
-from pickletools import pyunicode
 from typing import List, Literal, Optional
 
 from httpx import AsyncClient
 
 from letta.data_sources.redis_client import get_redis_client
-from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.log_context import update_log_context
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
-from letta.orm.message import Message as MessageModel
 from letta.orm.run import Run as RunModel
 from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, PrimitiveType, RunStatus
 from letta.schemas.job import LettaRequestConfig
-from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message as PydanticMessage
@@ -162,7 +157,7 @@ class RunManager:
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
-            from sqlalchemy import func, or_, select
+            from sqlalchemy import func, select
 
             # Always join with run_metrics to get duration data
             query = (
@@ -643,7 +638,13 @@ class RunManager:
                 raise NoResultFound(f"Run with id {run_id} not found")
             agent_id = run.agent_id
 
-        logger.debug(f"Cancelling run {run_id} for agent {agent_id}")
+        logger.info(
+            "[Interrupt] Processing cancellation for run=%s, agent=%s, current_status=%s, current_stop_reason=%s",
+            run_id,
+            agent_id,
+            run.status if run else "unknown",
+            run.stop_reason if run else "unknown",
+        )
 
         # Cancellation should be idempotent: if a run is already terminated, treat this as a no-op.
         # This commonly happens when a run finishes between client request and server handling.
@@ -744,7 +745,7 @@ class RunManager:
                 )
 
                 # Combine approval response and tool messages
-                new_messages = approval_response_messages + [tool_message]
+                new_messages = [*approval_response_messages, tool_message]
 
                 # Checkpoint the new messages
                 from letta.agents.agent_loop import AgentLoop

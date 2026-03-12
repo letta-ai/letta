@@ -6,6 +6,7 @@ from letta.server.rest_api.routers.v1.chat_completions import router as chat_com
 from letta.server.rest_api.routers.v1.conversations import router as conversations_router
 from letta.server.rest_api.routers.v1.embeddings import router as embeddings_router
 from letta.server.rest_api.routers.v1.folders import router as folders_router
+from letta.server.rest_api.routers.v1.git_http import router as git_http_router
 from letta.server.rest_api.routers.v1.groups import router as groups_router
 from letta.server.rest_api.routers.v1.health import router as health_router
 from letta.server.rest_api.routers.v1.identities import router as identities_router
@@ -39,6 +40,7 @@ ROUTERS = [
     agents_router,
     conversations_router,
     chat_completions_router,
+    git_http_router,
     groups_router,
     identities_router,
     internal_agents_router,

@@ -146,7 +146,9 @@ class LlamaIndexChunker:
                 raise e  # Raise the original error
 
     @trace_method
-    def default_chunk_text(self, content: Union[OCRPageObject, str], chunk_size: int = None, chunk_overlap: int = None) -> List[str]:
+    def default_chunk_text(
+        self, content: Union[OCRPageObject, str], chunk_size: int | None = None, chunk_overlap: int | None = None
+    ) -> List[str]:
         """Chunk text using default SentenceSplitter regardless of file type with conservative defaults"""
         try:
             from llama_index.core.node_parser import SentenceSplitter

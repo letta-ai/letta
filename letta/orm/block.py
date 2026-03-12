@@ -1,18 +1,19 @@
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type
 
 from sqlalchemy import JSON, BigInteger, ForeignKey, Index, Integer, String, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
 from letta.orm.block_history import BlockHistory
-from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.block import Block as PydanticBlock, Human, Persona
 
 if TYPE_CHECKING:
     from letta.orm import Organization
+    from letta.orm.agent import Agent
     from letta.orm.blocks_tags import BlocksTags
+    from letta.orm.group import Group
     from letta.orm.identity import Identity
 
 
@@ -57,7 +58,7 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
     )
     # NOTE: This takes advantage of built-in optimistic locking functionality by SqlAlchemy
     # https://docs.sqlalchemy.org/en/20/orm/versioning.html
-    __mapper_args__ = {"version_id_col": version}
+    __mapper_args__: ClassVar[dict] = {"version_id_col": version}
 
     # relationships
     organization: Mapped[Optional["Organization"]] = relationship("Organization", lazy="raise")
@@ -92,9 +93,9 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
 
     def to_pydantic(self) -> Type:
         match self.label:
-            case "human":
+            case "human" | "system/human":
                 Schema = Human
-            case "persona":
+            case "persona" | "system/persona":
                 Schema = Persona
             case _:
                 Schema = PydanticBlock

@@ -2,11 +2,14 @@ from collections import defaultdict
 from typing import ClassVar, Literal
 
 import httpx
-from openai import AsyncAzureOpenAI
+from openai import AsyncAzureOpenAI, AuthenticationError, PermissionDeniedError
 from pydantic import Field, field_validator
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
-from letta.errors import ErrorCode, LLMAuthenticationError
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMPermissionDeniedError
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
@@ -43,6 +46,12 @@ class AzureProvider(Provider):
     def replace_none_with_default(cls, v):
         return v if v is not None else cls.LATEST_API_VERSION
 
+    @staticmethod
+    def _is_v1_endpoint(base_url: str) -> bool:
+        if not base_url:
+            return False
+        return base_url.rstrip("/").endswith("/openai/v1")
+
     def get_azure_chat_completions_endpoint(self, model: str):
         return f"{self.base_url}/openai/deployments/{model}/chat/completions?api-version={self.api_version}"
 
@@ -57,14 +66,61 @@ class AzureProvider(Provider):
         # That's the only api version that works with this deployments endpoint
         return f"{self.base_url}/openai/deployments?api-version=2023-03-15-preview"
 
+    def _get_resource_base_url(self) -> str:
+        """Derive the Azure resource base URL (e.g. https://project.openai.azure.com) from any endpoint format."""
+        url = self.base_url.rstrip("/")
+        if url.endswith("/openai/v1"):
+            return url[: -len("/openai/v1")]
+        return url
+
+    async def _get_deployments(self, api_key: str | None) -> list[dict]:
+        """Fetch deployments using the legacy 2023-03-15-preview endpoint.
+
+        Works for both v1 and legacy endpoints since it hits the resource base URL.
+        Returns the raw deployment dicts (each has 'id' = deployment name).
+        """
+        resource_base = self._get_resource_base_url()
+        url = f"{resource_base}/openai/deployments?api-version=2023-03-15-preview"
+
+        headers = {"Content-Type": "application/json"}
+        if api_key is not None:
+            headers["api-key"] = f"{api_key}"
+
+        try:
+            timeout = httpx.Timeout(15.0, connect=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as http_client:
+                response = await http_client.get(url, headers=headers)
+                response.raise_for_status()
+        except httpx.TimeoutException as e:
+            raise RuntimeError(f"Azure API timeout after 15s: {e}")
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError(f"Failed to retrieve deployment list: {e}")
+
+        return response.json().get("data", [])
+
     async def azure_openai_get_deployed_model_list(self) -> list:
         """https://learn.microsoft.com/en-us/rest/api/azureopenai/models/list?view=rest-azureopenai-2023-05-15&tabs=HTTP"""
 
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
+
+        if self._is_v1_endpoint(self.base_url):
+            # The v1 /models endpoint returns base model names (e.g. "gpt-5.2-chat-2025-12-11")
+            # but inference calls require deployment names (e.g. "gpt-5.2-chat").
+            # Query the legacy deployments endpoint to get actual deployment names.
+            return await self._get_deployments(api_key)
+
+        # Legacy path: use Azure SDK + deployments endpoint
         client = AsyncAzureOpenAI(api_key=api_key, api_version=self.api_version, azure_endpoint=self.base_url)
 
         try:
             models_list = await client.models.list()
+        except (AuthenticationError, PermissionDeniedError):
+            # Re-raise auth/permission errors so they're properly handled upstream
+            raise
+        except AttributeError as e:
+            if "_set_private_attributes" in str(e):
+                logger.warning(f"Azure endpoint at {self.base_url} returned an unexpected non-JSON response: {e}")
+            return []
         except Exception:
             return []
 
@@ -112,6 +168,37 @@ class AzureProvider(Provider):
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         model_list = await self.azure_openai_get_deployed_model_list()
+
+        if self._is_v1_endpoint(self.base_url):
+            # v1 path: follow OpenAIProvider pattern with litellm context window lookup
+            configs = []
+            for model in model_list:
+                model_name = model.get("id")
+                if not model_name:
+                    continue
+
+                # Use capabilities if present, otherwise accept all (Azure deployments are user-curated)
+                capabilities = model.get("capabilities")
+                if capabilities and capabilities.get("chat_completion") is not None:
+                    if not capabilities.get("chat_completion"):
+                        continue
+
+                context_window_size = await self.get_model_context_window_async(model_name)
+                configs.append(
+                    LLMConfig(
+                        model=model_name,
+                        model_endpoint_type="azure",
+                        model_endpoint=self.base_url,
+                        context_window=context_window_size,
+                        handle=self.get_handle(model_name),
+                        max_tokens=self.get_default_max_output_tokens(model_name),
+                        provider_name=self.name,
+                        provider_category=self.provider_category,
+                    )
+                )
+            return configs
+
+        # Legacy path
         # Extract models that support text generation
         model_options = [m for m in model_list if m.get("capabilities").get("chat_completion") == True]
 
@@ -135,6 +222,38 @@ class AzureProvider(Provider):
         return configs
 
     async def list_embedding_models_async(self) -> list[EmbeddingConfig]:
+        model_list = await self.azure_openai_get_deployed_model_list()
+
+        if self._is_v1_endpoint(self.base_url):
+            # v1 path: use base URL as endpoint, filter by capabilities or name
+            configs = []
+            for model in model_list:
+                model_name = model.get("id")
+                if not model_name:
+                    continue
+
+                # Use capabilities if present, otherwise filter by name
+                capabilities = model.get("capabilities")
+                if capabilities and capabilities.get("embeddings") is not None:
+                    if not capabilities.get("embeddings"):
+                        continue
+                elif "embedding" not in model_name:
+                    continue
+
+                configs.append(
+                    EmbeddingConfig(
+                        embedding_model=model_name,
+                        embedding_endpoint_type="azure",
+                        embedding_endpoint=self.base_url,
+                        embedding_dim=768,
+                        embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+                        handle=self.get_handle(model_name, is_embedding=True),
+                        batch_size=1024,
+                    )
+                )
+            return configs
+
+        # Legacy path
         def valid_embedding_model(m: dict, require_embedding_in_name: bool = True):
             valid_name = True
             if require_embedding_in_name:
@@ -142,9 +261,7 @@ class AzureProvider(Provider):
 
             return m.get("capabilities").get("embeddings") == True and valid_name
 
-        model_list = await self.azure_openai_get_deployed_model_list()
         # Extract models that support embeddings
-
         model_options = [m for m in model_list if valid_embedding_model(m)]
 
         configs = []
@@ -169,6 +286,23 @@ class AzureProvider(Provider):
         llm_default = LLM_MAX_CONTEXT_WINDOW.get(model_name, 4096)
         return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
 
+    async def get_model_context_window_async(self, model_name: str) -> int | None:
+        """Get context window size, using litellm specs for v1 endpoints or hardcoded map for legacy."""
+        if self._is_v1_endpoint(self.base_url):
+            from letta.model_specs.litellm_model_specs import get_context_window
+
+            # Litellm keys Azure models with an "azure/" prefix
+            context_window = await get_context_window(f"azure/{model_name}")
+            if context_window is not None:
+                return context_window
+            # Try without prefix as fallback
+            context_window = await get_context_window(model_name)
+            if context_window is not None:
+                return context_window
+            # Fall back to hardcoded map, then default
+            return self.get_model_context_window(model_name)
+        return self.get_model_context_window(model_name)
+
     async def check_api_key(self):
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
         if not api_key:
@@ -176,5 +310,8 @@ class AzureProvider(Provider):
 
         try:
             await self.list_llm_models_async()
+        except (LLMAuthenticationError, LLMPermissionDeniedError):
+            # Re-raise specific LLM errors as-is
+            raise
         except Exception as e:
             raise LLMAuthenticationError(message=f"Failed to authenticate with Azure: {e}", code=ErrorCode.UNAUTHENTICATED)

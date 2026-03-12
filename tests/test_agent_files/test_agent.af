@@ -1678,7 +1678,7 @@
     {
       "id": "tool-5",
       "tool_type": "letta_memory_core",
-      "description": "Memory management tool with various sub-commands for memory block operations.\n\nExamples:\n        # Replace text in a memory block\n        memory(agent_state, \"str_replace\", path=\"/memories/user_preferences\", old_str=\"theme: dark\", new_str=\"theme: light\")\n\n        # Insert text at line 5\n        memory(agent_state, \"insert\", path=\"/memories/notes\", insert_line=5, insert_text=\"New note here\")\n\n        # Delete a memory block\n        memory(agent_state, \"delete\", path=\"/memories/old_notes\")\n\n        # Rename a memory block\n        memory(agent_state, \"rename\", old_path=\"/memories/temp\", new_path=\"/memories/permanent\")\n\n        # Update the description of a memory block\n        memory(agent_state, \"rename\", path=\"/memories/temp\", description=\"The user's temporary notes.\")\n\n        # Create a memory block with starting text\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\", \"file_text\": \"The user seems to add type hints to all of their Python code.\")\n\n        # Create an empty memory block\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\")",
+      "description": "Memory management tool with various sub-commands for memory block operations.\n\nExamples:\n        # Replace text in a memory block\n        memory(agent_state, \"str_replace\", path=\"/memories/user_preferences\", old_string=\"theme: dark\", new_string=\"theme: light\")\n\n        # Insert text at line 5\n        memory(agent_state, \"insert\", path=\"/memories/notes\", insert_line=5, insert_text=\"New note here\")\n\n        # Delete a memory block\n        memory(agent_state, \"delete\", path=\"/memories/old_notes\")\n\n        # Rename a memory block\n        memory(agent_state, \"rename\", old_path=\"/memories/temp\", new_path=\"/memories/permanent\")\n\n        # Update the description of a memory block\n        memory(agent_state, \"rename\", path=\"/memories/temp\", description=\"The user's temporary notes.\")\n\n        # Create a memory block with starting text\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\", \"file_text\": \"The user seems to add type hints to all of their Python code.\")\n\n        # Create an empty memory block\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\")",
       "source_type": "python",
       "name": "memory",
       "tags": [
@@ -1687,7 +1687,7 @@
       "source_code": null,
       "json_schema": {
         "name": "memory",
-        "description": "Memory management tool with various sub-commands for memory block operations.\n\nExamples:\n        # Replace text in a memory block\n        memory(agent_state, \"str_replace\", path=\"/memories/user_preferences\", old_str=\"theme: dark\", new_str=\"theme: light\")\n\n        # Insert text at line 5\n        memory(agent_state, \"insert\", path=\"/memories/notes\", insert_line=5, insert_text=\"New note here\")\n\n        # Delete a memory block\n        memory(agent_state, \"delete\", path=\"/memories/old_notes\")\n\n        # Rename a memory block\n        memory(agent_state, \"rename\", old_path=\"/memories/temp\", new_path=\"/memories/permanent\")\n\n        # Update the description of a memory block\n        memory(agent_state, \"rename\", path=\"/memories/temp\", description=\"The user's temporary notes.\")\n\n        # Create a memory block with starting text\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\", \"file_text\": \"The user seems to add type hints to all of their Python code.\")\n\n        # Create an empty memory block\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\")",
+        "description": "Memory management tool with various sub-commands for memory block operations.\n\nExamples:\n        # Replace text in a memory block\n        memory(agent_state, \"str_replace\", path=\"/memories/user_preferences\", old_string=\"theme: dark\", new_string=\"theme: light\")\n\n        # Insert text at line 5\n        memory(agent_state, \"insert\", path=\"/memories/notes\", insert_line=5, insert_text=\"New note here\")\n\n        # Delete a memory block\n        memory(agent_state, \"delete\", path=\"/memories/old_notes\")\n\n        # Rename a memory block\n        memory(agent_state, \"rename\", old_path=\"/memories/temp\", new_path=\"/memories/permanent\")\n\n        # Update the description of a memory block\n        memory(agent_state, \"rename\", path=\"/memories/temp\", description=\"The user's temporary notes.\")\n\n        # Create a memory block with starting text\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\", \"file_text\": \"The user seems to add type hints to all of their Python code.\")\n\n        # Create an empty memory block\n        memory(agent_state, \"create\", path=\"/memories/coding_preferences\", \"description\": \"The user's coding preferences.\")",
         "parameters": {
           "type": "object",
           "properties": {
@@ -1707,11 +1707,11 @@
               "type": "string",
               "description": "The description to set in the memory block (for create, rename)"
             },
-            "old_str": {
+            "old_string": {
               "type": "string",
               "description": "Old text to replace (for str_replace)"
             },
-            "new_str": {
+            "new_string": {
               "type": "string",
               "description": "New text to replace with (for str_replace)"
             },

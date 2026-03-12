@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from urllib.parse import urlparse
@@ -6,12 +5,8 @@ from urllib.parse import urlparse
 from pydantic import Field, field_validator
 
 from letta.functions.mcp_client.types import (
-    MCP_AUTH_HEADER_AUTHORIZATION,
     MCP_AUTH_TOKEN_BEARER_PREFIX,
     MCPServerType,
-    SSEServerConfig,
-    StdioServerConfig,
-    StreamableHTTPServerConfig,
 )
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.enums import PrimitiveType

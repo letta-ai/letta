@@ -27,8 +27,20 @@ from tests.utils import wait_for_server
 SERVER_PORT = 8283
 
 
-def get_raw_system_message(client: LettaSDKClient, agent_id: str) -> str:
+def recompile_agent_system_prompt(client: LettaSDKClient, agent_id: str) -> None:
+    """Force a system prompt recompilation for deterministic raw-preview assertions."""
+    client.post(
+        f"/v1/agents/{agent_id}/recompile",
+        cast_to=str,
+        body={},
+    )
+
+
+def get_raw_system_message(client: LettaSDKClient, agent_id: str, recompile: bool = False) -> str:
     """Helper function to get the raw system message from an agent's preview payload."""
+    if recompile:
+        recompile_agent_system_prompt(client, agent_id)
+
     raw_payload = client.post(
         f"/v1/agents/{agent_id}/messages/preview-raw-payload",
         cast_to=dict[str, Any],
@@ -77,9 +89,9 @@ def client() -> LettaSDKClient:
 
 @pytest.fixture
 def agent_state(disable_pinecone, client: LettaSDKClient):
-    open_file_tool = list(client.tools.list(name="open_files"))[0]
-    search_files_tool = list(client.tools.list(name="semantic_search_files"))[0]
-    grep_tool = list(client.tools.list(name="grep_files"))[0]
+    open_file_tool = next(iter(client.tools.list(name="open_files")))
+    search_files_tool = next(iter(client.tools.list(name="semantic_search_files")))
+    grep_tool = next(iter(client.tools.list(name="grep_files")))
 
     agent_state = client.agents.create(
         name="test_sources_agent",
@@ -215,7 +227,7 @@ def test_file_upload_creates_source_blocks_correctly(
         assert any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
         # verify raw system message contains source information
-        raw_system_message = get_raw_system_message(client, agent_state.id)
+        raw_system_message = get_raw_system_message(client, agent_state.id, recompile=True)
         assert "test_source" in raw_system_message
         assert "<directories>" in raw_system_message
         # verify file-specific details in raw system message
@@ -234,7 +246,7 @@ def test_file_upload_creates_source_blocks_correctly(
         assert not any(re.fullmatch(expected_label_regex, b.label) for b in blocks)
 
         # verify raw system message no longer contains source information
-        raw_system_message_after_removal = get_raw_system_message(client, agent_state.id)
+        raw_system_message_after_removal = get_raw_system_message(client, agent_state.id, recompile=True)
         # this should be in, because we didn't delete the source
         assert "test_source" in raw_system_message_after_removal
         assert "<directories>" in raw_system_message_after_removal
@@ -266,7 +278,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(
 
     # Attach after uploading the file
     client.agents.folders.attach(folder_id=source.id, agent_id=agent_state.id)
-    raw_system_message = get_raw_system_message(client, agent_state.id)
+    raw_system_message = get_raw_system_message(client, agent_state.id, recompile=True)
 
     # Assert that the expected chunk is in the raw system message
     expected_chunk = """<directories>
@@ -307,7 +319,7 @@ def test_attach_existing_files_creates_source_blocks_correctly(
     assert not any("test" in b.value for b in blocks)
 
     # Verify no traces of the prompt exist in the raw system message after detaching
-    raw_system_message_after_detach = get_raw_system_message(client, agent_state.id)
+    raw_system_message_after_detach = get_raw_system_message(client, agent_state.id, recompile=True)
     assert expected_chunk not in raw_system_message_after_detach
     assert "test_source" not in raw_system_message_after_detach
     assert "<directories>" not in raw_system_message_after_detach
@@ -321,7 +333,7 @@ def test_delete_source_removes_source_blocks_correctly(
     assert len(list(client.folders.list())) == 1
 
     client.agents.folders.attach(folder_id=source.id, agent_id=agent_state.id)
-    raw_system_message = get_raw_system_message(client, agent_state.id)
+    raw_system_message = get_raw_system_message(client, agent_state.id, recompile=True)
     assert "test_source" in raw_system_message
     assert "<directories>" in raw_system_message
 
@@ -330,7 +342,7 @@ def test_delete_source_removes_source_blocks_correctly(
 
     # Upload the files
     upload_file_and_wait(client, source.id, file_path)
-    raw_system_message = get_raw_system_message(client, agent_state.id)
+    raw_system_message = get_raw_system_message(client, agent_state.id, recompile=True)
     # Assert that the expected chunk is in the raw system message
     expected_chunk = """<directories>
 <file_limits>
@@ -361,7 +373,7 @@ def test_delete_source_removes_source_blocks_correctly(
 
     # Remove file from source
     client.folders.delete(folder_id=source.id)
-    raw_system_message_after_detach = get_raw_system_message(client, agent_state.id)
+    raw_system_message_after_detach = get_raw_system_message(client, agent_state.id, recompile=True)
     assert expected_chunk not in raw_system_message_after_detach
     assert "test_source" not in raw_system_message_after_detach
     assert "<directories>" not in raw_system_message_after_detach
@@ -520,7 +532,8 @@ def test_agent_uses_search_files_correctly(disable_pinecone, disable_turbopuffer
     # Check it returned successfully
     tool_returns = [msg for msg in search_files_response.messages if msg.message_type == "tool_return_message"]
     assert len(tool_returns) > 0, "No tool returns found"
-    assert all(tr.status == "success" for tr in tool_returns), f"Tool call failed {tr}"
+    failed_returns = [tr for tr in tool_returns if tr.status != "success"]
+    assert len(failed_returns) == 0, f"Tool call failed: {failed_returns}"
 
 
 def test_agent_uses_grep_correctly_basic(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
@@ -732,13 +745,13 @@ def test_duplicate_file_renaming(disable_pinecone, disable_turbopuffer, client: 
     file_path = "tests/data/test.txt"
 
     with open(file_path, "rb") as f:
-        first_file = client.folders.files.upload(folder_id=source.id, file=f)
+        client.folders.files.upload(folder_id=source.id, file=f)
 
     with open(file_path, "rb") as f:
-        second_file = client.folders.files.upload(folder_id=source.id, file=f)
+        client.folders.files.upload(folder_id=source.id, file=f)
 
     with open(file_path, "rb") as f:
-        third_file = client.folders.files.upload(folder_id=source.id, file=f)
+        client.folders.files.upload(folder_id=source.id, file=f)
 
     # Get all uploaded files
     files = list(client.folders.files.list(folder_id=source.id, limit=10))
@@ -808,7 +821,7 @@ def test_duplicate_file_handling_replace(disable_pinecone, disable_turbopuffer, 
             f.write(replacement_content)
 
         # Upload replacement file with REPLACE duplicate handling
-        replacement_file = upload_file_and_wait(client, source.id, temp_file_path, duplicate_handling="replace")
+        upload_file_and_wait(client, source.id, temp_file_path, duplicate_handling="replace")
 
         # Verify we still have only 1 file (replacement, not addition)
         files_after_replace = list(client.folders.files.list(folder_id=source.id, limit=10))
@@ -1112,7 +1125,7 @@ def test_agent_open_file(disable_pinecone, disable_turbopuffer, client: LettaSDK
     closed_files = client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata["id"])
     assert len(closed_files) == 0
 
-    system = get_raw_system_message(client, agent_state.id)
+    system = get_raw_system_message(client, agent_state.id, recompile=True)
     assert '<file status="open" name="test_source/test.txt">' in system
     assert "[Viewing file start (out of 1 lines)]" in system
 
@@ -1137,7 +1150,7 @@ def test_agent_close_file(disable_pinecone, disable_turbopuffer, client: LettaSD
     # Test close_file function
     client.agents.files.close(agent_id=agent_state.id, file_id=file_metadata["id"])
 
-    system = get_raw_system_message(client, agent_state.id)
+    system = get_raw_system_message(client, agent_state.id, recompile=True)
     assert '<file status="closed" name="test_source/test.txt">' in system
 
 
@@ -1160,7 +1173,7 @@ def test_agent_close_all_open_files(disable_pinecone, disable_turbopuffer, clien
         # Open each file
         client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata["id"])
 
-    system = get_raw_system_message(client, agent_state.id)
+    system = get_raw_system_message(client, agent_state.id, recompile=True)
     assert '<file status="open"' in system
 
     # Test close_all_open_files function
@@ -1170,7 +1183,7 @@ def test_agent_close_all_open_files(disable_pinecone, disable_turbopuffer, clien
     assert isinstance(result, list), f"Expected list, got {type(result)}"
     assert all(isinstance(item, str) for item in result), "All items in result should be strings"
 
-    system = get_raw_system_message(client, agent_state.id)
+    system = get_raw_system_message(client, agent_state.id, recompile=True)
     assert '<file status="open"' not in system
 
 

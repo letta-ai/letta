@@ -1,5 +1,3 @@
-import os
-
 import typer
 
 from letta.cli.cli import server

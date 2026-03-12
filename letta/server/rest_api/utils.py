@@ -5,7 +5,7 @@ import uuid
 from enum import Enum
 from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
 
-from fastapi import Header, HTTPException
+from fastapi import HTTPException
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from openai.types.chat.completion_create_params import CompletionCreateParams
@@ -308,7 +308,7 @@ def create_approval_request_message_from_llm_response(
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
-    run_id: str = None,
+    run_id: str | None = None,
 ) -> Message:
     messages = []
     if allowed_tool_calls:
@@ -364,6 +364,8 @@ def create_approval_request_message_from_llm_response(
     )
     if pre_computed_assistant_message_id:
         approval_message.id = decrement_message_uuid(pre_computed_assistant_message_id)
+    # Set otid to match streaming interface pattern (index -1 returns id unchanged)
+    approval_message.otid = Message.generate_otid_from_id(approval_message.id, -1)
     messages.append(approval_message)
     return messages
 
@@ -386,7 +388,7 @@ def create_letta_messages_from_llm_response(
     function_response: Optional[str],
     timezone: str,
     run_id: str | None = None,
-    step_id: str = None,
+    step_id: str | None = None,
     continue_stepping: bool = False,
     heartbeat_reason: Optional[str] = None,
     reasoning_content: Optional[

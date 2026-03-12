@@ -13,7 +13,7 @@ import os
 import threading
 import time
 import uuid
-from typing import Any, Generator, List
+from typing import Generator, List
 
 import pytest
 import requests

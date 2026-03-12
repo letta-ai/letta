@@ -5,6 +5,7 @@ from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -33,6 +34,11 @@ class GroqClient(OpenAIClient):
         tool_return_truncation_chars: Optional[int] = None,
     ) -> dict:
         data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+
+        # Groq only supports string values for tool_choice: "none", "auto", "required"
+        # Convert object-format tool_choice (used for force_tool_call) to "required"
+        if "tool_choice" in data and isinstance(data["tool_choice"], dict):
+            data["tool_choice"] = "required"
 
         # Groq validation - these fields are not supported and will cause 400 errors
         # https://console.groq.com/docs/openai
@@ -69,6 +75,8 @@ class GroqClient(OpenAIClient):
         """
         Performs underlying asynchronous request to Groq API and returns raw response dict.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key = model_settings.groq_api_key or os.environ.get("GROQ_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
 

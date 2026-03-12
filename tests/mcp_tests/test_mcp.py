@@ -151,6 +151,7 @@ def agent_state(client):
     client.agents.delete(agent_state.id)
 
 
+@pytest.mark.skip(reason="The deepwiki SSE MCP server is deprecated")
 @pytest.mark.asyncio
 async def test_sse_mcp_server(client, agent_state):
     mcp_server_name = "deepwiki"

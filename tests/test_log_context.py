@@ -2,8 +2,6 @@ import json
 import logging
 from io import StringIO
 
-import pytest
-
 from letta.log import JSONFormatter, LogContextFilter
 from letta.log_context import clear_log_context, get_log_context, remove_log_context, set_log_context, update_log_context
 

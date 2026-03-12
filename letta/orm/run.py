@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Index, String
+from sqlalchemy import JSON, BigInteger, Boolean, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateMixin

@@ -42,7 +42,7 @@ def get_cancellation_event_for_run(run_id: str) -> asyncio.Event:
 class RunCancelledException(Exception):
     """Exception raised when a run is explicitly cancelled (not due to client timeout)"""
 
-    def __init__(self, run_id: str, message: str = None):
+    def __init__(self, run_id: str, message: str | None = None):
         self.run_id = run_id
         super().__init__(message or f"Run {run_id} was explicitly cancelled")
 
@@ -228,7 +228,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                 await asyncio.shield(self._protected_stream_response(send))
             except asyncio.CancelledError:
                 logger.info("Stream response was cancelled, but shielded task should continue")
-            except anyio.ClosedResourceError:
+            except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                 logger.info("Client disconnected, but shielded task should continue")
                 self._client_connected = False
             except PendingApprovalError as e:
@@ -272,7 +272,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                         "more_body": more_body,
                     }
                 )
-            except anyio.ClosedResourceError:
+            except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                 logger.info("Client disconnected during initial response, continuing processing without sending more chunks")
                 self._client_connected = False
 
@@ -302,10 +302,9 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                                 "more_body": more_body,
                             }
                         )
-                    except anyio.ClosedResourceError:
+                    except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                         logger.info("Client disconnected, continuing processing without sending more data")
                         self._client_connected = False
-                        # Continue processing but don't try to send more data
 
         # Handle explicit run cancellations (should not throw error)
         except RunCancelledException as exc:
@@ -332,7 +331,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                             "more_body": more_body,
                         }
                     )
-                except anyio.ClosedResourceError:
+                except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                     self._client_connected = False
             return
 
@@ -369,7 +368,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                             "more_body": more_body,
                         }
                     )
-                except anyio.ClosedResourceError:
+                except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                     self._client_connected = False
 
             capture_sentry_exception(exc)
@@ -377,5 +376,5 @@ class StreamingResponseWithStatusCode(StreamingResponse):
         if more_body and self._client_connected:
             try:
                 await send({"type": "http.response.body", "body": b"", "more_body": False})
-            except anyio.ClosedResourceError:
+            except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                 self._client_connected = False

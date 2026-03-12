@@ -4,16 +4,17 @@ if TYPE_CHECKING:
     pass
 
 # Import AgentState outside TYPE_CHECKING for @enforce_types decorator
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, asc, delete, desc, func, nulls_last, or_, select
 
 from letta.errors import LettaInvalidArgumentError
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
 from letta.orm.blocks_conversations import BlocksConversations
 from letta.orm.conversation import Conversation as ConversationModel
 from letta.orm.conversation_messages import ConversationMessage as ConversationMessageModel
-from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
+from letta.orm.run import Run as RunModel
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block as PydanticBlock
@@ -22,11 +23,27 @@ from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.utils import enforce_types
 
 
 class ConversationManager:
     """Manager class to handle business logic related to Conversations."""
+
+    @staticmethod
+    def _serialize_model_settings(model_settings) -> Optional[dict]:
+        """Serialize model settings for DB storage, stripping max_output_tokens if not explicitly set.
+
+        Uses model_dump() to preserve all fields (including the provider_type discriminator),
+        but removes max_output_tokens when it wasn't explicitly provided by the caller so we
+        don't persist the Pydantic default (4096) and later overwrite the agent's own value.
+        """
+        if model_settings is None:
+            return None
+        data = model_settings.model_dump()
+        if "max_output_tokens" not in model_settings.model_fields_set:
+            data.pop("max_output_tokens", None)
+        return data
 
     @enforce_types
     @trace_method
@@ -48,10 +65,14 @@ class ConversationManager:
             The created conversation with isolated_block_ids if any were created
         """
         async with db_registry.async_session() as session:
+            # Validate that the agent exists before creating the conversation
+            await validate_agent_exists_async(session, agent_id, actor)
             conversation = ConversationModel(
                 agent_id=agent_id,
                 summary=conversation_create.summary,
                 organization_id=actor.organization_id,
+                model=conversation_create.model,
+                model_settings=self._serialize_model_settings(conversation_create.model_settings),
             )
             await conversation.create_async(session, actor=actor)
 
@@ -68,7 +89,101 @@ class ConversationManager:
 
             pydantic_conversation = conversation.to_pydantic()
             pydantic_conversation.isolated_block_ids = isolated_block_ids
-            return pydantic_conversation
+
+        # Compile and persist the initial system message for this conversation
+        # This ensures the conversation captures the latest memory block state at creation time
+        await self.compile_and_save_system_message_for_conversation(
+            conversation_id=pydantic_conversation.id,
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        return pydantic_conversation
+
+    @trace_method
+    async def compile_and_save_system_message_for_conversation(
+        self,
+        conversation_id: str,
+        agent_id: str,
+        actor: PydanticUser,
+        agent_state: Optional["AgentState"] = None,
+        message_manager: Optional[object] = None,
+    ) -> PydanticMessage:
+        """Compile and persist the initial system message for a conversation.
+
+        This recompiles the system prompt with the latest memory block values
+        and metadata, ensuring the conversation starts with an up-to-date
+        system message.
+
+        This is the single source of truth for creating a conversation's system
+        message — used both at conversation creation time and as a fallback
+        when a conversation has no messages yet.
+
+        Args:
+            conversation_id: The conversation to add the system message to
+            agent_id: The agent this conversation belongs to
+            actor: The user performing the action
+            agent_state: Optional pre-loaded agent state (avoids redundant DB load)
+            message_manager: Optional pre-loaded MessageManager instance
+
+        Returns:
+            The persisted system message
+        """
+        # Lazy imports to avoid circular dependencies
+        from letta.prompts.prompt_generator import PromptGenerator
+        from letta.services.message_manager import MessageManager
+        from letta.services.passage_manager import PassageManager
+
+        if message_manager is None:
+            message_manager = MessageManager()
+
+        if agent_state is None:
+            from letta.services.agent_manager import AgentManager
+
+            agent_state = await AgentManager().get_agent_by_id_async(
+                agent_id=agent_id,
+                include_relationships=["memory", "sources"],
+                actor=actor,
+            )
+
+        passage_manager = PassageManager()
+        num_messages = await message_manager.size_async(actor=actor, agent_id=agent_id)
+        num_archival_memories = await passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
+
+        # Compile the system message with current memory state
+        system_message_str = await PromptGenerator.compile_system_message_async(
+            system_prompt=agent_state.system,
+            in_context_memory=agent_state.memory,
+            in_context_memory_last_edit=get_utc_time(),
+            timezone=agent_state.timezone,
+            user_defined_variables=None,
+            append_icm_if_missing=True,
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
+            sources=agent_state.sources,
+            max_files_open=agent_state.max_files_open,
+        )
+
+        system_message = PydanticMessage.dict_to_message(
+            agent_id=agent_id,
+            model=agent_state.llm_config.model,
+            openai_message_dict={"role": "system", "content": system_message_str},
+        )
+
+        # Persist the new system message
+        persisted_messages = await message_manager.create_many_messages_async([system_message], actor=actor)
+        system_message = persisted_messages[0]
+
+        # Add it to the conversation tracking at position 0
+        await self.add_messages_to_conversation(
+            conversation_id=conversation_id,
+            agent_id=agent_id,
+            message_ids=[system_message.id],
+            actor=actor,
+            starting_position=0,
+        )
+
+        return system_message
 
     @enforce_types
     @trace_method
@@ -101,65 +216,140 @@ class ConversationManager:
     @trace_method
     async def list_conversations(
         self,
-        agent_id: str,
+        agent_id: Optional[str],
         actor: PydanticUser,
         limit: int = 50,
         after: Optional[str] = None,
         summary_search: Optional[str] = None,
+        ascending: bool = False,
+        sort_by: str = "created_at",
     ) -> List[PydanticConversation]:
-        """List conversations for an agent with cursor-based pagination.
+        """List conversations for an agent (or all conversations) with cursor-based pagination.
 
         Args:
-            agent_id: The agent ID to list conversations for
+            agent_id: The agent ID to list conversations for (optional - returns all if not provided)
             actor: The user performing the action
             limit: Maximum number of conversations to return
             after: Cursor for pagination (conversation ID)
             summary_search: Optional text to search for within the summary field
+            ascending: Sort order (True for oldest first, False for newest first)
+            sort_by: Field to sort by ("created_at" or "last_run_completion")
 
         Returns:
             List of conversations matching the criteria
         """
         async with db_registry.async_session() as session:
-            # If summary search is provided, use custom query
-            if summary_search:
-                from sqlalchemy import and_
-
-                stmt = (
-                    select(ConversationModel)
-                    .where(
-                        and_(
-                            ConversationModel.agent_id == agent_id,
-                            ConversationModel.organization_id == actor.organization_id,
-                            ConversationModel.summary.isnot(None),
-                            ConversationModel.summary.contains(summary_search),
-                        )
-                    )
-                    .order_by(ConversationModel.created_at.desc())
-                    .limit(limit)
+            # Build base query with optional join for last_run_completion
+            if sort_by == "last_run_completion":
+                # Subquery to get the latest completed_at for each conversation
+                latest_run_subquery = (
+                    select(RunModel.conversation_id, func.max(RunModel.completed_at).label("last_run_completion"))
+                    .where(RunModel.conversation_id.isnot(None))
+                    .group_by(RunModel.conversation_id)
+                    .subquery()
                 )
 
-                if after:
-                    # Add cursor filtering
+                # Join conversations with the subquery
+                stmt = select(ConversationModel).outerjoin(
+                    latest_run_subquery, ConversationModel.id == latest_run_subquery.c.conversation_id
+                )
+                sort_column = latest_run_subquery.c.last_run_completion
+                sort_nulls_last = True
+            else:
+                # Simple query for created_at
+                stmt = select(ConversationModel)
+                sort_column = ConversationModel.created_at
+                sort_nulls_last = False
+
+            # Build where conditions
+            conditions = [
+                ConversationModel.organization_id == actor.organization_id,
+                ConversationModel.is_deleted == False,
+            ]
+
+            # Add agent_id filter if provided
+            if agent_id is not None:
+                conditions.append(ConversationModel.agent_id == agent_id)
+
+            # Add summary search filter if provided
+            if summary_search:
+                conditions.extend(
+                    [
+                        ConversationModel.summary.isnot(None),
+                        ConversationModel.summary.contains(summary_search),
+                    ]
+                )
+
+            stmt = stmt.where(and_(*conditions))
+
+            # Handle cursor pagination
+            if after:
+                # Get the sort value for the cursor conversation
+                if sort_by == "last_run_completion":
+                    cursor_query = (
+                        select(ConversationModel.id, func.max(RunModel.completed_at).label("last_run_completion"))
+                        .outerjoin(RunModel, ConversationModel.id == RunModel.conversation_id)
+                        .where(ConversationModel.id == after)
+                        .group_by(ConversationModel.id)
+                    )
+                    result = (await session.execute(cursor_query)).first()
+                    if result:
+                        after_id, after_sort_value = result
+                        # Apply cursor filter
+                        if after_sort_value is None:
+                            # Cursor is at NULL - if ascending, get non-NULLs or NULLs with greater ID
+                            if ascending:
+                                stmt = stmt.where(
+                                    or_(and_(sort_column.is_(None), ConversationModel.id > after_id), sort_column.isnot(None))
+                                )
+                            else:
+                                # If descending, get NULLs with smaller ID
+                                stmt = stmt.where(and_(sort_column.is_(None), ConversationModel.id < after_id))
+                        else:
+                            # Cursor is at non-NULL
+                            if ascending:
+                                # Moving forward: greater values or same value with greater ID
+                                stmt = stmt.where(
+                                    and_(
+                                        sort_column.isnot(None),
+                                        or_(
+                                            sort_column > after_sort_value,
+                                            and_(sort_column == after_sort_value, ConversationModel.id > after_id),
+                                        ),
+                                    )
+                                )
+                            else:
+                                # Moving backward: smaller values or NULLs or same value with smaller ID
+                                stmt = stmt.where(
+                                    or_(
+                                        sort_column.is_(None),
+                                        sort_column < after_sort_value,
+                                        and_(sort_column == after_sort_value, ConversationModel.id < after_id),
+                                    )
+                                )
+                else:
+                    # Simple created_at cursor
                     after_conv = await ConversationModel.read_async(
                         db_session=session,
                         identifier=after,
                         actor=actor,
                     )
-                    stmt = stmt.where(ConversationModel.created_at < after_conv.created_at)
+                    if ascending:
+                        stmt = stmt.where(ConversationModel.created_at > after_conv.created_at)
+                    else:
+                        stmt = stmt.where(ConversationModel.created_at < after_conv.created_at)
 
-                result = await session.execute(stmt)
-                conversations = result.scalars().all()
-                return [conv.to_pydantic() for conv in conversations]
+            # Apply ordering
+            order_fn = asc if ascending else desc
+            if sort_nulls_last:
+                stmt = stmt.order_by(nulls_last(order_fn(sort_column)), order_fn(ConversationModel.id))
+            else:
+                stmt = stmt.order_by(order_fn(sort_column), order_fn(ConversationModel.id))
 
-            # Use default list logic
-            conversations = await ConversationModel.list_async(
-                db_session=session,
-                actor=actor,
-                agent_id=agent_id,
-                limit=limit,
-                after=after,
-                ascending=False,
-            )
+            stmt = stmt.limit(limit)
+
+            result = await session.execute(stmt)
+            conversations = result.scalars().all()
             return [conv.to_pydantic() for conv in conversations]
 
     @enforce_types
@@ -176,12 +366,21 @@ class ConversationManager:
                 db_session=session,
                 identifier=conversation_id,
                 actor=actor,
+                check_is_deleted=True,
             )
 
             # Set attributes on the model
             update_data = conversation_update.model_dump(exclude_none=True)
             for key, value in update_data.items():
-                setattr(conversation, key, value)
+                # model_settings needs to be serialized to dict for the JSON column
+                if key == "model_settings" and value is not None:
+                    setattr(
+                        conversation,
+                        key,
+                        self._serialize_model_settings(conversation_update.model_settings) if conversation_update.model_settings else value,
+                    )
+                else:
+                    setattr(conversation, key, value)
 
             # Commit the update
             updated_conversation = await conversation.update_async(
@@ -203,6 +402,7 @@ class ConversationManager:
                 db_session=session,
                 identifier=conversation_id,
                 actor=actor,
+                check_is_deleted=True,
             )
 
             # Get isolated blocks before modifying conversation
@@ -612,6 +812,7 @@ class ConversationManager:
             blocks=memory_blocks,
             file_blocks=agent_state.memory.file_blocks,
             agent_type=agent_state.memory.agent_type,
+            git_enabled=agent_state.memory.git_enabled,
         )
 
         return agent_state

@@ -1,23 +1,17 @@
 import copy
 import json
-import logging
 from collections import OrderedDict
-from typing import Any, List, Optional, Union
+from typing import List, Optional
 
-from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.helpers.json_helpers import json_dumps
 from letta.log import get_logger
-from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice
 from letta.schemas.response_format import (
     JsonObjectResponseFormat,
     JsonSchemaResponseFormat,
-    ResponseFormatType,
     ResponseFormatUnion,
     TextResponseFormat,
 )
-from letta.settings import summarizer_settings
-from letta.utils import printd
 
 logger = get_logger(__name__)
 

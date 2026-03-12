@@ -108,6 +108,16 @@ MODEL_LIST = [
         "name": "claude-opus-4-5-20251101",
         "context_window": 200000,
     },
+    ## Opus 4.6
+    {
+        "name": "claude-opus-4-6",
+        "context_window": 200000,
+    },
+    ## Sonnet 4.6
+    {
+        "name": "claude-sonnet-4-6",
+        "context_window": 200000,
+    },
 ]
 
 
@@ -134,7 +144,9 @@ class AnthropicProvider(Provider):
 
     def get_default_max_output_tokens(self, model_name: str) -> int:
         """Get the default max output tokens for Anthropic models."""
-        if "opus" in model_name:
+        if "claude-opus-4-6" in model_name or "claude-sonnet-4-6" in model_name:
+            return 21000  # Opus 4.6 / Sonnet 4.6 supports up to 128k with streaming, use 21k as default
+        elif "opus" in model_name:
             return 16384
         elif "sonnet" in model_name:
             return 16384
@@ -169,10 +181,19 @@ class AnthropicProvider(Provider):
         else:
             raise ValueError("No API key provided")
 
-        models = await anthropic_client.models.list()
-        models_json = models.model_dump()
-        assert "data" in models_json, f"Anthropic model query response missing 'data' field: {models_json}"
-        models_data = models_json["data"]
+        try:
+            # Auto-paginate through all pages to ensure we get every model.
+            # The default page size is 20, and Anthropic now has more models than that.
+            models_data = []
+            async for model in anthropic_client.models.list():
+                models_data.append(model.model_dump())
+        except AttributeError as e:
+            if "_set_private_attributes" in str(e):
+                raise LLMError(
+                    message="Anthropic API returned an unexpected non-JSON response. Verify the API key and endpoint.",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            raise
 
         return self._list_llm_models(models_data)
 
@@ -194,13 +215,15 @@ class AnthropicProvider(Provider):
                     logger.warning(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
                     model["context_window"] = 200000
 
-            # Optional override: enable 1M context for Sonnet 4/4.5 when flag is set
+            # Optional override: enable 1M context for Sonnet 4/4.5 or Opus 4.6 when flag is set
             try:
                 from letta.settings import model_settings
 
                 if model_settings.anthropic_sonnet_1m and (
                     model["id"].startswith("claude-sonnet-4") or model["id"].startswith("claude-sonnet-4-5")
                 ):
+                    model["context_window"] = 1_000_000
+                elif model_settings.anthropic_opus_1m and model["id"].startswith("claude-opus-4-6"):
                     model["context_window"] = 1_000_000
             except Exception:
                 pass

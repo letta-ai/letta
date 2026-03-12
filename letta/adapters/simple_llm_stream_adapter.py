@@ -1,7 +1,7 @@
-import json
 from typing import AsyncGenerator, List
 
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
+from letta.errors import LLMError
 from letta.log import get_logger
 
 logger = get_logger(__name__)
@@ -69,6 +69,9 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
         """
         # Store request data
         self.request_data = request_data
+
+        # Track request start time for latency calculation
+        request_start_ns = get_utc_timestamp_ns()
 
         # Get cancellation event for this run to enable graceful cancellation (before branching)
         cancellation_event = get_cancellation_event_for_run(self.run_id) if self.run_id else None
@@ -138,7 +141,19 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             else:
                 stream = await self.llm_client.stream_async(request_data, self.llm_config)
         except Exception as e:
-            raise self.llm_client.handle_llm_error(e)
+            self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+            latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
+            await self.llm_client.log_provider_trace_async(
+                request_data=request_data,
+                response_json=None,
+                llm_config=self.llm_config,
+                latency_ms=latency_ms,
+                error_msg=str(e),
+                error_type=type(e).__name__,
+            )
+            if isinstance(e, LLMError):
+                raise
+            raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
 
         # Process the stream and yield chunks immediately for TTFT
         try:
@@ -146,8 +161,19 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 # Yield each chunk immediately as it arrives
                 yield chunk
         except Exception as e:
-            # Map provider-specific errors during streaming to common LLMError types
-            raise self.llm_client.handle_llm_error(e)
+            self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+            latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
+            await self.llm_client.log_provider_trace_async(
+                request_data=request_data,
+                response_json=None,
+                llm_config=self.llm_config,
+                latency_ms=latency_ms,
+                error_msg=str(e),
+                error_type=type(e).__name__,
+            )
+            if isinstance(e, LLMError):
+                raise
+            raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
 
         # After streaming completes, extract the accumulated data
         self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
@@ -171,6 +197,22 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
 
         # Store any additional data from the interface
         self.message_id = self.interface.letta_message_id
+
+        # Populate finish_reason for downstream continuation logic.
+        # In Responses streaming, max_output_tokens is expressed via incomplete_details.reason.
+        if hasattr(self.interface, "final_response") and self.interface.final_response is not None:
+            resp = self.interface.final_response
+            incomplete_details = getattr(resp, "incomplete_details", None)
+            incomplete_reason = getattr(incomplete_details, "reason", None) if incomplete_details else None
+            if incomplete_reason == "max_output_tokens":
+                self._finish_reason = "length"
+            elif incomplete_reason == "content_filter":
+                self._finish_reason = "content_filter"
+            elif incomplete_reason is not None:
+                # Unknown incomplete reason — preserve it as-is for diagnostics
+                self._finish_reason = incomplete_reason
+            elif getattr(resp, "status", None) == "completed":
+                self._finish_reason = "stop"
 
         # Log request and response data
         self.log_provider_trace(step_id=step_id, actor=actor)
@@ -232,9 +274,11 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                         agent_id=self.agent_id,
                         agent_tags=self.agent_tags,
                         run_id=self.run_id,
+                        call_type=self.call_type,
                         org_id=self.org_id,
                         user_id=self.user_id,
                         llm_config=self.llm_config.model_dump() if self.llm_config else None,
+                        billing_context=self.billing_context,
                     ),
                 ),
                 label="create_provider_trace",

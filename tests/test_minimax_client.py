@@ -4,9 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from letta.llm_api.minimax_client import MINIMAX_BASE_URL, MiniMaxClient
+from letta.llm_api.minimax_client import MiniMaxClient
 from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
+
+# MiniMax API base URL
+MINIMAX_BASE_URL = "https://api.minimax.io/anthropic"
 
 
 class TestMiniMaxClient:
@@ -55,7 +58,7 @@ class TestMiniMaxClient:
             # Mock BYOK to return no override
             self.client.get_byok_overrides = MagicMock(return_value=(None, None, None))
 
-            client = self.client._get_anthropic_client(self.llm_config, async_client=False)
+            self.client._get_anthropic_client(self.llm_config, async_client=False)
 
             mock_anthropic.Anthropic.assert_called_once_with(
                 api_key="test-api-key",
@@ -73,7 +76,7 @@ class TestMiniMaxClient:
             # Mock BYOK to return no override
             self.client.get_byok_overrides = MagicMock(return_value=(None, None, None))
 
-            client = self.client._get_anthropic_client(self.llm_config, async_client=True)
+            self.client._get_anthropic_client(self.llm_config, async_client=True)
 
             mock_anthropic.AsyncAnthropic.assert_called_once_with(
                 api_key="test-api-key",
@@ -100,7 +103,7 @@ class TestMiniMaxClientTemperatureClamping:
         """Verify build_request_data is called for temperature clamping."""
         # This is a basic test to ensure the method exists and can be called
         mock_build.return_value = {"temperature": 0.7}
-        result = self.client.build_request_data(
+        self.client.build_request_data(
             agent_type=AgentType.letta_v1_agent,
             messages=[],
             llm_config=self.llm_config,
@@ -214,7 +217,7 @@ class TestMiniMaxClientUsesNonBetaAPI:
             mock_anthropic_client.messages.create.return_value = mock_response
             mock_get_client.return_value = mock_anthropic_client
 
-            result = client.request({"model": "MiniMax-M2.1"}, llm_config)
+            client.request({"model": "MiniMax-M2.1"}, llm_config)
 
             # Verify messages.create was called (not beta.messages.create)
             mock_anthropic_client.messages.create.assert_called_once()
@@ -239,7 +242,7 @@ class TestMiniMaxClientUsesNonBetaAPI:
             mock_anthropic_client.messages.create.return_value = mock_response
             mock_get_client.return_value = mock_anthropic_client
 
-            result = await client.request_async({"model": "MiniMax-M2.1"}, llm_config)
+            await client.request_async({"model": "MiniMax-M2.1"}, llm_config)
 
             # Verify messages.create was called (not beta.messages.create)
             mock_anthropic_client.messages.create.assert_called_once()
@@ -261,7 +264,7 @@ class TestMiniMaxClientUsesNonBetaAPI:
             mock_anthropic_client.messages.create.return_value = mock_stream
             mock_get_client.return_value = mock_anthropic_client
 
-            result = await client.stream_async({"model": "MiniMax-M2.1"}, llm_config)
+            await client.stream_async({"model": "MiniMax-M2.1"}, llm_config)
 
             # Verify messages.create was called (not beta.messages.create)
             mock_anthropic_client.messages.create.assert_called_once()

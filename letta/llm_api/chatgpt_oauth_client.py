@@ -1,10 +1,10 @@
 """ChatGPT OAuth Client - handles requests to chatgpt.com/backend-api/codex/responses."""
 
+import asyncio
 import json
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import httpx
-from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from openai.types.responses import (
     Response,
     ResponseCompletedEvent,
@@ -32,6 +32,7 @@ from openai.types.responses.response_stream_event import ResponseStreamEvent
 from letta.errors import (
     ContextWindowExceededError,
     ErrorCode,
+    LettaError,
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
@@ -39,6 +40,7 @@ from letta.errors import (
     LLMServerError,
     LLMTimeoutError,
 )
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -47,11 +49,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionResponse,
-    Choice,
-    FunctionCall,
-    Message as ChoiceMessage,
-    ToolCall,
-    UsageStatistics,
 )
 from letta.schemas.providers.chatgpt_oauth import ChatGPTOAuthCredentials, ChatGPTOAuthProvider
 from letta.schemas.usage import LettaUsageStatistics
@@ -99,6 +96,10 @@ class ChatGPTOAuthClient(LLMClientBase):
     3. Makes requests to chatgpt.com/backend-api/codex/responses
     4. Transforms responses back to OpenAI ChatCompletion format
     """
+
+    MAX_RETRIES = 3
+    # Transient httpx errors that are safe to retry (connection drops, transport-level failures)
+    _RETRYABLE_ERRORS = (httpx.ReadError, httpx.WriteError, httpx.ConnectError, httpx.RemoteProtocolError, LLMConnectionError)
 
     @trace_method
     async def _get_provider_and_credentials_async(self, llm_config: LLMConfig) -> tuple[ChatGPTOAuthProvider, ChatGPTOAuthCredentials]:
@@ -153,6 +154,11 @@ class ChatGPTOAuthClient(LLMClientBase):
         Returns:
             Dictionary of HTTP headers.
         """
+        if not creds.access_token:
+            raise LLMAuthenticationError(
+                message="ChatGPT OAuth access_token is empty or missing",
+                code=ErrorCode.UNAUTHENTICATED,
+            )
         return {
             "Authorization": f"Bearer {creds.access_token}",
             "ChatGPT-Account-Id": creds.account_id,
@@ -356,37 +362,67 @@ class ChatGPTOAuthClient(LLMClientBase):
         Returns:
             Response data in OpenAI ChatCompletion format.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         _, creds = await self._get_provider_and_credentials_async(llm_config)
         headers = self._build_headers(creds)
 
         endpoint = llm_config.model_endpoint or CHATGPT_CODEX_ENDPOINT
 
         # ChatGPT backend requires streaming, so we use client.stream() to handle SSE
-        async with httpx.AsyncClient() as client:
+        # Retry on transient network errors with exponential backoff
+        for attempt in range(self.MAX_RETRIES):
             try:
-                async with client.stream(
-                    "POST",
-                    endpoint,
-                    json=request_data,
-                    headers=headers,
-                    timeout=120.0,
-                ) as response:
-                    response.raise_for_status()
-                    # Accumulate SSE events into a final response
-                    return await self._accumulate_sse_response(response)
+                async with httpx.AsyncClient() as client:
+                    async with client.stream(
+                        "POST",
+                        endpoint,
+                        json=request_data,
+                        headers=headers,
+                        timeout=120.0,
+                    ) as response:
+                        response.raise_for_status()
+                        # Accumulate SSE events into a final response
+                        return await self._accumulate_sse_response(response)
 
             except httpx.HTTPStatusError as e:
-                raise self._handle_http_error(e)
+                mapped = self._handle_http_error(e)
+                if isinstance(mapped, tuple(self._RETRYABLE_ERRORS)) and attempt < self.MAX_RETRIES - 1:
+                    wait = 2**attempt
+                    logger.warning(
+                        f"[ChatGPT] Retryable HTTP error on request (attempt {attempt + 1}/{self.MAX_RETRIES}), "
+                        f"retrying in {wait}s: {type(mapped).__name__}: {mapped}"
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                raise mapped
             except httpx.TimeoutException:
                 raise LLMTimeoutError(
                     message="ChatGPT backend request timed out",
                     code=ErrorCode.TIMEOUT,
+                )
+            except self._RETRYABLE_ERRORS as e:
+                if attempt < self.MAX_RETRIES - 1:
+                    wait = 2**attempt
+                    logger.warning(
+                        f"[ChatGPT] Transient error on request (attempt {attempt + 1}/{self.MAX_RETRIES}), "
+                        f"retrying in {wait}s: {type(e).__name__}: {e}"
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                raise LLMConnectionError(
+                    message=f"Failed to connect to ChatGPT backend after {self.MAX_RETRIES} attempts: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
                 )
             except httpx.RequestError as e:
                 raise LLMConnectionError(
                     message=f"Failed to connect to ChatGPT backend: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
                 )
+
+        # Should not be reached, but satisfy type checker
+        raise LLMConnectionError(message="ChatGPT request failed after all retries", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
     async def _accumulate_sse_response(self, response: httpx.Response) -> dict:
         """Accumulate SSE stream into a final response.
@@ -550,64 +586,102 @@ class ChatGPTOAuthClient(LLMClientBase):
         Returns:
             Async generator yielding ResponseStreamEvent objects.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         _, creds = await self._get_provider_and_credentials_async(llm_config)
         headers = self._build_headers(creds)
 
         endpoint = llm_config.model_endpoint or CHATGPT_CODEX_ENDPOINT
 
         async def stream_generator():
-            event_count = 0
             # Track output item index for proper event construction
             output_index = 0
             # Track sequence_number in case backend doesn't provide it
             # (OpenAI SDK expects incrementing sequence numbers starting at 0)
             sequence_counter = 0
+            # Track whether we've yielded any events — once we have, we can't
+            # transparently retry because the caller has already consumed partial data.
+            has_yielded = False
 
-            async with httpx.AsyncClient() as client:
-                async with client.stream(
-                    "POST",
-                    endpoint,
-                    json=request_data,
-                    headers=headers,
-                    timeout=120.0,
-                ) as response:
-                    # Check for error status
-                    if response.status_code != 200:
-                        error_body = await response.aread()
-                        logger.error(f"ChatGPT SSE error: {response.status_code} - {error_body}")
-                        raise self._handle_http_error_from_status(response.status_code, error_body.decode())
+            for attempt in range(self.MAX_RETRIES):
+                try:
+                    async with httpx.AsyncClient() as client:
+                        async with client.stream(
+                            "POST",
+                            endpoint,
+                            json=request_data,
+                            headers=headers,
+                            timeout=120.0,
+                        ) as response:
+                            # Check for error status
+                            if response.status_code != 200:
+                                error_body = await response.aread()
+                                logger.error(f"ChatGPT SSE error: {response.status_code} - {error_body}")
+                                raise self._handle_http_error_from_status(response.status_code, error_body.decode())
 
-                    async for line in response.aiter_lines():
-                        if not line.startswith("data: "):
-                            continue
+                            async for line in response.aiter_lines():
+                                if not line or not line.startswith("data: "):
+                                    continue
 
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
+                                data_str = line[6:]
+                                if data_str == "[DONE]":
+                                    break
 
-                        try:
-                            raw_event = json.loads(data_str)
-                            event_type = raw_event.get("type")
-                            event_count += 1
+                                try:
+                                    raw_event = json.loads(data_str)
+                                    event_type = raw_event.get("type")
 
-                            # Use backend-provided sequence_number if available, else use counter
-                            # This ensures proper ordering even if backend doesn't provide it
-                            if "sequence_number" not in raw_event:
-                                raw_event["sequence_number"] = sequence_counter
-                            sequence_counter = raw_event["sequence_number"] + 1
+                                    # Check for error events from the API (context window, rate limit, etc.)
+                                    if event_type == "error":
+                                        logger.error(f"ChatGPT SSE error event: {json.dumps(raw_event, default=str)[:1000]}")
+                                        raise self._handle_sse_error_event(raw_event)
 
-                            # Track output index for output_item.added events
-                            if event_type == "response.output_item.added":
-                                output_index = raw_event.get("output_index", output_index)
+                                    # Check for response.failed or response.incomplete events
+                                    if event_type in ("response.failed", "response.incomplete"):
+                                        logger.error(f"ChatGPT SSE {event_type} event: {json.dumps(raw_event, default=str)[:1000]}")
+                                        resp_obj = raw_event.get("response", {})
+                                        error_info = resp_obj.get("error", {})
+                                        if error_info:
+                                            raise self._handle_sse_error_event({"error": error_info, "type": event_type})
+                                        else:
+                                            raise LLMBadRequestError(
+                                                message=f"ChatGPT request failed with status '{event_type}' (no error details provided)",
+                                                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                                            )
 
-                            # Convert to OpenAI SDK ResponseStreamEvent
-                            sdk_event = self._convert_to_sdk_event(raw_event, output_index)
-                            if sdk_event:
-                                yield sdk_event
+                                    # Use backend-provided sequence_number if available, else use counter
+                                    # This ensures proper ordering even if backend doesn't provide it
+                                    if "sequence_number" not in raw_event:
+                                        raw_event["sequence_number"] = sequence_counter
+                                    sequence_counter = raw_event["sequence_number"] + 1
 
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse SSE event: {data_str[:100]}")
-                            continue
+                                    # Track output index for output_item.added events
+                                    if event_type == "response.output_item.added":
+                                        output_index = raw_event.get("output_index", output_index)
+
+                                    # Convert to OpenAI SDK ResponseStreamEvent
+                                    sdk_event = self._convert_to_sdk_event(raw_event, output_index)
+                                    if sdk_event:
+                                        yield sdk_event
+                                        has_yielded = True
+
+                                except json.JSONDecodeError:
+                                    logger.warning(f"Failed to parse SSE event: {data_str[:100]}")
+                                    continue
+
+                    # Stream completed successfully
+                    return
+
+                except self._RETRYABLE_ERRORS as e:
+                    if has_yielded or attempt >= self.MAX_RETRIES - 1:
+                        # Already yielded partial data or exhausted retries — must propagate
+                        raise
+                    wait = 2**attempt
+                    logger.warning(
+                        f"[ChatGPT] Transient error on stream (attempt {attempt + 1}/{self.MAX_RETRIES}), "
+                        f"retrying in {wait}s: {type(e).__name__}: {e}"
+                    )
+                    await asyncio.sleep(wait)
 
         # Wrap the async generator in AsyncStreamWrapper to provide context manager protocol
         return AsyncStreamWrapper(stream_generator())
@@ -944,9 +1018,15 @@ class ChatGPTOAuthClient(LLMClientBase):
                 part=part,
             )
 
-        # Unhandled event types - log for debugging
-        logger.debug(f"Unhandled SSE event type: {event_type}")
+        # Unhandled event types
+        logger.warning(f"Unhandled ChatGPT SSE event type: {event_type}")
         return None
+
+    @staticmethod
+    def _is_upstream_connection_error(error_body: str) -> bool:
+        """Check if an error body indicates an upstream connection/proxy failure."""
+        lower = error_body.lower()
+        return "upstream connect error" in lower or "reset before headers" in lower or "connection termination" in lower
 
     def _handle_http_error_from_status(self, status_code: int, error_body: str) -> Exception:
         """Create appropriate exception from HTTP status code.
@@ -968,9 +1048,14 @@ class ChatGPTOAuthClient(LLMClientBase):
                 message=f"ChatGPT rate limit exceeded: {error_body}",
                 code=ErrorCode.RATE_LIMIT_EXCEEDED,
             )
+        elif status_code == 502 or (status_code >= 500 and self._is_upstream_connection_error(error_body)):
+            return LLMConnectionError(
+                message=f"ChatGPT upstream connection error: {error_body}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+            )
         elif status_code >= 500:
             return LLMServerError(
-                message=f"ChatGPT server error: {error_body}",
+                message=f"ChatGPT API error: {error_body}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
             )
         else:
@@ -992,25 +1077,43 @@ class ChatGPTOAuthClient(LLMClientBase):
         return "o1" in model or "o3" in model or "o4" in model or "gpt-5" in model
 
     @trace_method
-    def handle_llm_error(self, e: Exception) -> Exception:
+    def handle_llm_error(self, e: Exception, llm_config: Optional[LLMConfig] = None) -> Exception:
         """Map ChatGPT-specific errors to common LLMError types.
 
         Args:
             e: Original exception.
+            llm_config: Optional LLM config to determine if this is a BYOK key.
 
         Returns:
             Mapped LLMError subclass.
         """
+        is_byok = (llm_config.provider_category == ProviderCategory.byok) if llm_config else None
+
+        # Already a typed LLM/Letta error (e.g. from SSE error handling) — pass through
+        if isinstance(e, LettaError):
+            return e
+
         if isinstance(e, httpx.HTTPStatusError):
-            return self._handle_http_error(e)
+            return self._handle_http_error(e, is_byok=is_byok)
 
-        return super().handle_llm_error(e)
+        # Handle httpx network errors which can occur during streaming
+        # when the connection is unexpectedly closed while reading/writing
+        if isinstance(e, (httpx.ReadError, httpx.WriteError, httpx.ConnectError)):
+            logger.warning(f"[ChatGPT] Network error during streaming: {type(e).__name__}: {e}")
+            return LLMConnectionError(
+                message=f"Network error during ChatGPT streaming: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__, "is_byok": is_byok},
+            )
 
-    def _handle_http_error(self, e: httpx.HTTPStatusError) -> Exception:
+        return super().handle_llm_error(e, llm_config=llm_config)
+
+    def _handle_http_error(self, e: httpx.HTTPStatusError, is_byok: bool | None = None) -> Exception:
         """Handle HTTP status errors from ChatGPT backend.
 
         Args:
             e: HTTP status error.
+            is_byok: Whether the request used a BYOK key.
 
         Returns:
             Appropriate LLMError subclass.
@@ -1028,28 +1131,86 @@ class ChatGPTOAuthClient(LLMClientBase):
             return LLMAuthenticationError(
                 message=f"ChatGPT authentication failed: {error_message}",
                 code=ErrorCode.UNAUTHENTICATED,
+                details={"is_byok": is_byok},
             )
         elif status_code == 429:
             return LLMRateLimitError(
                 message=f"ChatGPT rate limit exceeded: {error_message}",
                 code=ErrorCode.RATE_LIMIT_EXCEEDED,
+                details={"is_byok": is_byok},
             )
         elif status_code == 400:
             if "context" in error_message.lower() or "token" in error_message.lower():
                 return ContextWindowExceededError(
                     message=f"ChatGPT context window exceeded: {error_message}",
+                    details={"is_byok": is_byok},
                 )
             return LLMBadRequestError(
                 message=f"ChatGPT bad request: {error_message}",
                 code=ErrorCode.INVALID_ARGUMENT,
+                details={"is_byok": is_byok},
+            )
+        elif status_code == 502 or (status_code >= 500 and self._is_upstream_connection_error(error_message)):
+            return LLMConnectionError(
+                message=f"ChatGPT upstream connection error: {error_message}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
             )
         elif status_code >= 500:
             return LLMServerError(
-                message=f"ChatGPT server error: {error_message}",
+                message=f"ChatGPT API error: {error_message}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
             )
         else:
             return LLMBadRequestError(
                 message=f"ChatGPT request failed ({status_code}): {error_message}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"is_byok": is_byok},
+            )
+
+    def _handle_sse_error_event(self, raw_event: dict) -> Exception:
+        """Create appropriate exception from an SSE error or response.failed event.
+
+        The ChatGPT backend can return errors as SSE events within a 200 OK stream,
+        e.g. {"type": "error", "error": {"type": "invalid_request_error",
+        "code": "context_length_exceeded", "message": "..."}}.
+
+        Args:
+            raw_event: Raw SSE event data containing an error.
+
+        Returns:
+            Appropriate LLM exception.
+        """
+        error_obj = raw_event.get("error", {})
+        if isinstance(error_obj, str):
+            error_message = error_obj
+            error_code = None
+        else:
+            error_message = error_obj.get("message", "Unknown ChatGPT SSE error")
+            error_code = error_obj.get("code") or None
+
+        if error_code == "context_length_exceeded":
+            return ContextWindowExceededError(
+                message=f"ChatGPT context window exceeded: {error_message}",
+            )
+        elif error_code == "rate_limit_exceeded":
+            return LLMRateLimitError(
+                message=f"ChatGPT rate limit exceeded: {error_message}",
+                code=ErrorCode.RATE_LIMIT_EXCEEDED,
+            )
+        elif error_code == "authentication_error":
+            return LLMAuthenticationError(
+                message=f"ChatGPT authentication failed: {error_message}",
+                code=ErrorCode.UNAUTHENTICATED,
+            )
+        elif error_code == "server_error":
+            return LLMServerError(
+                message=f"ChatGPT API error: {error_message}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+            )
+        else:
+            return LLMBadRequestError(
+                message=f"ChatGPT SSE error ({error_code or 'unknown'}): {error_message}",
+                code=ErrorCode.INVALID_ARGUMENT,
             )

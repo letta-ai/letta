@@ -1,10 +1,10 @@
 from typing import Literal
 
-from openai import AsyncOpenAI, AuthenticationError
+from openai import AsyncOpenAI, AuthenticationError, PermissionDeniedError
 from pydantic import Field
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_CONTEXT_WINDOW
-from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError, LLMPermissionDeniedError
 from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
@@ -14,7 +14,7 @@ from letta.schemas.providers.base import Provider
 logger = get_logger(__name__)
 
 ALLOWED_PREFIXES = {"gpt-4", "gpt-5", "o1", "o3", "o4"}
-DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro", "chat"}
+DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro"}
 DEFAULT_EMBEDDING_BATCH_SIZE = 1024
 
 
@@ -38,13 +38,34 @@ class OpenAIProvider(Provider):
             await client.models.list()
         except AuthenticationError as e:
             raise LLMAuthenticationError(message=f"Failed to authenticate with OpenAI: {e}", code=ErrorCode.UNAUTHENTICATED)
+        except PermissionDeniedError as e:
+            raise LLMPermissionDeniedError(message=f"Permission denied by OpenAI: {e}", code=ErrorCode.PERMISSION_DENIED)
+        except AttributeError as e:
+            if "_set_private_attributes" in str(e):
+                raise LLMError(
+                    message=f"OpenAI-compatible endpoint at {self.base_url} returned an unexpected non-JSON response. Verify the base URL and that the endpoint is reachable.",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
         except Exception as e:
             raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
+    @staticmethod
+    def _openai_default_max_output_tokens(model_name: str) -> int:
+        """Return a sensible max-output-tokens default for OpenAI models.
+
+        gpt-5.2* / gpt-5.3* support 128k output tokens, except the
+        `-chat` variants which are capped at 16k.
+        """
+        import re
+
+        if re.match(r"^gpt-5\.[23]", model_name) and "-chat" not in model_name:
+            return 128000
+        return 16384
+
     def get_default_max_output_tokens(self, model_name: str) -> int:
         """Get the default max output tokens for OpenAI models (sync fallback)."""
-        # Simple default for openai
-        return 16384
+        return self._openai_default_max_output_tokens(model_name)
 
     async def get_default_max_output_tokens_async(self, model_name: str) -> int:
         """Get the default max output tokens for OpenAI models.
@@ -58,8 +79,7 @@ class OpenAIProvider(Provider):
         if max_output is not None:
             return max_output
 
-        # Simple default for openai
-        return 16384
+        return self._openai_default_max_output_tokens(model_name)
 
     async def _get_models_async(self) -> list[dict]:
         from letta.llm_api.openai import openai_get_model_list_async

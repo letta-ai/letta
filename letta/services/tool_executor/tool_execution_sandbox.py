@@ -7,7 +7,10 @@ import sys
 import tempfile
 import traceback
 import uuid
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+if TYPE_CHECKING:
+    from e2b_code_interpreter import Execution, Sandbox
 
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.log import get_logger
@@ -256,7 +259,7 @@ class ToolExecutionSandbox:
         temp_file_path: str,
     ) -> ToolExecutionResult:
         status = "success"
-        func_return, agent_state, stderr = None, None, None
+        func_return, agent_state, _stderr = None, None, None
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr

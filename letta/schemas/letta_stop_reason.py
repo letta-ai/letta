@@ -17,6 +17,7 @@ class StopReasonType(str, Enum):
     no_tool_call = "no_tool_call"
     tool_rule = "tool_rule"
     cancelled = "cancelled"
+    insufficient_credits = "insufficient_credits"
     requires_approval = "requires_approval"
     context_window_overflow_in_system_prompt = "context_window_overflow_in_system_prompt"
 
@@ -42,6 +43,8 @@ class StopReasonType(str, Enum):
             return RunStatus.failed
         elif self == StopReasonType.cancelled:
             return RunStatus.cancelled
+        elif self == StopReasonType.insufficient_credits:
+            return RunStatus.failed
         else:
             raise ValueError("Unknown StopReasonType")
 

@@ -2,7 +2,7 @@ from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
-from letta.otel.tracing import log_attributes, log_event, safe_json_dumps, trace_method
+from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
 from letta.schemas.provider_trace import ProviderTrace
@@ -66,7 +66,13 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
             self.reasoning_content = [OmittedReasoningContent()]
         elif self.chat_completions_response.choices[0].message.content:
             # Reasoning placed into content for legacy reasons
-            self.reasoning_content = [TextContent(text=self.chat_completions_response.choices[0].message.content)]
+            # Carry thought_signature on TextContent when ReasoningContent doesn't exist to hold it
+            self.reasoning_content = [
+                TextContent(
+                    text=self.chat_completions_response.choices[0].message.content,
+                    signature=self.chat_completions_response.choices[0].message.reasoning_content_signature,
+                )
+            ]
         else:
             # logger.info("No reasoning content found.")
             self.reasoning_content = None
@@ -76,6 +82,9 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
             self.tool_call = self.chat_completions_response.choices[0].message.tool_calls[0]
         else:
             self.tool_call = None
+
+        # Extract logprobs if present
+        self.logprobs = self.chat_completions_response.choices[0].logprobs
 
         # Extract usage statistics
         self.usage.step_count = 1
@@ -127,6 +136,7 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
                         agent_id=self.agent_id,
                         agent_tags=self.agent_tags,
                         run_id=self.run_id,
+                        call_type=self.call_type,
                         org_id=self.org_id,
                         user_id=self.user_id,
                         llm_config=self.llm_config.model_dump() if self.llm_config else None,

@@ -19,16 +19,14 @@ from letta.constants import (
     DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT,
     DEFAULT_MAX_FILES_OPEN,
     DEFAULT_TIMEZONE,
-    DEPRECATED_LETTA_TOOLS,
     EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
-from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
+from letta.errors import LettaError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
-from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm import (
     Agent as AgentModel,
@@ -47,12 +45,11 @@ from letta.orm import (
     ToolsAgents,
 )
 from letta.orm.errors import NoResultFound
-from letta.orm.sandbox_config import AgentEnvironmentVariable, AgentEnvironmentVariable as AgentEnvironmentVariableModel
+from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import (
-    AgentRelationships,
     AgentState as PydanticAgentState,
     CreateAgent,
     InternalTemplateAgentCreate,
@@ -60,7 +57,7 @@ from letta.schemas.agent import (
 )
 from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import AgentType, PrimitiveType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
+from letta.schemas.enums import AgentType, PrimitiveType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.environment_variables import AgentEnvironmentVariable as PydanticAgentEnvVar
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
@@ -74,10 +71,6 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, TerminalToolRule
 from letta.schemas.user import User as PydanticUser
-from letta.serialize_schemas import MarshmallowAgentSchema
-from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
-from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
-from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager, validate_block_limit_constraint
@@ -89,11 +82,9 @@ from letta.services.files_agents_manager import FileAgentManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
     _apply_identity_filters,
-    _apply_pagination,
     _apply_pagination_async,
     _apply_relationship_filters,
     _apply_tag_filter,
-    _process_relationship,
     _process_relationship_async,
     build_agent_passage_query,
     build_passage_query,
@@ -113,7 +104,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
-from letta.settings import DatabaseChoice, model_settings, settings
+from letta.settings import DatabaseChoice, settings
 from letta.utils import (
     bounded_gather,
     calculate_file_defaults_based_on_context_window,
@@ -129,8 +120,8 @@ logger = get_logger(__name__)
 class AgentManager:
     """Manager class to handle business logic related to Agents."""
 
-    def __init__(self):
-        self.block_manager = BlockManager()
+    def __init__(self, block_manager: Optional[BlockManager] = None):
+        self.block_manager = block_manager or BlockManager()
         self.tool_manager = ToolManager()
         self.source_manager = SourceManager()
         self.message_manager = MessageManager()
@@ -351,9 +342,11 @@ class AgentManager:
 
         # For v1 agents, enforce sane defaults even when reasoning is omitted
         if agent_create.agent_type == AgentType.letta_v1_agent:
-            # Claude 3.7/4 or OpenAI o1/o3/o4/gpt-5
-            default_reasoning = LLMConfig.is_anthropic_reasoning_model(agent_create.llm_config) or LLMConfig.is_openai_reasoning_model(
-                agent_create.llm_config
+            # Claude 3.7/4 or OpenAI o1/o3/o4/gpt-5 or ZAI GLM-4.5+
+            default_reasoning = (
+                LLMConfig.is_anthropic_reasoning_model(agent_create.llm_config)
+                or LLMConfig.is_openai_reasoning_model(agent_create.llm_config)
+                or LLMConfig.is_zai_reasoning_model(agent_create.llm_config)
             )
             agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(
                 agent_create.llm_config,
@@ -495,6 +488,34 @@ class AgentManager:
                 if tool_rules:
                     check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
 
+                # Update agent's compaction settings with defaults if needed
+                from letta.schemas.enums import ProviderType
+                from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_summarizer_model
+
+                effective_compaction_settings = agent_create.compaction_settings
+                # Use provider_name if set, otherwise fall back to model_endpoint_type
+                provider_name = agent_create.llm_config.provider_name or agent_create.llm_config.model_endpoint_type
+
+                # Convert to ProviderType enum to get default summarizer model
+                try:
+                    default_model = get_default_summarizer_model(provider_type=ProviderType(provider_name))
+                except (ValueError, TypeError):  # unknown provider
+                    default_model = None
+
+                # Use agent's model as fallback
+                if not default_model:
+                    default_model = agent_create.llm_config.model
+
+                if effective_compaction_settings is None:
+                    # If no settings provided, INITIALIZE with default model
+                    effective_compaction_settings = CompactionSettings(model=default_model)
+                elif effective_compaction_settings is not None and effective_compaction_settings.model is None:
+                    # If settings provided but no model, UPDATE with default model
+                    effective_compaction_settings = effective_compaction_settings.model_copy(update={"model": default_model})
+
+                # Will set mode-specific default prompt if no prompt is provided
+                effective_compaction_settings = effective_compaction_settings.set_mode_specific_prompt()
+
                 new_agent = AgentModel(
                     name=agent_create.name,
                     system=derive_system_message(
@@ -505,7 +526,7 @@ class AgentManager:
                     agent_type=agent_create.agent_type,
                     llm_config=agent_create.llm_config,
                     embedding_config=agent_create.embedding_config,
-                    compaction_settings=agent_create.compaction_settings,
+                    compaction_settings=effective_compaction_settings,
                     organization_id=actor.organization_id,
                     description=agent_create.description,
                     metadata_=agent_create.metadata,
@@ -606,24 +627,30 @@ class AgentManager:
                     result.tool_exec_environment_variables = env_vars
                     result.secrets = env_vars
 
-                # initial message sequence (skip if _init_with_no_messages is True)
+                # initial message sequence (skip non-system messages if _init_with_no_messages is True)
                 if not _init_with_no_messages:
                     init_messages = await self._generate_initial_message_sequence_async(
                         actor,
                         agent_state=result,
                         supplied_initial_message_sequence=agent_create.initial_message_sequence,
                     )
-                    result.message_ids = [msg.id for msg in init_messages]
-                    new_agent.message_ids = [msg.id for msg in init_messages]
-                    await new_agent.update_async(session, no_refresh=True)
                 else:
-                    init_messages = []
+                    all_messages = await initialize_message_sequence_async(
+                        agent_state=result, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
+                    )
+                    init_messages = [
+                        PydanticMessage.dict_to_message(
+                            agent_id=result.id, model=result.llm_config.model, openai_message_dict=all_messages[0]
+                        )
+                    ]
 
-        # Only create messages if we initialized with messages
-        if not _init_with_no_messages:
-            await self.message_manager.create_many_messages_async(
-                pydantic_msgs=init_messages, actor=actor, project_id=result.project_id, template_id=result.template_id
-            )
+                result.message_ids = [msg.id for msg in init_messages]
+                new_agent.message_ids = [msg.id for msg in init_messages]
+                await new_agent.update_async(session, no_refresh=True)
+
+        await self.message_manager.create_many_messages_async(
+            pydantic_msgs=init_messages, actor=actor, project_id=result.project_id, template_id=result.template_id
+        )
 
         # Attach files from sources if this is a template-based creation
         # Use the new agent's sources (already copied from template via source_ids)
@@ -760,6 +787,25 @@ class AgentManager:
                     agent_update.reasoning,
                     agent.agent_type,
                 )
+
+            # Upsert compaction_settings: merge incoming partial update with existing settings
+            if agent_update.compaction_settings is not None:
+                # If mode changed, update the prompt to the default for the new mode
+                changed_fields = agent_update.compaction_settings.model_fields_set
+                if (
+                    agent.compaction_settings is not None
+                    and "mode" in changed_fields
+                    and agent_update.compaction_settings.mode != agent.compaction_settings.mode
+                ):
+                    from letta.services.summarizer.summarizer_config import get_default_prompt_for_mode
+
+                    agent_update.compaction_settings.prompt = get_default_prompt_for_mode(agent_update.compaction_settings.mode)
+
+                # Fill in unchanged fields from existing settings
+                if agent.compaction_settings is not None:
+                    for field in agent.compaction_settings.model_fields:
+                        if field not in changed_fields:
+                            setattr(agent_update.compaction_settings, field, getattr(agent.compaction_settings, field))
 
             scalar_updates = {
                 "name": agent_update.name,
@@ -1328,6 +1374,11 @@ class AgentManager:
     @trace_method
     def get_system_message(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
+        if not message_ids:
+            raise LettaError(
+                message=f"Agent {agent_id} has no in-context messages. "
+                "This typically means the agent's system message was not initialized correctly.",
+            )
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
     @enforce_types
@@ -1335,6 +1386,11 @@ class AgentManager:
     @trace_method
     async def get_system_message_async(self, agent_id: str, actor: PydanticUser) -> PydanticMessage:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=[], actor=actor)
+        if not agent.message_ids:
+            raise LettaError(
+                message=f"Agent {agent_id} has no in-context messages. "
+                "This typically means the agent's system message was not initialized correctly.",
+            )
         return await self.message_manager.get_message_by_id_async(message_id=agent.message_ids[0], actor=actor)
 
     # TODO: This is duplicated below
@@ -1522,7 +1578,7 @@ class AgentManager:
     @trace_method
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
-        new_messages = [message_ids[0]] + message_ids[num:]  # 0 is system message
+        new_messages = [message_ids[0], *message_ids[num:]]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
     @enforce_types
@@ -1565,21 +1621,30 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def reset_messages_async(
-        self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False, needs_agent_state: bool = True
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        add_default_initial_messages: bool = False,
+        needs_agent_state: bool = True,
+        rebuild_system_prompt: bool = False,
     ) -> Optional[PydanticAgentState]:
         """
         Clears all in-context messages for the specified agent except the original system message by:
           1) Preserving the first message ID (original system message).
           2) Updating the agent's message_ids to only contain the system message.
-          3) Optionally adding default initial messages after the system message.
+          3) Optionally rebuilding the system prompt with current memory blocks (for prefix caching optimization).
+          4) Optionally adding default initial messages after the system message.
 
         Note: This only clears messages from the agent's context, it does not delete them from the database.
 
         Args:
-            add_default_initial_messages: If true, adds the default initial messages after resetting.
             agent_id (str): The ID of the agent whose messages will be reset.
             actor (PydanticUser): The user performing this action.
+            add_default_initial_messages: If true, adds the default initial messages after resetting.
             needs_agent_state: If True, returns the updated agent state. If False, returns None (for performance optimization)
+            rebuild_system_prompt: If True, rebuilds the system prompt with current memory blocks.
+                This ensures the system prompt reflects the latest memory state after reset.
+                Defaults to False to preserve the original system message content.
 
         Returns:
             Optional[PydanticAgentState]: The updated agent state with only the original system message preserved, or None if needs_agent_state=False.
@@ -1599,11 +1664,16 @@ class AgentManager:
             agent.message_ids = [system_message_id]
             await agent.update_async(db_session=session, actor=actor)
 
-            # Only convert to pydantic if we need to return it or add initial messages
-            if add_default_initial_messages or needs_agent_state:
-                agent_state = await agent.to_pydantic_async(include_relationships=["sources"] if add_default_initial_messages else None)
+            # Only convert to pydantic if we need to return it or add initial messages or rebuild system prompt
+            if add_default_initial_messages or needs_agent_state or rebuild_system_prompt:
+                include_rels = ["sources", "memory"] if (add_default_initial_messages or rebuild_system_prompt) else None
+                agent_state = await agent.to_pydantic_async(include_relationships=include_rels)
             else:
                 agent_state = None
+
+        # Optionally rebuild the system prompt with current memory blocks
+        if rebuild_system_prompt and agent_state:
+            agent_state, _, _, _ = await self.rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
 
         # Optionally add default initial messages after the system message
         if add_default_initial_messages:
@@ -1672,6 +1742,7 @@ class AgentManager:
                 blocks=blocks,
                 file_blocks=agent_state.memory.file_blocks,
                 agent_type=agent_state.agent_type,
+                git_enabled=agent_state.memory.git_enabled,
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
@@ -1983,6 +2054,9 @@ class AgentManager:
         actor: PydanticUser,
     ) -> PydanticBlock:
         """Modifies a block attached to an agent by its label."""
+
+        block_id_for_custom_manager: str | None = None
+
         async with db_registry.async_session() as session:
             matched_block = None
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
@@ -1995,33 +2069,46 @@ class AgentManager:
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
-            # Extract tags from update data (it's not a column on the block table)
-            new_tags = update_data.pop("tags", None)
-
             # Validate limit constraints before updating
             validate_block_limit_constraint(update_data, matched_block)
 
-            for key, value in update_data.items():
-                setattr(matched_block, key, value)
-
-            await matched_block.update_async(session, actor=actor)
-
-            if new_tags is not None:
-                await BlockManager._replace_block_pivot_rows_async(
-                    session,
-                    BlocksTags.__table__,
-                    matched_block.id,
-                    [{"block_id": matched_block.id, "tag": tag} for tag in new_tags],
-                )
-
-            pydantic_block = matched_block.to_pydantic()
-            if new_tags is not None:
-                pydantic_block.tags = new_tags
+            # If a custom block manager is injected (e.g. GitEnabledBlockManager), route
+            # through it so git-backed memory semantics apply.
+            if self.block_manager.__class__ is not BlockManager:
+                block_id_for_custom_manager = matched_block.id
             else:
-                tags_result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == matched_block.id))
-                pydantic_block.tags = [row[0] for row in tags_result.fetchall()]
+                # Extract tags from update data (it's not a column on the block table)
+                new_tags = update_data.pop("tags", None)
 
-            return pydantic_block
+                for key, value in update_data.items():
+                    setattr(matched_block, key, value)
+
+                await matched_block.update_async(session, actor=actor)
+
+                if new_tags is not None:
+                    await BlockManager._replace_block_pivot_rows_async(
+                        session,
+                        BlocksTags.__table__,
+                        matched_block.id,
+                        [{"block_id": matched_block.id, "tag": tag} for tag in new_tags],
+                    )
+
+                pydantic_block = matched_block.to_pydantic()
+                if new_tags is not None:
+                    pydantic_block.tags = new_tags
+                else:
+                    tags_result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == matched_block.id))
+                    pydantic_block.tags = [row[0] for row in tags_result.fetchall()]
+
+                return pydantic_block
+
+        # Route through block_manager which handles git integration if enabled
+        assert block_id_for_custom_manager is not None
+        return await self.block_manager.update_block_async(
+            block_id=block_id_for_custom_manager,
+            block_update=block_update,
+            actor=actor,
+        )
 
     @enforce_types
     @raise_on_invalid_id(param_name="agent_id", expected_prefix=PrimitiveType.AGENT)
@@ -2033,9 +2120,9 @@ class AgentManager:
             agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
 
-            # Attach block to the main agent
-            agent.core_memory.append(block)
-            # await agent.update_async(session, actor=actor, no_commit=True)
+            # Attach block to the main agent (skip if already attached)
+            if not any(b.id == block_id for b in agent.core_memory):
+                agent.core_memory.append(block)
             await agent.update_async(session)
 
             # If agent is part of a sleeptime group, attach block to the sleeptime_agent
@@ -2047,9 +2134,7 @@ class AgentManager:
                         try:
                             other_agent = await AgentModel.read_async(db_session=session, identifier=other_agent_id, actor=actor)
                             if other_agent.agent_type == AgentType.sleeptime_agent:
-                                # Check if block with same label already exists
-                                existing_block = next((b for b in other_agent.core_memory if b.label == block.label), None)
-                                if not existing_block:
+                                if not any(b.id == block_id for b in other_agent.core_memory):
                                     other_agent.core_memory.append(block)
                                     await other_agent.update_async(session, actor=actor)
                         except NoResultFound:
@@ -2185,7 +2270,6 @@ class AgentManager:
 
         Lists all passages attached to an agent (combines both source and agent passages).
         """
-        import warnings
 
         logger.warning(
             "list_passages_async is deprecated. Use query_source_passages_async or query_agent_passages_async instead.",
