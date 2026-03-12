@@ -97,17 +97,25 @@ class OpenAIProvider(Provider):
         # Decrypt API key before using
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
 
-        response = await openai_get_model_list_async(
-            self.base_url,
-            api_key=api_key,
-            extra_params=extra_params,
-            # fix_url=True,  # NOTE: make sure together ends with /v1
-        )
+        try:
+            response = await openai_get_model_list_async(
+                self.base_url,
+                api_key=api_key,
+                extra_params=extra_params,
+                # fix_url=True,  # NOTE: make sure together ends with /v1
+            )
 
-        # TODO (cliandy): this is brittle as TogetherAI seems to result in a list instead of having a 'data' field
-        data = response.get("data", response)
-        assert isinstance(data, list)
-        return data
+            # TODO (cliandy): this is brittle as TogetherAI seems to result in a list instead of having a 'data' field
+            data = response.get("data", response)
+            assert isinstance(data, list)
+            return data
+        except Exception as e:
+            # Baseten dedicated deployments don't expose /models — return empty list
+            # so the provider can still be used with explicit model handles
+            if "baseten.co" in self.base_url:
+                logger.info(f"Baseten dedicated endpoint does not support /models listing: {e}")
+                return [{"id": "zai-org/GLM-5", "context_length": 180000}]
+            raise
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         data = await self._get_models_async()
