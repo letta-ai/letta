@@ -74,6 +74,18 @@ class ZAIClient(OpenAIClient):
         if "max_completion_tokens" in data:
             data["max_tokens"] = data.pop("max_completion_tokens")
 
+        # Strip reasoning fields from input messages — ZAI rejects these as invalid parameters (error 1210)
+        if "messages" in data:
+            for msg in data["messages"]:
+                if isinstance(msg, dict):
+                    for field in (
+                        "reasoning_content",
+                        "reasoning_content_signature",
+                        "redacted_reasoning_content",
+                        "omitted_reasoning_content",
+                    ):
+                        msg.pop(field, None)
+
         # Sanitize empty text content — ZAI rejects empty text blocks
         if "messages" in data:
             for msg in data["messages"]:
