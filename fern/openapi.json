@@ -21973,6 +21973,9 @@
                     "type": "string",
                     "enum": ["letta-code"]
                   },
+                  "server_version": {
+                    "type": "string"
+                  },
                   "events": {
                     "type": "array",
                     "items": {
