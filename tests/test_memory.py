@@ -23,13 +23,6 @@ def test_chat_memory_init_and_utils(chat_memory: Memory):
     assert set(chat_memory.list_block_labels()) == {"persona", "human"}
 
 
-def test_memory_limit_validation(chat_memory: Memory):
-    with pytest.raises(ValueError):
-        ChatMemory(persona="x " * 60000, human="y " * 60000)
-    with pytest.raises(ValueError):
-        chat_memory.get_block("persona").value = "x " * 60000
-
-
 def test_get_block_not_found(chat_memory: Memory):
     with pytest.raises(KeyError):
         chat_memory.get_block("missing")

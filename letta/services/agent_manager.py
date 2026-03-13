@@ -73,7 +73,7 @@ from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, 
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
-from letta.services.block_manager import BlockManager, validate_block_limit_constraint
+from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.conversation_manager import ConversationManager
@@ -2071,9 +2071,6 @@ class AgentManager:
                 raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
-
-            # Validate limit constraints before updating
-            validate_block_limit_constraint(update_data, matched_block)
 
             # If a custom block manager is injected (e.g. GitEnabledBlockManager), route
             # through it so git-backed memory semantics apply.

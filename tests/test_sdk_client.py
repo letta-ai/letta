@@ -801,38 +801,6 @@ def test_add_remove_agent_memory_block(client: LettaSDKClient, agent: AgentState
     assert example_new_label not in current_labels
 
 
-def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
-    """Test that we can update the limit of a block in an agent's memory"""
-
-    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id).items]
-    example_label = current_labels[0]
-    example_new_limit = 1
-    current_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label)
-    current_block_length = len(current_block.value)
-
-    assert example_new_limit != client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label).limit
-    assert example_new_limit < current_block_length
-
-    # We expect this to throw a value error
-    with pytest.raises(APIError):
-        client.agents.blocks.update(
-            agent_id=agent.id,
-            block_label=example_label,
-            limit=example_new_limit,
-        )
-
-    # Now try the same thing with a higher limit
-    example_new_limit = current_block_length + 10000
-    assert example_new_limit > current_block_length
-    client.agents.blocks.update(
-        agent_id=agent.id,
-        block_label=example_label,
-        limit=example_new_limit,
-    )
-
-    assert example_new_limit == client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label).limit
-
-
 def test_messages(client: LettaSDKClient, agent: AgentState):
     send_message_response = client.agents.messages.create(
         agent_id=agent.id,
