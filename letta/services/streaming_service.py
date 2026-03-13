@@ -158,6 +158,9 @@ class StreamingService:
                 conversation_llm_config = await self.server.get_llm_config_from_handle_async(
                     actor=actor,
                     handle=conversation.model,
+                    # Preserve the agent's context window (capped at the new model's max).
+                    # Without this, the context window resets to the model/global default.
+                    context_window_limit=agent.llm_config.context_window,
                 )
                 if conversation.model_settings is not None:
                     update_params = conversation.model_settings._to_legacy_config_params()
