@@ -671,6 +671,12 @@ class OpenAIClient(LLMClientBase):
                     if isinstance(msg, dict):
                         for field in ("reasoning_content_signature", "redacted_reasoning_content", "omitted_reasoning_content"):
                             msg.pop(field, None)
+            # Enable reasoning via chat_template_args for GLM-5 on BYOK deployments (e.g. Baseten TRT-LLM)
+            # Thinking is off by default; must be explicitly enabled
+            if llm_config.enable_reasoner:
+                request_data["extra_body"] = {
+                    "chat_template_args": {"enable_thinking": True},
+                }
 
         # Add OpenRouter reasoning configuration via extra_body
         if is_openrouter and llm_config.enable_reasoner:
