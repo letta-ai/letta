@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
@@ -140,51 +141,69 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 error_msg=str(e),
                 error_type=type(e).__name__,
             )
-            raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
-
-        # Process the stream and yield chunks immediately for TTFT
-        # Wrap in error handling to convert provider errors to common LLMError types
-        try:
-            async for chunk in self.interface.process(stream):  # TODO: add ttft span
-                # Yield each chunk immediately as it arrives
-                yield chunk
-        except Exception as e:
-            self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
-            latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
-            await self.llm_client.log_provider_trace_async(
-                request_data=request_data,
-                response_json=None,
-                llm_config=self.llm_config,
-                latency_ms=latency_ms,
-                error_msg=str(e),
-                error_type=type(e).__name__,
-            )
             if isinstance(e, LLMError):
                 raise
             raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
 
-        # After streaming completes, extract the accumulated data
-        self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+        stream_started = True
 
-        # Extract tool call from the interface
         try:
-            self.tool_call = self.interface.get_tool_call_object()
-        except ValueError:
-            # No tool call, handle upstream
-            self.tool_call = None
+            # Process the stream and yield chunks immediately for TTFT
+            # Wrap in error handling to convert provider errors to common LLMError types
+            try:
+                async for chunk in self.interface.process(stream):  # TODO: add ttft span
+                    # Yield each chunk immediately as it arrives
+                    yield chunk
+            except BaseException as e:
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+                latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
+                await self.llm_client.log_provider_trace_async(
+                    request_data=request_data,
+                    response_json=None,
+                    llm_config=self.llm_config,
+                    latency_ms=latency_ms,
+                    error_msg=str(e),
+                    error_type=type(e).__name__,
+                )
+                if isinstance(e, asyncio.CancelledError):
+                    raise
+                if isinstance(e, LLMError):
+                    raise
+                raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
+            else:
+                # After streaming completes, extract the accumulated data
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+        finally:
+            if not stream_started:
+                return
 
-        # Extract reasoning content from the interface
-        self.reasoning_content = self.interface.get_reasoning_content()
+            if self.llm_request_finish_timestamp_ns is None:
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
-        # Extract usage statistics from the streaming interface
-        self.usage = self.interface.get_usage_statistics()
-        self.usage.step_count = 1
+            # Extract best-effort request results for trace logging
+            try:
+                self.tool_call = self.interface.get_tool_call_object()
+            except Exception:
+                self.tool_call = None
 
-        # Store any additional data from the interface
-        self.message_id = self.interface.letta_message_id
+            try:
+                self.reasoning_content = self.interface.get_reasoning_content()
+            except Exception:
+                self.reasoning_content = []
 
-        # Log request and response data
-        self.log_provider_trace(step_id=step_id, actor=actor)
+            try:
+                self.usage = self.interface.get_usage_statistics()
+            except Exception:
+                pass
+            self.usage.step_count = 1
+
+            try:
+                self.message_id = self.interface.letta_message_id
+            except Exception:
+                self.message_id = None
+
+            # Log request and response data
+            self.log_provider_trace(step_id=step_id, actor=actor)
 
     def supports_token_streaming(self) -> bool:
         return True
