@@ -373,11 +373,6 @@ class Memory(BaseModel, validate_assignment=True):
         _render_tree(tree)
         s.write("</memory_filesystem>")
 
-        # Render explicit skill metadata block (agent-scoped + client-provided).
-        skills_str = self.compile_available_skills(client_skills=client_skills)
-        if skills_str:
-            s.write(skills_str)
-
     def compile_available_skills(self, client_skills=None) -> str:
         """Render the <available_skills> block from agent-scoped and client-provided skills.
 
@@ -563,6 +558,16 @@ class Memory(BaseModel, validate_assignment=True):
                 self._render_memory_blocks_line_numbered(s)
             else:
                 self._render_memory_blocks_standard(s)
+
+            # Render <available_skills> AFTER all memory blocks so it appears
+            # at the end of the memory section (right before <memory_metadata>).
+            # This prevents the surgical regex replacement in
+            # _update_system_message_skills() from accidentally matching literal
+            # <available_skills> text references inside memory block content.
+            if self.git_enabled:
+                skills_str = self.compile_available_skills(client_skills=client_skills)
+                if skills_str:
+                    s.write(skills_str)
 
         if tool_usage_rules is not None:
             desc = getattr(tool_usage_rules, "description", None) or ""
