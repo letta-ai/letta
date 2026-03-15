@@ -804,18 +804,32 @@ class LettaAgentV2(BaseAgentV2):
         # Compile the new skills section from agent blocks + client skills
         new_skills = self.agent_state.memory.compile_available_skills(client_skills=self.client_skills)
 
-        # Replace existing <available_skills>...</available_skills> if present
-        pattern = re.compile(r"\n*<available_skills>.*?</available_skills>", re.DOTALL)
-        if pattern.search(old_text):
-            new_text = pattern.sub(new_skills, old_text)
+        # Replace the STRUCTURAL <available_skills>...</available_skills> block.
+        #
+        # Memory block content may contain literal <available_skills> and
+        # </available_skills> text references (e.g. docs about the skills system).
+        # A regex approach cannot reliably distinguish structural tags from text
+        # references because non-greedy matches absorb the structural closing tag.
+        #
+        # Instead we locate the structural block by position: it is always rendered
+        # AFTER the last </system/...> memory block closing tag.  We find the
+        # <available_skills> that starts after that boundary using plain string search.
+        block_close_pattern = re.compile(r"</system/[^>]+>")
+        block_closes = list(block_close_pattern.finditer(old_text))
+        search_from = block_closes[-1].end() if block_closes else 0
+
+        skills_open = old_text.find("<available_skills>", search_from)
+        skills_close = old_text.find("</available_skills>", skills_open) if skills_open >= 0 else -1
+
+        if skills_open >= 0 and skills_close >= 0:
+            # Consume leading newlines before the tag
+            trim_start = skills_open
+            while trim_start > 0 and old_text[trim_start - 1] == "\n":
+                trim_start -= 1
+            new_text = old_text[:trim_start] + new_skills + old_text[skills_close + len("</available_skills>") :]
         elif new_skills:
-            # No existing skills section — insert after </memory_filesystem> if present
-            if "</memory_filesystem>" in old_text:
-                new_text = old_text.replace("</memory_filesystem>", "</memory_filesystem>" + new_skills)
-            else:
-                # Fallback: insert before <memory_metadata>
-                # Strip leading newlines from new_skills to avoid doubling up with
-                # the existing whitespace before <memory_metadata>.
+            # No existing skills section — insert right before <memory_metadata>
+            if "<memory_metadata>" in old_text:
                 new_text = old_text.replace("<memory_metadata>", new_skills.lstrip("\n") + "\n\n<memory_metadata>")
         else:
             return in_context_messages
