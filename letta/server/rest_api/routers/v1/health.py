@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 router = APIRouter(tags=["health"])
 
 # States that should cause readiness to return 503 when enforcement is enabled.
-_UNREADY_STATES = {"degraded", "degraded_dependency", "manual_disable", "warming"}
+_UNREADY_STATES = {"degraded", "manual_disable", "warming"}
 
 
 @router.get("/health/", response_model=Health, operation_id="check_health")

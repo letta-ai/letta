@@ -252,7 +252,6 @@ async def lifespan(app_: FastAPI):
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
     except Exception as e:
         logger.error(f"[Worker {worker_id}] Scheduler initialization failed: {e}", exc_info=True)
-        set_readiness_state(reason="degraded_dependency", source="scheduler_init_failure")
 
     set_readiness_state(reason="ready", source="lifespan_startup_complete")
     logger.info(f"[Worker {worker_id}] Lifespan startup completed")

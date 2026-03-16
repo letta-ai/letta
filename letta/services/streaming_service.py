@@ -26,7 +26,6 @@ from letta.errors import (
 )
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
-from letta.monitoring.readiness_state import set_readiness_state
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState
@@ -504,10 +503,6 @@ class StreamingService:
             except LLMTimeoutError as e:
                 MetricRegistry().request_timeout_counter.add(1, attributes=in_flight_attrs)
                 MetricRegistry().provider_timeout_counter.add(1, attributes={"provider": provider_name})
-                from letta.settings import readiness_settings
-
-                if readiness_settings.enforcement_enabled:
-                    set_readiness_state(reason="degraded_dependency", source="provider_timeout")
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(
