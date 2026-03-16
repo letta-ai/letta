@@ -100,16 +100,40 @@ async def build_summarizer_llm_config(
         from letta.services.provider_manager import ProviderManager
 
         provider_manager = ProviderManager()
-        try:
-            base = await provider_manager.get_llm_config_from_handle(
-                handle=summarizer_config.model,
-                actor=actor,
-            )
-        except Exception as e:
-            logger.warning(
-                f"Failed to load LLM config for summarizer handle '{summarizer_config.model}': {e}. Falling back to agent's LLM config."
-            )
-            return agent_llm_config
+
+        # If the summarizer model is also an auto mode handle, resolve it through
+        # the LLM router instead of loading the unresolved placeholder config
+        # (which has model_endpoint='' and will cause APIConnectionError).
+        if summarizer_config.model and summarizer_config.model.startswith("letta/auto"):
+            try:
+                from letta.services.llm_router import get_llm_routing_client
+
+                routing_client = await get_llm_routing_client()
+                # Create a placeholder config to resolve
+                placeholder = await provider_manager.get_llm_config_from_handle(
+                    handle=summarizer_config.model,
+                    actor=actor,
+                )
+                base, _, _ = await routing_client.resolve_auto_mode_config(
+                    stored_llm_config=placeholder,
+                    actor=actor,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to resolve auto mode summarizer handle '{summarizer_config.model}': {e}. Falling back to zai/glm-5."
+                )
+                base = await provider_manager.get_llm_config_from_handle("zai/glm-5", actor)
+        else:
+            try:
+                base = await provider_manager.get_llm_config_from_handle(
+                    handle=summarizer_config.model,
+                    actor=actor,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to load LLM config for summarizer handle '{summarizer_config.model}': {e}. Falling back to agent's LLM config."
+                )
+                return agent_llm_config
 
         # If explicit model_settings are provided for the summarizer, apply
         # them just like server.create_agent_async does for agents.
