@@ -20,6 +20,7 @@ from letta.functions.mcp_client.types import (
 )
 from letta.functions.schema_generator import normalize_mcp_schema
 from letta.functions.schema_validator import validate_complete_json_schema
+from letta.helpers.url_validation import validate_mcp_server_url
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.mcp_oauth import MCPOAuth, OAuthSessionStatus
@@ -987,6 +988,9 @@ class MCPServerManager:
         Raises:
             ValueError: If server config type is not supported
         """
+        if hasattr(server_config, "server_url") and server_config.server_url:
+            validate_mcp_server_url(server_config.server_url)
+
         # If no OAuth provider is provided, check if we have stored OAuth credentials
         if oauth is None and hasattr(server_config, "server_url"):
             oauth_session = await self.get_oauth_session_by_server(server_config.server_url, actor, status=OAuthSessionStatus.AUTHORIZED)

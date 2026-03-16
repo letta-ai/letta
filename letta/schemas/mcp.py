@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
 
@@ -16,6 +15,7 @@ from letta.functions.mcp_client.types import (
     StdioServerConfig,
     StreamableHTTPServerConfig,
 )
+from letta.helpers.url_validation import validate_mcp_server_url
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
@@ -54,17 +54,10 @@ class MCPServer(BaseMCPServer):
     @field_validator("server_url")
     @classmethod
     def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
-        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        """Validate that server_url is a safe HTTP(S) URL if provided."""
         if v is None:
             return v
-        if not v:
-            raise ValueError("server_url cannot be empty")
-        parsed = urlparse(v)
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
-        if not parsed.netloc:
-            raise ValueError(f"server_url must have a valid host, got: '{v}'")
-        return v
+        return validate_mcp_server_url(v, resolve_hostname=False)
 
     def get_token_secret(self) -> Optional[Secret]:
         """Get the token as a Secret object."""
@@ -217,17 +210,10 @@ class UpdateSSEMCPServer(LettaBase):
     @field_validator("server_url")
     @classmethod
     def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
-        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        """Validate that server_url is a safe HTTP(S) URL if provided."""
         if v is None:
             return v
-        if not v:
-            raise ValueError("server_url cannot be empty")
-        parsed = urlparse(v)
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
-        if not parsed.netloc:
-            raise ValueError(f"server_url must have a valid host, got: '{v}'")
-        return v
+        return validate_mcp_server_url(v, resolve_hostname=False)
 
 
 class UpdateStdioMCPServer(LettaBase):
@@ -251,17 +237,10 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
     @field_validator("server_url")
     @classmethod
     def validate_server_url(cls, v: Optional[str]) -> Optional[str]:
-        """Validate that server_url is a valid HTTP(S) URL if provided."""
+        """Validate that server_url is a safe HTTP(S) URL if provided."""
         if v is None:
             return v
-        if not v:
-            raise ValueError("server_url cannot be empty")
-        parsed = urlparse(v)
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError(f"server_url must start with 'http://' or 'https://', got: '{v}'")
-        if not parsed.netloc:
-            raise ValueError(f"server_url must have a valid host, got: '{v}'")
-        return v
+        return validate_mcp_server_url(v, resolve_hostname=False)
 
 
 UpdateMCPServer = Union[UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer]
