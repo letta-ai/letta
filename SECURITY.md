@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-Please email support@letta.com or report security vulnerabilities through GitHub's [private vulnerability reporting](https://github.com/letta-ai/letta/security/advisories/new).
+Please email support@letta.com with a description of the vulnerability, steps to reproduce, and any relevant details.
 
 Do **not** open a public issue for security vulnerabilities.
 
