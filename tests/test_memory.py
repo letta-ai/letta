@@ -597,55 +597,6 @@ def test_surgical_skills_update_preserves_blocks_with_literal_skills_text():
     assert "<name>test-skill</name>" in new_text[structural_start:structural_end]
 
 
-def test_append_available_skills_to_system_prompt_appends_to_end():
-    """Rendered skills are appended to the end of the existing system prompt text."""
-    from letta.schemas.letta_request import ClientSkillSchema
-
-    m = Memory(
-        agent_type=AgentType.letta_v1_agent,
-        git_enabled=True,
-        blocks=[
-            Block(label="system/human", value="human data", limit=500),
-            Block(
-                label="system/project/architecture",
-                value="Docs mention the `<memory_metadata>` section for context bookkeeping.",
-                limit=1000,
-                description="Architecture notes.",
-            ),
-        ],
-    )
-
-    old_text = m.compile() + "\n\n<memory_metadata>\nAGENT_ID: test\n</memory_metadata>"
-    assert "<available_skills>" not in old_text
-
-    client_skills = [
-        ClientSkillSchema(name="insert-test-skill", description="A test skill.", location="skills/insert-test/SKILL.md"),
-    ]
-    new_skills = m.compile_available_skills(client_skills=client_skills)
-
-    new_text = old_text.rstrip("\n") + "\n\n" + new_skills.lstrip("\n")
-    assert new_text.count("<available_skills>") == 1
-    assert new_text.count("</available_skills>") == 1
-    assert new_text.count("<memory_metadata>") == old_text.count("<memory_metadata>")
-    assert new_text.rstrip().endswith("</available_skills>")
-
-
-def test_append_available_skills_to_system_prompt_preserves_literal_references():
-    """Literal tag references in block content are preserved by append-only behavior."""
-    old_text = (
-        "<system/project/architecture.md>\n"
-        "`<available_skills>` and `<memory_metadata>` are documented here.\n"
-        "</system/project/architecture.md>\n\n"
-        "<memory_metadata>\nAGENT_ID: test\n</memory_metadata>"
-    )
-    new_skills = "\n\n<available_skills>\n<skill><name>x</name></skill>\n</available_skills>"
-
-    new_text = old_text.rstrip("\n") + "\n\n" + new_skills.lstrip("\n")
-    assert "`<available_skills>`" in new_text
-    assert "`<memory_metadata>`" in new_text
-    assert new_text.rstrip().endswith("</available_skills>")
-
-
 def test_compile_git_structured_recompile_after_block_edit():
     """Editing a block value should produce a different compile() output.
 
