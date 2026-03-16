@@ -10,7 +10,6 @@ _VALID_REASONS = {
     "warming",
     "draining",
     "degraded",
-    "degraded_dependency",
     "manual_disable",
 }
 
