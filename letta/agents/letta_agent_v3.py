@@ -646,7 +646,9 @@ class LettaAgentV3(LettaAgentV2):
             # Set stop_reason if not already set
             if self.stop_reason is None:
                 # Classify error type
-                if isinstance(e, LLMError):
+                if isinstance(e, SystemPromptTokenExceededError):
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value)
+                elif isinstance(e, LLMError):
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
                 else:
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
@@ -659,10 +661,19 @@ class LettaAgentV3(LettaAgentV2):
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
 
                 # Mid-stream error: yield error event to client in SSE format
+                user_visible_error_message = "An error occurred during agent execution."
+                error_type = "internal_error"
+                if isinstance(e, SystemPromptTokenExceededError):
+                    error_type = StopReasonType.context_window_overflow_in_system_prompt.value
+                    user_visible_error_message = (
+                        "Compaction failed because the system prompt is too large for this model's context window. "
+                        "Reduce system instructions, memory blocks, or tools, or use a model with a larger context window."
+                    )
+
                 error_message = LettaErrorMessage(
                     run_id=run_id,
-                    error_type="internal_error",
-                    message="An error occurred during agent execution.",
+                    error_type=error_type,
+                    message=user_visible_error_message,
                     detail=error_detail,
                 )
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
