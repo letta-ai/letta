@@ -22,6 +22,7 @@ from letta.errors import (
     LLMRateLimitError,
     LLMTimeoutError,
     PendingApprovalError,
+    SystemPromptTokenExceededError,
 )
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -581,6 +582,27 @@ class StreamingService:
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
+            except SystemPromptTokenExceededError as e:
+                run_status = RunStatus.failed
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt)
+                error_detail = str(e) or repr(e)
+                error_message = LettaErrorMessage(
+                    run_id=run_id,
+                    error_type=StopReasonType.context_window_overflow_in_system_prompt.value,
+                    message=(
+                        "Compaction failed because the system prompt is too large for this model's context window. "
+                        "Reduce system instructions, memory blocks, or tools, or use a model with a larger context window."
+                    ),
+                    detail=error_detail,
+                )
+                error_data = {"error": error_message.model_dump()}
+                logger.warning(
+                    f"Run {run_id} stopped with system prompt overflow: {error_detail}, error_data: {error_message.model_dump()}"
+                )
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except RunCancelledException:
                 # Run was explicitly cancelled - this is not an error
                 # The cancellation has already been handled by cancellation_aware_stream_wrapper
@@ -675,6 +697,7 @@ class StreamingService:
             "llm_empty_response",
             "internal_error",
             "stream_incomplete",
+            StopReasonType.context_window_overflow_in_system_prompt.value,
         }:
             return "upstream_error"
         return "unknown"
