@@ -284,6 +284,8 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gpt-5.4": 1050000,
     "gpt-5.4-fast": 1050000,
     "gpt-5.4-2026-03-05": 1050000,
+    "gpt-5.4-mini": 400000,
+    "gpt-5.4-nano": 400000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
