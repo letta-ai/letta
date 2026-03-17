@@ -1,6 +1,6 @@
 services:
   letta_db:
-    image: pgvector/pgvector:0.8.1-pg15
+    image: pgvector/pgvector:pg18
     networks:
       default:
         aliases:
@@ -11,7 +11,7 @@ services:
       - POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}
       - POSTGRES_DB=${LETTA_PG_DB:-letta}
     volumes:
-      - ./.persist/pgdata-test:/var/lib/postgresql/data
+      - ./.persist/pgdata-test:/var/lib/postgresql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - '5432:5432'

@@ -1,5 +1,5 @@
 # Start with pgvector base for builder
-FROM pgvector/pgvector:0.8.1-pg15 AS builder
+FROM pgvector/pgvector:pg18 AS builder
 # comment to trigger ci
 # Install Python and required packages
 RUN apt-get update && apt-get install -y \
@@ -39,7 +39,7 @@ COPY . .
 RUN uv sync --frozen --no-dev --all-extras --python 3.11
 
 # Runtime stage
-FROM pgvector/pgvector:0.8.1-pg15 AS runtime
+FROM pgvector/pgvector:pg18 AS runtime
 
 # Overridable Node.js version with --build-arg NODE_VERSION
 ARG NODE_VERSION=22

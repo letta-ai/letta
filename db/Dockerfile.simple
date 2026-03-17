@@ -16,21 +16,21 @@
 #   --name letta-db \
 #   -p 5432:5432 \
 #   -e POSTGRES_PASSWORD=password \
-#   -v letta_db:/var/lib/postgresql/data \
+#   -v letta_db:/var/lib/postgresql \
 #   letta-db:latest
 #
 # -d: run in the background
 # --rm: remove the container when it exits
 # --name letta-db: name the container letta-db
 # -p 5432:5432: map port 5432 on the host to port 5432 in the container
-# -v letta_db:/var/lib/postgresql/data: map the volume letta_db to /var/lib/postgresql/data in the container
+# -v letta_db:/var/lib/postgresql: map the volume letta_db to /var/lib/postgresql in the container
 # letta-db:latest: use the image letta-db:latest
 #
 # After the first time, you do not need the POSTGRES_PASSWORD.
 # docker run -d --rm \
 #   --name letta-db \
 #   -p 5432:5432 \
-#   -v letta_db:/var/lib/postgresql/data \
+#   -v letta_db:/var/lib/postgresql \
 #   letta-db:latest
 
 # Rather than a docker volume (letta_db), you can use an absolute path to a directory on the host.
@@ -43,10 +43,10 @@
 # where user, password, and db are the values you set in the init-letta.sql file,
 # all defaulting to 'letta'.
 
-# Version tags can be found here: https://hub.docker.com/r/ankane/pgvector/tags
-ARG PGVECTOR=v0.5.1
+# Version tags can be found here: https://hub.docker.com/r/pgvector/pgvector/tags
+ARG PGVECTOR=pg18
 # Set up a minimal postgres image
-FROM ankane/pgvector:${PGVECTOR}
+FROM pgvector/pgvector:${PGVECTOR}
 RUN sed -e 's/^    //' >/docker-entrypoint-initdb.d/01-initletta.sql <<'EOF'
     -- Title: Init Letta Database
 
