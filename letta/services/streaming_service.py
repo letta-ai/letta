@@ -609,6 +609,16 @@ class StreamingService:
                 run_status = None  # Signal to finally block to skip update
                 # Send [DONE] to properly close the stream
                 yield "data: [DONE]\n\n"
+            except asyncio.CancelledError:
+                # CancelledError is a BaseException (Python 3.9+) that bypasses
+                # `except Exception`. Caused by task cancellation or client disconnect.
+                logger.warning(
+                    f"Run {run_id} stream interrupted by asyncio.CancelledError "
+                    f"(likely client disconnect or task cancellation). "
+                    f"saw_done={saw_done}, saw_error={saw_error}, "
+                    f"agent stop_reason={agent_loop.stop_reason}"
+                )
+                raise
             except Exception as e:
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
