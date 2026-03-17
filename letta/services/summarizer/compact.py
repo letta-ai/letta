@@ -226,7 +226,7 @@ async def compact_messages(
                 tools=tools,
             )
         except Exception as e:
-            logger.error(f"Self summarization failed with exception: {str(e)}. Falling back to self sliding window mode.")
+            logger.warning(f"Self summarization failed with exception: {str(e)}. Falling back to self sliding window mode.")
             try:
                 fallback_config = summarizer_config.model_copy(
                     update={
@@ -251,7 +251,7 @@ async def compact_messages(
                 )
                 summarization_mode_used = "self_compact_sliding_window"
             except Exception as e:
-                logger.error(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+                logger.warning(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
                 fallback_config = summarizer_config.model_copy(
                     update={
                         "mode": "all",
@@ -290,7 +290,7 @@ async def compact_messages(
             raise
         except Exception as e:
             # Prompts for all and self mode should be similar --> can use original prompt
-            logger.error(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+            logger.warning(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
             fallback_config = summarizer_config.model_copy(
                 update={
                     "mode": "all",
@@ -337,7 +337,7 @@ async def compact_messages(
             # the summarizer's context window, falling back to all mode will fail harder.
             raise
         except Exception as e:
-            logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+            logger.warning(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
             fallback_config = summarizer_config.model_copy(
                 update={
                     "mode": "all",
@@ -369,7 +369,7 @@ async def compact_messages(
 
     # If the trigger_threshold is provided, verify the new token count is below it
     if trigger_threshold is not None and context_token_estimate is not None and context_token_estimate >= trigger_threshold:
-        logger.error(
+        logger.warning(
             "Summarization failed to sufficiently reduce context size: "
             f"post-summarization tokens={context_token_estimate}, "
             f"threshold={trigger_threshold}. "
@@ -408,13 +408,16 @@ async def compact_messages(
             if system_prompt_token_estimate is not None and system_prompt_token_estimate >= agent_llm_config.context_window:
                 from letta.errors import SystemPromptTokenExceededError
 
+                logger.warning(
+                    f"System prompt ({system_prompt_token_estimate} tokens) exceeds context window ({agent_llm_config.context_window})"
+                )
                 raise SystemPromptTokenExceededError(
                     system_prompt_token_estimate=system_prompt_token_estimate,
                     context_window=agent_llm_config.context_window,
                 )
 
             # Log error but don't brick the agent
-            logger.error(f"Failed to summarize messages after fallback: {context_token_estimate} > {trigger_threshold}")
+            logger.critical(f"Failed to summarize messages after fallback: {context_token_estimate} > {trigger_threshold}")
         else:
             logger.info(f"Summarization fallback succeeded: {context_token_estimate} < {trigger_threshold}")
 
