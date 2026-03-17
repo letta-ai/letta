@@ -40,6 +40,7 @@ CHATGPT_MODELS = [
     {"name": "gpt-5.4", "context_window": 272000},
     {"name": "gpt-5.4-pro", "context_window": 272000},
     {"name": "gpt-5.4-fast", "context_window": 272000},
+    {"name": "gpt-5.4-mini", "context_window": 400000},
     # GPT-5.3 codex
     {"name": "gpt-5.3-codex", "context_window": 272000},
     {"name": "gpt-5.3-codex-spark", "context_window": 128000},
