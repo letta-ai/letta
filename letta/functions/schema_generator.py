@@ -586,9 +586,10 @@ def generate_schema_from_args_schema_v2(
 def normalize_mcp_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize an MCP JSON schema to fix common issues:
-    1. Add explicit 'additionalProperties': false to all object types
-    2. Add explicit 'type' field to properties using $ref
-    3. Process $defs recursively
+    1. Add empty 'properties': {} to object types missing it
+    2. Add explicit 'additionalProperties': false to all object types
+    3. Add explicit 'type' field to properties using $ref
+    4. Process $defs recursively
 
     Args:
         schema: The JSON schema to normalize (will be modified in-place)
@@ -604,8 +605,10 @@ def normalize_mcp_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
     def normalize_object_schema(obj_schema: Dict[str, Any], defs: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Recursively normalize an object schema."""
 
-        # If this is an object type, add additionalProperties if missing
+        # If this is an object type, add additionalProperties and properties if missing
         if obj_schema.get("type") == "object":
+            if "properties" not in obj_schema:
+                obj_schema["properties"] = {}
             if "additionalProperties" not in obj_schema:
                 obj_schema["additionalProperties"] = False
 
@@ -710,8 +713,11 @@ def generate_tool_schema_for_mcp(
     # assert "required" in parameters_schema, parameters_schema
 
     # Normalize the schema to fix common issues with MCP schemas
-    # This adds additionalProperties: false and explicit types for $ref properties
+    # This adds additionalProperties: false, explicit types for $ref properties,
+    # and ensures object schemas have a 'properties' field
     parameters_schema = normalize_mcp_schema(parameters_schema)
+
+    assert "properties" in parameters_schema, parameters_schema
 
     # Zero-arg tools often omit "required" because nothing is required.
     # Normalise so downstream code can treat it consistently.
