@@ -502,9 +502,9 @@ class AgentManager:
                 except (ValueError, TypeError):  # unknown provider
                     default_model = None
 
-                # Use agent's model as fallback
+                # Use agent's model handle as fallback
                 if not default_model:
-                    default_model = agent_create.llm_config.model
+                    default_model = agent_create.llm_config.handle
 
                 if effective_compaction_settings is None:
                     # If no settings provided, INITIALIZE with default model
