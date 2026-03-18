@@ -251,6 +251,20 @@ class OpenAIClient(LLMClientBase):
     def _is_openrouter_request(self, llm_config: LLMConfig) -> bool:
         return (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (llm_config.provider_name == "openrouter")
 
+    @staticmethod
+    def _extract_openrouter_provider(e: Exception) -> str | None:
+        """Extract upstream provider name from an OpenRouter error response."""
+        body = getattr(e, "body", None)
+        if not isinstance(body, dict):
+            return None
+        error_data = body.get("error", {})
+        if not isinstance(error_data, dict):
+            return None
+        metadata = error_data.get("metadata", {})
+        if not isinstance(metadata, dict):
+            return None
+        return metadata.get("provider_name")
+
     def _is_true_openai_request(self, llm_config: LLMConfig) -> bool:
         if llm_config.model_endpoint_type != "openai":
             return False
@@ -688,6 +702,15 @@ class OpenAIClient(LLMClientBase):
             if not reasoning_config:
                 reasoning_config = {"enabled": True}
             request_data["extra_body"] = {"reasoning": reasoning_config}
+
+        # Add OpenRouter provider preferences for GLM-5 auto mode
+        # Exclude low-quality (fp4), degraded, tool-unsupported, and high-error-rate providers
+        if is_openrouter and (model or "").lower().endswith("glm-5"):
+            existing_extra = request_data.get("extra_body", {})
+            existing_extra["provider"] = {
+                "ignore": ["deepinfra/fp4", "ambient/fp8", "io-net/fp8", "phala", "siliconflow/fp8"],
+            }
+            request_data["extra_body"] = existing_extra
 
         return request_data
 
@@ -1150,6 +1173,17 @@ class OpenAIClient(LLMClientBase):
         Maps OpenAI-specific errors to common LLMError types.
         """
         is_byok = (llm_config.provider_category == ProviderCategory.byok) if llm_config else None
+
+        # Log OpenRouter upstream provider errors with searchable tag
+        if llm_config and self._is_openrouter_request(llm_config):
+            or_provider = self._extract_openrouter_provider(e)
+            logger.warning(
+                f"[OPENROUTER_PROVIDER_ERROR] handle={llm_config.handle} "
+                f"upstream_provider={or_provider} error_type={type(e).__name__} "
+                f"status={getattr(e, 'status_code', None)} "
+                f"message={str(e)[:500]}"
+            )
+
         if isinstance(e, openai.APITimeoutError):
             timeout_duration = getattr(e, "timeout", "unknown")
             logger.warning(f"[OpenAI] Request timeout after {timeout_duration} seconds: {e}")
