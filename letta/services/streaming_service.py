@@ -641,17 +641,26 @@ class StreamingService:
             finally:
                 # If run_status was never set and the stream ended without [DONE],
                 # mark as failed so the run doesn't stay "running" forever.
+                # For background runs, the background stream processor handles
+                # terminal state updates (and has better error context), so we
+                # only log here to avoid overwriting the correct stop_reason.
                 if run_id and self.runs_manager and run_status is None and not saw_done:
-                    logger.warning(f"Run {run_id} stream ended without setting run_status or emitting [DONE]. Marking as failed.")
-                    run_status = RunStatus.failed
-                    stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
-                    error_data = {
-                        "error": {
-                            "run_id": run_id,
-                            "error_type": "stream_incomplete",
-                            "message": "Stream ended unexpectedly without a terminal event.",
+                    if is_background:
+                        logger.warning(
+                            f"Run {run_id} stream ended without setting run_status or emitting [DONE]. "
+                            f"Skipping run update — background stream processor will handle terminal state."
+                        )
+                    else:
+                        logger.warning(f"Run {run_id} stream ended without setting run_status or emitting [DONE]. Marking as failed.")
+                        run_status = RunStatus.failed
+                        stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
+                        error_data = {
+                            "error": {
+                                "run_id": run_id,
+                                "error_type": "stream_incomplete",
+                                "message": "Stream ended unexpectedly without a terminal event.",
+                            }
                         }
-                    }
 
                 # always update run status, whether success or failure
                 if run_id and self.runs_manager and run_status:
