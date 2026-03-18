@@ -344,6 +344,7 @@ class LettaAgentV3(LettaAgentV2):
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_compaction_messages=include_compaction_messages,
+                billing_context=billing_context,
             )
             input_messages_to_persist = []  # clear after first step
 
@@ -582,6 +583,7 @@ class LettaAgentV3(LettaAgentV2):
                     include_return_message_types=include_return_message_types,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_compaction_messages=include_compaction_messages,
+                    billing_context=billing_context,
                 )
                 input_messages_to_persist = []  # clear after first step
                 async for chunk in response:
@@ -897,6 +899,7 @@ class LettaAgentV3(LettaAgentV2):
         dry_run: bool = False,
         enforce_run_id_set: bool = True,
         include_compaction_messages: bool = False,
+        billing_context: Optional["BillingContext"] = None,
     ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
@@ -1221,6 +1224,7 @@ class LettaAgentV3(LettaAgentV2):
                                     trigger="context_window_exceeded",
                                     context_tokens_before=context_tokens_before,
                                     messages_count_before=messages_count_before,
+                                    billing_context=billing_context,
                                 )
 
                                 # Recompile the persisted system prompt after compaction so subsequent
@@ -1443,6 +1447,7 @@ class LettaAgentV3(LettaAgentV2):
                         trigger="post_step_context_check",
                         context_tokens_before=context_tokens_before,
                         messages_count_before=messages_count_before,
+                        billing_context=billing_context,
                     )
 
                     # Recompile the persisted system prompt after compaction so subsequent
@@ -2057,6 +2062,7 @@ class LettaAgentV3(LettaAgentV2):
         trigger: Optional[str] = None,
         context_tokens_before: Optional[int] = None,
         messages_count_before: Optional[int] = None,
+        billing_context: Optional["BillingContext"] = None,
     ) -> tuple[Message, list[Message], str]:
         """Compact the current in-context messages for this agent.
 
@@ -2096,6 +2102,7 @@ class LettaAgentV3(LettaAgentV2):
             trigger=trigger,
             context_tokens_before=context_tokens_before,
             messages_count_before=messages_count_before,
+            billing_context=billing_context,
         )
 
         # Update the agent's context token estimate
