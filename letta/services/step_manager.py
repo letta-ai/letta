@@ -207,6 +207,7 @@ class StepManager:
             "provider_name": provider_name,
             "provider_category": provider_category,
             "model": model,
+            "model_handle": model_handle,
             "model_endpoint": model_endpoint,
             "context_window_limit": context_window_limit,
             "completion_tokens": usage.completion_tokens,
