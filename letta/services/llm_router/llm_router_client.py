@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Auto mode model routing
-AUTO_MODE_PRIMARY = "openrouter/z-ai/glm-5"
+AUTO_MODE_PRIMARY = "baseten/glm-5"
 AUTO_MODE_FALLBACK = "zai/glm-5"
 
 # Fallback routes: primary handle -> fallback handle
@@ -64,14 +64,14 @@ def _build_openrouter_config() -> "LLMConfig":
 
 
 def _build_baseten_config() -> "LLMConfig":
-    """Build a hardcoded LLMConfig for Baseten GLM-5 (not discoverable via provider sync)."""
+    """Build a hardcoded LLMConfig for Baseten serverless GLM-5 (not discoverable via provider sync)."""
     from letta.schemas.enums import ProviderCategory
     from letta.schemas.llm_config import LLMConfig
 
     return LLMConfig(
         model="zai-org/GLM-5",
         model_endpoint_type="baseten",
-        model_endpoint="3m5zok9w",
+        model_endpoint="https://inference.baseten.co/v1",
         context_window=180000,
         max_tokens=16384,
         handle="baseten/glm-5",
@@ -143,7 +143,7 @@ class LLMRoutingClient(LLMRoutingClientBase):
         if not model_settings.auto_mode_enabled:
             logger.info(f"[LLM ROUTER]: primary {primary_handle} disabled via kill switch, using {AUTO_MODE_FALLBACK}")
         elif await self._is_healthy(primary_handle):
-            config = _build_openrouter_config()
+            config = _build_baseten_config()
             config = config.model_copy(
                 update={
                     "context_window": min(stored_llm_config.context_window, config.context_window),

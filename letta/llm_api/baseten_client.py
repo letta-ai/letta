@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 from openai import AsyncOpenAI, AsyncStream, OpenAI
@@ -11,6 +12,8 @@ from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.settings import model_settings
+
+logger = logging.getLogger(__name__)
 
 
 def _build_base_url(model_endpoint: str) -> str:
@@ -96,6 +99,39 @@ class BasetenClient(OpenAIClient):
         if is_serverless:
             return {"api_key": api_key, "base_url": base_url}
         return {"api_key": "unused", "base_url": base_url, "default_headers": {"Authorization": f"Api-Key {api_key}"}}
+
+    @trace_method
+    def handle_llm_error(self, e: Exception, llm_config: Optional[LLMConfig] = None) -> Exception:
+        """Log Baseten provider errors with searchable tag, then delegate to parent."""
+        status_code = getattr(e, "status_code", None)
+        body = getattr(e, "body", None)
+
+        # Extract error details from the response body
+        error_code = None
+        error_message = None
+        if isinstance(body, dict):
+            error_data = body.get("error", {})
+            if isinstance(error_data, dict):
+                error_code = error_data.get("code") or error_data.get("type")
+                error_message = error_data.get("message")
+            elif isinstance(error_data, str):
+                error_message = error_data
+        if error_message is None:
+            error_message = str(e)[:500]
+
+        is_serverless = llm_config and llm_config.model_endpoint and llm_config.model_endpoint.startswith("https://")
+
+        logger.warning(
+            f"[BASETEN_PROVIDER_ERROR] handle={llm_config.handle if llm_config else None} "
+            f"model={llm_config.model if llm_config else None} "
+            f"serverless={is_serverless} "
+            f"error_type={type(e).__name__} "
+            f"status={status_code} "
+            f"error_code={error_code} "
+            f"message={error_message}"
+        )
+
+        return super().handle_llm_error(e, llm_config=llm_config)
 
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
