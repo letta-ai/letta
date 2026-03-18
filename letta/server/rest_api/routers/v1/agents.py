@@ -2536,6 +2536,6 @@ async def capture_messages(
     if sleeptime_group:
         sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
         sleeptime_agent_loop.response_messages = response_messages
-        run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
+        run_ids = await sleeptime_agent_loop.run_sleeptime_agents(billing_context=headers.billing_context)
 
     return JSONResponse({"success": True, "messages_created": len(response_messages), "run_ids": run_ids})
