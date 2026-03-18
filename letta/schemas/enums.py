@@ -75,6 +75,7 @@ class ProviderType(str, Enum):
     openrouter = "openrouter"
     xai = "xai"
     zai = "zai"
+    zai_coding = "zai_coding"
 
 
 class AgentType(str, Enum):

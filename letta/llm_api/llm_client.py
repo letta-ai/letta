@@ -79,7 +79,7 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
-            case ProviderType.zai:
+            case ProviderType.zai | ProviderType.zai_coding:
                 from letta.llm_api.zai_client import ZAIClient
 
                 return ZAIClient(

@@ -72,3 +72,10 @@ class ZAIProvider(OpenAIProvider):
             )
 
         return configs
+
+
+class ZAICodingProvider(ZAIProvider):
+    """Z.ai Coding Plan provider - uses coding-specific endpoint."""
+
+    provider_type: Literal[ProviderType.zai_coding] = Field(ProviderType.zai_coding, description="The type of the provider.")
+    base_url: str = Field("https://api.z.ai/api/coding/paas/v4/", description="Base URL for the Z.ai Coding API.")

@@ -21,7 +21,7 @@ from .sglang import SGLangProvider
 from .together import TogetherProvider
 from .vllm import VLLMProvider
 from .xai import XAIProvider
-from .zai import ZAIProvider
+from .zai import ZAICodingProvider, ZAIProvider
 
 __all__ = [
     "AnthropicProvider",
@@ -49,5 +49,6 @@ __all__ = [
     "TogetherProvider",
     "VLLMProvider",
     "XAIProvider",
+    "ZAICodingProvider",
     "ZAIProvider",
 ]

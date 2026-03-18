@@ -689,6 +689,7 @@ class StreamingService:
             "bedrock",
             "deepseek",
             "zai",
+            "zai_coding",
             "chatgpt_oauth",
             "minimax",
             "openrouter",
