@@ -144,8 +144,8 @@ async def test_minimax():
     provider = MiniMaxProvider(name="minimax")
     models = await provider.list_llm_models_async()
 
-    # Should have exactly 3 models: M2.1, M2.1-lightning, M2, M2.5
-    assert len(models) == 4
+    # Should have exactly 3 models: M2.1, M2.1-lightning, M2, M2.5, M2.7
+    assert len(models) == 5
 
     # Verify model properties
     model_names = {m.model for m in models}
