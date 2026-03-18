@@ -38,6 +38,12 @@ MODEL_LIST = [
         "max_output": 128000,
         "description": "Peak Performance. Ultimate Value. Master the Complex",
     },
+    {
+        "name": "MiniMax-M2.7",
+        "context_window": 200000,
+        "max_output": 128000,
+        "description": "Latest model.",
+    },
 ]
 
 
