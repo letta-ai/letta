@@ -131,6 +131,14 @@ class MessageCreateType(str, Enum):
 
 class MessageCreateBase(BaseModel):
     type: MessageCreateType = Field(..., description="The message type to be created.")
+    otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
+    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
+
+    @model_validator(mode="after")
+    def generate_otid_if_missing(self):
+        if self.otid is None:
+            self.otid = str(uuid.uuid4())
+        return self
 
 
 class MessageCreate(MessageCreateBase):
@@ -151,10 +159,8 @@ class MessageCreate(MessageCreateBase):
         json_schema_extra=get_letta_message_content_union_str_json_schema(),
     )
     name: Optional[str] = Field(default=None, description="The name of the participant.")
-    otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
     sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
     batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
-    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)
@@ -172,7 +178,6 @@ class ApprovalCreate(MessageCreateBase):
     approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
     approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
     reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
-    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     @model_validator(mode="after")
     def migrate_deprecated_fields(self):

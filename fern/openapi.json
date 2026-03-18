@@ -28671,6 +28671,30 @@
             "description": "The message type to be created.",
             "default": "approval"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id associated with this message"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "approvals": {
             "anyOf": [
               {
@@ -28738,18 +28762,6 @@
             "title": "Reason",
             "description": "An optional explanation for the provided approval status",
             "deprecated": true
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id",
-            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",
@@ -41586,6 +41598,30 @@
             "description": "The message type to be created.",
             "default": "message"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id associated with this message"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "role": {
             "type": "string",
             "enum": ["user", "system", "assistant"],
@@ -41619,18 +41655,6 @@
             "title": "Name",
             "description": "The name of the participant."
           },
-          "otid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Otid",
-            "description": "The offline threading id associated with this message"
-          },
           "sender_id": {
             "anyOf": [
               {
@@ -41654,18 +41678,6 @@
             ],
             "title": "Batch Item Id",
             "description": "The id of the LLMBatchItem that this message is associated with"
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id",
-            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",
@@ -47850,6 +47862,30 @@
             "description": "The message type to be created.",
             "default": "tool_return"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id associated with this message"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "tool_returns": {
             "items": {
               "$ref": "#/components/schemas/letta__schemas__letta_message__ToolReturn"
@@ -50872,6 +50908,30 @@
             "description": "The message type to be created.",
             "default": "message"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id associated with this message"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "role": {
             "$ref": "#/components/schemas/MessageRole",
             "description": "The role of the participant."
@@ -50903,18 +50963,6 @@
             "title": "Name",
             "description": "The name of the participant."
           },
-          "otid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Otid",
-            "description": "The offline threading id associated with this message"
-          },
           "sender_id": {
             "anyOf": [
               {
@@ -50938,18 +50986,6 @@
             ],
             "title": "Batch Item Id",
             "description": "The id of the LLMBatchItem that this message is associated with"
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id",
-            "description": "The multi-agent group that the message was sent in"
           },
           "id": {
             "type": "string",
