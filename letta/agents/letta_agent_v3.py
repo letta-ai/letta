@@ -1052,6 +1052,18 @@ class LettaAgentV3(LettaAgentV2):
                     # Update the adapter to use the resolved client and config
                     llm_adapter.llm_client = active_llm_client
                     llm_adapter.llm_config = active_llm_config
+                    # Update persisted step with resolved model info so billing can
+                    # identify the actual model and charge at the correct rate.
+                    # Keep model_handle as the original auto handle so we can still
+                    # identify that the user was on auto mode.
+                    await self.step_manager.update_step_resolved_model_async(
+                        actor=self.actor,
+                        step_id=step_id,
+                        provider_name=active_llm_config.model_endpoint_type,
+                        provider_category=active_llm_config.provider_category or "base",
+                        model=active_llm_config.model,
+                        model_endpoint=active_llm_config.model_endpoint,
+                    )
                 else:
                     active_llm_config = self.agent_state.llm_config
                     active_llm_client = self.llm_client

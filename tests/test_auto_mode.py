@@ -1,11 +1,18 @@
+import logging
+import os
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from letta_client import AsyncLetta
+from letta_client.types import MessageCreateParam
 
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.services.llm_router.llm_router_client import AUTO_MODE_FALLBACK, AUTO_MODE_PRIMARY, FALLBACK_ROUTES
 from letta.services.provider_manager import AUTO_MODE_HANDLES
+
+logger = logging.getLogger(__name__)
 
 
 class TestAutoModeConstants:
@@ -204,3 +211,61 @@ class TestFallbackRoutes:
 
         client = LLMRoutingClientBase()
         assert client.get_fallback_handle(AUTO_MODE_PRIMARY) is None
+
+
+class TestAutoModeStepFields:
+    """Integration test: verify that auto mode steps have resolved model info
+    but preserve model_handle as 'letta/auto'."""
+
+    @pytest.mark.asyncio
+    async def test_auto_mode_step_has_resolved_model_info(self, server_url: str):
+        client = AsyncLetta(base_url=server_url)
+
+        try:
+            agent = await client.agents.create(
+                agent_type="letta_v1_agent",
+                name=f"test_auto_mode_{uuid.uuid4().hex[:8]}",
+                include_base_tools=False,
+                model="letta/auto",
+                embedding=os.getenv("EMBEDDING_HANDLE", "openai/text-embedding-3-small"),
+                tags=["test_auto_mode"],
+            )
+        except Exception as e:
+            if "not found" in str(e).lower() or "auto" in str(e).lower():
+                pytest.skip("Auto mode not enabled on this server")
+            raise
+
+        try:
+            response = await client.agents.messages.send_message(
+                agent_id=agent.id,
+                messages=[
+                    MessageCreateParam(
+                        role="user",
+                        content="Reply with exactly: hello",
+                    )
+                ],
+            )
+
+            steps = await client.runs.list_steps(run_id=response.id)
+            assert len(steps) > 0, "Should have at least one step"
+
+            step = steps[0]
+            logger.info(
+                f"Auto mode step: model={step.model}, model_endpoint={step.model_endpoint}, "
+                f"model_handle={step.model_handle}, provider_name={step.provider_name}"
+            )
+
+            # model_handle should be preserved as letta/auto
+            assert step.model_handle == "letta/auto", f"model_handle should be 'letta/auto', got '{step.model_handle}'"
+
+            # Resolved fields should NOT be the placeholder values
+            assert step.model and step.model != "auto", f"model should be resolved (not 'auto'), got '{step.model}'"
+            assert step.model_endpoint and step.model_endpoint != "", (
+                f"model_endpoint should be resolved (not empty), got '{step.model_endpoint}'"
+            )
+            assert step.provider_name and step.provider_name != "letta", (
+                f"provider_name should be resolved (not 'letta'), got '{step.provider_name}'"
+            )
+
+        finally:
+            await client.agents.delete(agent.id)
