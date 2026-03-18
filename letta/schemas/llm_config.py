@@ -52,6 +52,7 @@ class LLMConfig(BaseModel):
         "deepseek",
         "xai",
         "zai",
+        "zai_coding",
         "baseten",
         "fireworks",
         "openrouter",
@@ -431,7 +432,7 @@ class LLMConfig(BaseModel):
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
-        elif self.model_endpoint_type == "zai":
+        elif self.model_endpoint_type in ("zai", "zai_coding"):
             from letta.schemas.model import ZAIThinking
 
             thinking_type = "enabled" if self.enable_reasoner else "disabled"
@@ -516,7 +517,7 @@ class LLMConfig(BaseModel):
 
     @classmethod
     def is_zai_reasoning_model(cls, config: "LLMConfig") -> bool:
-        return config.model_endpoint_type == "zai" and (
+        return config.model_endpoint_type in ("zai", "zai_coding") and (
             config.model.startswith("glm-4.5")
             or config.model.startswith("glm-4.6")
             or config.model.startswith("glm-4.7")

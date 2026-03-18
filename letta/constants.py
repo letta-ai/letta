@@ -25,7 +25,8 @@ PROVIDER_ORDER = {
     "xai": 12,
     "lmstudio": 13,
     "zai": 14,
-    "openrouter": 15,
+    "zai_coding": 15,
+    "openrouter": 16,
 }
 
 ADMIN_PREFIX = "/v1/admin"

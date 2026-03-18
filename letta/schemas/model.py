@@ -49,6 +49,7 @@ class Model(LLMConfig, ModelBase):
         "deepseek",
         "xai",
         "zai",
+        "zai_coding",
         "openrouter",
         "chatgpt_oauth",
     ] = Field(..., description="Deprecated: Use 'provider_type' field instead. The endpoint type for the model.", deprecated=True)
@@ -137,6 +138,7 @@ class Model(LLMConfig, ModelBase):
             ProviderType.azure: AzureModelSettings,
             ProviderType.xai: XAIModelSettings,
             ProviderType.zai: ZAIModelSettings,
+            ProviderType.zai_coding: ZAIModelSettings,
             ProviderType.groq: GroqModelSettings,
             ProviderType.deepseek: DeepseekModelSettings,
             ProviderType.together: TogetherModelSettings,

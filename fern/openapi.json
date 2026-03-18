@@ -39241,6 +39241,7 @@
               "deepseek",
               "xai",
               "zai",
+              "zai_coding",
               "baseten",
               "fireworks",
               "openrouter",
@@ -42018,6 +42019,7 @@
               "deepseek",
               "xai",
               "zai",
+              "zai_coding",
               "openrouter",
               "chatgpt_oauth"
             ],
@@ -43749,7 +43751,8 @@
           "sglang",
           "openrouter",
           "xai",
-          "zai"
+          "zai",
+          "zai_coding"
         ],
         "title": "ProviderType"
       },
