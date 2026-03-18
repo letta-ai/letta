@@ -875,21 +875,6 @@ class SimpleOpenAIStreamingInterface:
             choice = chunk.choices[0]
             message_delta = choice.delta
 
-            if message_delta.content is not None and message_delta.content != "":
-                if prev_message_type and prev_message_type != "assistant_message":
-                    message_index += 1
-                assistant_msg = AssistantMessage(
-                    id=self.letta_message_id,
-                    content=message_delta.content,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                self.content_messages.append(assistant_msg)
-                prev_message_type = assistant_msg.message_type
-                yield assistant_msg
-
             if hasattr(chunk, "choices") and len(chunk.choices) > 0 and hasattr(chunk.choices[0], "delta"):
                 delta = chunk.choices[0].delta
                 # Check for reasoning_content (standard) or reasoning (OpenRouter)
@@ -910,6 +895,21 @@ class SimpleOpenAIStreamingInterface:
                     self.content_messages.append(reasoning_msg)
                     prev_message_type = reasoning_msg.message_type
                     yield reasoning_msg
+
+            if message_delta.content is not None and message_delta.content != "":
+                if prev_message_type and prev_message_type != "assistant_message":
+                    message_index += 1
+                assistant_msg = AssistantMessage(
+                    id=self.letta_message_id,
+                    content=message_delta.content,
+                    date=datetime.now(timezone.utc).isoformat(),
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    run_id=self.run_id,
+                    step_id=self.step_id,
+                )
+                self.content_messages.append(assistant_msg)
+                prev_message_type = assistant_msg.message_type
+                yield assistant_msg
 
             if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
                 # Accumulate per-index tool call fragments and emit deltas
