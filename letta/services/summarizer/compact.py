@@ -13,6 +13,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
 from letta.services.summarizer.self_summarizer import self_summarize_all, self_summarize_sliding_window
 from letta.services.summarizer.summarizer_all import summarize_all
@@ -171,6 +172,7 @@ async def compact_messages(
     trigger: Optional[str] = None,
     context_tokens_before: Optional[int] = None,
     messages_count_before: Optional[int] = None,
+    billing_context: Optional[BillingContext] = None,
 ) -> CompactResult:
     """Compact in-context messages using summarization.
 
@@ -224,6 +226,7 @@ async def compact_messages(
                 timezone=timezone,
                 agent_tags=agent_tags,
                 tools=tools,
+                billing_context=billing_context,
             )
         except Exception as e:
             logger.warning(f"Self summarization failed with exception: {str(e)}. Falling back to self sliding window mode.")
@@ -248,6 +251,7 @@ async def compact_messages(
                     timezone=timezone,
                     agent_tags=agent_tags,
                     tools=tools,
+                    billing_context=billing_context,
                 )
                 summarization_mode_used = "self_compact_sliding_window"
             except Exception as e:
@@ -267,6 +271,7 @@ async def compact_messages(
                     agent_tags=agent_tags,
                     run_id=run_id,
                     step_id=step_id,
+                    billing_context=billing_context,
                 )
                 summarization_mode_used = "all"
     elif summarizer_config.mode == "self_compact_sliding_window":
@@ -285,6 +290,7 @@ async def compact_messages(
                 timezone=timezone,
                 agent_tags=agent_tags,
                 tools=tools,
+                billing_context=billing_context,
             )
         except ContextWindowExceededError:
             raise
@@ -306,6 +312,7 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
             summarization_mode_used = "all"
     elif summarizer_config.mode == "all":
@@ -318,6 +325,7 @@ async def compact_messages(
             agent_tags=agent_tags,
             run_id=run_id,
             step_id=step_id,
+            billing_context=billing_context,
         )
     elif summarizer_config.mode == "sliding_window":
         try:
@@ -331,6 +339,7 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
         except ContextWindowExceededError:
             # If sliding window failed because the transcript was too large for
@@ -353,6 +362,7 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
             summarization_mode_used = "all"
     else:
@@ -387,6 +397,7 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
             summarization_mode_used = "all"
 

@@ -21,6 +21,7 @@ from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ProviderTyp
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
@@ -496,6 +497,7 @@ async def simple_summary(
     run_id: str | None = None,
     step_id: str | None = None,
     compaction_settings: dict | None = None,
+    billing_context: BillingContext | None = None,
 ) -> str:
     """Generate a simple summary from a list of messages.
 
@@ -524,6 +526,7 @@ async def simple_summary(
         org_id=actor.organization_id if actor else None,
         user_id=actor.id if actor else None,
         compaction_settings=compaction_settings,
+        billing_context=billing_context,
     )
 
     # Prepare the messages payload to send to the LLM
