@@ -91,3 +91,7 @@ class LLMRoutingClient:
             None — no fallback routes configured without Redis.
         """
         return None
+
+    def apply_reroute_rules(self, resolved_config, messages, stored_llm_config, agent_state):
+        """Apply content-based reroute rules (noop in base)."""
+        return resolved_config

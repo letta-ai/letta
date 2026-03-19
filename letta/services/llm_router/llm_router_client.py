@@ -16,6 +16,7 @@ from letta.log import get_logger
 from .llm_router_client_base import LLMRoutingClient as LLMRoutingClientBase
 
 if TYPE_CHECKING:
+    from letta.schemas.agent import AgentState
     from letta.schemas.llm_config import LLMConfig
     from letta.schemas.user import User
 
@@ -105,6 +106,37 @@ def _build_fireworks_config() -> "LLMConfig":
         strict=True,
         parallel_tool_calls=True,
     )
+
+
+def _build_openrouter_kimi_k2_5_config() -> "LLMConfig":
+    """Build a hardcoded LLMConfig for OpenRouter Kimi K2.5 (vision-capable, used for image rerouting)."""
+    from letta.schemas.enums import ProviderCategory
+    from letta.schemas.llm_config import LLMConfig
+
+    return LLMConfig(
+        model="moonshotai/kimi-k2.5",
+        model_endpoint_type="openrouter",
+        model_endpoint="https://openrouter.ai/api/v1",
+        context_window=180000,
+        max_tokens=16384,
+        handle="openrouter/moonshotai/kimi-k2.5",
+        provider_name="openrouter",
+        provider_category=ProviderCategory.base,
+        strict=True,
+        parallel_tool_calls=True,
+    )
+
+
+def _messages_contain_images(messages: list) -> bool:
+    """Check if any message in the list contains image content."""
+    from letta.schemas.letta_message_content import ImageContent
+
+    for msg in messages:
+        if isinstance(getattr(msg, "content", None), list):
+            for part in msg.content:
+                if isinstance(part, ImageContent):
+                    return True
+    return False
 
 
 class CircuitState(str, Enum):
@@ -266,6 +298,37 @@ class LLMRoutingClient(LLMRoutingClientBase):
             The fallback handle, or None if no fallback is configured.
         """
         return FALLBACK_ROUTES.get(handle)
+
+    def apply_reroute_rules(
+        self,
+        resolved_config: "LLMConfig",
+        messages: list,
+        stored_llm_config: "LLMConfig",
+        agent_state: "AgentState",
+    ) -> "LLMConfig":
+        """Apply content-based reroute rules to the resolved auto mode config.
+
+        Inspects messages and agent state for conditions that require a different
+        model than what was resolved by the circuit breaker (e.g. images need a
+        vision-capable model).
+
+        Returns the original config if no rules match, or a replacement config.
+        """
+        # Rule: If messages contain images and the resolved model doesn't support vision,
+        # reroute to OpenRouter Kimi K2.5 (a vision-capable model)
+        if resolved_config.handle in ("baseten/glm-5", "zai/glm-5") and _messages_contain_images(messages):
+            logger.info(
+                f"[LLM ROUTER]: rerouting from {resolved_config.handle} to openrouter/moonshotai/kimi-k2.5 (image content detected)"
+            )
+            rerouted = _build_openrouter_kimi_k2_5_config()
+            return rerouted.model_copy(
+                update={
+                    "context_window": min(stored_llm_config.context_window, rerouted.context_window),
+                    "max_tokens": min(stored_llm_config.max_tokens, rerouted.max_tokens),
+                }
+            )
+
+        return resolved_config
 
     async def _is_healthy(self, handle: str) -> bool:
         """Check if a model handle is healthy (internal circuit breaker).

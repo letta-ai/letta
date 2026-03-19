@@ -1047,6 +1047,13 @@ class LettaAgentV3(LettaAgentV2):
                     )
                     if not is_primary:
                         self.logger.info(f"[LLM ROUTER]: primary {primary_handle} rerouted, falling back to {active_llm_config.handle}")
+                    # Content-based rerouting (e.g. images → vision-capable model)
+                    active_llm_config = routing_client.apply_reroute_rules(
+                        resolved_config=active_llm_config,
+                        messages=messages,
+                        stored_llm_config=self.agent_state.llm_config,
+                        agent_state=self.agent_state,
+                    )
                     active_llm_client = LLMClient.create(
                         provider_type=active_llm_config.model_endpoint_type,
                         put_inner_thoughts_first=True,
