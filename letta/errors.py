@@ -36,9 +36,10 @@ class LettaError(Exception):
         super().__init__(message)
 
     def __str__(self) -> str:
-        if self.code:
-            return f"{self.code.value}: {self.message}"
-        return self.message
+        base = f"{self.code.value}: {self.message}" if self.code else self.message
+        if isinstance(self.details, dict) and self.details.get("is_byok"):
+            return f"{base} [BYOK]"
+        return base
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(message='{self.message}', code='{self.code}', details={self.details})"
