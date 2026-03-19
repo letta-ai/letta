@@ -25,12 +25,17 @@ logger = get_logger(__name__)
 AUTO_MODE_PRIMARY = "baseten/glm-5"
 AUTO_MODE_FALLBACK = "zai/glm-5"
 
+# Auto-chat mode model routing
+AUTO_CHAT_MODE_PRIMARY = "minimax/MiniMax-M2.7"
+AUTO_CHAT_MODE_FALLBACK = "minimax/MiniMax-M2.5"
+
 # Fallback routes: primary handle -> fallback handle
 # When a model returns 429/5xx and the circuit breaker trips, route to the fallback.
 # Bedrock handles are dynamic (depend on AWS inference profiles), so anthropic->bedrock
 # routes should be added once we have a stable handle resolution mechanism.
 FALLBACK_ROUTES: dict[str, str] = {
     AUTO_MODE_PRIMARY: AUTO_MODE_FALLBACK,
+    AUTO_CHAT_MODE_PRIMARY: AUTO_CHAT_MODE_FALLBACK,
 }
 
 # Circuit breaker configuration
@@ -138,12 +143,23 @@ class LLMRoutingClient(LLMRoutingClientBase):
         from letta.settings import model_settings
 
         provider_manager = ProviderManager()
-        primary_handle = AUTO_MODE_PRIMARY
+
+        # Determine primary/fallback based on the stored handle
+        if stored_llm_config.handle == "letta/auto-chat":
+            primary_handle = AUTO_CHAT_MODE_PRIMARY
+            fallback_handle = AUTO_CHAT_MODE_FALLBACK
+        else:
+            primary_handle = AUTO_MODE_PRIMARY
+            fallback_handle = AUTO_MODE_FALLBACK
 
         if not model_settings.auto_mode_enabled:
-            logger.info(f"[LLM ROUTER]: primary {primary_handle} disabled via kill switch, using {AUTO_MODE_FALLBACK}")
+            logger.info(f"[LLM ROUTER]: primary {primary_handle} disabled via kill switch, using {fallback_handle}")
         elif await self._is_healthy(primary_handle):
-            config = _build_baseten_config()
+            # Auto-chat resolves via provider sync; auto/auto-fast use hardcoded baseten config
+            if stored_llm_config.handle == "letta/auto-chat":
+                config = await provider_manager.get_llm_config_from_handle(primary_handle, actor)
+            else:
+                config = _build_baseten_config()
             config = config.model_copy(
                 update={
                     "context_window": min(stored_llm_config.context_window, config.context_window),
@@ -152,9 +168,9 @@ class LLMRoutingClient(LLMRoutingClientBase):
             )
             return config, True, primary_handle
         else:
-            logger.warning(f"[LLM ROUTER]: primary {primary_handle} unhealthy, using {AUTO_MODE_FALLBACK}")
+            logger.warning(f"[LLM ROUTER]: primary {primary_handle} unhealthy, using {fallback_handle}")
 
-        config = await provider_manager.get_llm_config_from_handle(AUTO_MODE_FALLBACK, actor)
+        config = await provider_manager.get_llm_config_from_handle(fallback_handle, actor)
         config = config.model_copy(
             update={
                 "context_window": min(stored_llm_config.context_window, config.context_window),
@@ -205,7 +221,12 @@ class LLMRoutingClient(LLMRoutingClientBase):
         Returns:
             The fallback LLM config with preserved context_window and max_tokens.
         """
-        return await self.get_fallback_config_for_handle(AUTO_MODE_FALLBACK, stored_llm_config, actor)
+        # Determine fallback based on stored handle
+        if stored_llm_config.handle == "letta/auto-chat":
+            fallback = AUTO_CHAT_MODE_FALLBACK
+        else:
+            fallback = AUTO_MODE_FALLBACK
+        return await self.get_fallback_config_for_handle(fallback, stored_llm_config, actor)
 
     async def get_fallback_config_for_handle(
         self,

@@ -9,7 +9,13 @@ from letta_client.types import MessageCreateParam
 
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
-from letta.services.llm_router.llm_router_client import AUTO_MODE_FALLBACK, AUTO_MODE_PRIMARY, FALLBACK_ROUTES
+from letta.services.llm_router.llm_router_client import (
+    AUTO_CHAT_MODE_FALLBACK,
+    AUTO_CHAT_MODE_PRIMARY,
+    AUTO_MODE_FALLBACK,
+    AUTO_MODE_PRIMARY,
+    FALLBACK_ROUTES,
+)
 from letta.services.provider_manager import AUTO_MODE_HANDLES
 
 logger = logging.getLogger(__name__)
@@ -19,10 +25,15 @@ class TestAutoModeConstants:
     def test_handles_defined(self):
         assert "letta/auto" in AUTO_MODE_HANDLES
         assert "letta/auto-fast" in AUTO_MODE_HANDLES
+        assert "letta/auto-chat" in AUTO_MODE_HANDLES
         assert isinstance(AUTO_MODE_HANDLES, list)
 
     def test_fallback_defined(self):
         assert AUTO_MODE_FALLBACK == "zai/glm-5"
+
+    def test_auto_chat_constants_defined(self):
+        assert AUTO_CHAT_MODE_PRIMARY == "minimax/MiniMax-M2.7"
+        assert AUTO_CHAT_MODE_FALLBACK == "minimax/MiniMax-M2.5"
 
 
 class TestAutoModeGetLLMConfig:
@@ -64,6 +75,27 @@ class TestAutoModeGetLLMConfig:
             config = await pm.get_llm_config_from_handle("letta/auto-fast", actor)
             assert config.handle == "letta/auto-fast"
             assert config.model == "auto-fast"
+            assert config.provider_name == "letta"
+            assert config.context_window == 180000
+            assert config.max_tokens == 8192
+        finally:
+            model_settings.auto_mode_enabled = original
+
+    @pytest.mark.asyncio
+    async def test_returns_config_for_auto_chat(self):
+        from letta.services.provider_manager import ProviderManager
+        from letta.settings import model_settings
+
+        original = model_settings.auto_mode_enabled
+        model_settings.auto_mode_enabled = True
+        try:
+            pm = ProviderManager()
+            actor = MagicMock()
+            actor.organization_id = "org-test"
+
+            config = await pm.get_llm_config_from_handle("letta/auto-chat", actor)
+            assert config.handle == "letta/auto-chat"
+            assert config.model == "auto-chat"
             assert config.provider_name == "letta"
             assert config.context_window == 180000
             assert config.max_tokens == 8192
@@ -185,12 +217,119 @@ class TestAutoModeResolution:
             model_settings.auto_mode_enabled = original
 
 
+class TestAutoChatModeResolution:
+    """Test resolve_auto_mode_config for letta/auto-chat handle."""
+
+    def _make_config(self):
+        return LLMConfig(
+            model="auto-chat",
+            model_endpoint_type="openai",
+            model_endpoint="",
+            context_window=180000,
+            handle="letta/auto-chat",
+            max_tokens=8192,
+            provider_name="letta",
+            provider_category=ProviderCategory.base,
+        )
+
+    @pytest.mark.asyncio
+    async def test_resolves_minimax_primary_when_healthy(self):
+        from letta.services.llm_router.llm_router_client import LLMRoutingClient
+        from letta.settings import model_settings
+
+        stored_config = self._make_config()
+        actor = MagicMock()
+        actor.organization_id = "org-test"
+
+        primary_config = LLMConfig(
+            model="MiniMax-M2.7",
+            model_endpoint_type="minimax",
+            model_endpoint="https://api.minimax.io/anthropic",
+            context_window=180000,
+            handle="minimax/MiniMax-M2.7",
+            max_tokens=8192,
+        )
+
+        mock_redis = AsyncMock()
+        routing_client = LLMRoutingClient(mock_redis)
+
+        original = model_settings.auto_mode_enabled
+        model_settings.auto_mode_enabled = True
+        try:
+            with (
+                patch.object(routing_client, "_is_healthy", return_value=True),
+                patch("letta.services.provider_manager.ProviderManager") as MockPM,
+            ):
+                mock_pm = AsyncMock()
+                mock_pm.get_llm_config_from_handle = AsyncMock(return_value=primary_config)
+                MockPM.return_value = mock_pm
+
+                config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
+                    stored_llm_config=stored_config,
+                    actor=actor,
+                )
+
+                assert is_primary is True
+                assert primary_handle == "minimax/MiniMax-M2.7"
+                assert config.handle == "minimax/MiniMax-M2.7"
+                assert config.model_endpoint_type == "minimax"
+        finally:
+            model_settings.auto_mode_enabled = original
+
+    @pytest.mark.asyncio
+    async def test_resolves_minimax_fallback_when_unhealthy(self):
+        from letta.services.llm_router.llm_router_client import LLMRoutingClient
+        from letta.settings import model_settings
+
+        stored_config = self._make_config()
+        actor = MagicMock()
+        actor.organization_id = "org-test"
+
+        fallback_config = LLMConfig(
+            model="MiniMax-M2.5",
+            model_endpoint_type="minimax",
+            model_endpoint="https://api.minimax.io/anthropic",
+            context_window=180000,
+            handle="minimax/MiniMax-M2.5",
+            max_tokens=8192,
+        )
+
+        mock_redis = AsyncMock()
+        routing_client = LLMRoutingClient(mock_redis)
+
+        original = model_settings.auto_mode_enabled
+        model_settings.auto_mode_enabled = True
+        try:
+            with (
+                patch.object(routing_client, "_is_healthy", return_value=False),
+                patch("letta.services.provider_manager.ProviderManager") as MockPM,
+            ):
+                mock_pm = AsyncMock()
+                mock_pm.get_llm_config_from_handle = AsyncMock(return_value=fallback_config)
+                MockPM.return_value = mock_pm
+
+                config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
+                    stored_llm_config=stored_config,
+                    actor=actor,
+                )
+
+                assert is_primary is False
+                assert config.handle == "minimax/MiniMax-M2.5"
+                assert config.model_endpoint_type == "minimax"
+        finally:
+            model_settings.auto_mode_enabled = original
+
+
 class TestFallbackRoutes:
     """Test generic fallback routing."""
 
     def test_auto_mode_in_fallback_routes(self):
         assert AUTO_MODE_PRIMARY in FALLBACK_ROUTES
         assert FALLBACK_ROUTES[AUTO_MODE_PRIMARY] == AUTO_MODE_FALLBACK
+
+    def test_auto_chat_mode_in_fallback_routes(self):
+        assert AUTO_CHAT_MODE_PRIMARY in FALLBACK_ROUTES
+        assert FALLBACK_ROUTES[AUTO_CHAT_MODE_PRIMARY] == AUTO_CHAT_MODE_FALLBACK
 
     def test_get_fallback_handle_exists(self):
         from letta.services.llm_router.llm_router_client import LLMRoutingClient

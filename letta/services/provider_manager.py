@@ -22,7 +22,7 @@ from letta.validators import raise_on_invalid_id
 logger = get_logger(__name__)
 
 # Auto mode model handles
-AUTO_MODE_HANDLES = ["letta/auto", "letta/auto-fast"]
+AUTO_MODE_HANDLES = ["letta/auto", "letta/auto-fast", "letta/auto-chat"]
 
 
 class ProviderManager:
@@ -986,8 +986,14 @@ class ProviderManager:
         if handle in AUTO_MODE_HANDLES:
             if not model_settings.auto_mode_enabled:
                 raise NoResultFound(f"Auto mode not enabled for handle='{handle}'")
+            if handle == "letta/auto":
+                model_name = "auto"
+            elif handle == "letta/auto-fast":
+                model_name = "auto-fast"
+            else:
+                model_name = "auto-chat"
             return LLMConfig(
-                model="auto" if handle == "letta/auto" else "auto-fast",
+                model=model_name,
                 model_endpoint_type="openai",
                 model_endpoint="",
                 context_window=180000,
