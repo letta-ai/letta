@@ -259,6 +259,10 @@ LLM_MAX_CONTEXT_WINDOW = {
     "glm-4.7": 180000,
     "glm-5": 180000,
     "glm-5-code": 180000,
+    # kimi (moonshot)
+    "kimi-k2.5": 262144,
+    "kimi-k2-thinking": 256000,
+    "kimi-k2-0905": 262144,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # gpt-5
     "gpt-5": 272000,
