@@ -341,6 +341,7 @@ class StreamingService:
         agent_id: str,
         actor: User,
         request: LettaStreamingRequest,
+        billing_context: "BillingContext | None" = None,
     ) -> StreamingResponse:
         """
         Create OpenAI-compatible chat completions streaming response.
@@ -366,6 +367,7 @@ class StreamingService:
             actor=actor,
             request=request,
             run_type="openai_chat_completions",
+            billing_context=billing_context,
         )
 
         # extract the stream iterator from the response
