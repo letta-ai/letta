@@ -1035,6 +1035,7 @@ class AnthropicClient(LLMClientBase):
                 "prompt is too long" in error_str
                 or "exceed context limit" in error_str
                 or "exceeds context" in error_str
+                or "context window exceeds limit" in error_str
                 or "too many total text bytes" in error_str
                 or "total text bytes" in error_str
             ):
