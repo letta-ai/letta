@@ -107,6 +107,7 @@ async def _handle_chat_completion(
             agent_id=resolved_agent_id,
             actor=actor,
             request=letta_request,
+            billing_context=headers.billing_context,
         )
     else:
         raise LettaInvalidArgumentError(
