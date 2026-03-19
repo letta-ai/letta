@@ -283,8 +283,12 @@ class AzureProvider(Provider):
 
     def get_model_context_window(self, model_name: str) -> int | None:
         # Hard coded as there are no API endpoints for this
-        llm_default = LLM_MAX_CONTEXT_WINDOW.get(model_name, 4096)
-        return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
+        if model_name in AZURE_MODEL_TO_CONTEXT_LENGTH:
+            return AZURE_MODEL_TO_CONTEXT_LENGTH[model_name]
+        basename = model_name.rsplit("/", 1)[-1].lower()
+        if basename in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[basename]
+        return LLM_MAX_CONTEXT_WINDOW["DEFAULT"]
 
     async def get_model_context_window_async(self, model_name: str) -> int | None:
         """Get context window size, using litellm specs for v1 endpoints or hardcoded map for legacy."""
