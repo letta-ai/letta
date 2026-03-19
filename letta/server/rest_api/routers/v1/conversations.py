@@ -986,6 +986,7 @@ async def compact_conversation(
         messages=in_context_messages,
         compaction_settings=compaction_settings,
         use_summary_role=True,
+        billing_context=headers.billing_context,
     )
     num_messages_after = len(messages)
 
