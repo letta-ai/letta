@@ -241,13 +241,16 @@ async def count_agents(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    # If no filters are provided, use the simpler size_async method
+    # If no filters are provided AND we want all agents (including hidden),
+    # use the simpler size_async method which counts everything.
+    # When show_hidden_agents is False (the default), we must use
+    # count_agents_async which applies the hidden filter.
     if (
         all(
             param is None or param is False
             for param in [name, tags, query_text, project_id, template_id, base_template_id, identity_id, identifier_keys, last_stop_reason]
         )
-        and not show_hidden_agents
+        and show_hidden_agents
     ):
         return await server.agent_manager.size_async(actor=actor)
 
