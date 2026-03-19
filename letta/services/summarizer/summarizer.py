@@ -12,7 +12,7 @@ from letta.constants import (
     MESSAGE_SUMMARY_REQUEST_ACK,
     TOOL_RETURN_TRUNCATION_CHARS,
 )
-from letta.errors import ContextWindowExceededError
+from letta.errors import ContextWindowExceededError, LLMProviderOverloaded, LLMRateLimitError
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -560,7 +560,7 @@ async def simple_summary(
 
     request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, summarizer_llm_config, tools=[])
     try:
-        summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
+        summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client, actor=actor)
     except Exception as e:
         # handle LLM error (likely a context window exceeded error)
         try:
@@ -598,7 +598,7 @@ async def simple_summary(
             )
 
             try:
-                summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
+                summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client, actor=actor)
             except Exception as fallback_error_a:
                 # Fallback B: hard-truncate the user transcript to fit a conservative byte budget.
                 # We use bytes (not chars) to be more applicable across languages.
@@ -638,7 +638,9 @@ async def simple_summary(
                     tools=[],
                 )
                 try:
-                    summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
+                    summary = await _run_summarizer_request(
+                        request_data, input_messages_obj, summarizer_llm_config, llm_client, actor=actor
+                    )
                 except Exception as fallback_error_b:
                     logger.error(f"Transcript truncation fallback also failed: {fallback_error_b}. Propagating error.")
                     logger.info(f"Full fallback summarization payload: {request_data}")
@@ -709,13 +711,109 @@ def format_transcript(messages: List[Message], include_system: bool = False) -> 
     return lines
 
 
+BEDROCK_SUMMARIZER_FALLBACK_HANDLE = "bedrock/us.anthropic.claude-opus-4-5-20251101-v1:0"
+
+# Providers that support summarization fallback (str values for ProviderType comparison)
+_FALLBACK_PROVIDER_TYPES = frozenset({"anthropic", "zai", "zai_coding"})
+
+
+async def _get_summarizer_fallback_config(llm_config: LLMConfig, actor: User) -> LLMConfig | None:
+    """Get a fallback LLMConfig for summarization when the primary provider is overloaded.
+
+    Anthropic -> Bedrock (Opus 4.5), ZAI/ZAI Coding -> Baseten (GLM-5 serverless).
+    Returns None if no fallback is available.
+    """
+    endpoint_type = str(llm_config.model_endpoint_type)
+
+    if endpoint_type == "anthropic":
+        from letta.services.provider_manager import ProviderManager
+
+        return await ProviderManager().get_llm_config_from_handle(BEDROCK_SUMMARIZER_FALLBACK_HANDLE, actor)
+
+    if endpoint_type in ("zai", "zai_coding"):
+        from letta.services.llm_router.llm_router_client import _build_baseten_config
+
+        return _build_baseten_config()
+
+    return None
+
+
 @trace_method
-async def _run_summarizer_request(req_data: dict, req_messages_obj: list[Message], llm_config: LLMConfig, llm_client: LLMClient) -> str:
+async def _run_summarizer_request(
+    req_data: dict,
+    req_messages_obj: list[Message],
+    llm_config: LLMConfig,
+    llm_client: LLMClient,
+    actor: User | None = None,
+    is_fallback: bool = False,
+) -> str:
     """Run summarization request and return assistant text.
 
     For Anthropic, use provider-side streaming to avoid long-request failures
     (Anthropic requires streaming for requests that may exceed ~10 minutes).
+
+    If the primary provider is overloaded, falls back to an alternate provider:
+    - Anthropic -> Bedrock (Opus 4.5)
+    - ZAI -> Baseten (GLM-5 serverless)
     """
+
+    try:
+        return await _execute_summarizer_request(req_data, req_messages_obj, llm_config, llm_client)
+    except Exception as e:
+        if not isinstance(e, (LLMProviderOverloaded, LLMRateLimitError)):
+            handled = llm_client.handle_llm_error(e, llm_config=llm_config)
+            if not isinstance(handled, (LLMProviderOverloaded, LLMRateLimitError)):
+                raise
+            e = handled
+
+        if is_fallback or str(llm_config.model_endpoint_type) not in _FALLBACK_PROVIDER_TYPES or actor is None:
+            raise
+
+        original_error = e
+
+        try:
+            fallback_config = await _get_summarizer_fallback_config(llm_config, actor)
+            if fallback_config is None:
+                raise original_error
+
+            logger.warning(
+                f"{llm_config.model_endpoint_type} overloaded during summarization, "
+                f"falling back to {fallback_config.model_endpoint_type}/{fallback_config.model}: {original_error}"
+            )
+
+            fallback_client = LLMClient.create(
+                provider_type=ProviderType(fallback_config.model_endpoint_type),
+                put_inner_thoughts_first=True,
+                actor=getattr(llm_client, "actor", None),
+            )
+            fallback_client.set_telemetry_context(
+                telemetry_manager=llm_client._telemetry_manager,
+                agent_id=llm_client._telemetry_agent_id,
+                agent_tags=llm_client._telemetry_agent_tags,
+                run_id=llm_client._telemetry_run_id,
+                step_id=llm_client._telemetry_step_id,
+                call_type=LLMCallType.summarization,
+                org_id=llm_client._telemetry_org_id,
+                user_id=llm_client._telemetry_user_id,
+                billing_context=llm_client._telemetry_billing_context,
+            )
+
+            fallback_llm_config = LLMConfig(**fallback_config.model_dump())
+            fallback_llm_config.put_inner_thoughts_in_kwargs = False
+            fallback_llm_config.enable_reasoner = False
+
+            fallback_req = fallback_client.build_request_data(AgentType.letta_v1_agent, req_messages_obj, fallback_llm_config, tools=[])
+            return await _run_summarizer_request(
+                fallback_req, req_messages_obj, fallback_llm_config, fallback_client, actor=actor, is_fallback=True
+            )
+        except Exception as fallback_error:
+            logger.warning(f"Summarization fallback failed: {fallback_error}, re-raising original error")
+            raise original_error from fallback_error
+
+
+@trace_method
+async def _execute_summarizer_request(req_data: dict, req_messages_obj: list[Message], llm_config: LLMConfig, llm_client: LLMClient) -> str:
+    """Execute the actual LLM request for summarization."""
 
     if llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
         logger.info(
