@@ -22,6 +22,7 @@ from letta.errors import (
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
+    LLMEmptyResponseError,
     LLMInsufficientCreditsError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
@@ -927,6 +928,27 @@ class OpenAIClient(LLMClientBase):
         # OpenAI's response structure directly maps to ChatCompletionResponse
         # We just need to instantiate the Pydantic model for validation and type safety.
         chat_completion_response = ChatCompletionResponse(**response_data)
+
+        # Detect empty responses (no content and no tool calls)
+        # Some providers (e.g., OpenRouter/GLM-5) return these instead of an error
+        if chat_completion_response.choices and len(chat_completion_response.choices) > 0:
+            choice = chat_completion_response.choices[0]
+            if choice.message.content is None and not choice.message.tool_calls:
+                raise LLMEmptyResponseError(
+                    message=(
+                        f"LLM provider returned empty content in response "
+                        f"(ID: {chat_completion_response.id}, model: {chat_completion_response.model}, "
+                        f"finish_reason: {choice.finish_reason})"
+                    ),
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "response_id": chat_completion_response.id,
+                        "model": chat_completion_response.model,
+                        "finish_reason": choice.finish_reason,
+                        "response_data": str(response_data)[:500],
+                    },
+                )
+
         chat_completion_response = self._fix_truncated_json_response(chat_completion_response)
 
         # Parse reasoning_content from vLLM/OpenRouter/OpenAI proxies that return this field
