@@ -728,6 +728,39 @@ async def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture
     assert updated_agent.updated_at > last_updated_timestamp
 
 
+async def test_create_agent_with_subagent_role_tag_forces_hidden_true(server: SyncServer, default_user, default_block):
+    create_agent_request = CreateAgent(
+        name="test_subagent_hidden_on_create",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+        tags=["role:subagent", "test"],
+        hidden=False,
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    assert created_agent.hidden is True
+
+
+async def test_update_agent_with_subagent_role_tag_does_not_force_hidden_true(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user
+):
+    agent, _ = comprehensive_test_agent_fixture
+    assert agent.hidden is None
+
+    update_agent_request = UpdateAgent(
+        tags=["role:subagent", "test"],
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_agent_request, actor=default_user)
+
+    assert updated_agent.hidden is None
+
+
 @pytest.mark.asyncio
 async def test_create_agent_with_compaction_settings(server: SyncServer, default_user, default_block):
     """Test that agents can be created with custom compaction_settings"""

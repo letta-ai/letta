@@ -36,6 +36,7 @@ OPENAI_API_PREFIX = "/openai"
 
 MCP_CONFIG_NAME = "mcp_config.json"
 MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
+SUBAGENT_ROLE_TAG = "role:subagent"
 
 LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
