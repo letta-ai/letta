@@ -27566,6 +27566,42 @@
           }
         }
       }
+    },
+    "/v1/device-storage-key": {
+      "get": {
+        "description": "Returns an HMAC-derived AES-256-GCM key scoped to the authenticated user and device. Used to encrypt/decrypt local IndexedDB caches on the client.",
+        "summary": "Get Device Storage Key",
+        "tags": ["deviceStorage"],
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "deviceStorage.getDeviceStorageKey",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["key"]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
