@@ -23,6 +23,7 @@ from letta.constants import (
     FILES_TOOLS,
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
+    SUBAGENT_ROLE_TAG,
 )
 from letta.errors import LettaError
 from letta.helpers import ToolRulesSolver
@@ -441,6 +442,7 @@ class AgentManager:
 
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
+        force_hidden_for_subagent = SUBAGENT_ROLE_TAG in tag_values
 
         # if the agent type is workflow, we set the autoclear to forced true
         if agent_create.agent_type == AgentType.workflow_agent:
@@ -530,7 +532,7 @@ class AgentManager:
                     description=agent_create.description,
                     metadata_=agent_create.metadata,
                     tool_rules=tool_rules,
-                    hidden=agent_create.hidden,
+                    hidden=True if force_hidden_for_subagent else agent_create.hidden,
                     project_id=agent_create.project_id,
                     template_id=agent_create.template_id,
                     base_template_id=agent_create.base_template_id,
