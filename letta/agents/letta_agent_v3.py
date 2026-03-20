@@ -20,9 +20,17 @@ from letta.agents.helpers import (
     merge_and_validate_prefilled_args,
 )
 from letta.agents.letta_agent_v2 import LettaAgentV2
-from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
+from letta.constants import (
+    DEFAULT_MAX_STEPS,
+    NON_USER_MSG_PREFIX,
+    REQUEST_HEARTBEAT_PARAM,
+    SHOULD_EMIT_SYSTEM_PROMPT_WARNING,
+    SYSTEM_PROMPT_WARNING_THRESHOLD,
+)
 from letta.errors import (
     ContextWindowExceededError,
+    LargeSystemPromptAndToolsError,
+    LargeSystemPromptError,
     LLMEmptyResponseError,
     LLMError,
     LLMProviderOverloaded,
@@ -65,13 +73,14 @@ from letta.server.rest_api.utils import (
     create_parallel_tool_messages_from_llm_response,
     create_tool_returns_for_denials,
 )
+from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.conversation_manager import ConversationManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.llm_router import get_llm_routing_client
 from letta.services.provider_manager import AUTO_MODE_HANDLES
 from letta.services.summarizer.compact import compact_messages
+from letta.services.summarizer.constants import COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN
 from letta.services.summarizer.summarizer_config import CompactionSettings
-from letta.services.summarizer.summarizer_sliding_window import count_tokens
 from letta.services.summarizer.thresholds import get_compaction_trigger_threshold
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
@@ -139,6 +148,8 @@ class LettaAgentV3(LettaAgentV2):
         # Multi-turn token tracking for RL training (accumulated across all LLM calls)
         self.turns: list[TurnTokenData] = []
         self.return_token_ids: bool = False
+        # Track which run_ids have already emitted a context warning event.
+        self._context_warning_emitted_run_ids: set[str] = set()
 
     def _compute_tool_return_truncation_chars(self) -> int:
         """Compute a dynamic cap for tool returns in requests.
@@ -663,19 +674,20 @@ class LettaAgentV3(LettaAgentV2):
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
 
                 # Mid-stream error: yield error event to client in SSE format
-                user_visible_error_message = "An error occurred during agent execution."
                 error_type = "internal_error"
-                if isinstance(e, SystemPromptTokenExceededError):
+
+                if (
+                    isinstance(e, SystemPromptTokenExceededError)
+                    or isinstance(e, LargeSystemPromptError)
+                    or isinstance(e, LargeSystemPromptAndToolsError)
+                ):
+                    # error detail already includes message + detail for ContextWindowExceededError types
                     error_type = StopReasonType.context_window_overflow_in_system_prompt.value
-                    user_visible_error_message = (
-                        "Compaction failed because the system prompt is too large for this model's context window. "
-                        "Reduce system instructions, memory blocks, or tools, or use a model with a larger context window."
-                    )
 
                 error_message = LettaErrorMessage(
                     run_id=run_id,
                     error_type=error_type,
-                    message=user_visible_error_message,
+                    message="An error occurred during agent execution.",
                     detail=error_detail,
                 )
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
@@ -731,23 +743,6 @@ class LettaAgentV3(LettaAgentV2):
         finally:
             # Ensure adapter resources (e.g. WebSocket connections) are cleaned up
             await llm_adapter.aclose()
-
-    async def _check_for_system_prompt_overflow(self, system_message):
-        """
-        Since the system prompt cannot be compacted, we need to check to see if it is the cause of the context overflow
-        """
-        system_prompt_token_estimate = await count_tokens(
-            actor=self.actor,
-            llm_config=self.agent_state.llm_config,
-            messages=[system_message],
-        )
-        if system_prompt_token_estimate is not None and system_prompt_token_estimate >= self.agent_state.llm_config.context_window:
-            self.should_continue = False
-            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value)
-            raise SystemPromptTokenExceededError(
-                system_prompt_token_estimate=system_prompt_token_estimate,
-                context_window=self.agent_state.llm_config.context_window,
-            )
 
     async def _checkpoint_messages(self, run_id: str, step_id: str, new_messages: list[Message], in_context_messages: list[Message]):
         """
@@ -838,6 +833,35 @@ class LettaAgentV3(LettaAgentV2):
             run_id=run_id,
             step_id=step_id,
         )
+
+    def _create_context_warning_event_message(
+        self,
+        step_id: str | None,
+        run_id: str | None,
+        *,
+        system_prompt_token_estimate: int,
+        context_window: int,
+        threshold: int,
+    ) -> EventMessage:
+        """Create an EventMessage for large system prompt context warnings."""
+        msg = EventMessage(
+            id=str(uuid.uuid4()),
+            date=get_utc_time(),
+            event_type="context_warning",
+            event_data={
+                "kind": "large_system_prompt",
+                "system_tokens_estimate": system_prompt_token_estimate,
+                "context_window": context_window,
+                "threshold": threshold,
+                "message": (
+                    "System prompt is large and is reducing available context. Consider running /doctor to clean up system memory."
+                ),
+            },
+            run_id=run_id,
+            step_id=step_id,
+        )
+
+        return msg
 
     def _create_summary_result_message(
         self,
@@ -1079,6 +1103,30 @@ class LettaAgentV3(LettaAgentV2):
                     active_llm_client = self.llm_client
 
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 and self._require_tool_call else None
+
+                ### TODO: toggle this to true once we have memory /doctor
+                if SHOULD_EMIT_SYSTEM_PROMPT_WARNING:
+                    # Pre-LLM context warning: large system prompt may reduce available context.
+                    approx_counter = create_token_counter(safety_margin=COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN)
+                    system_prompt_token_estimate = await approx_counter.count_system_prompt_tokens(messages)
+
+                    should_emit_context_warning = (  # include_compaction_messages and
+                        system_prompt_token_estimate >= SYSTEM_PROMPT_WARNING_THRESHOLD
+                        and (run_id is None or run_id not in self._context_warning_emitted_run_ids)
+                    )
+
+                    if should_emit_context_warning:
+                        if run_id is not None:
+                            self._context_warning_emitted_run_ids.add(run_id)
+
+                        yield self._create_context_warning_event_message(
+                            step_id=step_id,
+                            run_id=run_id,
+                            system_prompt_token_estimate=system_prompt_token_estimate,
+                            context_window=active_llm_config.context_window,
+                            threshold=SYSTEM_PROMPT_WARNING_THRESHOLD,
+                        )
+
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
                         request_data = active_llm_client.build_request_data(
@@ -1266,12 +1314,12 @@ class LettaAgentV3(LettaAgentV2):
                                     yield msg
 
                                 continue
-                            except SystemPromptTokenExceededError:
+                            except (SystemPromptTokenExceededError, LargeSystemPromptError, LargeSystemPromptAndToolsError) as e:
                                 self.should_continue = False
                                 self.stop_reason = LettaStopReason(
                                     stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value
                                 )
-                                raise
+                                raise e
                             except Exception as e:
                                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                                 self.logger.error(f"Unknown error occured for summarization run {run_id}: {e}")
@@ -1487,10 +1535,10 @@ class LettaAgentV3(LettaAgentV2):
                         new_messages=[summary_message],
                         in_context_messages=messages,
                     )
-                except SystemPromptTokenExceededError:
+                except (SystemPromptTokenExceededError, LargeSystemPromptError, LargeSystemPromptAndToolsError) as e:
                     self.should_continue = False
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value)
-                    raise
+                    raise e
 
         except Exception as e:
             caught_exception = e

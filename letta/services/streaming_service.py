@@ -14,6 +14,8 @@ from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.constants import REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
+    LargeSystemPromptAndToolsError,
+    LargeSystemPromptError,
     LettaInvalidArgumentError,
     LettaServiceUnavailableError,
     LLMAuthenticationError,
@@ -579,23 +581,19 @@ class StreamingService:
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
-            except SystemPromptTokenExceededError as e:
+            except (SystemPromptTokenExceededError, LargeSystemPromptError, LargeSystemPromptAndToolsError) as e:
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt)
                 error_detail = str(e) or repr(e)
                 error_message = LettaErrorMessage(
                     run_id=run_id,
                     error_type=StopReasonType.context_window_overflow_in_system_prompt.value,
-                    message=(
-                        "Compaction failed because the system prompt is too large for this model's context window. "
-                        "Reduce system instructions, memory blocks, or tools, or use a model with a larger context window."
-                    ),
+                    message=e.message
+                    if e.message
+                    else "The system prompt and/or tools are too large for this model's context window. Reduce system instructions, memory blocks, or tools, or use a model with a larger context window.",
                     detail=error_detail,
                 )
-                error_data = {"error": error_message.model_dump()}
-                logger.warning(
-                    f"Run {run_id} stopped with system prompt overflow: {error_detail}, error_data: {error_message.model_dump()}"
-                )
+                logger.warning(f"Run {run_id} stopped with system prompt overflow: {error_detail}")
                 yield f"data: {stop_reason.model_dump_json()}\n\n"
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream

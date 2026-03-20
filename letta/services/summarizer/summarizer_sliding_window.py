@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional, Tuple
-
-if TYPE_CHECKING:
-    from letta.schemas.tool import Tool
+from typing import List, Optional, Tuple
 
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -11,88 +8,11 @@ from letta.schemas.message import Message
 from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
 from letta.services.context_window_calculator.token_counter import create_token_counter
-from letta.services.summarizer.constants import SUMMARY_TRUNCATION_SUFFIX
+from letta.services.summarizer.constants import COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN, SUMMARY_TRUNCATION_SUFFIX
 from letta.services.summarizer.summarizer import simple_summary
 from letta.services.summarizer.summarizer_config import CompactionSettings
 
 logger = get_logger(__name__)
-
-
-# Safety margin for approximate token counting.
-# The bytes/4 heuristic underestimates by ~25-35% for JSON-serialized messages
-# due to structural overhead (brackets, quotes, colons) each becoming tokens.
-APPROX_TOKEN_SAFETY_MARGIN = 1.3
-
-
-async def count_tokens(actor: User, llm_config: LLMConfig, messages: List[Message]) -> int:
-    """Count tokens in messages using the appropriate token counter for the model configuration."""
-    token_counter = create_token_counter(
-        model_endpoint_type=llm_config.model_endpoint_type,
-        model=llm_config.model,
-        actor=actor,
-    )
-    converted_messages = token_counter.convert_messages(messages)
-    tokens = await token_counter.count_message_tokens(converted_messages)
-
-    # Apply safety margin for approximate counting to avoid underestimating
-    from letta.services.context_window_calculator.token_counter import ApproxTokenCounter
-
-    if isinstance(token_counter, ApproxTokenCounter):
-        return int(tokens * APPROX_TOKEN_SAFETY_MARGIN)
-    return tokens
-
-
-async def count_tokens_with_tools(
-    actor: User,
-    llm_config: LLMConfig,
-    messages: List[Message],
-    tools: Optional[List["Tool"]] = None,
-) -> int:
-    """Count tokens in messages AND tool definitions.
-
-    This provides a more accurate context token count by including tool definitions,
-    which are sent to the LLM but not included in the messages list.
-
-    Args:
-        actor: The user making the request.
-        llm_config: The LLM configuration for selecting the appropriate tokenizer.
-        messages: The in-context messages (including system message).
-        tools: Optional list of Tool objects. If provided, their schemas are counted.
-
-    Returns:
-        Total token count for messages + tools.
-    """
-    # Delegate message counting to existing function
-    message_tokens = await count_tokens(actor, llm_config, messages)
-
-    if not tools:
-        return message_tokens
-
-    # Count tools
-    from openai.types.beta.function_tool import FunctionTool as OpenAITool
-
-    from letta.services.context_window_calculator.token_counter import ApproxTokenCounter
-
-    token_counter = create_token_counter(
-        model_endpoint_type=llm_config.model_endpoint_type,
-        model=llm_config.model,
-        actor=actor,
-    )
-
-    # Tools can be either Tool objects (with .json_schema) or dicts (json schemas directly)
-    # For compatibility with how tools need to be passed in for self compaction
-    tool_definitions = [
-        OpenAITool(type="function", function=t.json_schema if hasattr(t, "json_schema") else t)
-        for t in tools
-        if (hasattr(t, "json_schema") and t.json_schema) or (isinstance(t, dict) and t)
-    ]
-    tool_tokens = await token_counter.count_tool_tokens(tool_definitions) if tool_definitions else 0
-
-    # Apply safety margin for approximate counting (message_tokens already has margin applied)
-    if isinstance(token_counter, ApproxTokenCounter):
-        tool_tokens = int(tool_tokens * APPROX_TOKEN_SAFETY_MARGIN)
-
-    return message_tokens + tool_tokens
 
 
 @trace_method
@@ -185,7 +105,14 @@ async def summarize_via_sliding_window(
         # update token count
         logger.info(f"Attempting to compact messages index 1:{assistant_message_index} messages")
         post_summarization_buffer = [system_prompt, *in_context_messages[assistant_message_index:]]
-        approx_token_count = await count_tokens(actor, agent_llm_config, post_summarization_buffer)
+        token_counter = create_token_counter(
+            model_endpoint_type=agent_llm_config.model_endpoint_type,
+            model=agent_llm_config.model,
+            actor=actor,
+            safety_margin=COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN,
+        )
+        converted = token_counter.convert_messages(post_summarization_buffer)
+        approx_token_count = await token_counter.count_message_tokens(converted)
         logger.info(
             f"Compacting messages index 1:{assistant_message_index} messages resulted in {approx_token_count} tokens, goal is {goal_tokens}"
         )

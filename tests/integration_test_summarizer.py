@@ -1051,19 +1051,29 @@ async def test_v3_summarize_hard_eviction_when_still_over_threshold(
     # We don't care which summarizer mode is used here; we just need
     # summarize_conversation_history to run and then hit the branch where the
     # *post*-summarization token count is still above the proactive
-    # summarization threshold. We simulate that by patching the
-    # count_tokens_with_tools helper to report an extremely large
+    # summarization threshold. We simulate that by patching
+    # TokenCounter.count_messages_with_tools to report an extremely large
     # token count for the first call (post-summary) and a small count for the
     # second call (after hard eviction).
-    with patch("letta.services.summarizer.compact.count_tokens_with_tools") as mock_count_tokens:
-        # First call: pretend the summarized context is still huge relative to
-        # this model's context window so that we always trigger the
-        # hard-eviction path. Second call: minimal context (system only) is
-        # small.
-        context_limit = llm_config.context_window or 100_000
-        huge_tokens = context_limit * 10  # safely above any reasonable trigger
-        mock_count_tokens.side_effect = [huge_tokens, 10]
+    context_limit = llm_config.context_window or 100_000
+    huge_tokens = context_limit * 10  # safely above any reasonable trigger
 
+    from letta.services.context_window_calculator.token_counter import TokenCounter
+
+    original_count = TokenCounter.count_messages_with_tools
+
+    call_count = 0
+    returns = [huge_tokens, 10]
+
+    async def mock_count(self, messages, tools=None):
+        nonlocal call_count
+        if call_count < len(returns):
+            result = returns[call_count]
+            call_count += 1
+            return result
+        return await original_count(self, messages, tools)
+
+    with patch.object(TokenCounter, "count_messages_with_tools", mock_count):
         caplog.set_level("ERROR")
 
         _summary, result, summary_text = await agent_loop.compact(
@@ -1073,7 +1083,7 @@ async def test_v3_summarize_hard_eviction_when_still_over_threshold(
 
     # We should have made exactly two token-count calls: one for the
     # summarized context, one for the hard-evicted minimal context.
-    assert mock_count_tokens.call_count == 2
+    assert call_count == 2
 
     print("COMPACTED RESULT ======")
     for msg in result:
