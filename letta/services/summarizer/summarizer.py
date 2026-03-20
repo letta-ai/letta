@@ -17,7 +17,7 @@ from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ProviderType
+from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ProviderCategory, ProviderType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
@@ -766,7 +766,12 @@ async def _run_summarizer_request(
                 raise
             e = handled
 
-        if is_fallback or str(llm_config.model_endpoint_type) not in _FALLBACK_PROVIDER_TYPES or actor is None:
+        if (
+            is_fallback
+            or str(llm_config.model_endpoint_type) not in _FALLBACK_PROVIDER_TYPES
+            or actor is None
+            or llm_config.provider_category == ProviderCategory.byok
+        ):
             raise
 
         original_error = e
