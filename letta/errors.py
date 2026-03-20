@@ -352,34 +352,9 @@ class SystemPromptTokenExceededError(ContextWindowExceededError):
     """Error raised when the system prompt token estimate exceeds the context window."""
 
     def __init__(self, system_prompt_token_estimate: int, context_window: int):
-        message = f"The system prompt tokens {system_prompt_token_estimate} exceeds the context window {context_window}. Please reduce the size of your system prompt, memory blocks, or increase the context window. You may also try recompiling the system prompt with /recompile."
+        message = f"The system prompt tokens {system_prompt_token_estimate} exceeds the context window {context_window}. Please reduce the size of your system prompt, memory blocks, or increase the context window."
         super().__init__(
             message=message, details={"system_prompt_token_estimate": system_prompt_token_estimate, "context_window": context_window}
-        )
-
-
-class LargeSystemPromptError(ContextWindowExceededError):
-    """Error raised when the system prompt is larger than a maximum threshold (but not exceeding the context window yet)."""
-
-    def __init__(self, system_prompt_token_estimate: int, context_window: int):
-        message = f"Compaction cannot effectively reduce the context window. The system prompt is extremely large ({system_prompt_token_estimate} tokens compared to {context_window} context window). Please reduce the size of your system prompt, memory blocks, or increase the context window. You may also try recompiling the system prompt with /recompile."
-        super().__init__(
-            message=message, details={"system_prompt_token_estimate": system_prompt_token_estimate, "context_window": context_window}
-        )
-
-
-class LargeSystemPromptAndToolsError(ContextWindowExceededError):
-    """Error raised when the system prompt + tools are larger than a maximum threshold (but not exceeding the context window yet)."""
-
-    def __init__(self, system_prompt_token_estimate: int, tools_token_estimate: int, context_window: int):
-        message = f"Compaction cannot effectively reduce the context window. The system prompt ({system_prompt_token_estimate}) + tools ({tools_token_estimate}) tokens are extremely large (compared to {context_window} context window). Please reduce the size of your system prompt, memory blocks, tools, or increase the context window. You may also try recompiling the system prompt with /recompile."
-        super().__init__(
-            message=message,
-            details={
-                "system_prompt_token_estimate": system_prompt_token_estimate,
-                "tools_token_estimate": tools_token_estimate,
-                "context_window": context_window,
-            },
         )
 
 

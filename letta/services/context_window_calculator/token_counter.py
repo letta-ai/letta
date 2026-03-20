@@ -37,70 +37,6 @@ class TokenCounter(ABC):
     def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
         """Convert messages to the appropriate format for this counter"""
 
-    @staticmethod
-    def extract_system_prompt_text(messages: List[Any]) -> str | None:
-        """Extract system prompt text from the first message (index 0).
-
-        Handles TextContent parts, falls back to JSON serialization of content,
-        then to None if messages is empty.
-        """
-        from letta.schemas.letta_message_content import TextContent
-
-        if not messages:
-            return None
-        first_message = messages[0]
-        if not first_message or not first_message.content:
-            return None
-        text_parts = [part.text for part in first_message.content if isinstance(part, TextContent) and part.text]
-        if text_parts:
-            return "\n".join(text_parts)
-        # Fallback: deterministic string representation for non-TextContent parts
-        return json.dumps(
-            [part.model_dump(mode="json") if hasattr(part, "model_dump") else str(part) for part in first_message.content],
-            ensure_ascii=False,
-        )
-
-    async def count_system_prompt_tokens(self, messages: List[Any]) -> int:
-        """Extract system prompt text from messages[0] and count its tokens."""
-        text = self.extract_system_prompt_text(messages)
-        if not text:
-            return 0
-        return await self.count_text_tokens(text)
-
-    async def count_messages_with_tools(self, messages: List[Any], tools: List[Any] | None = None) -> int:
-        """Count tokens in messages and tool definitions combined.
-
-        Converts messages, normalizes tools, and returns the total token count.
-        """
-        converted = self.convert_messages(messages)
-        msg_tokens = await self.count_message_tokens(converted)
-        if not tools:
-            return msg_tokens
-        tool_defs = self.normalize_tool_definitions(tools)
-        tool_tokens = await self.count_tool_tokens(tool_defs) if tool_defs else 0
-        return msg_tokens + tool_tokens
-
-    @staticmethod
-    def normalize_tool_definitions(tools: List[Any]) -> List["OpenAITool"]:
-        """Normalize Tool objects or raw dicts into OpenAI function tool definitions.
-
-        Accepts:
-            - Tool schema objects (with .json_schema attribute)
-            - Raw dicts (already a function schema)
-            - OpenAI FunctionTool objects (passed through as-is)
-        """
-        from openai.types.beta.function_tool import FunctionTool as OpenAIFnTool
-
-        result = []
-        for t in tools:
-            if isinstance(t, OpenAIFnTool):
-                result.append(t)
-            elif hasattr(t, "json_schema") and t.json_schema:
-                result.append(OpenAIFnTool(type="function", function=t.json_schema))
-            elif isinstance(t, dict) and t:
-                result.append(OpenAIFnTool(type="function", function=t))
-        return result
-
 
 class AnthropicTokenCounter(TokenCounter):
     """Token counter using Anthropic's API"""
@@ -160,20 +96,16 @@ class ApproxTokenCounter(TokenCounter):
 
     APPROX_BYTES_PER_TOKEN = 4
 
-    def __init__(self, model: str | None = None, safety_margin: float = 1.0):
+    def __init__(self, model: str | None = None):
         # Model is optional since we don't actually use a tokenizer
         self.model = model
-        self.safety_margin = safety_margin
 
     def _approx_token_count(self, text: str) -> int:
-        """Approximate token count: ceil(byte_len / 4), with optional safety margin."""
+        """Approximate token count: ceil(byte_len / 4)"""
         if not text:
             return 0
         byte_len = len(text.encode("utf-8"))
-        raw = (byte_len + self.APPROX_BYTES_PER_TOKEN - 1) // self.APPROX_BYTES_PER_TOKEN
-        if self.safety_margin != 1.0:
-            return int(raw * self.safety_margin)
-        return raw
+        return (byte_len + self.APPROX_BYTES_PER_TOKEN - 1) // self.APPROX_BYTES_PER_TOKEN
 
     async def count_text_tokens(self, text: str) -> int:
         if not text:
@@ -334,28 +266,17 @@ class TiktokenCounter(TokenCounter):
 
 
 def create_token_counter(
-    model_endpoint_type: Optional[ProviderType] = None,
+    model_endpoint_type: ProviderType,
     model: Optional[str] = None,
     actor: "User" = None,
     agent_id: Optional[str] = None,
-    safety_margin: float = 1.0,
 ) -> "TokenCounter":
     """
     Factory function to create the appropriate token counter based on model configuration.
 
-    When called with no arguments, returns an ApproxTokenCounter.
-
-    Args:
-        safety_margin: Multiplier applied to ApproxTokenCounter estimates (default 1.0, no adjustment).
-            The bytes/4 heuristic underestimates by ~25-35% for JSON-heavy content; pass 1.3
-            for compaction/summarization where overestimating is safer.
-
     Returns:
         The appropriate TokenCounter instance
     """
-    if model_endpoint_type is None:
-        return ApproxTokenCounter(safety_margin=safety_margin)
-
     from letta.llm_api.llm_client import LLMClient
     from letta.settings import settings
 
@@ -385,7 +306,7 @@ def create_token_counter(
             f"environment={settings.environment}"
         )
     else:
-        token_counter = ApproxTokenCounter(safety_margin=safety_margin)
+        token_counter = ApproxTokenCounter()
         logger.debug(
             f"Using ApproxTokenCounter for agent_id={agent_id}, model={model}, "
             f"model_endpoint_type={model_endpoint_type}, "
