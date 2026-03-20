@@ -917,6 +917,138 @@ async def test_update_agent_partial_compaction_settings_same_mode(server: SyncSe
 
 
 @pytest.mark.asyncio
+async def test_update_agent_switches_default_compaction_model_on_llm_change(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user
+):
+    """If compaction model is default-derived, switching agent provider/model should refresh it."""
+    from letta.schemas.enums import ProviderType
+    from letta.services.summarizer.summarizer_config import get_default_summarizer_model
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    # Fixture uses OpenAI model; compaction defaults should follow OpenAI provider defaults.
+    assert agent.compaction_settings is not None
+    assert agent.compaction_settings.model == get_default_summarizer_model(ProviderType.openai)
+
+    updated_llm_config = agent.llm_config.model_copy(
+        update={
+            "model": "claude-sonnet-4-5",
+            "model_endpoint_type": "anthropic",
+            "provider_name": "anthropic",
+            "handle": "anthropic/claude-sonnet-4-5",
+        }
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(llm_config=updated_llm_config),
+        actor=default_user,
+    )
+
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.model == get_default_summarizer_model(ProviderType.anthropic)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_preserves_custom_compaction_model_on_llm_change(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user
+):
+    """If compaction model is custom, switching agent provider/model should not overwrite it."""
+    agent, _ = comprehensive_test_agent_fixture
+
+    custom_model = "openai/gpt-4o-mini"
+    agent_with_custom_compaction = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(compaction_settings=CompactionSettings(model=custom_model)),
+        actor=default_user,
+    )
+    assert agent_with_custom_compaction.compaction_settings is not None
+    assert agent_with_custom_compaction.compaction_settings.model == custom_model
+
+    updated_llm_config = agent.llm_config.model_copy(
+        update={
+            "model": "claude-sonnet-4-5",
+            "model_endpoint_type": "anthropic",
+            "provider_name": "anthropic",
+            "handle": "anthropic/claude-sonnet-4-5",
+        }
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(llm_config=updated_llm_config),
+        actor=default_user,
+    )
+
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.model == custom_model
+
+
+@pytest.mark.asyncio
+async def test_update_agent_switches_default_compaction_model_on_llm_change_with_partial_compaction_update(
+    server: SyncServer,
+    comprehensive_test_agent_fixture,
+    default_user,
+):
+    """If compaction update omits model, provider/model switch should still refresh default-derived compaction model."""
+    from letta.schemas.enums import ProviderType
+    from letta.services.summarizer.summarizer_config import get_default_prompt_for_mode, get_default_summarizer_model
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    updated_llm_config = agent.llm_config.model_copy(
+        update={
+            "model": "claude-sonnet-4-5",
+            "model_endpoint_type": "anthropic",
+            "provider_name": "anthropic",
+            "handle": "anthropic/claude-sonnet-4-5",
+        }
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(
+            llm_config=updated_llm_config,
+            compaction_settings=CompactionSettings(mode="all"),
+        ),
+        actor=default_user,
+    )
+
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.mode == "all"
+    assert updated_agent.compaction_settings.prompt == get_default_prompt_for_mode("all")
+    assert updated_agent.compaction_settings.model == get_default_summarizer_model(ProviderType.anthropic)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_does_not_switch_default_compaction_model_on_same_provider_model_change(
+    server: SyncServer,
+    comprehensive_test_agent_fixture,
+    default_user,
+):
+    """If only model changes (same provider), compaction default model should not be refreshed."""
+    from letta.schemas.enums import ProviderType
+    from letta.services.summarizer.summarizer_config import get_default_summarizer_model
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    assert agent.compaction_settings is not None
+    assert agent.compaction_settings.model == get_default_summarizer_model(ProviderType.openai)
+
+    updated_llm_config = agent.llm_config.model_copy(update={"model": "gpt-4o", "handle": "openai/gpt-4o"})
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(llm_config=updated_llm_config),
+        actor=default_user,
+    )
+
+    assert updated_agent.llm_config.model == "gpt-4o"
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.model == get_default_summarizer_model(ProviderType.openai)
+
+
+@pytest.mark.asyncio
 async def test_agent_file_defaults_based_on_context_window(server: SyncServer, default_user, default_block):
     """Test that file-related defaults are set based on the model's context window size"""
 

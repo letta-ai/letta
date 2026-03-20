@@ -62,8 +62,6 @@ async def build_summarizer_llm_config(
     Returns:
         LLMConfig configured for summarization.
     """
-    from letta.schemas.enums import ProviderType
-
     # Auto mode agents: resolve the placeholder config upfront so every fallback path
     # returns a working config instead of the unresolved placeholder (model_endpoint='').
     if agent_llm_config.handle and agent_llm_config.handle.startswith("letta/auto"):
@@ -84,13 +82,9 @@ async def build_summarizer_llm_config(
     # If no summarizer model specified, use lightweight provider-specific defaults
     if not summarizer_config.model:
         provider_name = agent_llm_config.provider_name or agent_llm_config.model_endpoint_type
-        try:
-            provider_type = ProviderType(provider_name)
-            default_model = get_default_summarizer_model(provider_type=provider_type)
-            if default_model:
-                summarizer_config = summarizer_config.model_copy(update={"model": default_model})
-        except (ValueError, TypeError):
-            pass  # Unknown provider - will fall back to agent's model below
+        default_model = get_default_summarizer_model(provider_name)
+        if default_model:
+            summarizer_config = summarizer_config.model_copy(update={"model": default_model})
 
     # If still no model after defaults, use agent's model
     if not summarizer_config.model:
