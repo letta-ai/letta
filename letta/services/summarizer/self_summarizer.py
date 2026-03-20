@@ -12,9 +12,9 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
-from letta.services.context_window_calculator.token_counter import create_token_counter
-from letta.services.summarizer.constants import COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN, SUMMARY_TRUNCATION_SUFFIX
+from letta.services.summarizer.constants import SUMMARY_TRUNCATION_SUFFIX
 from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_prompt_for_mode
+from letta.services.summarizer.summarizer_sliding_window import count_tokens
 from letta.services.telemetry_manager import TelemetryManager
 
 logger = get_logger(__name__)
@@ -223,14 +223,7 @@ async def self_summarize_sliding_window(
         # update token count
         logger.info(f"Attempting to compact messages to index {assistant_message_index} messages")
         post_summarization_buffer = list(messages[assistant_message_index:])
-        token_counter = create_token_counter(
-            model_endpoint_type=agent_llm_config.model_endpoint_type,
-            model=agent_llm_config.model,
-            actor=actor,
-            safety_margin=COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN,
-        )
-        converted = token_counter.convert_messages([system_prompt, *post_summarization_buffer])
-        approx_token_count = await token_counter.count_message_tokens(converted)
+        approx_token_count = await count_tokens(actor, agent_llm_config, [system_prompt, *post_summarization_buffer])
         logger.info(
             f"Compacting messages index 1:{assistant_message_index} messages resulted in {approx_token_count} tokens, goal is {goal_tokens}"
         )
