@@ -532,3 +532,7 @@ DEFAULT_GENERATE_TOOL_MODEL_HANDLE = "openai/gpt-4.1"
 # Reserved keyword arguments that are injected by the system into tool functions, not provided by the LLM
 # These parameters are excluded from tool schema generation
 TOOL_RESERVED_KWARGS = ["self", "agent_state"]
+
+SHOULD_EMIT_SYSTEM_PROMPT_WARNING = True
+SYSTEM_PROMPT_WARNING_THRESHOLD = 30000
+SYSTEM_PROMPT_TOO_LARGE_THRESHOLD = 0.8

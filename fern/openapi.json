@@ -35321,7 +35321,7 @@
           },
           "event_type": {
             "type": "string",
-            "const": "compaction",
+            "enum": ["compaction", "context_warning"],
             "title": "Event Type"
           },
           "event_data": {

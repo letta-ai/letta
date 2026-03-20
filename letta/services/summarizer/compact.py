@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from letta.errors import ContextWindowExceededError
+from letta.constants import SYSTEM_PROMPT_TOO_LARGE_THRESHOLD
+from letta.errors import ContextWindowExceededError, LargeSystemPromptAndToolsError, LargeSystemPromptError, SystemPromptTokenExceededError
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -15,14 +16,12 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
+from letta.services.context_window_calculator.token_counter import TokenCounter, create_token_counter
+from letta.services.summarizer.constants import COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN
 from letta.services.summarizer.self_summarizer import self_summarize_all, self_summarize_sliding_window
 from letta.services.summarizer.summarizer_all import summarize_all
 from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_prompt_for_mode, get_default_summarizer_model
-from letta.services.summarizer.summarizer_sliding_window import (
-    count_tokens,
-    count_tokens_with_tools,
-    summarize_via_sliding_window,
-)
+from letta.services.summarizer.summarizer_sliding_window import summarize_via_sliding_window
 from letta.services.telemetry_manager import TelemetryManager
 from letta.system import package_summarize_message_no_counts
 
@@ -192,6 +191,17 @@ async def compact_messages(
         CompactResult containing the summary message, compacted messages, summary text,
         and updated context token estimate.
     """
+    # Precheck: if system prompt is too large, raise an error before attempting compaction
+    # Uses heuristic (doesn't pass in model/provider) for latency reasons
+    approx_counter = create_token_counter(safety_margin=COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN)
+    system_prompt_token_estimate = await approx_counter.count_system_prompt_tokens(messages)
+
+    if trigger_threshold is not None and system_prompt_token_estimate is not None and system_prompt_token_estimate >= trigger_threshold:
+        raise LargeSystemPromptError(
+            system_prompt_token_estimate=system_prompt_token_estimate,
+            context_window=agent_llm_config.context_window,
+        )
+
     summarizer_config = compaction_settings if compaction_settings else CompactionSettings()
 
     # Build the LLMConfig used for summarization
@@ -362,13 +372,16 @@ async def compact_messages(
     else:
         raise ValueError(f"Invalid summarizer mode: {summarizer_config.mode}")
 
-    # Update the token count (including tools for accurate comparison with LLM's prompt_tokens)
-    context_token_estimate = await count_tokens_with_tools(
+    # Create a token counter for post-compaction estimates
+    token_counter = create_token_counter(
+        model_endpoint_type=agent_llm_config.model_endpoint_type,
+        model=agent_llm_config.model,
         actor=actor,
-        llm_config=agent_llm_config,
-        messages=compacted_messages,
-        tools=tools or [],
+        safety_margin=COMPACTION_TOKEN_HEURISTIC_SAFETY_MARGIN,
     )
+
+    # Update the token count (including tools for accurate comparison with LLM's prompt_tokens)
+    context_token_estimate = await token_counter.count_messages_with_tools(compacted_messages, tools or [])
     logger.info(f"Context token estimate after summarization: {context_token_estimate}")
 
     # If the trigger_threshold is provided, verify the new token count is below it
@@ -395,24 +408,15 @@ async def compact_messages(
             )
             summarization_mode_used = "all"
 
-        context_token_estimate = await count_tokens_with_tools(
-            actor=actor,
-            llm_config=agent_llm_config,
-            messages=compacted_messages,
-            tools=tools or [],
-        )
+        context_token_estimate = await token_counter.count_messages_with_tools(compacted_messages, tools or [])
 
         # Final edge case: check if we're still over threshold
         if context_token_estimate is not None and context_token_estimate >= trigger_threshold:
+            # These checks use a more realistic token counter than the system prompt precheck (for anthropic/openai/gemini/etc.)
             # Check if system prompt is the cause
-            system_prompt_token_estimate = await count_tokens(
-                actor=actor,
-                llm_config=agent_llm_config,
-                messages=[compacted_messages[0]],
-            )
+            system_prompt_token_estimate = await token_counter.count_system_prompt_tokens(compacted_messages)
+            # System prompt exceeds context window
             if system_prompt_token_estimate is not None and system_prompt_token_estimate >= agent_llm_config.context_window:
-                from letta.errors import SystemPromptTokenExceededError
-
                 logger.warning(
                     f"System prompt ({system_prompt_token_estimate} tokens) exceeds context window ({agent_llm_config.context_window})"
                 )
@@ -421,8 +425,39 @@ async def compact_messages(
                     context_window=agent_llm_config.context_window,
                 )
 
-            # Log error but don't brick the agent
-            logger.critical(f"Failed to summarize messages after fallback: {context_token_estimate} > {trigger_threshold}")
+            # System prompt + tools are large but not exceeding the context window
+            if (
+                system_prompt_token_estimate is not None
+                and system_prompt_token_estimate >= SYSTEM_PROMPT_TOO_LARGE_THRESHOLD * agent_llm_config.context_window
+            ):
+                logger.warning(
+                    f"System prompt is large ({system_prompt_token_estimate} tokens, context window {agent_llm_config.context_window}). Failed to reduce context window during compaction: {context_token_estimate} > {trigger_threshold}."
+                )
+
+                raise LargeSystemPromptError(
+                    system_prompt_token_estimate=system_prompt_token_estimate,
+                    context_window=agent_llm_config.context_window,
+                )
+
+            tool_defs = TokenCounter.normalize_tool_definitions(tools or [])
+            tools_token_estimate = await token_counter.count_tool_tokens(tool_defs) if tool_defs else 0
+            if (
+                tools_token_estimate is not None
+                and system_prompt_token_estimate is not None
+                and tools_token_estimate + system_prompt_token_estimate
+                >= SYSTEM_PROMPT_TOO_LARGE_THRESHOLD * agent_llm_config.context_window
+            ):
+                logger.warning(
+                    f"System prompt ({system_prompt_token_estimate} tokens) + tools ({tools_token_estimate} tokens) are large (context window {agent_llm_config.context_window}). Failed to reduce context window during compaction: {context_token_estimate} > {trigger_threshold}."
+                )
+                raise LargeSystemPromptAndToolsError(
+                    system_prompt_token_estimate=system_prompt_token_estimate,
+                    tools_token_estimate=tools_token_estimate,
+                    context_window=agent_llm_config.context_window,
+                )
+            else:
+                # Log error but don't brick the agent
+                logger.critical(f"Failed to summarize messages after fallback: {context_token_estimate} > {trigger_threshold}")
         else:
             logger.info(f"Summarization fallback succeeded: {context_token_estimate} < {trigger_threshold}")
 

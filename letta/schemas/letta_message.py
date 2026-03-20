@@ -448,7 +448,7 @@ class EventMessage(LettaMessage):
     """
 
     message_type: Literal["event_message"] = "event_message"
-    event_type: Literal["compaction"]
+    event_type: Literal["compaction", "context_warning"]
     event_data: dict
 
 
