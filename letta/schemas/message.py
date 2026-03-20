@@ -131,7 +131,12 @@ class MessageCreateType(str, Enum):
 
 class MessageCreateBase(BaseModel):
     type: MessageCreateType = Field(..., description="The message type to be created.")
-    otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
+    otid: Optional[str] = Field(
+        default=None,
+        description="The offline threading id (OTID). Set by the client to deduplicate requests. "
+        "Used for idempotency in background streaming mode — each message in a request must have a unique OTID. "
+        "Retries of the same request should reuse the same OTIDs.",
+    )
     group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     @model_validator(mode="after")
