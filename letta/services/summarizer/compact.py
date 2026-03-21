@@ -51,8 +51,8 @@ async def build_summarizer_llm_config(
     then apply any explicit ``compaction_settings.model_settings`` via
     ``_to_legacy_config_params``.
 
-    For auto mode agents (letta/baseten providers), uses the LLM router's
-    circuit breaker to try the primary model first, falling back if unhealthy.
+    For auto mode agents, routes summarization to Haiku 4.5 instead of the
+    agent's model, falling back to zai/glm-5 if Haiku is unavailable.
 
     Args:
         agent_llm_config: The agent's LLM configuration to use as base.
@@ -62,22 +62,19 @@ async def build_summarizer_llm_config(
     Returns:
         LLMConfig configured for summarization.
     """
-    # Auto mode agents: resolve the placeholder config upfront so every fallback path
-    # returns a working config instead of the unresolved placeholder (model_endpoint='').
+    # Auto mode agents: route summarization to Haiku 4.5 instead of the LLM router's
+    # default (GLM-5). Haiku is cheaper and well-suited for summarization.
     if agent_llm_config.handle and agent_llm_config.handle.startswith("letta/auto"):
+        from letta.services.provider_manager import ProviderManager
+
         try:
-            from letta.services.llm_router import get_llm_routing_client
-
-            routing_client = await get_llm_routing_client()
-            agent_llm_config, _, _ = await routing_client.resolve_auto_mode_config(
-                stored_llm_config=agent_llm_config,
-                actor=actor,
-            )
+            return await ProviderManager().get_llm_config_from_handle("anthropic/claude-haiku-4-5", actor)
         except Exception as e:
-            logger.warning(f"Failed to resolve auto mode config for summarizer: {e}. Falling back to zai/glm-5.")
-            from letta.services.provider_manager import ProviderManager
-
-            agent_llm_config = await ProviderManager().get_llm_config_from_handle("zai/glm-5", actor)
+            logger.warning(f"Failed to resolve haiku for auto mode summarizer: {e}. Falling back to zai/glm-5.")
+            try:
+                return await ProviderManager().get_llm_config_from_handle("zai/glm-5", actor)
+            except Exception:
+                pass
 
     # If no summarizer model specified, use lightweight provider-specific defaults
     if not summarizer_config.model:
@@ -96,26 +93,14 @@ async def build_summarizer_llm_config(
 
         provider_manager = ProviderManager()
 
-        # If the summarizer model is also an auto mode handle, resolve it through
-        # the LLM router instead of loading the unresolved placeholder config
-        # (which has model_endpoint='' and will cause APIConnectionError).
+        # If the summarizer model is an auto mode handle, resolve to haiku
+        # (safety net for stale compaction_settings that still reference letta/auto)
         if summarizer_config.model and summarizer_config.model.startswith("letta/auto"):
             try:
-                from letta.services.llm_router import get_llm_routing_client
-
-                routing_client = await get_llm_routing_client()
-                # Create a placeholder config to resolve
-                placeholder = await provider_manager.get_llm_config_from_handle(
-                    handle=summarizer_config.model,
-                    actor=actor,
-                )
-                base, _, _ = await routing_client.resolve_auto_mode_config(
-                    stored_llm_config=placeholder,
-                    actor=actor,
-                )
+                base = await provider_manager.get_llm_config_from_handle("anthropic/claude-haiku-4-5", actor)
             except Exception as e:
                 logger.warning(
-                    f"Failed to resolve auto mode summarizer handle '{summarizer_config.model}': {e}. Falling back to zai/glm-5."
+                    f"Failed to resolve haiku for auto mode summarizer handle '{summarizer_config.model}': {e}. Falling back to zai/glm-5."
                 )
                 base = await provider_manager.get_llm_config_from_handle("zai/glm-5", actor)
         else:
