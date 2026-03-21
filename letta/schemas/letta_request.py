@@ -220,6 +220,14 @@ class RetrieveStreamRequest(BaseModel):
         default=None,
         description="Agent ID for agent-direct mode with 'default' conversation. Use with conversation_id='default' in the URL path.",
     )
+    run_id: Optional[str] = Field(
+        default=None,
+        description="Run ID to stream directly, bypassing run lookup. Use for recovery from duplicate requests.",
+    )
+    otid: Optional[str] = Field(
+        default=None,
+        description="Offline threading ID to look up the run_id. Bypasses active run lookup if run_id not provided.",
+    )
     starting_after: int = Field(
         0, description="Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id"
     )
