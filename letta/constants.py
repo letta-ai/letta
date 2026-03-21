@@ -474,6 +474,10 @@ REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 CONVERSATION_LOCK_PREFIX = "conversation:lock:"
 CONVERSATION_LOCK_TTL_SECONDS = 300  # 5 minutes
 
+# OTID -> run_id mapping (for recovering from duplicate requests)
+OTID_RUN_PREFIX = "otid:run:"
+OTID_RUN_TTL_SECONDS = 10800  # 3 hours (same as stream TTL)
+
 # Memory repo locks - prevents concurrent modifications to git-based memory
 MEMORY_REPO_LOCK_PREFIX = "memory_repo:lock:"
 MEMORY_REPO_LOCK_TTL_SECONDS = 60  # 1 minute (git operations should be fast)

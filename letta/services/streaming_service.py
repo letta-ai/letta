@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import time
 from datetime import datetime, timezone
@@ -12,8 +13,9 @@ from openai.types.chat.chat_completion_chunk import Choice, ChoiceDelta
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.constants import REDIS_RUN_ID_PREFIX
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
+from letta.data_sources.redis_client import AsyncRedisClient, NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
+    ConversationBusyError,
     LettaInvalidArgumentError,
     LettaServiceUnavailableError,
     LLMAuthenticationError,
@@ -56,6 +58,86 @@ from letta.settings import settings
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
+
+
+def derive_request_token(otids: list[str]) -> str:
+    """
+    Derive a request token from all message otids for deduplication.
+
+    This ensures that two requests with different message combinations get
+    different lock tokens, even if they share the same first message.
+
+    Args:
+        otids: List of otids from all messages in the request
+
+    Returns:
+        A hash of all otids, or a random UUID if no otids provided
+    """
+    if not otids:
+        return str(uuid4())
+    combined = "|".join(otids)
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
+
+
+async def try_recover_duplicate_request(
+    redis_client: "AsyncRedisClient",
+    request_token: str,
+    lock_key: str,
+    include_pings: bool = False,
+) -> Optional[StreamingResponse]:
+    """
+    Check if an existing run already exists for this request token (same otid retry).
+    If so, return a stream attached to the existing run as a read-only reader.
+    Called BEFORE lock acquisition so duplicate requests never touch the lock.
+
+    Args:
+        redis_client: The Redis client
+        request_token: Hash of all message otids
+        lock_key: The conversation/agent ID used as lock key
+        include_pings: Whether to add keepalive pings to the stream
+
+    Returns:
+        StreamingResponse if recovery succeeded, None otherwise
+    """
+    existing_run_id = await redis_client.get_run_id_by_otid(request_token)
+    if not existing_run_id:
+        return None
+
+    logger.info(
+        f"Recovering from duplicate request: returning stream for existing run_id={existing_run_id} "
+        f"(request_token={request_token}, lock_key={lock_key})"
+    )
+    stream = redis_sse_stream_generator(
+        redis_client=redis_client,
+        run_id=existing_run_id,
+    )
+    if include_pings and settings.enable_keepalive:
+        stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=existing_run_id)
+    return StreamingResponseWithStatusCode(stream, media_type="text/event-stream")
+
+
+async def enrich_conversation_busy_error(
+    redis_client: "AsyncRedisClient",
+    error: ConversationBusyError,
+) -> ConversationBusyError:
+    """
+    Enrich a ConversationBusyError with the run_id of the lock holder if available.
+
+    Args:
+        redis_client: The Redis client
+        error: The original ConversationBusyError
+
+    Returns:
+        A new ConversationBusyError with run_id populated if found
+    """
+    existing_run_id = None
+    if error.lock_holder_token:
+        existing_run_id = await redis_client.get_run_id_by_otid(error.lock_holder_token)
+    return ConversationBusyError(
+        conversation_id=error.conversation_id,
+        lock_holder_token=error.lock_holder_token,
+        run_id=existing_run_id,
+    )
 
 
 async def prepend_initial_run_ping(
@@ -186,16 +268,40 @@ class StreamingService:
         # Determine lock key: use conversation_id if provided, else agent_id if should_lock
         lock_key = conversation_id if conversation_id else (agent_id if should_lock else None)
 
+        # Collect all otids from messages for request deduplication
+        # Each message has an otid (auto-generated if not provided)
+        message_otids = [msg.otid for msg in request.messages if msg.otid]
+
+        # Derive a request token from ALL message otids for deduplication
+        # This ensures requests with different message combinations get different tokens
+        request_token = derive_request_token(message_otids)
+
         # Attempt to acquire lock if lock_key is set
         # This prevents concurrent message processing for the same conversation/agent
         # Skip locking if Redis is not available (graceful degradation)
         if lock_key and not isinstance(redis_client, NoopAsyncRedisClient):
+            # Check for existing run BEFORE acquiring the lock.
+            # Same-otid retries should never acquire the lock — just read from Redis.
+            # Only possible when background=True (Redis-backed streaming).
+            if request.background:
+                recovery_response = await try_recover_duplicate_request(
+                    redis_client=redis_client,
+                    request_token=request_token,
+                    lock_key=lock_key,
+                    include_pings=request.include_pings,
+                )
+                if recovery_response:
+                    return None, recovery_response
+
             admission_wait_start_ns = get_utc_timestamp_ns()
             try:
                 await redis_client.acquire_conversation_lock(
                     conversation_id=lock_key,
-                    token=str(uuid4()),
+                    token=request_token,
                 )
+
+            except ConversationBusyError as e:
+                raise await enrich_conversation_busy_error(redis_client, e)
             finally:
                 admission_wait_ms = (get_utc_timestamp_ns() - admission_wait_start_ns) / 1_000_000
                 MetricRegistry().request_admission_wait_ms_histogram.record(
@@ -214,6 +320,16 @@ class StreamingService:
             if settings.track_agent_run:
                 run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
                 await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
+
+                # Store request_token -> run_id mapping for duplicate request recovery
+                # This allows detecting exact retry vs different request
+                if request_token:
+                    await redis_client.set_otid_run_mapping(request_token, run.id)
+
+                # Store each individual otid -> run_id mapping for client convenience
+                # Client can use ANY otid from their request to recover the stream
+                for otid in message_otids:
+                    await redis_client.set_otid_run_mapping(otid, run.id)
 
             # use agent loop for streaming
             agent_loop = AgentLoop.load(agent_state=agent, actor=actor)

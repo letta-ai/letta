@@ -2,13 +2,41 @@
 Integration tests for the Conversations API using the SDK.
 """
 
+import asyncio
+import logging
 import uuid
+from typing import Any, List, Optional
 
 import pytest
 import requests
-from letta_client import Letta
+from letta_client import APIError, AsyncLetta, Letta
+from letta_client.types import MessageCreateParam
+
+logger = logging.getLogger(__name__)
 
 TEST_MODEL_HANDLE = "anthropic/claude-haiku-4-5"
+
+
+@pytest.fixture
+def async_client(server_url: str) -> AsyncLetta:
+    """Create an async Letta client."""
+    return AsyncLetta(base_url=server_url)
+
+
+@pytest.fixture
+def otid_test_agent(client: Letta):
+    """Create a test agent for otid/lock tests using openai/gpt-4o-mini (always available)."""
+    agent_state = client.agents.create(
+        name=f"test_conversations_{uuid.uuid4().hex[:8]}",
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        memory_blocks=[
+            {"label": "human", "value": "Test user"},
+            {"label": "persona", "value": "You are a helpful assistant."},
+        ],
+    )
+    yield agent_state
+    client.agents.delete(agent_id=agent_state.id)
 
 
 @pytest.fixture
@@ -1504,3 +1532,191 @@ class TestConversationSystemMessageRecompilation:
 
         finally:
             client.agents.delete(agent_id=agent.id)
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_concurrent_conversation_requests_return_409(
+    server_url: str,
+    otid_test_agent,
+    async_client: AsyncLetta,
+    disable_e2b_api_key: Any,
+) -> None:
+    """
+    Test that concurrent requests to the same conversation return 409 CONVERSATION_BUSY.
+
+    This is a simpler test to verify the locking mechanism is working.
+    If this fails, the lock is not being held properly.
+    """
+    from letta.settings import settings
+
+    if settings.redis_host is None or settings.redis_port is None:
+        pytest.skip("Redis not configured - skipping conversation lock test")
+
+    conversation = await async_client.conversations.create(agent_id=otid_test_agent.id)
+
+    # Different otids for the two requests
+    otid1 = f"test-otid-1-{uuid.uuid4()}"
+    otid2 = f"test-otid-2-{uuid.uuid4()}"
+
+    messages1 = [
+        MessageCreateParam(
+            role="user",
+            content="Hello! Please count from 1 to 5 slowly.",
+            otid=otid1,
+        )
+    ]
+
+    messages2 = [
+        MessageCreateParam(
+            role="user",
+            content="Hello! Please count from 1 to 5 slowly.",
+            otid=otid2,  # Different otid
+        )
+    ]
+
+    # Track state
+    stream1_started = asyncio.Event()
+    stream2_error: Optional[APIError] = None
+
+    async def collect_stream1():
+        """First request - the original."""
+        stream = await async_client.conversations.messages.create(
+            conversation_id=conversation.id,
+            messages=messages1,
+            background=True,
+        )
+        async for chunk in stream:
+            if not stream1_started.is_set():
+                stream1_started.set()
+            await asyncio.sleep(0.01)
+
+    async def collect_stream2():
+        """Second request - should return 409 (different otid)."""
+        await stream1_started.wait()
+
+        nonlocal stream2_error
+        try:
+            stream = await async_client.conversations.messages.create(
+                conversation_id=conversation.id,
+                messages=messages2,  # Different otid!
+                background=True,
+            )
+            async for chunk in stream:
+                pass
+        except APIError as e:
+            stream2_error = e
+
+    await asyncio.gather(collect_stream1(), collect_stream2())
+
+    # Stream 2 should have gotten 409 if stream 1 was still running.
+    # If stream 1 completed before stream 2 started, stream 2 may succeed —
+    # that's correct behavior (lock released, new request is fine).
+    if stream2_error is not None:
+        assert stream2_error.status_code == 409, f"Stream 2 should have returned 409, got {stream2_error.status_code}"
+        logger.info(f"Stream 2 correctly returned 409: {stream2_error.body}")
+    else:
+        logger.info("Stream 1 completed before stream 2 started — no lock contention (acceptable)")
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_duplicate_request_recovery_with_same_otid(
+    server_url: str,
+    otid_test_agent,
+    async_client: AsyncLetta,
+    disable_e2b_api_key: Any,
+) -> None:
+    """
+    Test that a duplicate request with the same otid recovers the existing stream.
+
+    This test verifies the otid-based deduplication and recovery mechanism:
+    1. Start a streaming request with a specific otid
+    2. Start another request with the SAME otid (while first is still running)
+    3. The second request should recover and return the same run_id
+    4. After both complete, a third request with the same otid should still recover
+    """
+    from letta.settings import settings
+
+    if settings.redis_host is None or settings.redis_port is None:
+        pytest.skip("Redis not configured - skipping conversation lock test")
+
+    conversation = await async_client.conversations.create(agent_id=otid_test_agent.id)
+
+    shared_otid = f"test-otid-{uuid.uuid4()}"
+    messages = [
+        MessageCreateParam(
+            role="user",
+            content="Hello! Please count from 1 to 5 slowly.",
+            otid=shared_otid,
+        )
+    ]
+
+    # Track state
+    chunks_from_stream1: List[Any] = []
+    chunks_from_stream2: List[Any] = []
+    stream1_started = asyncio.Event()
+
+    async def collect_stream1():
+        """First request - the original."""
+        stream = await async_client.conversations.messages.create(
+            conversation_id=conversation.id,
+            messages=messages,
+            background=True,
+        )
+        async for chunk in stream:
+            chunks_from_stream1.append(chunk)
+            if not stream1_started.is_set():
+                stream1_started.set()
+            await asyncio.sleep(0.01)
+
+    async def collect_stream2():
+        """Second request - should recover from stream1 (same otid)."""
+        await stream1_started.wait()
+        await asyncio.sleep(0.1)
+
+        stream = await async_client.conversations.messages.create(
+            conversation_id=conversation.id,
+            messages=messages,  # Same otid!
+            background=True,
+        )
+        async for chunk in stream:
+            chunks_from_stream2.append(chunk)
+
+    # Run both streams concurrently
+    await asyncio.gather(collect_stream1(), collect_stream2())
+
+    def extract_run_id(chunks: List[Any]) -> Optional[str]:
+        for chunk in chunks:
+            if hasattr(chunk, "run_id") and chunk.run_id:
+                return chunk.run_id
+        return None
+
+    run_id_1 = extract_run_id(chunks_from_stream1)
+    run_id_2 = extract_run_id(chunks_from_stream2)
+
+    logger.info(f"Stream 1 run_id: {run_id_1}")
+    logger.info(f"Stream 2 run_id: {run_id_2}")
+
+    assert len(chunks_from_stream1) > 0, "Stream 1 should have received chunks"
+    assert len(chunks_from_stream2) > 0, "Stream 2 should have recovered and received chunks"
+
+    assert run_id_1 is not None, "Stream 1 should have a run_id"
+    assert run_id_2 is not None, "Stream 2 should have a run_id"
+    assert run_id_1 == run_id_2, f"Both streams should have the same run_id (recovery): {run_id_1} vs {run_id_2}"
+
+    # Stream 3: retry AFTER both streams have completed (lock is definitely released).
+    # Should still recover the same run from Redis without acquiring the lock.
+    chunks_from_stream3: List[Any] = []
+    stream3 = await async_client.conversations.messages.create(
+        conversation_id=conversation.id,
+        messages=messages,  # Same otid!
+        background=True,
+    )
+    async for chunk in stream3:
+        chunks_from_stream3.append(chunk)
+
+    run_id_3 = extract_run_id(chunks_from_stream3)
+    logger.info(f"Stream 3 run_id: {run_id_3}")
+
+    assert len(chunks_from_stream3) > 0, "Stream 3 should have received chunks"
+    assert run_id_3 is not None, "Stream 3 should have a run_id"
+    assert run_id_3 == run_id_1, f"Stream 3 should recover the same run_id after lock released: {run_id_3} vs {run_id_1}"

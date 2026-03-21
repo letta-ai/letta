@@ -1,6 +1,5 @@
 from datetime import timedelta
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from uuid import uuid4
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -10,7 +9,7 @@ from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.constants import REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaExpiredError, LettaInvalidArgumentError, NoActiveRunsToCancelError
+from letta.errors import ConversationBusyError, LettaExpiredError, LettaInvalidArgumentError, NoActiveRunsToCancelError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.conversation import Conversation, CreateConversation, UpdateConversation
@@ -278,12 +277,24 @@ async def _send_agent_direct_message(
         )
         agent = agent.model_copy(update={"llm_config": override_llm_config})
 
+    # Collect all otids from messages for request deduplication
+    message_otids = [msg.otid for msg in request.messages if msg.otid]
+
+    # Derive a request token from ALL message otids for deduplication
+    from letta.services.streaming_service import derive_request_token, enrich_conversation_busy_error
+
+    request_token = derive_request_token(message_otids)
+
     # Acquire lock using agent_id as lock key
     if not isinstance(redis_client, NoopAsyncRedisClient):
-        await redis_client.acquire_conversation_lock(
-            conversation_id=agent_id,
-            token=str(uuid4()),
-        )
+        try:
+            await redis_client.acquire_conversation_lock(
+                conversation_id=agent_id,
+                token=request_token,
+            )
+
+        except ConversationBusyError as e:
+            raise await enrich_conversation_busy_error(redis_client, e)
 
     try:
         # Create a run for execution tracking
@@ -304,6 +315,15 @@ async def _send_agent_direct_message(
 
         # Set run_id in Redis for cancellation support
         await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
+
+        # Store request_token -> run_id mapping for duplicate request recovery
+        if request_token and run:
+            await redis_client.set_otid_run_mapping(request_token, run.id)
+
+        # Store each individual otid -> run_id mapping for client convenience
+        if run:
+            for otid in message_otids:
+                await redis_client.set_otid_run_mapping(otid, run.id)
 
         agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
         return await agent_loop.step(
@@ -620,55 +640,22 @@ async def retrieve_conversation_stream(
     This endpoint allows you to reconnect to an active background stream
     for a conversation, enabling recovery from network interruptions.
 
-    **Agent-direct mode**: Pass conversation_id="default" with agent_id in request body
+    **Agent-direct mode**: Pass conversation_id=\"default\" with agent_id in request body
     to retrieve the stream for the agent's most recent active run.
+
+    **Direct run access**: Pass run_id directly to skip run lookup entirely.
+    Useful for recovery from duplicate request 409 errors.
+
+    **OTID lookup**: Pass otid to look up the run_id from Redis.
+    Useful when you have the otid from a 409 error response.
 
     **Deprecated**: Passing an agent ID as conversation_id still works but will be removed.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
-
-    # Agent-direct mode: conversation_id="default" + agent_id in body (preferred)
-    # OR conversation_id="agent-*" (backwards compat, deprecated)
-    resolved_agent_id = None
-    if conversation_id == "default" and request and request.agent_id:
-        resolved_agent_id = request.agent_id
-    elif conversation_id.startswith("agent-"):
-        resolved_agent_id = conversation_id
-
-    # Find the most recent active run
-    if resolved_agent_id:
-        # Agent-direct mode: find runs by agent_id
-        active_runs = await runs_manager.list_runs(
-            actor=actor,
-            agent_id=resolved_agent_id,
-            statuses=[RunStatus.created, RunStatus.running],
-            limit=1,
-            ascending=False,
-        )
-    else:
-        # Normal mode: find runs by conversation_id
-        active_runs = await runs_manager.list_runs(
-            actor=actor,
-            conversation_id=conversation_id,
-            statuses=[RunStatus.created, RunStatus.running],
-            limit=1,
-            ascending=False,
-        )
-
-    if not active_runs:
-        raise LettaInvalidArgumentError("No active runs found for this conversation.")
-
-    run = active_runs[0]
-
-    if not run.background:
-        raise LettaInvalidArgumentError("Run was not created in background mode, so it cannot be retrieved.")
-
-    if run.created_at < get_utc_time() - timedelta(hours=3):
-        raise LettaExpiredError("Run was created more than 3 hours ago, and is now expired.")
-
     redis_client = await get_redis_client()
 
+    # Check Redis availability early
     if isinstance(redis_client, NoopAsyncRedisClient):
         raise HTTPException(
             status_code=503,
@@ -679,9 +666,74 @@ async def retrieve_conversation_stream(
             ),
         )
 
+    run_id = None
+    run = None
+
+    # Priority 1: Direct run_id provided (bypasses all lookups)
+    if request and request.run_id:
+        run_id = request.run_id
+        # Fetch run to check expiration
+        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
+        if not run:
+            raise LettaInvalidArgumentError(f"Run {run_id} not found.")
+
+    # Priority 2: OTID provided (look up run_id from Redis)
+    elif request and request.otid:
+        run_id = await redis_client.get_run_id_by_otid(request.otid)
+        if not run_id:
+            raise LettaInvalidArgumentError(f"No run found for otid={request.otid}. The run may have expired or never existed.")
+        # Fetch run to check expiration
+        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
+        if not run:
+            raise LettaInvalidArgumentError(f"Run {run_id} (from otid={request.otid}) not found.")
+
+    # Priority 3: Fall back to active run lookup
+    else:
+        # Agent-direct mode: conversation_id="default" + agent_id in body (preferred)
+        # OR conversation_id="agent-*" (backwards compat, deprecated)
+        resolved_agent_id = None
+        if conversation_id == "default" and request and request.agent_id:
+            resolved_agent_id = request.agent_id
+        elif conversation_id.startswith("agent-"):
+            resolved_agent_id = conversation_id
+
+        # Find the most recent active run
+        if resolved_agent_id:
+            # Agent-direct mode: find runs by agent_id
+            active_runs = await runs_manager.list_runs(
+                actor=actor,
+                agent_id=resolved_agent_id,
+                statuses=[RunStatus.created, RunStatus.running],
+                limit=1,
+                ascending=False,
+            )
+        else:
+            # Normal mode: find runs by conversation_id
+            active_runs = await runs_manager.list_runs(
+                actor=actor,
+                conversation_id=conversation_id,
+                statuses=[RunStatus.created, RunStatus.running],
+                limit=1,
+                ascending=False,
+            )
+
+        if not active_runs:
+            raise LettaInvalidArgumentError("No active runs found for this conversation.")
+
+        run = active_runs[0]
+        run_id = run.id
+
+        # For active run lookup, require background mode
+        if not run.background:
+            raise LettaInvalidArgumentError("Run was not created in background mode, so it cannot be retrieved.")
+
+    # Check expiration for all paths
+    if run and run.created_at < get_utc_time() - timedelta(hours=3):
+        raise LettaExpiredError("Run was created more than 3 hours ago, and is now expired.")
+
     stream = redis_sse_stream_generator(
         redis_client=redis_client,
-        run_id=run.id,
+        run_id=run_id,
         starting_after=request.starting_after if request else None,
         poll_interval=request.poll_interval if request else None,
         batch_size=request.batch_size if request else None,
@@ -693,13 +745,13 @@ async def retrieve_conversation_stream(
         stream = cancellation_aware_stream_wrapper(
             stream_generator=stream,
             run_manager=server.run_manager,
-            run_id=run.id,
+            run_id=run_id,
             actor=actor,
-            cancellation_event=get_cancellation_event_for_run(run.id),
+            cancellation_event=get_cancellation_event_for_run(run_id),
         )
 
     if request and request.include_pings and settings.enable_keepalive:
-        stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
+        stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run_id)
 
     return StreamingResponseWithStatusCode(
         stream,

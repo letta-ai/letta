@@ -7,6 +7,8 @@ from letta.constants import (
     CONVERSATION_LOCK_TTL_SECONDS,
     MEMORY_REPO_LOCK_PREFIX,
     MEMORY_REPO_LOCK_TTL_SECONDS,
+    OTID_RUN_PREFIX,
+    OTID_RUN_TTL_SECONDS,
     REDIS_EXCLUDE,
     REDIS_INCLUDE,
     REDIS_SET_DEFAULT_VAL,
@@ -243,6 +245,67 @@ class AsyncRedisClient:
             return True
         except Exception as e:
             logger.warning(f"Failed to release conversation lock for conversation {conversation_id}: {e}")
+            return False
+
+    async def set_otid_run_mapping(self, otid: str, run_id: str) -> bool:
+        """
+        Store a mapping from otid to run_id.
+
+        This allows recovering the run_id from a duplicate request's otid
+        when a 409 Conflict error is raised.
+
+        Args:
+            otid: The offline threading ID (used as lock token)
+            run_id: The run ID associated with this request
+
+        Returns:
+            True if mapping was stored successfully
+        """
+        try:
+            client = await self.get_client()
+            key = f"{OTID_RUN_PREFIX}{otid}"
+            await client.set(key, run_id, ex=OTID_RUN_TTL_SECONDS)
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to store otid->run_id mapping for otid {otid}: {e}")
+            return False
+
+    async def get_run_id_by_otid(self, otid: str) -> Optional[str]:
+        """
+        Look up the run_id associated with an otid.
+
+        Args:
+            otid: The offline threading ID to look up
+
+        Returns:
+            The run_id if found, None otherwise
+        """
+        try:
+            client = await self.get_client()
+            key = f"{OTID_RUN_PREFIX}{otid}"
+            return await client.get(key)
+        except Exception as e:
+            logger.warning(f"Failed to lookup run_id for otid {otid}: {e}")
+            return None
+
+    async def has_stream_chunks(self, run_id: str) -> bool:
+        """
+        Check if there are any chunks available for a run in Redis.
+
+        Args:
+            run_id: The run ID to check
+
+        Returns:
+            True if chunks exist, False otherwise
+        """
+        try:
+            client = await self.get_client()
+            stream_key = f"sse:run:{run_id}"
+            # Check if stream exists and has entries
+            length = await client.xlen(stream_key)
+            return length > 0
+        except Exception as e:
+            logger.warning(f"Failed to check stream chunks for run {run_id}: {e}")
             return False
 
     async def acquire_memory_repo_lock(
@@ -535,6 +598,15 @@ class NoopAsyncRedisClient(AsyncRedisClient):
         return None
 
     async def release_conversation_lock(self, conversation_id: str) -> bool:
+        return False
+
+    async def set_otid_run_mapping(self, otid: str, run_id: str) -> bool:
+        return False
+
+    async def get_run_id_by_otid(self, otid: str) -> Optional[str]:
+        return None
+
+    async def has_stream_chunks(self, run_id: str) -> bool:
         return False
 
     async def acquire_memory_repo_lock(

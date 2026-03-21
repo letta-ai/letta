@@ -9307,7 +9307,7 @@
       "post": {
         "tags": ["conversations"],
         "summary": "Retrieve Conversation Stream",
-        "description": "Resume the stream for the most recent active run in a conversation.\n\nThis endpoint allows you to reconnect to an active background stream\nfor a conversation, enabling recovery from network interruptions.\n\n**Agent-direct mode**: Pass conversation_id=\"default\" with agent_id in request body\nto retrieve the stream for the agent's most recent active run.\n\n**Deprecated**: Passing an agent ID as conversation_id still works but will be removed.",
+        "description": "Resume the stream for the most recent active run in a conversation.\n\nThis endpoint allows you to reconnect to an active background stream\nfor a conversation, enabling recovery from network interruptions.\n\n**Agent-direct mode**: Pass conversation_id=\"default\" with agent_id in request body\nto retrieve the stream for the agent's most recent active run.\n\n**Direct run access**: Pass run_id directly to skip run lookup entirely.\nUseful for recovery from duplicate request 409 errors.\n\n**OTID lookup**: Pass otid to look up the run_id from Redis.\nUseful when you have the otid from a 409 error response.\n\n**Deprecated**: Passing an agent ID as conversation_id still works but will be removed.",
         "operationId": "retrieve_conversation_stream",
         "parameters": [
           {
@@ -44102,6 +44102,30 @@
             ],
             "title": "Agent Id",
             "description": "Agent ID for agent-direct mode with 'default' conversation. Use with conversation_id='default' in the URL path."
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "Run ID to stream directly, bypassing run lookup. Use for recovery from duplicate requests."
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "Offline threading ID to look up the run_id. Bypasses active run lookup if run_id not provided."
           },
           "starting_after": {
             "type": "integer",

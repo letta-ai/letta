@@ -582,7 +582,15 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
     app.add_exception_handler(ConcurrentUpdateError, _error_handler_409)
-    app.add_exception_handler(ConversationBusyError, _error_handler_409)
+
+    async def _conversation_busy_handler(request: Request, exc: ConversationBusyError):
+        logger.error(f"{type(exc).__name__}", exc_info=exc)
+        content = {"detail": str(exc)}
+        if exc.run_id:
+            content["run_id"] = exc.run_id
+        return JSONResponse(status_code=409, content=content)
+
+    app.add_exception_handler(ConversationBusyError, _conversation_busy_handler)
     app.add_exception_handler(MemoryRepoBusyError, _error_handler_409)
     app.add_exception_handler(PendingApprovalError, _error_handler_409)
     app.add_exception_handler(NoActiveRunsToCancelError, _error_handler_409)
