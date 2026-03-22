@@ -23,6 +23,7 @@ from letta.schemas.agent import CreateAgent, InternalTemplateAgentCreate, Update
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
+    AgentType,
     MessageRole,
 )
 from letta.schemas.letta_message_content import TextContent
@@ -1440,6 +1441,53 @@ async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user)
     all_agents = await server.agent_manager.list_agents_async(actor=default_user)
     all_names = {agent.name for agent in all_agents}
     assert {"agent_requires_approval", "agent_error", "agent_no_stop_reason"}.issubset(all_names)
+
+
+@pytest.mark.asyncio
+async def test_list_agents_by_created_by_id(server: SyncServer, default_user, other_user):
+    """Test filtering agents by created_by_id."""
+    # Create agent as default_user
+    await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_by_default_user",
+            agent_type=AgentType.letta_v1_agent,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # Create agent as other_user
+    await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_by_other_user",
+            agent_type=AgentType.letta_v1_agent,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=other_user,
+    )
+
+    # Filter by default_user's id
+    default_user_agents = await server.agent_manager.list_agents_async(actor=default_user, created_by_id=default_user.id)
+    default_user_names = {agent.name for agent in default_user_agents}
+    assert "agent_by_default_user" in default_user_names
+    assert "agent_by_other_user" not in default_user_names
+
+    # Filter by other_user's id
+    other_user_agents = await server.agent_manager.list_agents_async(actor=other_user, created_by_id=other_user.id)
+    other_user_names = {agent.name for agent in other_user_agents}
+    assert "agent_by_other_user" in other_user_names
+    assert "agent_by_default_user" not in other_user_names
+
+    # No filter - both users' agents visible
+    all_agents = await server.agent_manager.list_agents_async(actor=default_user)
+    all_names = {agent.name for agent in all_agents}
+    assert {"agent_by_default_user", "agent_by_other_user"}.issubset(all_names)
 
 
 @pytest.mark.asyncio
