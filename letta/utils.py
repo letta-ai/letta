@@ -872,6 +872,29 @@ def parse_json(string) -> dict:
         raise e
 
 
+def parse_json_or_wrap_raw(
+    string: str,
+    wrapper_key: str = "_malformed_tool_arguments",
+    context: Optional[dict[str, Any]] = None,
+) -> dict:
+    """Parse JSON into a dict, returning a wrapped raw payload on parse failure.
+
+    This is intended for serialization paths where we prefer degraded, non-fatal behavior
+    over failing an entire run because historical tool-call args are malformed.
+    """
+    try:
+        return parse_json(string)
+    except Exception as e:
+        context = context or {}
+        logger.warning(
+            "Failed to parse JSON payload, falling back to wrapped raw payload. wrapper_key=%s error=%s context=%s",
+            wrapper_key,
+            e,
+            context,
+        )
+        return {wrapper_key: string}
+
+
 def validate_function_response(
     function_response: Any, return_char_limit: int, strict: bool = False, truncate: bool = True
 ) -> str | dict[str, Any]:
