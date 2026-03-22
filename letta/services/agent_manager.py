@@ -1041,6 +1041,7 @@ class AgentManager:
         sort_by: Optional[str] = "created_at",
         show_hidden_agents: Optional[bool] = None,
         last_stop_reason: Optional[StopReasonType] = None,
+        created_by_id: Optional[str] = None,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -1073,7 +1074,7 @@ class AgentManager:
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
-            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason, created_by_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_relationship_filters(query, include_relationships, include)
@@ -1112,6 +1113,7 @@ class AgentManager:
         identifier_keys: Optional[List[str]] = None,
         show_hidden_agents: Optional[bool] = None,
         last_stop_reason: Optional[StopReasonType] = None,
+        created_by_id: Optional[str] = None,
     ) -> int:
         """
         Count agents matching the specified filters using an efficient database-level COUNT query.
@@ -1138,7 +1140,7 @@ class AgentManager:
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
-            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason, created_by_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
 

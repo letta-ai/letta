@@ -4334,6 +4334,24 @@
               "title": "Last Stop Reason"
             },
             "description": "Filter agents by their last stop reason."
+          },
+          {
+            "name": "created_by_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by the user who created them.",
+              "title": "Created By Id"
+            },
+            "description": "Filter agents by the user who created them."
           }
         ],
         "responses": {
@@ -4608,6 +4626,24 @@
               "title": "Last Stop Reason"
             },
             "description": "Filter agents by their last stop reason."
+          },
+          {
+            "name": "created_by_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by the user who created them.",
+              "title": "Created By Id"
+            },
+            "description": "Filter agents by the user who created them."
           }
         ],
         "responses": {

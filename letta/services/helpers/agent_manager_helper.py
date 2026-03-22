@@ -741,6 +741,7 @@ def _apply_filters(
     template_id: Optional[str],
     base_template_id: Optional[str],
     last_stop_reason: Optional[StopReasonType] = None,
+    created_by_id: Optional[str] = None,
 ):
     """
     Apply basic filtering criteria to the agent query.
@@ -757,6 +758,7 @@ def _apply_filters(
         template_id (Optional[str]): Filter for agents using a specific template.
         base_template_id (Optional[str]): Filter for agents using a specific base template.
         last_stop_reason (Optional[StopReasonType]): Filter for agents by their last stop reason (e.g., 'requires_approval', 'error').
+        created_by_id (Optional[str]): Filter for agents created by a specific user.
 
     Returns:
         The modified query with the applied filters.
@@ -784,6 +786,9 @@ def _apply_filters(
     # Filter agents by last stop reason.
     if last_stop_reason:
         query = query.where(AgentModel.last_stop_reason == last_stop_reason)
+    # Filter agents by created_by_id.
+    if created_by_id:
+        query = query.where(AgentModel._created_by_id == created_by_id)
     return query
 
 

@@ -174,6 +174,7 @@ async def list_agents(
         description="If set to True, include agents marked as hidden in the results.",
     ),
     last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
+    created_by_id: str | None = Query(None, description="Filter agents by the user who created them."),
 ):
     """
     Get a list of all agents.
@@ -209,6 +210,7 @@ async def list_agents(
         sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
         last_stop_reason=last_stop_reason,
+        created_by_id=created_by_id,
     )
 
 
@@ -232,6 +234,7 @@ async def count_agents(
         description="If set to True, include agents marked as hidden in the results.",
     ),
     last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
+    created_by_id: str | None = Query(None, description="Filter agents by the user who created them."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -248,7 +251,18 @@ async def count_agents(
     if (
         all(
             param is None or param is False
-            for param in [name, tags, query_text, project_id, template_id, base_template_id, identity_id, identifier_keys, last_stop_reason]
+            for param in [
+                name,
+                tags,
+                query_text,
+                project_id,
+                template_id,
+                base_template_id,
+                identity_id,
+                identifier_keys,
+                last_stop_reason,
+                created_by_id,
+            ]
         )
         and show_hidden_agents
     ):
@@ -267,6 +281,7 @@ async def count_agents(
         identifier_keys=identifier_keys,
         show_hidden_agents=show_hidden_agents,
         last_stop_reason=last_stop_reason,
+        created_by_id=created_by_id,
     )
 
 
