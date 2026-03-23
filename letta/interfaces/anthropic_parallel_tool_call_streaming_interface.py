@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
 
+    from letta.schemas.llm_config import LLMConfig
     from letta.schemas.usage import LettaUsageStatistics
 
 from anthropic import AsyncStream
@@ -79,10 +80,12 @@ class SimpleAnthropicStreamingInterface:
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
+        llm_config: "LLMConfig | None" = None,
     ):
         self.json_parser: JSONParser = PydanticJSONParser()
         self.run_id = run_id
         self.step_id = step_id
+        self.llm_config = llm_config
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -284,7 +287,7 @@ class SimpleAnthropicStreamingInterface:
             from letta.llm_api.anthropic_client import AnthropicClient
 
             client = AnthropicClient()
-            transformed_error = client.handle_llm_error(e)
+            transformed_error = client.handle_llm_error(e, llm_config=self.llm_config)
             raise transformed_error
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")
