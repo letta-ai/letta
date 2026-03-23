@@ -398,11 +398,22 @@ async def create_background_stream_processor(
                 run_id=run_id,
                 update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value, metadata={"error": str(e)}),
                 actor=actor,
-                conversation_id=conversation_id,
             )
     finally:
         if should_stop_writer:
             await writer.stop()
+
+        # Release the conversation lock BEFORE run status bookkeeping.
+        # The client sees [DONE] and immediately submits the next message
+        # (e.g., tool results). If we hold the lock through the DB commit,
+        # the client hits a 409 race (~1-2s window). The bookkeeping
+        # (run status, metrics, last_stop_reason) is safe to race with
+        # the next request — they touch different rows/fields.
+        if conversation_id:
+            try:
+                await redis_client.release_conversation_lock(conversation_id)
+            except Exception as lock_error:
+                logger.warning(f"Failed to release conversation lock for {conversation_id}: {lock_error}")
 
         # Derive a final stop_reason if one wasn't observed explicitly
         final_stop_reason = stop_reason
@@ -413,7 +424,7 @@ async def create_background_stream_processor(
                 # Treat DONE without an explicit stop_reason as an error to avoid masking failures
                 final_stop_reason = StopReasonType.error.value
 
-        # Update run status to reflect terminal outcome
+        # Update run status to reflect terminal outcome (lock already released)
         if run_manager and actor and final_stop_reason:
             # Resolve stop_reason using canonical enum mapping to avoid drift.
             try:
@@ -430,7 +441,6 @@ async def create_background_stream_processor(
                 run_id=run_id,
                 update=RunUpdate(**update_kwargs),
                 actor=actor,
-                conversation_id=conversation_id,
             )
 
         # Belt-and-suspenders: always append a terminal [DONE] chunk to ensure clients terminate
