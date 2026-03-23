@@ -835,6 +835,7 @@ async def _execute_summarizer_request(req_data: dict, req_messages_obj: list[Mes
             requires_approval_tools=[],
             run_id=None,
             step_id=None,
+            llm_config=llm_config,
         )
 
         # AnthropicClient.stream_async sets request_data["stream"] = True internally.

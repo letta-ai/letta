@@ -84,6 +84,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
                 step_id=step_id,
+                llm_config=self.llm_config,
             )
         elif self.llm_config.model_endpoint_type in [
             ProviderType.openai,

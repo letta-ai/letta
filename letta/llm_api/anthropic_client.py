@@ -218,6 +218,7 @@ class AnthropicClient(LLMClientBase):
             requires_approval_tools=[],
             run_id=None,
             step_id=None,
+            llm_config=llm_config,
         )
 
         # Get the streaming response
