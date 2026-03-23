@@ -9,6 +9,7 @@ from contextlib import aclosing
 from typing import Dict, List, Optional
 
 from letta.data_sources.redis_client import AsyncRedisClient
+from letta.errors import LettaError
 from letta.log import get_logger
 from letta.schemas.enums import RunStatus
 from letta.schemas.letta_message import LettaErrorMessage
@@ -381,7 +382,7 @@ async def create_background_stream_processor(
         error_message = LettaErrorMessage(
             run_id=run_id,
             error_type="internal_error",
-            message="An unknown error occurred with the LLM streaming request.",
+            message=str(e) if isinstance(e, LettaError) else "An unknown error occurred with the LLM streaming request.",
             detail=str(e),
         )
         await writer.write_chunk(

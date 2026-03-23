@@ -16,6 +16,7 @@ from letta.constants import REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import AsyncRedisClient, NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
     ConversationBusyError,
+    LettaError,
     LettaInvalidArgumentError,
     LettaServiceUnavailableError,
     LLMAuthenticationError,
@@ -745,7 +746,7 @@ class StreamingService:
                 error_message = LettaErrorMessage(
                     run_id=run_id,
                     error_type="internal_error",
-                    message="An unknown error occurred with the LLM streaming request.",
+                    message=error_detail if isinstance(e, LettaError) else "An unknown error occurred with the LLM streaming request.",
                     detail=error_detail,
                 )
                 error_data = {"error": error_message.model_dump()}
