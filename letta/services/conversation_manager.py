@@ -236,7 +236,7 @@ class ConversationManager:
             after: Cursor for pagination (conversation ID)
             summary_search: Optional text to search for within the summary field
             ascending: Sort order (True for oldest first, False for newest first)
-            sort_by: Field to sort by ("created_at" or "last_run_completion")
+            sort_by: Field to sort by ("created_at", "last_run_completion", or "last_message_at")
 
         Returns:
             List of conversations matching the criteria
@@ -257,6 +257,10 @@ class ConversationManager:
                     latest_run_subquery, ConversationModel.id == latest_run_subquery.c.conversation_id
                 )
                 sort_column = latest_run_subquery.c.last_run_completion
+                sort_nulls_last = True
+            elif sort_by == "last_message_at":
+                stmt = select(ConversationModel)
+                sort_column = ConversationModel.last_message_at
                 sort_nulls_last = True
             else:
                 # Simple query for created_at
@@ -330,6 +334,43 @@ class ConversationManager:
                                         and_(sort_column == after_sort_value, ConversationModel.id < after_id),
                                     )
                                 )
+                elif sort_by == "last_message_at":
+                    after_conv = await ConversationModel.read_async(
+                        db_session=session,
+                        identifier=after,
+                        actor=actor,
+                    )
+                    after_sort_value = after_conv.last_message_at
+                    after_id = after_conv.id
+                    if after_sort_value is None:
+                        if ascending:
+                            stmt = stmt.where(
+                                or_(
+                                    and_(ConversationModel.last_message_at.is_(None), ConversationModel.id > after_id),
+                                    ConversationModel.last_message_at.isnot(None),
+                                )
+                            )
+                        else:
+                            stmt = stmt.where(and_(ConversationModel.last_message_at.is_(None), ConversationModel.id < after_id))
+                    else:
+                        if ascending:
+                            stmt = stmt.where(
+                                and_(
+                                    ConversationModel.last_message_at.isnot(None),
+                                    or_(
+                                        ConversationModel.last_message_at > after_sort_value,
+                                        and_(ConversationModel.last_message_at == after_sort_value, ConversationModel.id > after_id),
+                                    ),
+                                )
+                            )
+                        else:
+                            stmt = stmt.where(
+                                or_(
+                                    ConversationModel.last_message_at.is_(None),
+                                    ConversationModel.last_message_at < after_sort_value,
+                                    and_(ConversationModel.last_message_at == after_sort_value, ConversationModel.id < after_id),
+                                )
+                            )
                 else:
                     # Simple created_at cursor
                     after_conv = await ConversationModel.read_async(

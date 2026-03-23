@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -27,6 +28,10 @@ class Conversation(OrmMetadataBase):
     model_settings: Optional[ModelSettingsUnion] = Field(
         None,
         description="The model settings for this conversation (overrides agent's model settings).",
+    )
+    last_message_at: Optional[datetime] = Field(
+        None,
+        description="Timestamp of the most recent message request sent to this conversation.",
     )
 
 
@@ -72,6 +77,10 @@ class UpdateConversation(BaseModel):
     model_settings: Optional[ModelSettingsUnion] = Field(
         None,
         description="The model settings for this conversation (overrides agent's model settings).",
+    )
+    last_message_at: Optional[datetime] = Field(
+        None,
+        description="Timestamp of the most recent message request sent to this conversation.",
     )
 
     @field_validator("model")
