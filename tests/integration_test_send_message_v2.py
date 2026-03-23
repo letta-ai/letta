@@ -6,6 +6,7 @@ import os
 import threading
 import time
 import uuid
+from datetime import datetime
 from typing import Any, List, Tuple
 
 import pytest
@@ -1011,6 +1012,13 @@ async def test_conversation_streaming_raw_http(
             },
         )
         assert stream_response.status_code == 200, f"Failed to send message: {stream_response.text}"
+
+        # Verify last_message_at is populated and parseable
+        retrieve_after_send_response = await http_client.get(f"/v1/conversations/{conversation['id']}")
+        assert retrieve_after_send_response.status_code == 200
+        retrieved_after_send = retrieve_after_send_response.json()
+        assert retrieved_after_send["last_message_at"] is not None
+        datetime.fromisoformat(retrieved_after_send["last_message_at"].replace("Z", "+00:00"))
 
         # Parse SSE response and accumulate messages
         messages = await accumulate_chunks(stream_response.text)

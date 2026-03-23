@@ -70,7 +70,7 @@ async def list_conversations(
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for conversations. 'asc' for oldest first, 'desc' for newest first"
     ),
-    order_by: Literal["created_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
+    order_by: Literal["created_at", "last_run_completion", "last_message_at"] = Query("created_at", description="Field to sort by"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -402,6 +402,13 @@ async def send_conversation_message(
     # Normal conversation mode
     conversation = await conversation_manager.get_conversation_by_id(
         conversation_id=conversation_id,
+        actor=actor,
+    )
+
+    # Mark conversation message activity at request time
+    conversation = await conversation_manager.update_conversation(
+        conversation_id=conversation_id,
+        conversation_update=UpdateConversation(last_message_at=get_utc_time()),
         actor=actor,
     )
 

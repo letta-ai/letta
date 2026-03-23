@@ -2,6 +2,8 @@
 Tests for ConversationManager.
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from letta.orm.errors import NoResultFound
@@ -383,6 +385,58 @@ async def test_delete_conversation_excluded_from_summary_search(conversation_man
     result_ids = [c.id for c in results]
     assert to_delete.id not in result_ids
     assert len(results) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_conversations_sort_by_last_message_at(conversation_manager, server: SyncServer, sarah_agent, default_user):
+    """Test sorting conversations by last_message_at with nulls last."""
+    conv_old = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="old"),
+        actor=default_user,
+    )
+    conv_new = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="new"),
+        actor=default_user,
+    )
+    conv_null = await conversation_manager.create_conversation(
+        agent_id=sarah_agent.id,
+        conversation_create=CreateConversation(summary="null"),
+        actor=default_user,
+    )
+
+    now = datetime.now(timezone.utc)
+    await conversation_manager.update_conversation(
+        conversation_id=conv_old.id,
+        conversation_update=UpdateConversation(last_message_at=now - timedelta(minutes=5)),
+        actor=default_user,
+    )
+    await conversation_manager.update_conversation(
+        conversation_id=conv_new.id,
+        conversation_update=UpdateConversation(last_message_at=now),
+        actor=default_user,
+    )
+
+    desc_conversations = await conversation_manager.list_conversations(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        sort_by="last_message_at",
+        ascending=False,
+    )
+    desc_ids = [c.id for c in desc_conversations]
+    assert desc_ids.index(conv_new.id) < desc_ids.index(conv_old.id)
+    assert desc_ids.index(conv_old.id) < desc_ids.index(conv_null.id)
+
+    asc_conversations = await conversation_manager.list_conversations(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        sort_by="last_message_at",
+        ascending=True,
+    )
+    asc_ids = [c.id for c in asc_conversations]
+    assert asc_ids.index(conv_old.id) < asc_ids.index(conv_new.id)
+    assert asc_ids.index(conv_new.id) < asc_ids.index(conv_null.id)
 
 
 @pytest.mark.asyncio

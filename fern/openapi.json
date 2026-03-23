@@ -8841,7 +8841,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": ["created_at", "last_run_completion"],
+              "enum": ["created_at", "last_run_completion", "last_message_at"],
               "type": "string",
               "description": "Field to sort by",
               "default": "created_at",
@@ -32959,6 +32959,19 @@
             ],
             "title": "Model Settings",
             "description": "The model settings for this conversation (overrides agent's model settings)."
+          },
+          "last_message_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message At",
+            "description": "Timestamp of the most recent message request sent to this conversation."
           }
         },
         "additionalProperties": false,
@@ -49331,6 +49344,19 @@
             ],
             "title": "Model Settings",
             "description": "The model settings for this conversation (overrides agent's model settings)."
+          },
+          "last_message_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message At",
+            "description": "Timestamp of the most recent message request sent to this conversation."
           }
         },
         "type": "object",

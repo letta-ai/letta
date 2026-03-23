@@ -108,6 +108,31 @@ class TestConversationsSDK:
         assert conv1.id in conv_ids
         assert conv2.id in conv_ids
 
+    def test_list_conversations_sort_by_last_message_at(self, client: Letta, agent):
+        """Test listing conversations sorted by last_message_at."""
+        conv_older = client.conversations.create(agent_id=agent.id)
+        conv_newer = client.conversations.create(agent_id=agent.id)
+
+        list(
+            client.conversations.messages.create(
+                conversation_id=conv_older.id,
+                messages=[{"role": "user", "content": "hello older conversation"}],
+            )
+        )
+        list(
+            client.conversations.messages.create(
+                conversation_id=conv_newer.id,
+                messages=[{"role": "user", "content": "hello newer conversation"}],
+            )
+        )
+
+        sorted_desc = client.conversations.list(agent_id=agent.id, order_by="last_message_at", order="desc")
+        sorted_ids = [c.id for c in sorted_desc]
+
+        assert conv_older.id in sorted_ids
+        assert conv_newer.id in sorted_ids
+        assert sorted_ids.index(conv_newer.id) < sorted_ids.index(conv_older.id)
+
     def test_retrieve_conversation(self, client: Letta, agent):
         """Test retrieving a specific conversation."""
         # Create a conversation
