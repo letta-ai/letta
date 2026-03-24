@@ -1741,3 +1741,70 @@ async def test_duplicate_request_recovery_with_same_otid(
     assert len(chunks_from_stream3) > 0, "Stream 3 should have received chunks"
     assert run_id_3 is not None, "Stream 3 should have a run_id"
     assert run_id_3 == run_id_1, f"Stream 3 should recover the same run_id after lock released: {run_id_3} vs {run_id_1}"
+
+
+@pytest.mark.asyncio
+async def test_otid_recovery_via_retrieve_stream(
+    server_url: str,
+    otid_test_agent,
+    async_client: AsyncLetta,
+    disable_e2b_api_key: Any,
+) -> None:
+    """
+    Test that the retrieve_conversation_stream endpoint can recover a run via OTID.
+
+    This simulates the client flow:
+    1. Send a background streaming request with an OTID
+    2. While it's running, call retrieve_conversation_stream with the same OTID
+    3. The stream endpoint should find the run via OTID lookup and return chunks
+    """
+    from letta.settings import settings
+
+    if settings.redis_host is None or settings.redis_port is None:
+        pytest.skip("Redis not configured - skipping OTID stream recovery test")
+
+    conversation = await async_client.conversations.create(agent_id=otid_test_agent.id)
+
+    shared_otid = f"test-otid-{uuid.uuid4()}"
+    messages = [
+        MessageCreateParam(
+            role="user",
+            content="Hello! Please respond briefly.",
+            otid=shared_otid,
+        )
+    ]
+
+    # Start a background streaming request
+    chunks_from_send: List[Any] = []
+    send_started = asyncio.Event()
+
+    async def send_message():
+        stream = await async_client.conversations.messages.create(
+            conversation_id=conversation.id,
+            messages=messages,
+            background=True,
+        )
+        async for chunk in stream:
+            chunks_from_send.append(chunk)
+            if not send_started.is_set():
+                send_started.set()
+            await asyncio.sleep(0.01)
+
+    # Start the send, wait for it to begin streaming, then try OTID recovery
+    send_task = asyncio.create_task(send_message())
+    await send_started.wait()
+    await asyncio.sleep(0.5)  # Give time for OTID mapping to be stored
+
+    # Recover stream via OTID using the retrieve endpoint
+    recover_response = requests.post(
+        f"{server_url}/v1/conversations/{conversation.id}/stream",
+        json={"otid": shared_otid},
+    )
+    assert recover_response.status_code == 200, (
+        f"OTID recovery via retrieve_stream should succeed: {recover_response.status_code} {recover_response.text}"
+    )
+
+    # Wait for original send to finish
+    await send_task
+
+    assert len(chunks_from_send) > 0, "Original send should have received chunks"
