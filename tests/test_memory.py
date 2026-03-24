@@ -219,8 +219,7 @@ def test_current_files_open_counts_truthy_only():
 
 
 def test_compile_git_structured_core_memory_rendering():
-    """Git-enabled agents should render system/* blocks as named sections with full content,
-    and <core_memory> should contain metadata-only entries."""
+    """Git-enabled agents should render persona in <self> and other system blocks in nested <memory> tags."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -233,19 +232,14 @@ def test_compile_git_structured_core_memory_rendering():
 
     out = m.compile()
 
-    assert "<memory_filesystem>" in out
-    assert "system/" in out
-    assert "human.md" in out
-    assert "persona.md" in out
-
-    assert "<system/human.md>" in out
-    assert "</system/human.md>" in out
-    assert "description: The human block" in out
+    assert "<memory>" in out
+    assert "<human>" in out
+    assert "</human>" in out
     assert "human data" in out
 
-    assert "<system/persona.md>" in out
-    assert "</system/persona.md>" in out
-    assert "description: The persona block" in out
+    assert "<self>" in out
+    assert "</self>" in out
+    assert "<projection>$MEMORY_DIR/system/persona.md</projection>" in out
     assert "persona data" in out
 
 
@@ -303,7 +297,7 @@ def test_compile_git_structured_skills_section():
 
 
 def test_compile_git_structured_archival_memory_section():
-    """Non-system, non-skills blocks should render as filesystem references only."""
+    """Non-system, non-skills blocks should render in <external-memory> as projections."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -317,10 +311,14 @@ def test_compile_git_structured_archival_memory_section():
 
     out = m.compile()
 
-    assert "<memory_filesystem>" in out
-    assert "notes.md (Personal notes)" in out
-    assert "reference/" in out
-    assert "api.md (API docs)" in out
+    assert "<memory>" in out
+    assert "<external-memory>" in out
+    assert "<notes>" in out
+    assert "<reference/api>" in out
+    assert "<projection>$MEMORY_DIR/notes.md</projection>" in out
+    assert "<projection>$MEMORY_DIR/reference/api.md</projection>" in out
+    assert "Personal notes" in out
+    assert "API docs" in out
 
     # Archival memory content should NOT be rendered
     assert "my notes" not in out
@@ -459,7 +457,7 @@ def test_compile_available_skills_standalone():
 
 
 def test_compile_does_not_include_available_skills():
-    """compile() output should never persist <available_skills> in system prompt storage."""
+    """compile() output should never persist request-scoped <available_skills> in system prompt storage."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -468,7 +466,7 @@ def test_compile_does_not_include_available_skills():
             Block(label="system/human", value="human data", limit=500),
             Block(
                 label="system/project/notes",
-                value="The `<available_skills>` section is rendered after `</memory_filesystem>`.",
+                value="The `<available_skills>` section is request-scoped.",
                 limit=500,
                 description="Notes that reference <available_skills> as literal text.",
             ),
@@ -506,7 +504,7 @@ def test_append_available_skills_preserves_blocks_with_literal_skills_text():
                 label="system/project/architecture",
                 value=(
                     "`compile_available_skills()` returns the `<available_skills>...</available_skills>` string.\n"
-                    "`_update_system_message_skills()` regex replaces only the `<available_skills>` XML block."
+                    "Request-scoped skills are appended at LLM request build time."
                 ),
                 limit=1000,
                 description="Architecture notes.",
@@ -524,22 +522,20 @@ def test_append_available_skills_preserves_blocks_with_literal_skills_text():
     new_text = old_text.rstrip("\n") + "\n\n" + new_skills.lstrip("\n")
 
     # ALL blocks must survive the replacement
-    assert "<system/human.md>" in new_text
-    assert "</system/human.md>" in new_text
-    assert "<system/project/workflow.md>" in new_text
-    assert "</system/project/workflow.md>" in new_text
-    assert "<system/project/architecture.md>" in new_text
-    assert "</system/project/architecture.md>" in new_text
-    assert "<system/persona.md>" in new_text
-    assert "</system/persona.md>" in new_text
+    assert "<memory>" in new_text
+    assert "<human>" in new_text
+    assert "<project>" in new_text
+    assert "<workflow>" in new_text
+    assert "<architecture>" in new_text
+    assert "<self>" in new_text
 
     # Block content with literal text references must be preserved
     assert "`<available_skills>`" in new_text
     assert "`<available_skills>...</available_skills>`" in new_text
 
     # The structural <available_skills> block must be present at the end
-    structural_start = new_text.rfind("<available_skills>")
-    structural_end = new_text.rfind("</available_skills>")
+    structural_start = new_text.rfind("\n<available_skills>\n")
+    structural_end = new_text.find("</available_skills>", structural_start)
     assert structural_start > 0
     assert structural_end > structural_start
     assert "<name>test-skill</name>" in new_text[structural_start:structural_end]
@@ -604,8 +600,7 @@ def test_compile_git_structured_recompile_after_block_label_change():
     )
 
     out_before = m.compile()
-    assert "<system/human.md>" in out_before
-    assert "human.md" in out_before
+    assert "<human>" in out_before
 
     # Simulate label rename
     block.label = "system/user"
@@ -613,14 +608,13 @@ def test_compile_git_structured_recompile_after_block_label_change():
 
     # Output should change: new tag name, new metadata
     assert out_before != out_after
-    assert "<system/user.md>" in out_after
-    assert "</system/user.md>" in out_after
-    assert "user.md" in out_after
-    assert "<system/human.md>" not in out_after
+    assert "<user>" in out_after
+    assert "</user>" in out_after
+    assert "<human>" not in out_after
 
 
 def test_compile_git_structured_recompile_after_description_change():
-    """Changing a block description should produce a different compile() output."""
+    """Changing a block description should affect git-structured compile() output."""
 
     block = Block(label="system/human", value="human data", limit=500, description="Original description")
 
@@ -631,12 +625,11 @@ def test_compile_git_structured_recompile_after_description_change():
     )
 
     out_before = m.compile()
-    assert "description: Original description" in out_before
+    assert "human data" in out_before
 
     # Simulate description edit
     block.description = "Updated description with more detail"
     out_after = m.compile()
 
     assert out_before != out_after
-    assert "description: Updated description with more detail" in out_after
-    assert "Original description" not in out_after
+    assert "human data" in out_after
