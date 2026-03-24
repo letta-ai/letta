@@ -46,8 +46,18 @@ class BasetenClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+        data = super().build_request_data(
+            agent_type,
+            messages,
+            llm_config,
+            tools,
+            force_tool_call,
+            requires_subsequent_tool_call,
+            tool_return_truncation_chars,
+            system,
+        )
 
         # model field is passed through from llm_config.model
 

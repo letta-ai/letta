@@ -129,6 +129,7 @@ class MiniMaxClient(AnthropicClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Build request data for MiniMax API.
@@ -144,6 +145,7 @@ class MiniMaxClient(AnthropicClient):
             force_tool_call,
             requires_subsequent_tool_call,
             tool_return_truncation_chars,
+            system,
         )
 
         # MiniMax temperature range is (0.0, 1.0], recommended value: 1

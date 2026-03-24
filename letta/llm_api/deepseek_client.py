@@ -54,6 +54,7 @@ class DeepseekClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         # DeepSeek thinking mode surfaces reasoning_content; keep it for active turns, drop for new user turns.
         llm_config.put_inner_thoughts_in_kwargs = False
@@ -66,6 +67,7 @@ class DeepseekClient(OpenAIClient):
             force_tool_call,
             requires_subsequent_tool_call,
             tool_return_truncation_chars,
+            system,
         )
 
         if "messages" in data:

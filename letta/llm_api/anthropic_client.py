@@ -506,6 +506,7 @@ class AnthropicClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
         # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
@@ -664,7 +665,9 @@ class AnthropicClient(LLMClientBase):
         # Move 'system' to the top level
         if messages[0].role != "system":
             raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
-        system_content = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
+        system_content = system
+        if system_content is None:
+            system_content = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
         data["system"] = self._add_cache_control_to_system_message(system_content)
         data["messages"] = PydanticMessage.to_anthropic_dicts_from_list(
             messages=messages[1:],

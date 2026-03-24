@@ -511,12 +511,17 @@ class LettaAgentV2(BaseAgentV2):
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 else None
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
+                        request_system_prompt = self.generate_request_system_prompt(
+                            client_skills=self.client_skills,
+                            current_system_message=messages[0],
+                        )
                         request_data = self.llm_client.build_request_data(
                             agent_type=self.agent_state.agent_type,
                             messages=messages,
                             llm_config=self.agent_state.llm_config,
                             tools=valid_tools,
                             force_tool_call=force_tool_call,
+                            system=request_system_prompt,
                         )
                         if dry_run:
                             yield request_data
@@ -753,8 +758,6 @@ class LettaAgentV2(BaseAgentV2):
            This avoids rebuilding the system prompt on every step due to dynamic metadata (e.g. message counts),
            which can bust prefix caching.
         2) Scrub inner thoughts from messages.
-        3) If client_skills are present, surgically update just the <available_skills> section
-           without rebuilding the full system prompt (preserves prefix cache).
 
         Args:
             in_context_messages: Current in-context messages
@@ -777,70 +780,22 @@ class LettaAgentV2(BaseAgentV2):
             except Exception:
                 raise
 
-        # Surgically update the <available_skills> section when client_skills are
-        # present without triggering a full system prompt rebuild (preserves prefix cache).
-        if self.client_skills:
-            in_context_messages = await self._update_system_message_skills(in_context_messages)
-
         # Always scrub inner thoughts regardless of system prompt refresh
         in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, self.agent_state.llm_config)
         return in_context_messages
 
     @trace_method
-    async def _update_system_message_skills(self, in_context_messages: list[Message]) -> list[Message]:
-        """Surgically update the <available_skills> section in the system message.
-
-        This avoids a full system prompt rebuild (which would change timestamps and
-        bust prefix caching) by only replacing the skills portion of the prompt.
-        """
-        import re
-
-        if not in_context_messages:
-            return in_context_messages
-
-        system_message = in_context_messages[0]
-        old_text = system_message.content[0].text
-
-        # Compile the new skills section from agent blocks + client skills
-        new_skills = self.agent_state.memory.compile_available_skills(client_skills=self.client_skills)
-
-        # Replace the STRUCTURAL <available_skills>...</available_skills> block.
-        #
-        # Memory block content may contain literal <available_skills> and
-        # </available_skills> text references (e.g. docs about the skills system).
-        # A regex approach cannot reliably distinguish structural tags from text
-        # references because non-greedy matches absorb the structural closing tag.
-        #
-        # Instead we locate the structural block by position: it is always rendered
-        # AFTER the last </system/...> memory block closing tag.  We find the
-        # <available_skills> that starts after that boundary using plain string search.
-        block_close_pattern = re.compile(r"</system/[^>]+>")
-        block_closes = list(block_close_pattern.finditer(old_text))
-        search_from = block_closes[-1].end() if block_closes else 0
-
-        skills_open = old_text.find("<available_skills>", search_from)
-        skills_close = old_text.find("</available_skills>", skills_open) if skills_open >= 0 else -1
-
-        if skills_open >= 0 and skills_close >= 0:
-            # Consume leading newlines before the tag
-            trim_start = skills_open
-            while trim_start > 0 and old_text[trim_start - 1] == "\n":
-                trim_start -= 1
-            new_text = old_text[:trim_start] + new_skills + old_text[skills_close + len("</available_skills>") :]
-        elif new_skills:
-            # No existing skills section — insert right before <memory_metadata>
-            if "<memory_metadata>" in old_text:
-                new_text = old_text.replace("<memory_metadata>", new_skills.lstrip("\n") + "\n\n<memory_metadata>")
-        else:
-            return in_context_messages
-
-        if new_text == old_text:
-            return in_context_messages
-
-        new_system_message = await self.message_manager.update_message_by_id_async(
-            system_message.id, message_update=MessageUpdate(content=new_text), actor=self.actor
-        )
-        return [new_system_message, *in_context_messages[1:]]
+    def generate_request_system_prompt(
+        self,
+        client_skills: list[ClientSkillSchema] | None,
+        current_system_message: Message,
+    ) -> str:
+        """Build request-scoped system prompt text without persisting request skills."""
+        current_system_text = current_system_message.content[0].text
+        request_skills_block = self.agent_state.memory.compile_available_skills(client_skills=client_skills)
+        if not request_skills_block:
+            return current_system_text
+        return current_system_text.rstrip("\n") + "\n\n" + request_skills_block.lstrip("\n")
 
     @trace_method
     async def _rebuild_memory(
@@ -881,7 +836,6 @@ class LettaAgentV2(BaseAgentV2):
             sources=agent_state.sources,
             max_files_open=agent_state.max_files_open,
             llm_config=agent_state.llm_config,
-            client_skills=self.client_skills,
         )
 
         # Skip rebuild unless explicitly forced and unless system/memory content actually changed.

@@ -559,15 +559,9 @@ class Memory(BaseModel, validate_assignment=True):
             else:
                 self._render_memory_blocks_standard(s)
 
-            # Render <available_skills> AFTER all memory blocks so it appears
-            # at the end of the memory section (right before <memory_metadata>).
-            # This prevents the surgical regex replacement in
-            # _update_system_message_skills() from accidentally matching literal
-            # <available_skills> text references inside memory block content.
-            if self.git_enabled:
-                skills_str = self.compile_available_skills(client_skills=client_skills)
-                if skills_str:
-                    s.write(skills_str)
+            # NOTE: available_skills is request-scoped and injected dynamically
+            # by the agent at LLM request build time. It is intentionally NOT
+            # persisted into compiled system prompt storage.
 
         if tool_usage_rules is not None:
             desc = getattr(tool_usage_rules, "description", None) or ""

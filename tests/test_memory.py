@@ -250,7 +250,7 @@ def test_compile_git_structured_core_memory_rendering():
 
 
 def test_compile_git_structured_skills_section():
-    """skills/ blocks should render in <available_skills> section as metadata-only entries.
+    """skills/ blocks should render in compile_available_skills() as metadata-only entries.
 
     Nested skill files should NOT appear. Only top-level skill entries
     with name, description, and location.
@@ -282,7 +282,7 @@ def test_compile_git_structured_skills_section():
         ],
     )
 
-    out = m.compile()
+    out = m.compile_available_skills()
 
     assert "<available_skills>" in out
     assert "</available_skills>" in out
@@ -328,7 +328,7 @@ def test_compile_git_structured_archival_memory_section():
 
 
 def test_compile_git_structured_client_skills():
-    """client_skills should be merged with agent skills in <available_skills>."""
+    """client_skills should be merged with agent skills in compile_available_skills()."""
     from letta.schemas.letta_request import ClientSkillSchema
 
     m = Memory(
@@ -350,7 +350,7 @@ def test_compile_git_structured_client_skills():
         ClientSkillSchema(name="google", description="Google Workspace CLI.", location="skills/google/SKILL.md"),
     ]
 
-    out = m.compile(client_skills=client_skills)
+    out = m.compile_available_skills(client_skills=client_skills)
 
     # All skills (agent + client) merged in <available_skills>
     assert "<available_skills>" in out
@@ -365,11 +365,6 @@ def test_compile_git_structured_client_skills():
     assert "<location>skills/playwright-skill/SKILL.md</location>" in out
     assert "<name>google</name>" in out
     assert "<description>Google Workspace CLI.</description>" in out
-
-    # <available_skills> should come after the filesystem tree
-    fs_end = out.find("</memory_filesystem>")
-    skills_start = out.find("<available_skills>")
-    assert skills_start > fs_end
 
 
 def test_compile_git_structured_dedup_client_skills():
@@ -389,7 +384,7 @@ def test_compile_git_structured_dedup_client_skills():
         ClientSkillSchema(name="my-skill", description="Client version of same skill.", location="skills/my-skill/SKILL.md"),
     ]
 
-    out = m.compile(client_skills=client_skills)
+    out = m.compile_available_skills(client_skills=client_skills)
 
     # Agent skill present, client duplicate deduplicated
     assert "<available_skills>" in out
@@ -416,7 +411,7 @@ def test_compile_git_structured_client_skills_omits_empty_description_location_t
         ClientSkillSchema(name="blanky", description="", location=""),
     ]
 
-    out = m.compile(client_skills=client_skills)
+    out = m.compile_available_skills(client_skills=client_skills)
 
     assert "<available_skills>" in out
     assert "<name>blanky</name>" in out
@@ -463,15 +458,8 @@ def test_compile_available_skills_standalone():
     assert m_empty.compile_available_skills(client_skills=[]) == ""
 
 
-def test_compile_git_skills_rendered_after_all_blocks():
-    """<available_skills> must appear AFTER all memory block closing tags.
-
-    Regression test: previously skills were rendered inside _render_memory_filesystem()
-    (right after </memory_filesystem>) which placed them BEFORE the memory blocks.
-    The surgical regex in _update_system_message_skills() could then match literal
-    <available_skills> text references inside block content and destroy intervening blocks.
-    """
-    from letta.schemas.letta_request import ClientSkillSchema
+def test_compile_does_not_include_available_skills():
+    """compile() output should never persist <available_skills> in system prompt storage."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -488,35 +476,13 @@ def test_compile_git_skills_rendered_after_all_blocks():
         ],
     )
 
-    client_skills = [
-        ClientSkillSchema(name="test-skill", description="A test skill.", location="skills/test-skill/SKILL.md"),
-    ]
-
-    out = m.compile(client_skills=client_skills)
-
-    # All three blocks must be present with proper open+close tags
-    assert "<system/human.md>" in out
-    assert "</system/human.md>" in out
-    assert "<system/project/notes.md>" in out
-    assert "</system/project/notes.md>" in out
-    assert "<system/persona.md>" in out
-    assert "</system/persona.md>" in out
-
-    # The structural <available_skills> block must appear AFTER the last block's closing tag
-    last_block_close = max(out.find("</system/human.md>"), out.find("</system/project/notes.md>"), out.find("</system/persona.md>"))
-    skills_start = out.rfind("<available_skills>")
-    assert skills_start > last_block_close, "<available_skills> should render after all memory block closing tags"
+    out = m.compile()
+    assert "\n<available_skills>\n" not in out
+    assert "\n</available_skills>" not in out
 
 
-def test_surgical_skills_update_preserves_blocks_with_literal_skills_text():
-    """Simulates _update_system_message_skills() regex on a prompt where block content
-    contains literal <available_skills> and </available_skills> text references.
-
-    Regression test: pattern.sub() without count=1 replaced ALL matches, which
-    could span from a literal text reference in one block to another, destroying
-    all blocks in between.
-    """
-    import re
+def test_append_available_skills_preserves_blocks_with_literal_skills_text():
+    """Appending request-scoped skills preserves blocks with literal tag references."""
 
     from letta.schemas.letta_request import ClientSkillSchema
 
@@ -553,27 +519,9 @@ def test_surgical_skills_update_preserves_blocks_with_literal_skills_text():
         ClientSkillSchema(name="test-skill", description="A test skill.", location="skills/test-skill/SKILL.md"),
     ]
 
-    old_text = m.compile(client_skills=client_skills)
-
-    # Verify the prompt has both literal text references AND the structural block
-    assert old_text.count("<available_skills>") >= 2, "Expected literal text refs + structural block"
-
-    # Simulate the surgical update (same logic as _update_system_message_skills):
-    # find the structural <available_skills> by position — after all </system/...> tags.
+    old_text = m.compile()
     new_skills = m.compile_available_skills(client_skills=client_skills)
-
-    block_close_pattern = re.compile(r"</system/[^>]+>")
-    block_closes = list(block_close_pattern.finditer(old_text))
-    last_block_end = block_closes[-1].end() if block_closes else 0
-
-    skills_open = old_text.find("<available_skills>", last_block_end)
-    skills_close = old_text.find("</available_skills>", skills_open) if skills_open >= 0 else -1
-    assert skills_open >= 0 and skills_close >= 0, "Should find structural <available_skills> after all blocks"
-
-    trim_start = skills_open
-    while trim_start > 0 and old_text[trim_start - 1] == "\n":
-        trim_start -= 1
-    new_text = old_text[:trim_start] + new_skills + old_text[skills_close + len("</available_skills>") :]
+    new_text = old_text.rstrip("\n") + "\n\n" + new_skills.lstrip("\n")
 
     # ALL blocks must survive the replacement
     assert "<system/human.md>" in new_text
@@ -589,7 +537,7 @@ def test_surgical_skills_update_preserves_blocks_with_literal_skills_text():
     assert "`<available_skills>`" in new_text
     assert "`<available_skills>...</available_skills>`" in new_text
 
-    # The structural <available_skills> block must still be present at the end
+    # The structural <available_skills> block must be present at the end
     structural_start = new_text.rfind("<available_skills>")
     structural_end = new_text.rfind("</available_skills>")
     assert structural_start > 0
