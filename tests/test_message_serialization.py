@@ -80,3 +80,49 @@ def test_to_google_dict_falls_back_for_malformed_tool_call_arguments():
     function_calls = [item for item in serialized["parts"] if item.get("functionCall")]
     assert len(function_calls) == 1
     assert function_calls[0]["functionCall"]["args"] == {"_malformed_tool_arguments": malformed_args}
+
+
+def test_to_google_dict_preserves_thought_signature_on_empty_content():
+    """When Gemini returns a function call without reasoning text, the
+    thought_signature must still appear on the serialized functionCall part.
+    Regression test for LET-8166 / GitHub #3221."""
+    sig = "EoQHsomebase64signaturedata=="
+    msg = Message(
+        role=MessageRole.assistant,
+        content=[TextContent(text="", signature=sig)],
+        tool_calls=[
+            ChatCompletionMessageToolCall(
+                id="call_test_thought_sig",
+                type="function",
+                function=Function(name="archival_memory_search", arguments='{"query": "test"}'),
+            )
+        ],
+    )
+
+    serialized = msg.to_google_dict(current_model="google/gemini-3-flash")
+
+    function_calls = [p for p in serialized["parts"] if "functionCall" in p]
+    assert len(function_calls) == 1
+    assert function_calls[0].get("thought_signature") == sig
+
+
+def test_to_google_dict_no_signature_when_absent():
+    """Without a signature, functionCall parts should not include
+    thought_signature (no sentinel, no empty string)."""
+    msg = Message(
+        role=MessageRole.assistant,
+        content=[],
+        tool_calls=[
+            ChatCompletionMessageToolCall(
+                id="call_test_no_sig",
+                type="function",
+                function=Function(name="send_message", arguments='{"message": "hi"}'),
+            )
+        ],
+    )
+
+    serialized = msg.to_google_dict(current_model="google/gemini-3-flash")
+
+    function_calls = [p for p in serialized["parts"] if "functionCall" in p]
+    assert len(function_calls) == 1
+    assert "thought_signature" not in function_calls[0]

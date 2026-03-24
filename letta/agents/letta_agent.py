@@ -380,8 +380,15 @@ class LettaAgent(BaseAgent):
                             )
                         ]  # reasoning placed into content for legacy reasons
                     else:
-                        self.logger.info("No reasoning content found.")
-                        reasoning = None
+                        # Preserve thought_signature even when there's no reasoning text.
+                        # Gemini requires the signature on all function call parts in history;
+                        # dropping it causes 400 INVALID_ARGUMENT on the next request.
+                        sig = response.choices[0].message.reasoning_content_signature
+                        if sig:
+                            reasoning = [TextContent(text="", signature=sig)]
+                        else:
+                            self.logger.info("No reasoning content found.")
+                            reasoning = None
 
                     persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                         tool_call,
@@ -721,8 +728,15 @@ class LettaAgent(BaseAgent):
                     elif response.choices[0].message.omitted_reasoning_content:
                         reasoning = [OmittedReasoningContent()]
                     else:
-                        self.logger.info("No reasoning content found.")
-                        reasoning = None
+                        # Preserve thought_signature even when there's no reasoning text.
+                        # Gemini requires the signature on all function call parts in history;
+                        # dropping it causes 400 INVALID_ARGUMENT on the next request.
+                        sig = response.choices[0].message.reasoning_content_signature
+                        if sig:
+                            reasoning = [TextContent(text="", signature=sig)]
+                        else:
+                            self.logger.info("No reasoning content found.")
+                            reasoning = None
 
                     persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                         tool_call,
