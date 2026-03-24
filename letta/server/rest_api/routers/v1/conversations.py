@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
@@ -685,8 +686,14 @@ async def retrieve_conversation_stream(
             raise LettaInvalidArgumentError(f"Run {run_id} not found.")
 
     # Priority 2: OTID provided (look up run_id from Redis)
+    # Retry with backoff: the mapping may not be stored yet if the request
+    # that created the run is still inside _create_run() (DB insert).
     elif request and request.otid:
-        run_id = await redis_client.get_run_id_by_otid(request.otid)
+        for _attempt in range(3):
+            run_id = await redis_client.get_run_id_by_otid(request.otid)
+            if run_id:
+                break
+            await asyncio.sleep(0.25 * (2**_attempt))  # 250ms, 500ms, 1s
         if not run_id:
             raise LettaInvalidArgumentError(f"No run found for otid={request.otid}. The run may have expired or never existed.")
         # Fetch run to check expiration
