@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
@@ -115,6 +115,15 @@ class LettaRequest(BaseModel):
         "not just the last one. Uses SGLang native /generate endpoint. "
         "Returns 'turns' field with TurnTokenData for each assistant/tool turn. "
         "Required for proper multi-turn RL training with loss masking.",
+    )
+    override_system: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("override_system", "system"),
+        description=(
+            "Optional per-request system prompt override. "
+            "When set, this is passed directly to the underlying LLM request and bypasses "
+            "the persisted/compiled system message for that request."
+        ),
     )
 
     @field_validator("messages", mode="before")

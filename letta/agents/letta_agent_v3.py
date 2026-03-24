@@ -159,6 +159,7 @@ class LettaAgentV3(LettaAgentV2):
         client_skills: list[ClientSkillSchema] | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         conversation_id: str | None = None,
+        override_system: str | None = None,
     ) -> dict:
         """
         Build the request data for an LLM call without actually executing it.
@@ -180,6 +181,7 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.client_tools = client_tools or []
         self.client_skills = client_skills or []
+        self.override_system = override_system
         self.conversation_id = conversation_id
 
         # Apply conversation-specific block overrides (same as step())
@@ -228,6 +230,7 @@ class LettaAgentV3(LettaAgentV2):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -254,6 +257,7 @@ class LettaAgentV3(LettaAgentV2):
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
         self.client_skills = client_skills or []
+        self.override_system = override_system
 
         # Apply conversation-specific block overrides if conversation_id is provided
         if conversation_id:
@@ -449,6 +453,7 @@ class LettaAgentV3(LettaAgentV2):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: BillingContext | None = None,
         openai_responses_websocket: bool = False,
@@ -481,6 +486,7 @@ class LettaAgentV3(LettaAgentV2):
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
         self.client_skills = client_skills or []
+        self.override_system = override_system
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True

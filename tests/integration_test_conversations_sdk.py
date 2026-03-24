@@ -1062,6 +1062,46 @@ class TestConversationsSDK:
         # Either 200 (if run exists) or 400 (no active run) are both acceptable
         assert response.status_code in [200, 400], f"Stream retrieve should accept new pattern: {response.text}"
 
+    def test_conversation_system_override_forces_response_content(self, client: Letta, agent, server_url: str):
+        """Conversation send should honor request.system override in the actual model response."""
+        conversation = client.conversations.create(agent_id=agent.id)
+        override_system = 'Always respond with a single word: "blue"'
+
+        response = requests.post(
+            f"{server_url}/v1/conversations/{conversation.id}/messages",
+            json={
+                "messages": [{"role": "user", "content": "hi"}],
+                "streaming": False,
+                "override_system": override_system,
+            },
+        )
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        payload = response.json()
+
+        assistant_contents = [m.get("content", "") for m in payload.get("messages", []) if m.get("message_type") == "assistant_message"]
+        combined_response = " ".join(c for c in assistant_contents if isinstance(c, str))
+        assert "blue" in combined_response.lower(), f"Expected 'blue' in assistant response, got: {combined_response}"
+
+    def test_default_conversation_system_override_forces_response_content(self, client: Letta, agent, server_url: str):
+        """Agent-direct default conversation send should honor request.system override in the actual model response."""
+        override_system = 'Always respond with a single word: "blue"'
+
+        response = requests.post(
+            f"{server_url}/v1/conversations/default/messages",
+            json={
+                "agent_id": agent.id,
+                "messages": [{"role": "user", "content": "hi"}],
+                "streaming": False,
+                "override_system": override_system,
+            },
+        )
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        payload = response.json()
+
+        assistant_contents = [m.get("content", "") for m in payload.get("messages", []) if m.get("message_type") == "assistant_message"]
+        combined_response = " ".join(c for c in assistant_contents if isinstance(c, str))
+        assert "blue" in combined_response.lower(), f"Expected 'blue' in assistant response, got: {combined_response}"
+
 
 class TestConversationDelete:
     """Tests for the conversation delete endpoint."""

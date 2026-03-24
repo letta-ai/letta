@@ -144,6 +144,7 @@ class LettaAgentV2(BaseAgentV2):
         client_skills: list[ClientSkillSchema] | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         conversation_id: str | None = None,
+        override_system: str | None = None,
     ) -> dict:
         """
         Build the request data for an LLM call without actually executing it.
@@ -161,6 +162,7 @@ class LettaAgentV2(BaseAgentV2):
         """
         request = {}
         self.client_skills = client_skills or []
+        self.override_system = override_system
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
             input_messages, self.agent_state, self.message_manager, self.actor, None
         )
@@ -196,6 +198,7 @@ class LettaAgentV2(BaseAgentV2):
         request_start_timestamp_ns: int | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -218,6 +221,7 @@ class LettaAgentV2(BaseAgentV2):
         self._initialize_state()
         self.conversation_id = None
         self.client_skills = client_skills or []
+        self.override_system = override_system
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
 
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
@@ -305,6 +309,7 @@ class LettaAgentV2(BaseAgentV2):
         conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
         client_tools: list[ClientToolSchema] | None = None,
         client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: BillingContext | None = None,
         openai_responses_websocket: bool = False,  # Not used in V2, but accepted for API compatibility
@@ -334,6 +339,7 @@ class LettaAgentV2(BaseAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_skills = client_skills or []
+        self.override_system = override_system
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         first_chunk = True
 
@@ -727,6 +733,7 @@ class LettaAgentV2(BaseAgentV2):
         self.job_update_metadata = None
         self.last_function_response = None
         self.response_messages = []
+        self.override_system: str | None = None
 
     async def _check_credits(self) -> bool:
         """Check if the organization still has credits. Returns True if OK or not configured."""
@@ -791,6 +798,11 @@ class LettaAgentV2(BaseAgentV2):
         current_system_message: Message,
     ) -> str:
         """Build request-scoped system prompt text without persisting request skills."""
+        if self.override_system is not None:
+            # Request-scoped system overrides must pass through exactly as provided.
+            # Do not append compiled skills in this mode.
+            return self.override_system
+
         current_system_text = current_system_message.content[0].text
         request_skills_block = self.agent_state.memory.compile_available_skills(client_skills=client_skills)
         if not request_skills_block:

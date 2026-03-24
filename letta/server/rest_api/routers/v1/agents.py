@@ -1788,6 +1788,7 @@ async def send_message(
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
             client_skills=request.client_skills,
+            override_system=request.override_system,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=headers.billing_context,
         )
@@ -2067,6 +2068,7 @@ async def _process_message_background(
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
     override_model: str | None = None,
+    override_system: str | None = None,
     include_compaction_messages: bool = False,
     billing_context: "BillingContext | None" = None,
 ) -> None:
@@ -2100,6 +2102,7 @@ async def _process_message_background(
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=include_return_message_types,
             client_skills=[],
+            override_system=override_system,
             include_compaction_messages=include_compaction_messages,
             billing_context=billing_context,
         )
@@ -2269,6 +2272,7 @@ async def send_message_async(
             max_steps=request.max_steps,
             include_return_message_types=request.include_return_message_types,
             override_model=request.override_model,
+            override_system=request.override_system,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=headers.billing_context,
         ),
@@ -2402,6 +2406,7 @@ async def preview_model_request(
         input_messages=request.messages,
         client_skills=request.client_skills,
         client_tools=request.client_tools,
+        override_system=request.override_system,
     )
 
 
