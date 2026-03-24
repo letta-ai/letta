@@ -192,7 +192,7 @@ class TestConversationsSDK:
         self._assert_system_metadata_identifiers(content=content, agent_id=agent.id, conversation_id=conversation.id)
 
     def test_client_skills_are_rendered_in_conversation_system_prompt(self, client: Letta, agent, server_url: str):
-        """Client skills should render into <available_skills> and remain stable across turns."""
+        """Client skills are request-scoped: injected at LLM request time, never persisted to DB system message."""
         conversation = client.conversations.create(agent_id=agent.id)
 
         client_skills = [
@@ -221,19 +221,14 @@ class TestConversationsSDK:
             )
         )
 
+        # Persisted system message should NOT contain skills (they are request-scoped only)
         retrieved_after_first_turn = client.conversations.retrieve(conversation_id=conversation.id)
         first_system_message_id = retrieved_after_first_turn.in_context_message_ids[0]
         first_system_content = self._get_system_message_content(server_url=server_url, message_id=first_system_message_id)
 
-        assert "<available_skills>" in first_system_content
-        assert "</available_skills>" in first_system_content
-        assert "debugging-checklist" in first_system_content
-        assert "Use this skill to debug stream wiring issues." in first_system_content
-        assert "/tmp/.skills/debugging-checklist/SKILL.md" in first_system_content
-        assert "api-ops" in first_system_content
-        assert "Operational API runbook." in first_system_content
-        assert "/tmp/.skills/api-ops/SKILL.md" in first_system_content
+        assert "<available_skills>" not in first_system_content, "Skills should not be persisted in the DB system message"
 
+        # Agent should still see skills at request time and respond about them
         assistant_messages = [m for m in response_messages if getattr(m, "message_type", None) == "assistant_message"]
         assert assistant_messages, "Expected at least one assistant message in response stream"
 
@@ -241,6 +236,7 @@ class TestConversationsSDK:
         assert "debugging-checklist" in assistant_content
         assert "api-ops" in assistant_content
 
+        # Second turn: persisted system prompt should remain stable (no drift)
         list(
             client.conversations.messages.create(
                 conversation_id=conversation.id,

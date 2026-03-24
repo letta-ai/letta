@@ -136,7 +136,6 @@ class BaseAgent(ABC):
                 sources=agent_state.sources,
                 max_files_open=agent_state.max_files_open,
                 llm_config=agent_state.llm_config,
-                client_skills=self.client_skills,
             )
 
             system_prompt_changed = agent_state.system not in curr_system_message_text

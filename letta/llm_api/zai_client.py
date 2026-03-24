@@ -62,8 +62,18 @@ class ZAIClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+        data = super().build_request_data(
+            agent_type,
+            messages,
+            llm_config,
+            tools,
+            force_tool_call,
+            requires_subsequent_tool_call,
+            tool_return_truncation_chars,
+            system,
+        )
 
         # Add thinking configuration for ZAI GLM-4.5+ models
         # Must explicitly send type: "disabled" when reasoning is off, as GLM-4.7 has thinking on by default

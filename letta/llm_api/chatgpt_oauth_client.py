@@ -45,6 +45,7 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import AgentType, ProviderCategory
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import (
@@ -178,6 +179,7 @@ class ChatGPTOAuthClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Build request data for ChatGPT backend API in Responses API format.
@@ -187,9 +189,21 @@ class ChatGPTOAuthClient(LLMClientBase):
         - `role: "developer"` instead of `role: "system"`
         - Structured content arrays
         """
+        request_messages = messages
+        if system is not None:
+            from letta.schemas.letta_message_content import TextContent
+
+            if not messages:
+                raise RuntimeError("Cannot override system prompt because messages is empty")
+            if messages[0].role != "system":
+                raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
+            system_message = messages[0].model_copy(deep=True)
+            system_message.content = [TextContent(text=system)]
+            request_messages = [system_message, *messages[1:]]
+
         # Use the existing method to convert messages to Responses API format
         input_messages = PydanticMessage.to_openai_responses_dicts_from_list(
-            messages,
+            request_messages,
             tool_return_truncation_chars=tool_return_truncation_chars,
         )
 

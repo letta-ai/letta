@@ -46,7 +46,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory
-from letta.schemas.letta_message_content import MessageContentType
+from letta.schemas.letta_message_content import MessageContentType, TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import (
@@ -321,6 +321,23 @@ class OpenAIClient(LLMClientBase):
         if self._supports_extended_prompt_cache_retention(model):
             request_obj.prompt_cache_retention = "24h"
 
+    @staticmethod
+    def _apply_system_override(messages: List[PydanticMessage], system: Optional[str]) -> List[PydanticMessage]:
+        if system is None:
+            return messages
+
+        if not messages:
+            raise RuntimeError("Cannot override system prompt because messages is empty")
+
+        if messages[0].role != "system":
+            raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
+
+        from letta.schemas.letta_message_content import TextContent
+
+        system_message = messages[0].model_copy(deep=True)
+        system_message.content = [TextContent(text=system)]
+        return [system_message, *messages[1:]]
+
     @trace_method
     def build_request_data_responses(
         self,
@@ -331,6 +348,7 @@ class OpenAIClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI Responses API.
@@ -338,12 +356,15 @@ class OpenAIClient(LLMClientBase):
         if llm_config.put_inner_thoughts_in_kwargs:
             raise ValueError("Inner thoughts in kwargs are not supported for the OpenAI Responses API")
 
+        request_messages = self._apply_system_override(messages, system)
+
         openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(
-            messages, tool_return_truncation_chars=tool_return_truncation_chars
+            request_messages,
+            tool_return_truncation_chars=tool_return_truncation_chars,
         )
         # Add multi-modal support for Responses API by rewriting user messages
         # into input_text/input_image parts.
-        openai_messages_list = fill_image_content_in_responses_input(openai_messages_list, messages)
+        openai_messages_list = fill_image_content_in_responses_input(openai_messages_list, request_messages)
 
         if llm_config.model:
             model = llm_config.model
@@ -472,7 +493,7 @@ class OpenAIClient(LLMClientBase):
         self._apply_prompt_cache_settings(
             llm_config=llm_config,
             model=model,
-            messages=messages,
+            messages=request_messages,
             request_obj=data,
         )
 
@@ -489,6 +510,7 @@ class OpenAIClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI API.
@@ -503,6 +525,7 @@ class OpenAIClient(LLMClientBase):
                 force_tool_call=force_tool_call,
                 requires_subsequent_tool_call=requires_subsequent_tool_call,
                 tool_return_truncation_chars=tool_return_truncation_chars,
+                system=system,
             )
 
         if agent_type == AgentType.letta_v1_agent:
@@ -526,10 +549,12 @@ class OpenAIClient(LLMClientBase):
 
         use_developer_message = accepts_developer_role(llm_config.model)
 
+        request_messages = self._apply_system_override(messages, system)
+
         openai_message_list = [
             cast_message_to_subtype(m)
             for m in PydanticMessage.to_openai_dicts_from_list(
-                messages,
+                request_messages,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
                 tool_return_truncation_chars=tool_return_truncation_chars,
@@ -654,7 +679,7 @@ class OpenAIClient(LLMClientBase):
         self._apply_prompt_cache_settings(
             llm_config=llm_config,
             model=model,
-            messages=messages,
+            messages=request_messages,
             request_obj=data,
         )
 

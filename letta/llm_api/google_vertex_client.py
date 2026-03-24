@@ -40,6 +40,7 @@ from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.enums import ProviderCategory
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool
@@ -433,6 +434,7 @@ class GoogleVertexClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
@@ -450,9 +452,21 @@ class GoogleVertexClient(LLMClientBase):
             formatted_tools = []
             tool_names = []
 
+        request_messages = messages
+        if system is not None:
+            from letta.schemas.letta_message_content import TextContent
+
+            if not messages:
+                raise RuntimeError("Cannot override system prompt because messages is empty")
+            if messages[0].role != "system":
+                raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
+            system_message = messages[0].model_copy(deep=True)
+            system_message.content = [TextContent(text=system)]
+            request_messages = [system_message, *messages[1:]]
+
         contents = self.add_dummy_model_messages(
             PydanticMessage.to_google_dicts_from_list(
-                messages,
+                request_messages,
                 current_model=llm_config.model,
                 put_inner_thoughts_in_kwargs=False if agent_type == AgentType.letta_v1_agent else True,
                 native_content=True if agent_type == AgentType.letta_v1_agent else False,

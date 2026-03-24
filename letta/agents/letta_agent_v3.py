@@ -1081,6 +1081,10 @@ class LettaAgentV3(LettaAgentV2):
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 and self._require_tool_call else None
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
+                        request_system_prompt = self.generate_request_system_prompt(
+                            client_skills=self.client_skills,
+                            current_system_message=messages[0],
+                        )
                         request_data = active_llm_client.build_request_data(
                             agent_type=self.agent_state.agent_type,
                             messages=messages,
@@ -1089,6 +1093,7 @@ class LettaAgentV3(LettaAgentV2):
                             force_tool_call=force_tool_call,
                             requires_subsequent_tool_call=self._require_tool_call,
                             tool_return_truncation_chars=self._compute_tool_return_truncation_chars(),
+                            system=request_system_prompt,
                         )
                         # TODO: Extend to more providers, and also approval tool rules
                         # TODO: this entire code block should be inside of the clients
