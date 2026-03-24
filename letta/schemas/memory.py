@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 from io import StringIO
 from typing import List, Optional, Union
@@ -209,8 +210,7 @@ class Memory(BaseModel, validate_assignment=True):
           derived from their slash-separated labels (dropping the `system/`
           prefix).
         - Files outside `system/` and `skills/` are rendered under
-          `<memory><external-memory>...</external-memory></memory>` as metadata-only
-          projections.
+          `<memory><external>...</external></memory>` as a file tree.
         """
         renderable = self._get_renderable_blocks()
         if not renderable:
@@ -283,12 +283,18 @@ class Memory(BaseModel, validate_assignment=True):
 
         system_tree = _build_tree(non_persona, strip_prefix="system/")
 
-        def _render_nested(node: dict, indent: int = 0):
+        def _render_nested(node: dict, indent: int = 0, path_parts: list[str] | None = None):
             pad = "  " * indent
+            curr_parts = path_parts or []
             for key in sorted(k for k in node.keys() if k not in (LEAF_KEY, LEAF_DESC_KEY, LEAF_LABEL_KEY)):
                 child = node[key]
+                child_parts = [*curr_parts, key]
                 s.write(f"{pad}<{key}>\n")
                 if isinstance(child, dict):
+                    if LEAF_KEY in child:
+                        projection_path = "/".join(child_parts)
+                        s.write(f"{pad}  <projection>$MEMORY_DIR/system/{projection_path}.md</projection>\n")
+
                     desc = str(child.get(LEAF_DESC_KEY) or "").rstrip("\n")
                     if desc:
                         s.write(f"{pad}  <description>{desc}</description>\n")
@@ -296,27 +302,49 @@ class Memory(BaseModel, validate_assignment=True):
                         value = str(child[LEAF_KEY] or "").rstrip("\n")
                         if value:
                             s.write(f"{pad}  {value}\n")
-                    _render_nested(child, indent + 1)
+                    _render_nested(child, indent + 1, child_parts)
                 s.write(f"{pad}</{key}>\n")
 
         s.write("\n\n<memory>\n")
         _render_nested(system_tree)
 
-        # 3) External memory projections (all files outside system/ and skills/)
+        # 3) External memory file tree (all files outside system/ and skills/)
         if external_blocks:
-            s.write("<external-memory>\n")
-            s.write("Reminder: external memory must be actively retrieved into context on-demand. Only descriptions are shown below.\n")
+            s.write("<external_projection>\n")
+
+            tree: dict = {}
             for block in sorted(external_blocks, key=lambda b: b.label or ""):
                 label = (block.label or "").strip()
                 if not label:
                     continue
-                s.write(f"<{label}>\n")
-                desc = (block.description or "").strip()
-                if desc:
-                    s.write(f"{desc.splitlines()[0].strip()}\n")
-                s.write(f"<projection>$MEMORY_DIR/{label}.md</projection>\n")
-                s.write(f"</{label}>\n")
-            s.write("</external-memory>\n")
+
+                parts = [p for p in label.split("/") if p]
+                if not parts:
+                    continue
+
+                node = tree
+                for part in parts[:-1]:
+                    node = node.setdefault(part, {})
+                node[f"{parts[-1]}.md"] = None
+
+            def _render_tree(node: dict, prefix: str = ""):
+                dirs = sorted(k for k, v in node.items() if isinstance(v, dict))
+                files = sorted(k for k, v in node.items() if v is None)
+                entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+
+                for i, (name, is_dir) in enumerate(entries):
+                    is_last = i == len(entries) - 1
+                    connector = "└── " if is_last else "├── "
+                    if is_dir:
+                        s.write(f"{prefix}{connector}{name}/\n")
+                        extension = "    " if is_last else "│   "
+                        _render_tree(node[name], prefix + extension)
+                    else:
+                        s.write(f"{prefix}{connector}{name}\n")
+
+            s.write("${MEMORY_DIR}/\n")
+            _render_tree(tree)
+            s.write("</external_projection>\n")
 
         s.write("</memory>")
 
@@ -491,23 +519,69 @@ class Memory(BaseModel, validate_assignment=True):
 
                 seen_skill_names.add(name)
                 desc = (cs.description or "").strip().split("\n")[0].strip()
-                location = cs.location or ""
+                location = (cs.location or "").strip() or f"${{MEMORY_DIR}}/skills/{name}/SKILL.md"
                 all_skill_entries.append((name, desc, location))
 
         if not all_skill_entries:
             return ""
 
-        s = StringIO()
-        all_skill_entries.sort(key=lambda e: e[0])
-        s.write("\n\n<available_skills>\n")
+        def _skill_root(skill_name: str, location: str) -> tuple[str, str]:
+            norm = location.strip()
+            if norm.endswith("/SKILL.md"):
+                skill_dir = os.path.dirname(norm)
+                root = os.path.dirname(skill_dir)
+                rel = os.path.relpath(norm, root)
+                if os.path.basename(skill_dir) == skill_name.split("/")[-1]:
+                    return root, rel
+            root = os.path.dirname(norm)
+            rel = os.path.basename(norm)
+            return root, rel
+
+        grouped: dict[str, list[tuple[str, str]]] = {}
         for name, desc, location in all_skill_entries:
-            s.write("<skill>\n")
-            s.write(f"<name>{name}</name>\n")
-            if desc:
-                s.write(f"<description>{desc}</description>\n")
-            if location:
-                s.write(f"<location>{location}</location>\n")
-            s.write("</skill>\n")
+            root, relative_path = _skill_root(name, location)
+            grouped.setdefault(root, []).append((relative_path, desc))
+
+        s = StringIO()
+        s.write("\n\n<available_skills>\n")
+
+        root_paths = sorted(grouped.keys())
+        for root_index, root in enumerate(root_paths):
+            s.write(f"{root}\n")
+
+            # Build a tree for each top-level location root.
+            tree: dict = {}
+            for rel_path, desc in sorted(grouped[root], key=lambda e: e[0]):
+                parts = [p for p in rel_path.split("/") if p]
+                if not parts:
+                    continue
+
+                node = tree
+                for part in parts[:-1]:
+                    node = node.setdefault(part, {})
+                node[parts[-1]] = desc
+
+            def _render_tree(node: dict, prefix: str = ""):
+                dirs = sorted(k for k, v in node.items() if isinstance(v, dict))
+                files = sorted(k for k, v in node.items() if isinstance(v, str))
+                entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+
+                for i, (name, is_dir) in enumerate(entries):
+                    is_last = i == len(entries) - 1
+                    connector = "└── " if is_last else "├── "
+                    if is_dir:
+                        s.write(f"{prefix}{connector}{name}/\n")
+                        extension = "    " if is_last else "│   "
+                        _render_tree(node[name], prefix + extension)
+                    else:
+                        desc = (node[name] or "").strip()
+                        desc_suffix = f" ({desc})" if desc else ""
+                        s.write(f"{prefix}{connector}{name}{desc_suffix}\n")
+
+            _render_tree(tree)
+            if root_index != len(root_paths) - 1:
+                s.write("\n")
+
         s.write("</available_skills>")
         return s.getvalue()
 

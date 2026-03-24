@@ -59,7 +59,7 @@ def _build_memory_with_literal_tag_refs() -> Memory:
 
 
 def _assert_one_structural_skills_block_at_tail(text: str) -> None:
-    system_block_ends = [m.end() for m in re.finditer(r"</system/[^>]+>", text)]
+    system_block_ends = [m.end() for m in re.finditer(r"</memory>", text)]
     assert system_block_ends, "Expected system blocks in test prompt"
     tail = text[max(system_block_ends) :]
     assert tail.count("<available_skills>") == 1
@@ -81,7 +81,8 @@ def test_generate_request_system_prompt_appends_skills_and_preserves_literals():
 
     _assert_one_structural_skills_block_at_tail(new_text)
     assert "`<available_skills>`" in new_text
-    assert "<name>fresh-skill</name>" in new_text
+    assert "/tmp/fresh" in new_text
+    assert "SKILL.md (fresh)" in new_text
     assert new_text.rstrip().endswith(new_skills.rstrip())
 
 
@@ -143,7 +144,8 @@ def test_generate_request_system_prompt_includes_request_scoped_client_skills_wi
 
     _assert_one_structural_skills_block_at_tail(request_system_text)
     assert "`<available_skills>`" in request_system_text
-    assert "<name>fresh-skill</name>" in request_system_text
+    assert "/tmp/fresh" in request_system_text
+    assert "SKILL.md (fresh)" in request_system_text
     # Ensure original persisted message object is unchanged (request-scoped only)
     assert system_message.content[0].text == old_text
 
@@ -175,7 +177,7 @@ def test_generate_request_system_prompt_is_stable_for_same_stored_system_prompt(
 
     assert request_system_text is not None
     _assert_one_structural_skills_block_at_tail(request_system_text)
-    assert request_system_text.count("<name>fresh-skill</name>") == 1
+    assert request_system_text.count("SKILL.md (fresh)") == 1
 
 
 @pytest.mark.asyncio

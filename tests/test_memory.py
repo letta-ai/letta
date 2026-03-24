@@ -244,11 +244,7 @@ def test_compile_git_structured_core_memory_rendering():
 
 
 def test_compile_git_structured_skills_section():
-    """skills/ blocks should render in compile_available_skills() as metadata-only entries.
-
-    Nested skill files should NOT appear. Only top-level skill entries
-    with name, description, and location.
-    """
+    """skills/ blocks should render in compile_available_skills() as filetree entries."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -281,11 +277,12 @@ def test_compile_git_structured_skills_section():
     assert "<available_skills>" in out
     assert "</available_skills>" in out
 
-    # Top-level skill entries with descriptions
-    assert "<name>searching-messages</name>" in out
-    assert "<description>Search past messages to recall context.</description>" in out
-    assert "<name>creating-skills</name>" in out
-    assert "<description>Guide for creating effective skills.</description>" in out
+    # Top-level location and skill tree entries with descriptions
+    assert "${MEMORY_DIR}/skills" in out
+    assert "searching-messages/" in out
+    assert "SKILL.md (Search past messages to recall context.)" in out
+    assert "creating-skills/" in out
+    assert "SKILL.md (Guide for creating effective skills.)" in out
 
     # Skill content should NOT be rendered (metadata only)
     assert "# searching messages" not in out
@@ -297,7 +294,7 @@ def test_compile_git_structured_skills_section():
 
 
 def test_compile_git_structured_archival_memory_section():
-    """Non-system, non-skills blocks should render in <external-memory> as projections."""
+    """Non-system, non-skills blocks should render in <external_projection> as a file tree."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -312,13 +309,18 @@ def test_compile_git_structured_archival_memory_section():
     out = m.compile()
 
     assert "<memory>" in out
-    assert "<external-memory>" in out
-    assert "<notes>" in out
-    assert "<reference/api>" in out
-    assert "<projection>$MEMORY_DIR/notes.md</projection>" in out
-    assert "<projection>$MEMORY_DIR/reference/api.md</projection>" in out
-    assert "Personal notes" in out
-    assert "API docs" in out
+    assert "<projection>$MEMORY_DIR/system/human.md</projection>" in out
+    assert "<external_projection>" in out
+    assert "${MEMORY_DIR}/" in out
+    assert "reference/" in out
+    assert "api.md" in out
+    assert "notes.md" in out
+    assert "${MEMORY_DIR}/reference/" not in out
+    assert "${MEMORY_DIR}/notes.md" not in out
+
+    # Descriptions are not rendered in the external tree.
+    assert "Personal notes" not in out
+    assert "API docs" not in out
 
     # Archival memory content should NOT be rendered
     assert "my notes" not in out
@@ -326,7 +328,7 @@ def test_compile_git_structured_archival_memory_section():
 
 
 def test_compile_git_structured_client_skills():
-    """client_skills should be merged with agent skills in compile_available_skills()."""
+    """client_skills should be merged with agent skills in compile_available_skills() as trees grouped by root."""
     from letta.schemas.letta_request import ClientSkillSchema
 
     m = Memory(
@@ -354,15 +356,17 @@ def test_compile_git_structured_client_skills():
     assert "<available_skills>" in out
     assert "</available_skills>" in out
 
-    # Agent skill present
-    assert "<name>searching-messages</name>" in out
+    # Agent skill present under memory skills root
+    assert "${MEMORY_DIR}/skills" in out
+    assert "searching-messages/" in out
+    assert "SKILL.md (Search past messages.)" in out
 
-    # Client skills present with descriptions and locations
-    assert "<name>playwright-skill</name>" in out
-    assert "<description>Browser automation.</description>" in out
-    assert "<location>skills/playwright-skill/SKILL.md</location>" in out
-    assert "<name>google</name>" in out
-    assert "<description>Google Workspace CLI.</description>" in out
+    # Client skills grouped under their location roots
+    assert "skills" in out
+    assert "playwright-skill/" in out
+    assert "SKILL.md (Browser automation.)" in out
+    assert "google/" in out
+    assert "SKILL.md (Google Workspace CLI.)" in out
 
 
 def test_compile_git_structured_dedup_client_skills():
@@ -386,15 +390,16 @@ def test_compile_git_structured_dedup_client_skills():
 
     # Agent skill present, client duplicate deduplicated
     assert "<available_skills>" in out
-    assert "<name>my-skill</name>" in out
+    assert "my-skill/" in out
+    assert "SKILL.md" in out
     # Agent skill wins — description comes from agent block, not client
-    assert "<description>Agent skill.</description>" in out
+    assert "(Agent skill.)" in out
     # Only one entry for the skill (deduplicated)
-    assert out.count("<name>my-skill</name>") == 1
+    assert out.count("my-skill/") == 1
 
 
 def test_compile_git_structured_client_skills_omits_empty_description_location_tags():
-    """Client skills with blank description/location should still render name but omit empty XML tags."""
+    """Client skills with blank description/location should still render name without empty suffix."""
     from letta.schemas.letta_request import ClientSkillSchema
 
     m = Memory(
@@ -412,13 +417,13 @@ def test_compile_git_structured_client_skills_omits_empty_description_location_t
     out = m.compile_available_skills(client_skills=client_skills)
 
     assert "<available_skills>" in out
-    assert "<name>blanky</name>" in out
-    assert "<description></description>" not in out
-    assert "<location></location>" not in out
+    assert "blanky/" in out
+    assert "SKILL.md" in out
+    assert "SKILL.md ()" not in out
 
 
 def test_compile_available_skills_standalone():
-    """compile_available_skills() returns the skills block without recompiling the full prompt."""
+    """compile_available_skills() returns grouped file trees without recompiling the full prompt."""
     from letta.schemas.letta_request import ClientSkillSchema
 
     m = Memory(
@@ -439,12 +444,12 @@ def test_compile_available_skills_standalone():
     assert "<available_skills>" in result
     assert "</available_skills>" in result
     # Agent skill present
-    assert "<name>my-skill</name>" in result
-    assert "<description>Agent skill.</description>" in result
+    assert "my-skill/" in result
+    assert "SKILL.md (Agent skill.)" in result
     # Client skill present
-    assert "<name>client-only</name>" in result
-    assert "<description>From client.</description>" in result
-    assert "<location>/tmp/client-only/SKILL.md</location>" in result
+    assert "/tmp" in result
+    assert "client-only/" in result
+    assert "SKILL.md (From client.)" in result
 
     # No skills → empty string
     m_empty = Memory(
@@ -538,7 +543,8 @@ def test_append_available_skills_preserves_blocks_with_literal_skills_text():
     structural_end = new_text.find("</available_skills>", structural_start)
     assert structural_start > 0
     assert structural_end > structural_start
-    assert "<name>test-skill</name>" in new_text[structural_start:structural_end]
+    assert "test-skill/" in new_text[structural_start:structural_end]
+    assert "SKILL.md (A test skill.)" in new_text[structural_start:structural_end]
 
 
 def test_compile_git_structured_recompile_after_block_edit():

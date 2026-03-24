@@ -71,7 +71,7 @@ class PromptGenerator:
             f"- AGENT_ID: {agent_id}",
             f"- CONVERSATION_ID: {conversation_id}",
             f"- System prompt last recompiled: {timestamp_str}",
-            f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
+            f"- {previous_message_count} previous messages between you and the user are stored in recall memory",
         ]
 
         # Only include archival memory line if there are archival memories
