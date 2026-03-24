@@ -303,17 +303,19 @@ class StreamingService:
 
             except ConversationBusyError as e:
                 # Second-chance recovery for same-OTID retries that lost the race:
-                # The pre-lock check ran before the mapping was stored, but by now
-                # the lock holder has created the run and stored the mapping.
+                # The pre-lock check ran before the mapping was stored. The lock holder
+                # may still be creating the run (DB insert), so poll briefly for the mapping.
                 if request.background and request_token and e.lock_holder_token and e.lock_holder_token == request_token:
-                    recovery_response = await try_recover_duplicate_request(
-                        redis_client=redis_client,
-                        request_token=request_token,
-                        lock_key=lock_key,
-                        include_pings=request.include_pings,
-                    )
-                    if recovery_response:
-                        return None, recovery_response
+                    for _attempt in range(3):
+                        recovery_response = await try_recover_duplicate_request(
+                            redis_client=redis_client,
+                            request_token=request_token,
+                            lock_key=lock_key,
+                            include_pings=request.include_pings,
+                        )
+                        if recovery_response:
+                            return None, recovery_response
+                        await asyncio.sleep(0.25 * (2**_attempt))  # 250ms, 500ms, 1s
                 raise await enrich_conversation_busy_error(redis_client, e)
             finally:
                 admission_wait_ms = (get_utc_timestamp_ns() - admission_wait_start_ns) / 1_000_000
