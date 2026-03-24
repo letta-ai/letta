@@ -39,6 +39,7 @@ class BaseAgentV2(ABC):
         client_skills: list["ClientSkillSchema"] | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
         conversation_id: str | None = None,
+        override_system: str | None = None,
     ) -> dict:
         """
         Execute the agent loop in dry_run mode, returning just the generated request
@@ -57,6 +58,7 @@ class BaseAgentV2(ABC):
         request_start_timestamp_ns: int | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
         client_skills: list["ClientSkillSchema"] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -83,6 +85,7 @@ class BaseAgentV2(ABC):
         conversation_id: str | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
         client_skills: list["ClientSkillSchema"] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
         openai_responses_websocket: bool = False,

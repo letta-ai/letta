@@ -52,6 +52,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         client_skills=None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -71,6 +72,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
             conversation_id=conversation_id,
             client_tools=client_tools,
             client_skills=client_skills,
+            override_system=override_system,
             include_compaction_messages=include_compaction_messages,
             billing_context=billing_context,
         )
@@ -92,6 +94,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
         client_skills=None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
         openai_responses_websocket: bool = False,
@@ -115,6 +118,7 @@ class SleeptimeMultiAgentV4(LettaAgentV3):
                 conversation_id=conversation_id,
                 client_tools=client_tools,
                 client_skills=client_skills,
+                override_system=override_system,
                 include_compaction_messages=include_compaction_messages,
                 billing_context=billing_context,
             ):

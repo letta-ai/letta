@@ -365,6 +365,7 @@ class StreamingService:
                 lock_key=lock_key,  # For lock release (may differ from conversation_id)
                 client_tools=request.client_tools,
                 client_skills=request.client_skills,
+                override_system=request.override_system,
                 include_compaction_messages=request.include_compaction_messages,
                 billing_context=billing_context,
                 route_class=route_class,
@@ -543,6 +544,7 @@ class StreamingService:
         lock_key: Optional[str] = None,
         client_tools: Optional[list[ClientToolSchema]] = None,
         client_skills=None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: BillingContext | None = None,
         route_class: str = "foreground",
@@ -589,6 +591,7 @@ class StreamingService:
                     conversation_id=conversation_id,
                     client_tools=client_tools,
                     client_skills=client_skills,
+                    override_system=override_system,
                     include_compaction_messages=include_compaction_messages,
                     billing_context=billing_context,
                     openai_responses_websocket=openai_responses_websocket,

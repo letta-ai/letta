@@ -249,6 +249,7 @@ async def _send_agent_direct_message(
             override_model=request.override_model,
             client_tools=request.client_tools,
             client_skills=request.client_skills,
+            override_system=request.override_system,
         )
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
@@ -335,6 +336,7 @@ async def _send_agent_direct_message(
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
             client_skills=request.client_skills,
+            override_system=request.override_system,
             conversation_id=None,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=billing_context,
@@ -430,6 +432,7 @@ async def send_conversation_message(
             override_model=request.override_model,
             client_tools=request.client_tools,
             client_skills=request.client_skills,
+            override_system=request.override_system,
         )
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
@@ -504,6 +507,7 @@ async def send_conversation_message(
         include_return_message_types=request.include_return_message_types,
         client_tools=request.client_tools,
         client_skills=request.client_skills,
+        override_system=request.override_system,
         conversation_id=conversation_id,
         include_compaction_messages=request.include_compaction_messages,
         billing_context=headers.billing_context,
@@ -558,6 +562,7 @@ async def preview_conversation_model_request(
             input_messages=request.messages,
             client_skills=request.client_skills,
             client_tools=request.client_tools,
+            override_system=request.override_system,
         )
 
     # Normal conversation mode
@@ -600,6 +605,7 @@ async def preview_conversation_model_request(
         input_messages=request.messages,
         client_skills=request.client_skills,
         client_tools=request.client_tools,
+        override_system=request.override_system,
         conversation_id=conversation_id,
     )
 
