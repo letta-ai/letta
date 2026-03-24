@@ -202,44 +202,123 @@ class Memory(BaseModel, validate_assignment=True):
         s.write("\n</memory_blocks>")
 
     def _render_memory_blocks_git(self, s: StringIO):
-        """Render memory blocks as individual file tags with YAML frontmatter.
+        """Render git-backed system memory with structured tags.
 
-        Each block is rendered as <label.md>---frontmatter---value</label.md>,
-        matching the format stored in the git repo. Labels without a 'system/'
-        prefix get one added automatically.
-
-        DEPRECATED: Kept for backward compatibility. New agents use
-        _render_memory_filesystem_structured() which embeds core memory
-        inside the <memory_filesystem> tag.
+        - `system/persona` is rendered in a dedicated `<self>` section.
+        - Other `system/*` blocks are rendered under `<memory>` with nested tags
+          derived from their slash-separated labels (dropping the `system/`
+          prefix).
+        - Files outside `system/` and `skills/` are rendered under
+          `<memory><external-memory>...</external-memory></memory>` as metadata-only
+          projections.
         """
         renderable = self._get_renderable_blocks()
         if not renderable:
             return
 
-        for idx, block in enumerate(renderable):
-            label = block.label or "block"
-            # Ensure system/ prefix
-            if not label.startswith("system/"):
-                label = f"system/{label}"
-            tag = f"{label}.md"
-            value = block.value or ""
+        s.write("\n\nReminder: <projection> contains the local path of the memory file projection.")
 
-            s.write(f"\n\n<{tag}>\n")
+        # 1) Dedicated <self> section from system/persona
+        persona_block = next((b for b in renderable if (b.label or "") == "system/persona"), None)
+        if persona_block is not None:
+            s.write("\n\n<self>\n")
+            s.write("<projection>$MEMORY_DIR/system/persona.md</projection>\n")
+            s.write((persona_block.value or "").rstrip("\n"))
+            s.write("\n</self>")
 
-            # Build frontmatter (same fields as serialize_block)
-            front_lines = []
-            if block.description:
-                front_lines.append(f"description: {block.description}")
-            if getattr(block, "read_only", False):
-                front_lines.append("read_only: true")
+        # 2) Render all other system/* blocks as nested tags under <memory>
+        non_persona = [b for b in renderable if (b.label or "") != "system/persona"]
+        external_blocks = [
+            b
+            for b in self.blocks
+            if (b.label or "") and not (b.label or "").startswith("system/") and not (b.label or "").startswith("skills/")
+        ]
+        if not non_persona and not external_blocks:
+            return
 
-            if front_lines:
-                s.write("---\n")
-                s.write("\n".join(front_lines))
-                s.write("\n---\n")
+        LEAF_KEY = "__value__"
+        LEAF_DESC_KEY = "__description__"
+        LEAF_LABEL_KEY = "__label__"
 
-            s.write(f"{value}\n")
-            s.write(f"</{tag}>")
+        def _build_tree(blocks: list[Block], strip_prefix: str | None = None) -> dict:
+            tree: dict = {}
+            for block in blocks:
+                label = block.label or ""
+                if strip_prefix:
+                    if not label.startswith(strip_prefix):
+                        continue
+                    label = label.removeprefix(strip_prefix)
+
+                parts = [p for p in label.split("/") if p]
+                if not parts:
+                    continue
+
+                node = tree
+                for part in parts[:-1]:
+                    if part not in node or not isinstance(node[part], dict):
+                        node[part] = {}
+                    node = node[part]
+
+                leaf = parts[-1]
+                leaf_node = node.get(leaf)
+                desc = (block.description or "").strip()
+                original_label = block.label or ""
+                if leaf_node is None:
+                    node[leaf] = {
+                        LEAF_KEY: block.value or "",
+                        LEAF_DESC_KEY: desc,
+                        LEAF_LABEL_KEY: original_label,
+                    }
+                elif isinstance(leaf_node, dict):
+                    leaf_node[LEAF_KEY] = block.value or ""
+                    leaf_node[LEAF_DESC_KEY] = desc
+                    leaf_node[LEAF_LABEL_KEY] = original_label
+                else:
+                    node[leaf] = {
+                        LEAF_KEY: block.value or "",
+                        LEAF_DESC_KEY: desc,
+                        LEAF_LABEL_KEY: original_label,
+                    }
+            return tree
+
+        system_tree = _build_tree(non_persona, strip_prefix="system/")
+
+        def _render_nested(node: dict, indent: int = 0):
+            pad = "  " * indent
+            for key in sorted(k for k in node.keys() if k not in (LEAF_KEY, LEAF_DESC_KEY, LEAF_LABEL_KEY)):
+                child = node[key]
+                s.write(f"{pad}<{key}>\n")
+                if isinstance(child, dict):
+                    desc = str(child.get(LEAF_DESC_KEY) or "").rstrip("\n")
+                    if desc:
+                        s.write(f"{pad}  <description>{desc}</description>\n")
+                    if LEAF_KEY in child:
+                        value = str(child[LEAF_KEY] or "").rstrip("\n")
+                        if value:
+                            s.write(f"{pad}  {value}\n")
+                    _render_nested(child, indent + 1)
+                s.write(f"{pad}</{key}>\n")
+
+        s.write("\n\n<memory>\n")
+        _render_nested(system_tree)
+
+        # 3) External memory projections (all files outside system/ and skills/)
+        if external_blocks:
+            s.write("<external-memory>\n")
+            s.write("Reminder: external memory must be actively retrieved into context on-demand. Only descriptions are shown below.\n")
+            for block in sorted(external_blocks, key=lambda b: b.label or ""):
+                label = (block.label or "").strip()
+                if not label:
+                    continue
+                s.write(f"<{label}>\n")
+                desc = (block.description or "").strip()
+                if desc:
+                    s.write(f"{desc.splitlines()[0].strip()}\n")
+                s.write(f"<projection>$MEMORY_DIR/{label}.md</projection>\n")
+                s.write(f"</{label}>\n")
+            s.write("</external-memory>\n")
+
+        s.write("</memory>")
 
     def _render_memory_filesystem(self, s: StringIO, client_skills=None):
         """Render a filesystem tree view of all memory blocks.
@@ -551,8 +630,7 @@ class Memory(BaseModel, validate_assignment=True):
         # Memory blocks (not for react/workflow). Always include wrapper for preview/tests.
         if not is_react:
             if self.git_enabled:
-                # Git-enabled: filesystem tree + file-style block rendering
-                self._render_memory_filesystem(s, client_skills=client_skills)
+                # Git-enabled: structured self + memory rendering
                 self._render_memory_blocks_git(s)
             elif is_line_numbered:
                 self._render_memory_blocks_line_numbered(s)
