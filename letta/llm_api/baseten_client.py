@@ -34,7 +34,7 @@ class BasetenClient(OpenAIClient):
         return False
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
-        return True  # hardcode for now
+        return True
 
     @trace_method
     def build_request_data(
@@ -87,6 +87,12 @@ class BasetenClient(OpenAIClient):
                         if isinstance(block, dict) and block.get("type") == "text":
                             if not block.get("text", "").strip():
                                 block["text"] = "."
+
+        # Kimi K2.5 requires opt-in for reasoning via chat_template_args
+        if llm_config.model == "moonshotai/Kimi-K2.5" and llm_config.enable_reasoner:
+            extra = data.get("extra_body", {})
+            extra["chat_template_args"] = {"enable_thinking": True}
+            data["extra_body"] = extra
 
         # Strip reasoning fields that are not in the Baseten schema
         if "messages" in data:

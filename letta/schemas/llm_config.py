@@ -472,6 +472,13 @@ class LLMConfig(BaseModel):
                 temperature=self.temperature,
                 reasoning=ChatGPTOAuthReasoning(reasoning_effort=self.reasoning_effort or "medium"),
             )
+        elif self.model_endpoint_type == "baseten":
+            from letta.schemas.model import BasetenModelSettings
+
+            return BasetenModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
         elif self.model_endpoint_type == "minimax":
             # MiniMax uses Anthropic-compatible API
             thinking_type = "enabled" if self.enable_reasoner else "disabled"
@@ -625,6 +632,12 @@ class LLMConfig(BaseModel):
 
             # OpenRouter reasoning models: toggle honored
             if cls.is_openrouter_reasoning_model(config):
+                config.enable_reasoner = bool(reasoning)
+                config.put_inner_thoughts_in_kwargs = False
+                return config
+
+            # Baseten models: toggle honored
+            if config.model_endpoint_type == "baseten":
                 config.enable_reasoner = bool(reasoning)
                 config.put_inner_thoughts_in_kwargs = False
                 return config

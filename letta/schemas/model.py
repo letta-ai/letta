@@ -42,6 +42,7 @@ class Model(LLMConfig, ModelBase):
         "koboldcpp",
         "vllm",
         "hugging-face",
+        "baseten",
         "minimax",
         "mistral",
         "together",
@@ -531,6 +532,21 @@ class ChatGPTOAuthModelSettings(ModelSettings):
         }
 
 
+class BasetenModelSettings(ModelSettings):
+    """Baseten model configuration (OpenAI-compatible)."""
+
+    provider_type: Literal[ProviderType.baseten] = Field(ProviderType.baseten, description="The type of the provider.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
+
+    def _to_legacy_config_params(self) -> dict:
+        return {
+            "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
+            "parallel_tool_calls": self.parallel_tool_calls,
+            "strict": True,
+        }
+
+
 ModelSettingsUnion = Annotated[
     Union[
         OpenAIModelSettings,
@@ -545,6 +561,7 @@ ModelSettingsUnion = Annotated[
         DeepseekModelSettings,
         TogetherModelSettings,
         BedrockModelSettings,
+        BasetenModelSettings,
         OpenRouterModelSettings,
         ChatGPTOAuthModelSettings,
     ],

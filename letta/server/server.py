@@ -48,6 +48,7 @@ from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
+    BasetenProvider,
     BedrockProvider,
     DeepSeekProvider,
     GoogleAIProvider,
@@ -345,6 +346,13 @@ class SyncServer(object):
                 MiniMaxProvider(
                     name="minimax",
                     api_key_enc=Secret.from_plaintext(model_settings.minimax_api_key),
+                )
+            )
+        if model_settings.baseten_api_key:
+            self._enabled_providers.append(
+                BasetenProvider(
+                    name="baseten",
+                    api_key_enc=Secret.from_plaintext(model_settings.baseten_api_key),
                 )
             )
         if model_settings.zai_api_key:
