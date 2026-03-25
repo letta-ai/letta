@@ -3,6 +3,7 @@
 from .anthropic import AnthropicProvider
 from .azure import AzureProvider
 from .base import Provider, ProviderBase, ProviderCheck, ProviderCreate, ProviderUpdate
+from .baseten import BasetenProvider
 from .bedrock import BedrockProvider
 from .cerebras import CerebrasProvider
 from .chatgpt_oauth import ChatGPTOAuthProvider
@@ -26,6 +27,7 @@ from .zai import ZAICodingProvider, ZAIProvider
 __all__ = [
     "AnthropicProvider",
     "AzureProvider",
+    "BasetenProvider",
     "BedrockProvider",
     "CerebrasProvider",
     "ChatGPTOAuthProvider",

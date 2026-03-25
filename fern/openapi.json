@@ -28137,6 +28137,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -28148,6 +28151,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -29719,6 +29723,38 @@
         "type": "object",
         "required": ["tool_name", "type"],
         "title": "BaseToolRuleSchema"
+      },
+      "BasetenModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": true
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "baseten",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "baseten"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          }
+        },
+        "type": "object",
+        "title": "BasetenModelSettings",
+        "description": "Baseten model configuration (OpenAI-compatible)."
       },
       "BatchJob": {
         "properties": {
@@ -32132,6 +32168,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -32143,6 +32182,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -32273,6 +32313,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -32284,6 +32327,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -32975,6 +33019,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -32986,6 +33033,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -33725,6 +33773,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -33736,6 +33787,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -34428,6 +34480,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -34439,6 +34494,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -38360,6 +38416,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -38371,6 +38430,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -42131,6 +42191,7 @@
               "koboldcpp",
               "vllm",
               "hugging-face",
+              "baseten",
               "minimax",
               "mistral",
               "together",
@@ -49076,6 +49137,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -49087,6 +49151,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -49420,6 +49485,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -49431,6 +49499,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -50646,6 +50715,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -50657,6 +50729,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
