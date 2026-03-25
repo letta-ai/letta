@@ -9028,7 +9028,7 @@
       "post": {
         "tags": ["conversations"],
         "summary": "Fork Conversation",
-        "description": "Fork an existing conversation.\n\nCreates a new conversation that shares the same in-context messages as the source\nconversation, but with a newly compiled system message reflecting the latest memory\nblock values. The forked conversation belongs to the same agent as the source.",
+        "description": "Fork an existing conversation.\n\nCreates a new conversation that shares the same in-context messages as the source\nconversation, but with a newly compiled system message reflecting the latest memory\nblock values. The forked conversation belongs to the same agent as the source.\n\n**Agent-direct mode**: Pass conversation_id=\"default\" with agent_id query parameter\nto fork the agent's default (agent-direct) message history into a new conversation.\n\n**Deprecated**: Passing an agent ID as conversation_id still works but will be removed.",
         "operationId": "fork_conversation",
         "parameters": [
           {
@@ -9037,14 +9037,36 @@
             "required": true,
             "schema": {
               "type": "string",
-              "minLength": 41,
-              "maxLength": 41,
-              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The ID of the conv in the format 'conv-<uuid4>'",
-              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "minLength": 1,
+              "maxLength": 42,
+              "pattern": "^(default|conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated).",
+              "examples": [
+                "default",
+                "conv-123e4567-e89b-42d3-8456-426614174000",
+                "agent-123e4567-e89b-42d3-8456-426614174000"
+              ],
               "title": "Conversation Id"
             },
-            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+            "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated)."
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID for agent-direct mode with 'default' conversation",
+              "title": "Agent Id"
+            },
+            "description": "Agent ID for agent-direct mode with 'default' conversation"
           }
         ],
         "responses": {
