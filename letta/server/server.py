@@ -39,7 +39,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, JobStatus, ProviderCategory, ProviderType, ToolSourceType
 from letta.schemas.group import GroupCreate, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
+from letta.schemas.letta_message import LettaMessage, MessageType, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message
@@ -948,6 +948,7 @@ class SyncServer(object):
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
         conversation_id: Optional[str] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=agent_id,
@@ -974,6 +975,7 @@ class SyncServer(object):
                 reverse=reverse,
                 include_err=include_err,
                 text_is_assistant_message=text_is_assistant_message,
+                include_return_message_types=include_return_message_types,
             )
 
         if reverse:
@@ -995,6 +997,7 @@ class SyncServer(object):
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
         conversation_id: Optional[str] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=None,
@@ -1021,6 +1024,7 @@ class SyncServer(object):
                 reverse=reverse,
                 include_err=include_err,
                 text_is_assistant_message=text_is_assistant_message,
+                include_return_message_types=include_return_message_types,
             )
 
         if reverse:

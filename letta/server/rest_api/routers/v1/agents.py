@@ -1598,6 +1598,7 @@ async def list_messages(
     include_err: bool | None = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -1618,6 +1619,7 @@ async def list_messages(
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
         include_err=include_err,
+        include_return_message_types=include_return_message_types,
         actor=actor,
     )
 

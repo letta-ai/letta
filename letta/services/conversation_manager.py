@@ -19,7 +19,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.conversation import Conversation as PydanticConversation, CreateConversation, UpdateConversation
-from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -808,6 +808,7 @@ class ConversationManager:
         reverse: bool = False,
         group_id: Optional[str] = None,
         include_err: Optional[bool] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> List[LettaMessage]:
         """
         List all messages in a conversation with pagination support.
@@ -885,7 +886,7 @@ class ConversationManager:
 
             # Convert to LettaMessages (reverse=False keeps sub-messages in natural order)
             return PydanticMessage.to_letta_messages_from_list(
-                messages, reverse=False, include_err=include_err, text_is_assistant_message=True
+                messages, reverse=False, include_err=include_err, text_is_assistant_message=True, include_return_message_types=include_return_message_types
             )
 
     # ==================== Isolated Blocks Methods ====================

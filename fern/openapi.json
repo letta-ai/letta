@@ -7852,6 +7852,27 @@
               "title": "Include Err"
             },
             "description": "Whether to include error messages and error statuses. For debugging purposes only."
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -9253,6 +9274,27 @@
               "title": "Include Err"
             },
             "description": "Whether to include error messages and error statuses. For debugging purposes only."
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -10472,6 +10514,27 @@
             },
             "description": "The name of the message argument.",
             "deprecated": true
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -17392,6 +17455,27 @@
               "title": "Conversation Id"
             },
             "description": "Conversation ID to filter messages by"
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
