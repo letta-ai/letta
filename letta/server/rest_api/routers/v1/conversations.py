@@ -731,7 +731,10 @@ async def retrieve_conversation_stream(
         # Fetch run to check expiration
         run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
         if not run:
-            raise LettaInvalidArgumentError(f"Run {run_id} not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id} not found.",
+            )
 
     # Priority 2: OTID provided (look up run_id from Redis)
     # Retry with backoff: the mapping may not be stored yet if the request
@@ -743,11 +746,17 @@ async def retrieve_conversation_stream(
                 break
             await asyncio.sleep(0.25 * (2**_attempt))  # 250ms, 500ms, 1s
         if not run_id:
-            raise LettaInvalidArgumentError(f"No run found for otid={request.otid}. The run may have expired or never existed.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No run found for otid={request.otid}. The run may have expired or never existed.",
+            )
         # Fetch run to check expiration
         run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
         if not run:
-            raise LettaInvalidArgumentError(f"Run {run_id} (from otid={request.otid}) not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id} (from otid={request.otid}) not found.",
+            )
 
     # Priority 3: Fall back to active run lookup
     else:
