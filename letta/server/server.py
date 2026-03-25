@@ -372,19 +372,21 @@ class SyncServer(object):
             )
 
     async def init_async(self, init_with_default_org_and_user: bool = True):
+        # unfortunately we must always create default org/user
+        self.default_org = await self.organization_manager.create_default_organization_async()
+        self.default_user = await self.user_manager.create_default_actor_async()
+        print(f"Default user: {self.default_user} and org: {self.default_org}")
+
+        # Sync environment-based providers to database (idempotent, safe for multi-pod startup)
+        await self.provider_manager.sync_base_providers(base_providers=self._enabled_providers, actor=self.default_user)
+
+        # Sync provider models to database
+        await self._sync_provider_models_async()
+
+        await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
+
         # Make default user and org
         if init_with_default_org_and_user:
-            self.default_org = await self.organization_manager.create_default_organization_async()
-            self.default_user = await self.user_manager.create_default_actor_async()
-            print(f"Default user: {self.default_user} and org: {self.default_org}")
-            await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
-
-            # Sync environment-based providers to database (idempotent, safe for multi-pod startup)
-            await self.provider_manager.sync_base_providers(base_providers=self._enabled_providers, actor=self.default_user)
-
-            # Sync provider models to database
-            await self._sync_provider_models_async()
-
             # For OSS users, create a local sandbox config
             oss_default_user = await self.user_manager.get_default_actor_async()
             use_venv = False if not tool_settings.tool_exec_venv_name else True
@@ -640,9 +642,7 @@ class SyncServer(object):
             # Recompile the system prompt now that git_enabled=True, so the
             # persisted system message uses the git-style memory rendering
             # instead of the legacy <memory_blocks> format.
-            await self.agent_manager.rebuild_system_prompt_async(
-                agent_id=main_agent.id, actor=actor, force=True, update_timestamp=True
-            )
+            await self.agent_manager.rebuild_system_prompt_async(agent_id=main_agent.id, actor=actor, force=True, update_timestamp=True)
 
         log_event(name="start insert_files_into_context_window db")
         # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
