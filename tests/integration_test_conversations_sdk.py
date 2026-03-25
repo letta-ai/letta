@@ -369,6 +369,56 @@ class TestConversationsSDK:
         conv2_system_id = conv2_messages[0].id
         assert conv1_system_id != conv2_system_id, "System messages should have different IDs for different conversations"
 
+    def test_fork_conversation_via_rest_shares_non_system_message_ids(self, client: Letta, agent, server_url: str):
+        """Fork via REST and verify memory continuity plus shared non-system message IDs in-order."""
+        source = client.conversations.create(agent_id=agent.id)
+
+        list(
+            client.conversations.messages.create(
+                conversation_id=source.id,
+                messages=[{"role": "user", "content": "my favorite color is red"}],
+            )
+        )
+
+        fork_response = requests.post(f"{server_url}/v1/conversations/{source.id}/fork")
+        assert fork_response.status_code == 200, f"Fork request failed: {fork_response.text}"
+        forked_conversation = fork_response.json()
+        forked_id = forked_conversation["id"]
+
+        fork_reply_stream = list(
+            client.conversations.messages.create(
+                conversation_id=forked_id,
+                messages=[{"role": "user", "content": "whats my favorite color?"}],
+            )
+        )
+
+        fork_reply_text = " ".join(
+            m.content
+            for m in fork_reply_stream
+            if hasattr(m, "message_type") and m.message_type == "assistant_message" and isinstance(getattr(m, "content", None), str)
+        )
+        assert "red" in fork_reply_text.lower(), f"Expected forked conversation to remember red, got: {fork_reply_text}"
+
+        source_messages = list(client.conversations.messages.list(conversation_id=source.id, order="asc"))
+        forked_messages = list(client.conversations.messages.list(conversation_id=forked_id, order="asc"))
+
+        source_message_ids = [m.id for m in source_messages]
+        forked_message_ids = [m.id for m in forked_messages]
+
+        # System messages should differ across source and fork.
+        assert source_message_ids[0] != forked_message_ids[0]
+
+        # All non-system source messages should be reused in-order in the fork.
+        source_non_system_ids = source_message_ids[1:]
+        forked_after_system_ids = forked_message_ids[1:]
+        assert source_non_system_ids == forked_after_system_ids[: len(source_non_system_ids)]
+        assert set(source_non_system_ids).issubset(set(forked_message_ids))
+
+    def test_fork_conversation_via_rest_not_found(self, client: Letta, agent, server_url: str):
+        """Forking a non-existent conversation should return not found/validation error."""
+        response = requests.post(f"{server_url}/v1/conversations/conv-nonexistent-00000000/fork")
+        assert response.status_code in (404, 422), f"Expected 404/422, got {response.status_code}: {response.text}"
+
     def test_conversation_messages_pagination(self, client: Letta, agent):
         """Test pagination when listing conversation messages."""
         # Create a conversation

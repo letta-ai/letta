@@ -1622,7 +1622,7 @@ async def list_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message", deprecated=True)
 async def modify_message(
     agent_id: AgentId,  # backwards compatible. Consider removing for v1
     message_id: MessageId,
@@ -1632,11 +1632,13 @@ async def modify_message(
 ):
     """
     Update the details of a message associated with an agent.
+
+    **Deprecated**: Messages are now considered immutable since they can be shared across
+    multiple conversations via forking. This endpoint will be removed in a future version.
     """
-    # TODO: support modifying tool calls/returns
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.message_manager.update_message_by_letta_message_async(
-        message_id=message_id, letta_message_update=request, actor=actor
+    raise HTTPException(
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+        detail="Message editing is no longer supported. Messages are immutable as they may be shared across multiple conversations via forking.",
     )
 
 

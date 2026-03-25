@@ -7944,8 +7944,9 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Modify Message",
-        "description": "Update the details of a message associated with an agent.",
+        "description": "Update the details of a message associated with an agent.\n\n**Deprecated**: Messages are now considered immutable since they can be shared across\nmultiple conversations via forking. This endpoint will be removed in a future version.",
         "operationId": "modify_message",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -9007,6 +9008,53 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/fork": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Fork Conversation",
+        "description": "Fork an existing conversation.\n\nCreates a new conversation that shares the same in-context messages as the source\nconversation, but with a newly compiled system message reflecting the latest memory\nblock values. The forked conversation belongs to the same agent as the source.",
+        "operationId": "fork_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 41,
+              "maxLength": 41,
+              "pattern": "^conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+              "description": "The ID of the conv in the format 'conv-<uuid4>'",
+              "examples": ["conv-123e4567-e89b-42d3-8456-426614174000"],
+              "title": "Conversation Id"
+            },
+            "description": "The ID of the conv in the format 'conv-<uuid4>'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
               }
             }
           },

@@ -119,6 +119,26 @@ async def update_conversation(
     )
 
 
+@router.post("/{conversation_id}/fork", response_model=Conversation, operation_id="fork_conversation")
+async def fork_conversation(
+    conversation_id: ConversationId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Fork an existing conversation.
+
+    Creates a new conversation that shares the same in-context messages as the source
+    conversation, but with a newly compiled system message reflecting the latest memory
+    block values. The forked conversation belongs to the same agent as the source.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await conversation_manager.fork_conversation(
+        conversation_id=conversation_id,
+        actor=actor,
+    )
+
+
 @router.delete("/{conversation_id}", response_model=None, operation_id="delete_conversation")
 async def delete_conversation(
     conversation_id: ConversationId,
