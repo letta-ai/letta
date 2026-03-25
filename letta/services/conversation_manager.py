@@ -100,6 +100,77 @@ class ConversationManager:
 
         return pydantic_conversation
 
+    @enforce_types
+    @trace_method
+    async def fork_conversation(
+        self,
+        conversation_id: str,
+        actor: PydanticUser,
+    ) -> PydanticConversation:
+        """Fork an existing conversation, creating a new conversation with shared messages.
+
+        The forked conversation gets:
+        - A new Conversation record (same agent_id as the source)
+        - A NEW system message compiled from the latest block values
+        - The same in-context Message objects as the source (shared, not copied)
+
+        Args:
+            conversation_id: The ID of the conversation to fork
+            actor: The user performing the action
+
+        Returns:
+            The newly created forked conversation
+        """
+        async with db_registry.async_session() as session:
+            source_conversation = await ConversationModel.read_async(
+                db_session=session,
+                identifier=conversation_id,
+                actor=actor,
+                check_is_deleted=True,
+            )
+            agent_id = source_conversation.agent_id
+
+            new_conversation = ConversationModel(
+                agent_id=agent_id,
+                summary=None,
+                organization_id=actor.organization_id,
+                model=source_conversation.model,
+                model_settings=source_conversation.model_settings,
+            )
+            await new_conversation.create_async(session, actor=actor, no_commit=True)
+
+            source_message_ids = await self._get_message_ids_for_conversation_with_session(
+                session=session,
+                conversation_id=conversation_id,
+                actor=actor,
+            )
+
+            # Skip the system message (always position 0); the fork gets its own.
+            message_ids_to_copy = source_message_ids[1:] if source_message_ids else []
+
+            await self._add_messages_to_conversation_with_session(
+                session=session,
+                conversation_id=new_conversation.id,
+                agent_id=agent_id,
+                message_ids=message_ids_to_copy,
+                actor=actor,
+                starting_position=1,
+            )
+
+            await session.commit()
+            await session.refresh(new_conversation)
+            pydantic_conversation = new_conversation.to_pydantic()
+
+        # Compile and persist a NEW system message for the forked conversation
+        # This captures the latest memory block state
+        await self.compile_and_save_system_message_for_conversation(
+            conversation_id=pydantic_conversation.id,
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        return pydantic_conversation
+
     @trace_method
     async def compile_and_save_system_message_for_conversation(
         self,
@@ -461,12 +532,23 @@ class ConversationManager:
                 .values({ConversationMessageModel.is_deleted: True})
             )
 
-            # Bulk soft-delete messages that belong to this real conversation.
+            # Soft-delete messages that belong to this conversation AND are not
+            # shared with any other active (non-deleted) conversation.
+            # With conversation forking, messages can be referenced by multiple
+            # conversations via the conversation_messages junction table.
+            other_conv_ref = (
+                select(ConversationMessageModel.message_id)
+                .where(
+                    ConversationMessageModel.conversation_id != conversation_id,
+                    ConversationMessageModel.is_deleted == False,
+                )
+            )
             await session.execute(
                 update(MessageModel)
                 .where(MessageModel.conversation_id == conversation_id)
                 .where(MessageModel.organization_id == actor.organization_id)
                 .where(MessageModel.is_deleted == False)
+                .where(~MessageModel.id.in_(other_conv_ref))
                 .values({MessageModel.is_deleted: True})
             )
 
@@ -484,6 +566,25 @@ class ConversationManager:
 
     # ==================== Message Management Methods ====================
 
+    async def _get_message_ids_for_conversation_with_session(
+        self,
+        session,
+        conversation_id: str,
+        actor: PydanticUser,
+    ) -> List[str]:
+        query = (
+            select(ConversationMessageModel.message_id)
+            .where(
+                ConversationMessageModel.conversation_id == conversation_id,
+                ConversationMessageModel.organization_id == actor.organization_id,
+                ConversationMessageModel.in_context == True,
+                ConversationMessageModel.is_deleted == False,
+            )
+            .order_by(ConversationMessageModel.position)
+        )
+        result = await session.execute(query)
+        return list(result.scalars().all())
+
     @enforce_types
     @trace_method
     async def get_message_ids_for_conversation(
@@ -498,18 +599,11 @@ class ConversationManager:
         Only returns messages that are currently in_context.
         """
         async with db_registry.async_session() as session:
-            query = (
-                select(ConversationMessageModel.message_id)
-                .where(
-                    ConversationMessageModel.conversation_id == conversation_id,
-                    ConversationMessageModel.organization_id == actor.organization_id,
-                    ConversationMessageModel.in_context == True,
-                    ConversationMessageModel.is_deleted == False,
-                )
-                .order_by(ConversationMessageModel.position)
+            return await self._get_message_ids_for_conversation_with_session(
+                session=session,
+                conversation_id=conversation_id,
+                actor=actor,
             )
-            result = await session.execute(query)
-            return list(result.scalars().all())
 
     @enforce_types
     @trace_method
@@ -542,6 +636,40 @@ class ConversationManager:
             result = await session.execute(query)
             return [msg.to_pydantic() for msg in result.scalars().all()]
 
+    async def _add_messages_to_conversation_with_session(
+        self,
+        session,
+        conversation_id: str,
+        agent_id: str,
+        message_ids: List[str],
+        actor: PydanticUser,
+        starting_position: Optional[int] = None,
+    ) -> None:
+        if not message_ids:
+            return
+
+        if starting_position is None:
+            query = select(func.coalesce(func.max(ConversationMessageModel.position), -1)).where(
+                ConversationMessageModel.conversation_id == conversation_id,
+                ConversationMessageModel.organization_id == actor.organization_id,
+            )
+            result = await session.execute(query)
+            max_position = result.scalar()
+            if max_position is None:
+                max_position = -1
+            starting_position = max_position + 1
+
+        for i, message_id in enumerate(message_ids):
+            conv_msg = ConversationMessageModel(
+                conversation_id=conversation_id,
+                agent_id=agent_id,
+                message_id=message_id,
+                position=starting_position + i,
+                in_context=True,
+                organization_id=actor.organization_id,
+            )
+            session.add(conv_msg)
+
     @enforce_types
     @trace_method
     async def add_messages_to_conversation(
@@ -564,35 +692,15 @@ class ConversationManager:
             actor: The user performing the action
             starting_position: Optional starting position (defaults to next available)
         """
-        if not message_ids:
-            return
-
         async with db_registry.async_session() as session:
-            # Get starting position if not provided
-            if starting_position is None:
-                query = select(func.coalesce(func.max(ConversationMessageModel.position), -1)).where(
-                    ConversationMessageModel.conversation_id == conversation_id,
-                    ConversationMessageModel.organization_id == actor.organization_id,
-                )
-                result = await session.execute(query)
-                max_position = result.scalar()
-                # Use explicit None check instead of `or` to handle position=0 correctly
-                if max_position is None:
-                    max_position = -1
-                starting_position = max_position + 1
-
-            # Create ConversationMessage entries
-            for i, message_id in enumerate(message_ids):
-                conv_msg = ConversationMessageModel(
-                    conversation_id=conversation_id,
-                    agent_id=agent_id,
-                    message_id=message_id,
-                    position=starting_position + i,
-                    in_context=True,
-                    organization_id=actor.organization_id,
-                )
-                session.add(conv_msg)
-
+            await self._add_messages_to_conversation_with_session(
+                session=session,
+                conversation_id=conversation_id,
+                agent_id=agent_id,
+                message_ids=message_ids,
+                actor=actor,
+                starting_position=starting_position,
+            )
             await session.commit()
 
     @enforce_types
