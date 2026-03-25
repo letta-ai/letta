@@ -350,6 +350,7 @@ class Message(BaseMessage):
         include_err: Optional[bool] = None,
         text_is_assistant_message: bool = False,
         convert_summary_to_user: bool = True,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> List[LettaMessage]:
         if use_assistant_message:
             message_ids_to_remove = []
@@ -372,7 +373,7 @@ class Message(BaseMessage):
             messages = [msg for msg in messages if msg.id not in message_ids_to_remove]
 
         # Convert messages to LettaMessages
-        return [
+        letta_messages = [
             msg
             for m in messages
             for msg in m.to_letta_messages(
@@ -385,6 +386,12 @@ class Message(BaseMessage):
                 convert_summary_to_user=convert_summary_to_user,
             )
         ]
+
+        if include_return_message_types is not None:
+            # Filter to only the specified message types
+            letta_messages = [msg for msg in letta_messages if msg.message_type in include_return_message_types]
+
+        return letta_messages
 
     @staticmethod
     @trace_method

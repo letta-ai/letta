@@ -16,7 +16,7 @@ from letta.log import get_logger
 from letta.schemas.conversation import Conversation, CreateConversation, UpdateConversation
 from letta.schemas.enums import RunStatus
 from letta.schemas.job import LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion, MessageType
 from letta.schemas.letta_request import ConversationMessageRequest, LettaStreamingRequest, RetrieveStreamRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.provider_trace import BillingContext
@@ -211,6 +211,7 @@ async def list_conversation_messages(
     include_err: Optional[bool] = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
 ):
     """
     List all messages in a conversation.
@@ -244,6 +245,7 @@ async def list_conversation_messages(
             reverse=(order == "desc"),
             return_message_object=False,
             include_err=include_err,
+            include_return_message_types=include_return_message_types,
             actor=actor,
         )
 
@@ -256,6 +258,7 @@ async def list_conversation_messages(
         reverse=(order == "desc"),
         group_id=group_id,
         include_err=include_err,
+        include_return_message_types=include_return_message_types,
     )
 
 
