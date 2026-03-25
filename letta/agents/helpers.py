@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 
 from letta.errors import LettaError, PendingApprovalError
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -267,7 +266,11 @@ async def _prepare_in_context_messages_no_persist_async(
 
             if approval_already_processed:
                 # Approval already handled, just process follow-up messages if any or manually inject keep-alive message
-                keep_alive_messages = input_messages[1:] or [
+                follow_up = [m for m in input_messages[1:] if isinstance(m, MessageCreate)]
+                skipped = [m for m in input_messages[1:] if not isinstance(m, MessageCreate)]
+                if skipped:
+                    logger.warning(f"Filtered {len(skipped)} non-MessageCreate follow-up messages: {[type(m).__name__ for m in skipped]}")
+                keep_alive_messages = follow_up or [
                     MessageCreate(
                         role="user",
                         content=[
@@ -292,9 +295,13 @@ async def _prepare_in_context_messages_no_persist_async(
         new_in_context_messages = await create_approval_response_message_from_input(
             agent_state=agent_state, input_message=input_messages[0], run_id=run_id
         )
-        if len(input_messages) > 1:
+        follow_up = [m for m in input_messages[1:] if isinstance(m, MessageCreate)]
+        skipped = [m for m in input_messages[1:] if not isinstance(m, MessageCreate)]
+        if skipped:
+            logger.warning(f"Filtered {len(skipped)} non-MessageCreate follow-up messages: {[type(m).__name__ for m in skipped]}")
+        if follow_up:
             follow_up_messages = await create_input_messages(
-                input_messages=input_messages[1:], agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
+                input_messages=follow_up, agent_id=agent_state.id, timezone=agent_state.timezone, run_id=run_id, actor=actor
             )
             new_in_context_messages.extend(follow_up_messages)
     else:
