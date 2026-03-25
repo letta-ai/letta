@@ -1152,6 +1152,69 @@ class TestConversationsSDK:
         combined_response = " ".join(c for c in assistant_contents if isinstance(c, str))
         assert "blue" in combined_response.lower(), f"Expected 'blue' in assistant response, got: {combined_response}"
 
+    def test_fork_default_conversation_via_rest(self, client: Letta, agent, server_url: str):
+        """Fork the default (agent-direct) conversation via REST and verify message sharing."""
+        # Send a message to the default conversation (agent-direct mode)
+        requests.post(
+            f"{server_url}/v1/conversations/default/messages",
+            json={
+                "agent_id": agent.id,
+                "messages": [{"role": "user", "content": "my favorite animal is a penguin"}],
+                "streaming": False,
+            },
+        )
+
+        # Fork the default conversation using the new pattern
+        fork_response = requests.post(
+            f"{server_url}/v1/conversations/default/fork",
+            params={"agent_id": agent.id},
+        )
+        assert fork_response.status_code == 200, f"Fork request failed: {fork_response.text}"
+        forked_conversation = fork_response.json()
+        forked_id = forked_conversation["id"]
+        assert forked_id.startswith("conv-"), f"Expected conversation ID, got: {forked_id}"
+
+        # Verify the forked conversation remembers the context
+        fork_reply_response = requests.post(
+            f"{server_url}/v1/conversations/{forked_id}/messages",
+            json={
+                "messages": [{"role": "user", "content": "what is my favorite animal?"}],
+                "streaming": False,
+            },
+        )
+        assert fork_reply_response.status_code == 200, f"Fork reply failed: {fork_reply_response.text}"
+        fork_reply_data = fork_reply_response.json()
+
+        fork_reply_text = " ".join(
+            m.get("content", "")
+            for m in fork_reply_data.get("messages", [])
+            if m.get("message_type") == "assistant_message" and isinstance(m.get("content"), str)
+        )
+        assert "penguin" in fork_reply_text.lower(), f"Expected forked conversation to remember penguin, got: {fork_reply_text}"
+
+        # Verify message IDs are shared (non-system messages)
+        default_messages_response = requests.get(
+            f"{server_url}/v1/conversations/default/messages",
+            params={"agent_id": agent.id, "order": "asc"},
+        )
+        assert default_messages_response.status_code == 200
+        default_messages = default_messages_response.json()
+
+        forked_messages = list(client.conversations.messages.list(conversation_id=forked_id, order="asc"))
+
+        default_message_ids = [m["id"] for m in default_messages]
+        forked_message_ids = [m.id for m in forked_messages]
+
+        # System messages should differ
+        assert default_message_ids[0] != forked_message_ids[0], "System messages should be different"
+
+        # Non-system messages from default should be in the fork
+        default_non_system_ids = default_message_ids[1:]
+        forked_after_system_ids = forked_message_ids[1:]
+        assert default_non_system_ids == forked_after_system_ids[: len(default_non_system_ids)], (
+            f"Non-system messages should match. Default: {default_non_system_ids}, Fork: {forked_after_system_ids}"
+        )
+
 
 class TestConversationDelete:
     """Tests for the conversation delete endpoint."""

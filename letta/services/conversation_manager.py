@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
-    pass
+    from letta.server.server import SyncServer
 
 # Import AgentState outside TYPE_CHECKING for @enforce_types decorator
 from sqlalchemy import and_, asc, delete, desc, func, nulls_last, or_, select, update
@@ -163,6 +163,53 @@ class ConversationManager:
 
         # Compile and persist a NEW system message for the forked conversation
         # This captures the latest memory block state
+        await self.compile_and_save_system_message_for_conversation(
+            conversation_id=pydantic_conversation.id,
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        return pydantic_conversation
+
+    @trace_method
+    async def fork_default_conversation(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        server: "SyncServer",
+    ) -> PydanticConversation:
+        """Fork the agent's default (agent-direct) message history into a new conversation.
+
+        Reads the agent's message_ids, creates a new Conversation record, links all
+        non-system messages, and compiles a fresh system message for the fork.
+        """
+        agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
+        source_message_ids = agent.message_ids or []
+
+        # Skip the system message (always position 0); the fork gets its own.
+        message_ids_to_copy = source_message_ids[1:] if source_message_ids else []
+
+        async with db_registry.async_session() as session:
+            new_conversation = ConversationModel(
+                agent_id=agent_id,
+                summary=None,
+                organization_id=actor.organization_id,
+            )
+            await new_conversation.create_async(session, actor=actor, no_commit=True)
+
+            await self._add_messages_to_conversation_with_session(
+                session=session,
+                conversation_id=new_conversation.id,
+                agent_id=agent_id,
+                message_ids=message_ids_to_copy,
+                actor=actor,
+                starting_position=1,
+            )
+
+            await session.commit()
+            await session.refresh(new_conversation)
+            pydantic_conversation = new_conversation.to_pydantic()
+
         await self.compile_and_save_system_message_for_conversation(
             conversation_id=pydantic_conversation.id,
             agent_id=agent_id,
@@ -536,12 +583,9 @@ class ConversationManager:
             # shared with any other active (non-deleted) conversation.
             # With conversation forking, messages can be referenced by multiple
             # conversations via the conversation_messages junction table.
-            other_conv_ref = (
-                select(ConversationMessageModel.message_id)
-                .where(
-                    ConversationMessageModel.conversation_id != conversation_id,
-                    ConversationMessageModel.is_deleted == False,
-                )
+            other_conv_ref = select(ConversationMessageModel.message_id).where(
+                ConversationMessageModel.conversation_id != conversation_id,
+                ConversationMessageModel.is_deleted == False,
             )
             await session.execute(
                 update(MessageModel)

@@ -121,7 +121,8 @@ async def update_conversation(
 
 @router.post("/{conversation_id}/fork", response_model=Conversation, operation_id="fork_conversation")
 async def fork_conversation(
-    conversation_id: ConversationId,
+    conversation_id: ConversationIdOrDefault,
+    agent_id: Optional[str] = Query(None, description="Agent ID for agent-direct mode with 'default' conversation"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -131,8 +132,29 @@ async def fork_conversation(
     Creates a new conversation that shares the same in-context messages as the source
     conversation, but with a newly compiled system message reflecting the latest memory
     block values. The forked conversation belongs to the same agent as the source.
+
+    **Agent-direct mode**: Pass conversation_id="default" with agent_id query parameter
+    to fork the agent's default (agent-direct) message history into a new conversation.
+
+    **Deprecated**: Passing an agent ID as conversation_id still works but will be removed.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Agent-direct mode: conversation_id="default" + agent_id param (preferred)
+    # OR conversation_id="agent-*" (backwards compat, deprecated)
+    resolved_agent_id = None
+    if conversation_id == "default" and agent_id:
+        resolved_agent_id = agent_id
+    elif conversation_id.startswith("agent-"):
+        resolved_agent_id = conversation_id
+
+    if resolved_agent_id:
+        return await conversation_manager.fork_default_conversation(
+            agent_id=resolved_agent_id,
+            actor=actor,
+            server=server,
+        )
+
     return await conversation_manager.fork_conversation(
         conversation_id=conversation_id,
         actor=actor,
