@@ -17510,7 +17510,7 @@
       "post": {
         "tags": ["messages"],
         "summary": "Search All Messages",
-        "description": "Search messages across the organization with optional agent filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\nThis is a cloud-only feature.",
+        "description": "Search messages across the organization with optional agent filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\n\nThis is a cloud-only feature.",
         "operationId": "search_all_messages",
         "parameters": [],
         "requestBody": {
@@ -41984,6 +41984,13 @@
         ],
         "title": "MessageRole"
       },
+      "MessageSearchCacheWarmScope": {
+        "properties": {},
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MessageSearchCacheWarmScope",
+        "description": "Messages currently infer scope from the authenticated actor."
+      },
       "MessageSearchRequest": {
         "properties": {
           "query": {
@@ -45456,6 +45463,46 @@
         "type": "object",
         "required": ["query"],
         "title": "SearchAllMessagesRequest"
+      },
+      "SearchCacheWarmRequest": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "const": "messages",
+            "title": "Collection",
+            "description": "Embedded collection whose cache should be warmed."
+          },
+          "scope": {
+            "$ref": "#/components/schemas/MessageSearchCacheWarmScope",
+            "description": "Collection-specific scope. Messages currently infer organization from the authenticated actor."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["collection", "scope"],
+        "title": "SearchCacheWarmRequest",
+        "description": "Request for warming an internal search cache."
+      },
+      "SearchCacheWarmResponse": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "const": "messages",
+            "title": "Collection"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "warmed": {
+            "type": "boolean",
+            "title": "Warmed"
+          }
+        },
+        "type": "object",
+        "required": ["collection", "status", "warmed"],
+        "title": "SearchCacheWarmResponse",
+        "description": "Response for internal search cache warming."
       },
       "SkillSchema": {
         "properties": {
