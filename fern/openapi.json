@@ -22192,6 +22192,9 @@
                                 "agent_id": {
                                   "type": "string"
                                 },
+                                "surface": {
+                                  "type": "string"
+                                },
                                 "startup_command": {
                                   "type": "string"
                                 },
@@ -22227,6 +22230,9 @@
                                   "type": "string"
                                 },
                                 "agent_id": {
+                                  "type": "string"
+                                },
+                                "surface": {
                                   "type": "string"
                                 },
                                 "duration": {
@@ -22295,6 +22301,9 @@
                                 "agent_id": {
                                   "type": "string"
                                 },
+                                "surface": {
+                                  "type": "string"
+                                },
                                 "tool_name": {
                                   "type": "string"
                                 },
@@ -22361,6 +22370,9 @@
                                 "model_id": {
                                   "type": "string"
                                 },
+                                "surface": {
+                                  "type": "string"
+                                },
                                 "recent_chunks": {
                                   "type": "array",
                                   "items": {
@@ -22398,6 +22410,9 @@
                                   "type": "string"
                                 },
                                 "agent_id": {
+                                  "type": "string"
+                                },
+                                "surface": {
                                   "type": "string"
                                 },
                                 "input_length": {
