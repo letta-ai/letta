@@ -69,6 +69,23 @@ def _build_openrouter_config() -> "LLMConfig":
     )
 
 
+def _min_optional(a: int | None, b: int | None) -> int | None:
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return min(a, b)
+
+
+def _apply_stored_limits(config: "LLMConfig", stored: "LLMConfig") -> "LLMConfig":
+    return config.model_copy(
+        update={
+            "context_window": min(stored.context_window, config.context_window),
+            "max_tokens": _min_optional(stored.max_tokens, config.max_tokens),
+        }
+    )
+
+
 def _build_baseten_config() -> "LLMConfig":
     """Build a hardcoded LLMConfig for Baseten serverless GLM-5 (not discoverable via provider sync)."""
     from letta.schemas.enums import ProviderCategory
@@ -192,23 +209,13 @@ class LLMRoutingClient(LLMRoutingClientBase):
                 config = await provider_manager.get_llm_config_from_handle(primary_handle, actor)
             else:
                 config = _build_baseten_config()
-            config = config.model_copy(
-                update={
-                    "context_window": min(stored_llm_config.context_window, config.context_window),
-                    "max_tokens": min(stored_llm_config.max_tokens, config.max_tokens),
-                }
-            )
+            config = _apply_stored_limits(config, stored_llm_config)
             return config, True, primary_handle
         else:
             logger.warning(f"[LLM ROUTER]: primary {primary_handle} unhealthy, using {fallback_handle}")
 
         config = await provider_manager.get_llm_config_from_handle(fallback_handle, actor)
-        config = config.model_copy(
-            update={
-                "context_window": min(stored_llm_config.context_window, config.context_window),
-                "max_tokens": min(stored_llm_config.max_tokens, config.max_tokens),
-            }
-        )
+        config = _apply_stored_limits(config, stored_llm_config)
         return config, False, primary_handle
 
     async def record_failure(self, handle: str) -> None:
