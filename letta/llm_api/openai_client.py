@@ -332,8 +332,6 @@ class OpenAIClient(LLMClientBase):
         if messages[0].role != "system":
             raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
 
-        from letta.schemas.letta_message_content import TextContent
-
         system_message = messages[0].model_copy(deep=True)
         system_message.content = [TextContent(text=system)]
         return [system_message, *messages[1:]]
@@ -1291,7 +1289,7 @@ class OpenAIClient(LLMClientBase):
                 return LLMBadRequestError(
                     message="Upstream endpoint returned HTML error (400 Bad Request). This usually indicates the configured API endpoint is not an OpenAI-compatible API or the request was rejected by a load balancer.",
                     code=ErrorCode.INVALID_ARGUMENT,
-                    details={"raw_body_preview": error_str[:500]},
+                    details={"raw_body_preview": error_str[:500], "is_byok": is_byok},
                 )
 
             error_code = None

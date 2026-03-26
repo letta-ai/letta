@@ -1099,12 +1099,14 @@ class AnthropicClient(LLMClientBase):
                     details={
                         "status_code": e.status_code if hasattr(e, "status_code") else None,
                         "transient": True,
+                        "is_byok": is_byok,
                     },
                 )
             if "overloaded" in error_str:
                 return LLMProviderOverloaded(
                     message=f"Anthropic API is overloaded: {str(e)}",
                     code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"is_byok": is_byok},
                 )
             logger.warning(f"[Anthropic] Internal server error: {str(e)}")
             return LLMServerError(
@@ -1113,6 +1115,7 @@ class AnthropicClient(LLMClientBase):
                 details={
                     "status_code": e.status_code if hasattr(e, "status_code") else None,
                     "response": str(e.response) if hasattr(e, "response") else None,
+                    "is_byok": is_byok,
                 },
             )
 
