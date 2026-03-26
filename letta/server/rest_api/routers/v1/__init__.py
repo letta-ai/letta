@@ -13,6 +13,7 @@ from letta.server.rest_api.routers.v1.identities import router as identities_rou
 from letta.server.rest_api.routers.v1.internal_agents import router as internal_agents_router
 from letta.server.rest_api.routers.v1.internal_blocks import router as internal_blocks_router
 from letta.server.rest_api.routers.v1.internal_runs import router as internal_runs_router
+from letta.server.rest_api.routers.v1.internal_search import router as internal_search_router
 from letta.server.rest_api.routers.v1.internal_templates import router as internal_templates_router
 from letta.server.rest_api.routers.v1.jobs import router as jobs_router
 from letta.server.rest_api.routers.v1.llms import router as llm_router
@@ -45,6 +46,7 @@ ROUTERS = [
     identities_router,
     internal_agents_router,
     internal_blocks_router,
+    internal_search_router,
     internal_runs_router,
     internal_templates_router,
     llm_router,

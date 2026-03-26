@@ -42,7 +42,9 @@ async def list_all_messages(
         "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     conversation_id: Optional[str] = Query(None, description="Conversation ID to filter messages by"),
-    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
+    include_return_message_types: Optional[List[MessageType]] = Query(
+        None, description="Message types to include in response. When null, all message types are returned."
+    ),
 ):
     """
     List messages across all agents for the current user.
@@ -69,6 +71,7 @@ async def search_all_messages(
     """
     Search messages across the organization with optional agent filtering.
     Returns messages with FTS/vector ranks and total RRF score.
+
 
     This is a cloud-only feature.
     """
