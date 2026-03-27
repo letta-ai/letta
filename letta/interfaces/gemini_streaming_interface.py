@@ -46,6 +46,7 @@ class SimpleGeminiStreamingInterface:
 
     def __init__(
         self,
+        model: str | None = None,
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
@@ -77,7 +78,7 @@ class SimpleGeminiStreamingInterface:
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
-        # self.model = model
+        self.model = model
 
         # Sadly, Gemini's encrypted reasoning logic forces us to store stream parts in state
         self.content_parts: List[ReasoningContent | TextContent | ToolCallContent] = []
