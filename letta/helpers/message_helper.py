@@ -1,12 +1,12 @@
 import asyncio
 import base64
 import mimetypes
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
 
 import httpx
 
 from letta import __version__, system
-from letta.errors import LettaImageFetchError
+from letta.errors import LettaImageFetchError, LettaInvalidArgumentError
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import Base64Image, ImageContent, ImageSourceType, TextContent
 from letta.schemas.message import Message, MessageCreate
@@ -60,6 +60,35 @@ async def _fetch_image_from_url(url: str, max_retries: int = 1, timeout_seconds:
     raise LettaImageFetchError(url=url, reason=f"Failed after {max_retries + 1} attempts: {last_exception}")
 
 
+def _validate_image_source_url(url: str) -> str:
+    """Validate supported image URL schemes before any fetch/resolve happens."""
+    parsed_url = urlparse(url)
+    scheme = parsed_url.scheme.lower()
+
+    if scheme in ("http", "https", "data"):
+        return scheme
+
+    raise LettaInvalidArgumentError(
+        message=(
+            f"Unsupported image URL scheme '{parsed_url.scheme or '<missing>'}'. "
+            "Only 'http', 'https', and 'data' image URLs are supported. "
+            "Local file paths (file://) are not allowed."
+        ),
+        argument_name="url",
+    )
+
+
+def _parse_data_image_url(url: str) -> tuple[str, str]:
+    """Parse a data URL and return its base64 payload and media type."""
+    try:
+        header, image_data = url.split(",", 1)
+        header_parts = header.split(";")
+        image_media_type = header_parts[0].replace("data:", "") or "image/jpeg"
+        return image_data, image_media_type
+    except ValueError as exc:
+        raise LettaImageFetchError(url=url[:100] + "...", reason="Invalid data URL format") from exc
+
+
 async def convert_message_creates_to_messages(
     message_creates: list[MessageCreate],
     agent_id: str,
@@ -92,8 +121,8 @@ async def _convert_message_create_to_message(
     wrap_system_message: bool = True,
 ) -> Message:
     """Converts a MessageCreate object into a Message object, applying wrapping if needed."""
-    # TODO: This seems like extra boilerplate with little benefit
-    assert isinstance(message_create, MessageCreate)
+    if not isinstance(message_create, MessageCreate):
+        raise ValueError(f"Expected MessageCreate, got {type(message_create).__name__}")
 
     # Extract message content
     if isinstance(message_create.content, str) and message_create.content != "":
@@ -121,45 +150,17 @@ async def _convert_message_create_to_message(
             if content.source.type == ImageSourceType.url:
                 # Convert URL image to Base64Image if needed
                 url = content.source.url
+                url_scheme = _validate_image_source_url(url)
 
-                # Handle file:// URLs for local filesystem access
-                if url.startswith("file://"):
-                    # Parse file path from file:// URL
-                    parsed = urlparse(url)
-                    file_path = unquote(parsed.path)
+                if url_scheme == "data":
+                    image_data, image_media_type = _parse_data_image_url(url)
+                    content.source = Base64Image(media_type=image_media_type, data=image_data)
+                    continue
 
-                    # Read file directly from filesystem (wrapped to avoid blocking event loop)
-                    def _read_file():
-                        with open(file_path, "rb") as f:
-                            return f.read()
+                image_bytes, image_media_type = await _fetch_image_from_url(url)
+                if not image_media_type:
+                    image_media_type, _ = mimetypes.guess_type(url)
 
-                    image_bytes = await asyncio.to_thread(_read_file)
-
-                    # Guess media type from file extension
-                    image_media_type, _ = mimetypes.guess_type(file_path)
-                    if not image_media_type:
-                        image_media_type = "image/jpeg"  # default fallback
-                elif url.startswith("data:"):
-                    # Handle data: URLs (inline base64 encoded images)
-                    # Format: data:[<mediatype>][;base64],<data>
-                    try:
-                        # Split header from data
-                        header, image_data = url.split(",", 1)
-                        # Extract media type from header (e.g., "data:image/jpeg;base64")
-                        header_parts = header.split(";")
-                        image_media_type = header_parts[0].replace("data:", "") or "image/jpeg"
-                        # Data is already base64 encoded, set directly and continue
-                        content.source = Base64Image(media_type=image_media_type, data=image_data)
-                        continue  # Skip the common conversion path below
-                    except ValueError:
-                        raise LettaImageFetchError(url=url[:100] + "...", reason="Invalid data URL format")
-                else:
-                    # Handle http(s):// URLs using async httpx
-                    image_bytes, image_media_type = await _fetch_image_from_url(url)
-                    if not image_media_type:
-                        image_media_type, _ = mimetypes.guess_type(url)
-
-                # Convert to base64 (common path for both file:// and http(s)://)
                 image_data = base64.standard_b64encode(image_bytes).decode("utf-8")
                 content.source = Base64Image(media_type=image_media_type, data=image_data)
             if content.source.type == ImageSourceType.letta and not content.source.data:
@@ -184,15 +185,13 @@ async def _convert_message_create_to_message(
 
 async def _resolve_url_to_base64(url: str) -> tuple[str, str]:
     """Resolve URL to base64 data and media type."""
-    if url.startswith("file://"):
-        parsed = urlparse(url)
-        file_path = unquote(parsed.path)
-        image_bytes = await asyncio.to_thread(lambda: open(file_path, "rb").read())
-        media_type, _ = mimetypes.guess_type(file_path)
-        media_type = media_type or "image/jpeg"
-    else:
-        image_bytes, media_type = await _fetch_image_from_url(url)
-        media_type = media_type or mimetypes.guess_type(url)[0] or "image/png"
+    url_scheme = _validate_image_source_url(url)
+
+    if url_scheme == "data":
+        return _parse_data_image_url(url)
+
+    image_bytes, media_type = await _fetch_image_from_url(url)
+    media_type = media_type or mimetypes.guess_type(url)[0] or "image/png"
 
     image_data = base64.standard_b64encode(image_bytes).decode("utf-8")
     return image_data, media_type
