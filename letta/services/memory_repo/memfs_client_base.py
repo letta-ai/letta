@@ -51,7 +51,7 @@ class MemfsClient:
         """
         self.local_path = local_path or DEFAULT_LOCAL_PATH
         self.storage = LocalStorageBackend(base_path=self.local_path)
-        self.git = GitOperations(storage=self.storage, redis_client=None)
+        self.git = GitOperations(storage=self.storage)
 
         logger.info(f"MemfsClient initialized with local storage at {self.local_path}")
 
