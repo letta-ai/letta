@@ -79,7 +79,7 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
-            case ProviderType.zai:
+            case ProviderType.zai | ProviderType.zai_coding:
                 from letta.llm_api.zai_client import ZAIClient
 
                 return ZAIClient(
@@ -112,6 +112,20 @@ class LLMClient:
                 from letta.llm_api.deepseek_client import DeepseekClient
 
                 return DeepseekClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
+            case ProviderType.baseten:
+                from letta.llm_api.baseten_client import BasetenClient
+
+                return BasetenClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
+            case ProviderType.fireworks:
+                from letta.llm_api.fireworks_client import FireworksClient
+
+                return FireworksClient(
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )

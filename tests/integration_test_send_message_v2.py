@@ -6,6 +6,7 @@ import os
 import threading
 import time
 import uuid
+from datetime import datetime
 from typing import Any, List, Tuple
 
 import pytest
@@ -297,6 +298,9 @@ async def accumulate_chunks(chunks, verify_token_streaming: bool = False) -> Lis
                 try:
                     data = json.loads(line[6:])  # Remove 'data: ' prefix
                     if "message_type" in data:
+                        # Skip keepalive/initial pings — not content messages
+                        if data.get("message_type") == "ping":
+                            continue
                         # Create proper message type objects
                         message_type = data.get("message_type")
                         if message_type == "assistant_message":
@@ -351,6 +355,10 @@ async def accumulate_chunks(chunks, verify_token_streaming: bool = False) -> Lis
         # Handle async iterator from agents.messages.stream()
         async for chunk in chunks:
             current_message_type = chunk.message_type
+
+            # Skip keepalive/initial pings — not content messages
+            if current_message_type == "ping":
+                continue
 
             if prev_message_type != current_message_type:
                 if current_message is not None:
@@ -1004,6 +1012,13 @@ async def test_conversation_streaming_raw_http(
             },
         )
         assert stream_response.status_code == 200, f"Failed to send message: {stream_response.text}"
+
+        # Verify last_message_at is populated and parseable
+        retrieve_after_send_response = await http_client.get(f"/v1/conversations/{conversation['id']}")
+        assert retrieve_after_send_response.status_code == 200
+        retrieved_after_send = retrieve_after_send_response.json()
+        assert retrieved_after_send["last_message_at"] is not None
+        datetime.fromisoformat(retrieved_after_send["last_message_at"].replace("Z", "+00:00"))
 
         # Parse SSE response and accumulate messages
         messages = await accumulate_chunks(stream_response.text)

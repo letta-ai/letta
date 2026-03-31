@@ -19,6 +19,7 @@ def is_context_window_overflow_message(msg: str) -> bool:
         or "maximum context length" in msg
         or "context_length_exceeded" in msg
         or "Input tokens exceed the configured limit" in msg
+        or "exceeds the maximum allowed input length" in msg
     )
 
 

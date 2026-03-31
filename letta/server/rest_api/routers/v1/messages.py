@@ -8,7 +8,7 @@ from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
-from letta.schemas.letta_message import LettaMessageSearchResult, LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageSearchResult, LettaMessageUnion, MessageType
 from letta.schemas.letta_request import CreateBatch
 from letta.schemas.letta_response import LettaBatchMessages
 from letta.schemas.message import Message, SearchAllMessagesRequest
@@ -42,6 +42,9 @@ async def list_all_messages(
         "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     conversation_id: Optional[str] = Query(None, description="Conversation ID to filter messages by"),
+    include_return_message_types: Optional[List[MessageType]] = Query(
+        None, description="Message types to include in response. When null, all message types are returned."
+    ),
 ):
     """
     List messages across all agents for the current user.
@@ -54,6 +57,7 @@ async def list_all_messages(
         reverse=(order == "desc"),
         return_message_object=False,
         conversation_id=conversation_id,
+        include_return_message_types=include_return_message_types,
         actor=actor,
     )
 
@@ -67,6 +71,7 @@ async def search_all_messages(
     """
     Search messages across the organization with optional agent filtering.
     Returns messages with FTS/vector ranks and total RRF score.
+
 
     This is a cloud-only feature.
     """

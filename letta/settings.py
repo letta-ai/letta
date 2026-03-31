@@ -116,6 +116,11 @@ class ModelSettings(BaseSettings):
 
     global_max_context_window_limit: int = 128000
 
+    auto_mode_enabled: bool = Field(
+        default=False,
+        description="Enable auto mode model handles (i.e. letta/auto, letta/auto-fast) in model listing",
+    )
+
     inner_thoughts_kwarg: str | None = Field(default=INNER_THOUGHTS_KWARG, description="Key used for passing in inner thoughts.")
 
     # env_prefix='my_prefix_'
@@ -144,6 +149,13 @@ class ModelSettings(BaseSettings):
 
     # deepseek
     deepseek_api_key: Optional[str] = None
+
+    # baseten
+    baseten_api_key: Optional[str] = None
+
+    # fireworks
+    fireworks_api_key: Optional[str] = None
+    fireworks_api_base: str = "https://api.fireworks.ai/inference/v1"
 
     # xAI / Grok
     xai_api_key: Optional[str] = None
@@ -585,6 +597,46 @@ class TelemetrySettings(BaseSettings):
         return "socket" in self.provider_trace_backends
 
 
+class ReadinessSettings(BaseSettings):
+    """Readiness enforcement configuration. All gates default to OFF (non-breaking)."""
+
+    model_config = SettingsConfigDict(env_prefix="letta_readiness_", extra="ignore")
+
+    # Master kill switch — enables health probe integration with readiness_state module.
+    # When False (default), /v1/health/ always returns 200 regardless of internal state.
+    enforcement_enabled: bool = Field(default=False, description="Gate /v1/health/ on internal readiness state.")
+
+    # When True, /v1/health/ returns 503 during draining state (graceful shutdown signal to k8s).
+    drain_returns_503: bool = Field(default=True, description="Return HTTP 503 when readiness state is 'draining'.")
+
+    # When True, event loop lag above threshold triggers degraded state.
+    event_loop_lag_gating_enabled: bool = Field(default=False, description="Gate readiness on event loop lag threshold.")
+    event_loop_lag_threshold_ms: float = Field(
+        default=5000.0, ge=100.0, description="Event loop lag threshold (ms) for degraded transition."
+    )
+
+    # When True, fg in-flight count above threshold triggers degraded state.
+    fg_in_flight_gating_enabled: bool = Field(default=False, description="Gate readiness on foreground in-flight count.")
+    fg_in_flight_threshold: int = Field(default=10, ge=1, description="Foreground in-flight count threshold per pod.")
+
+    # When True, bg in-flight count above threshold triggers degraded state.
+    bg_in_flight_gating_enabled: bool = Field(default=False, description="Gate readiness on background in-flight count.")
+    bg_in_flight_threshold: int = Field(default=15, ge=1, description="Background in-flight count threshold per pod.")
+
+    # When True, request admission wait above threshold triggers degraded state.
+    admission_wait_gating_enabled: bool = Field(default=False, description="Gate readiness on request admission wait.")
+    admission_wait_threshold_ms: float = Field(default=300.0, ge=10.0, description="Admission wait threshold (ms) for degraded transition.")
+
+    # Stabilization window prevents flapping: state must be consistently bad for this many seconds before degrading.
+    degraded_stabilization_seconds: float = Field(
+        default=30.0, ge=0.0, description="Seconds of sustained overload before transitioning to degraded."
+    )
+    # Recovery: state must be healthy for this long before returning to ready.
+    recovery_stabilization_seconds: float = Field(
+        default=15.0, ge=0.0, description="Seconds of sustained health before recovering from degraded."
+    )
+
+
 # singleton
 settings = Settings(_env_parse_none_str="None")
 test_settings = TestSettings()
@@ -593,3 +645,4 @@ tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
 log_settings = LogSettings()
 telemetry_settings = TelemetrySettings()
+readiness_settings = ReadinessSettings()

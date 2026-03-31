@@ -87,4 +87,4 @@ service:
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse]
+      exporters: [clickhouse, datadog]

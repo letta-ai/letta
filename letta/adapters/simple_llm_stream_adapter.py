@@ -1,4 +1,5 @@
-from typing import AsyncGenerator, List
+import asyncio
+from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
 from letta.errors import LLMError
@@ -9,10 +10,10 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_parallel_tool_call_streaming_interface import SimpleAnthropicStreamingInterface
 from letta.interfaces.gemini_streaming_interface import SimpleGeminiStreamingInterface
 from letta.interfaces.openai_streaming_interface import SimpleOpenAIResponsesStreamingInterface, SimpleOpenAIStreamingInterface
+from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
-from letta.schemas.letta_message_content import LettaMessageContentUnion
 from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.user import User
 from letta.server.rest_api.streaming_response import get_cancellation_event_for_run
@@ -83,12 +84,16 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
                 step_id=step_id,
+                llm_config=self.llm_config,
             )
         elif self.llm_config.model_endpoint_type in [
             ProviderType.openai,
             ProviderType.deepseek,
             ProviderType.openrouter,
             ProviderType.zai,
+            ProviderType.zai_coding,
+            ProviderType.baseten,
+            ProviderType.fireworks,
             ProviderType.chatgpt_oauth,
         ]:
             # Decide interface based on payload shape
@@ -124,6 +129,7 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 )
         elif self.llm_config.model_endpoint_type in [ProviderType.google_ai, ProviderType.google_vertex]:
             self.interface = SimpleGeminiStreamingInterface(
+                model=self.llm_config.model,
                 requires_approval_tools=requires_approval_tools,
                 run_id=self.run_id,
                 step_id=step_id,
@@ -138,6 +144,14 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
             # Other providers return awaitables that resolve to iterators
             if self.llm_config.model_endpoint_type in [ProviderType.google_ai, ProviderType.google_vertex]:
                 stream = self.llm_client.stream_async(request_data, self.llm_config)
+            elif self.use_openai_responses_websocket and isinstance(self.llm_client, OpenAIClient):
+                ws_session = await self._get_or_create_ws_session()
+                stream = await self.llm_client.stream_async(
+                    request_data,
+                    self.llm_config,
+                    use_websocket=True,
+                    ws_session=ws_session,
+                )
             else:
                 stream = await self.llm_client.stream_async(request_data, self.llm_config)
         except Exception as e:
@@ -155,67 +169,89 @@ class SimpleLLMStreamAdapter(LettaLLMStreamAdapter):
                 raise
             raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
 
-        # Process the stream and yield chunks immediately for TTFT
+        stream_started = True
+
         try:
-            async for chunk in self.interface.process(stream):  # TODO: add ttft span
-                # Yield each chunk immediately as it arrives
-                yield chunk
-        except Exception as e:
-            self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
-            latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
-            await self.llm_client.log_provider_trace_async(
-                request_data=request_data,
-                response_json=None,
-                llm_config=self.llm_config,
-                latency_ms=latency_ms,
-                error_msg=str(e),
-                error_type=type(e).__name__,
-            )
-            if isinstance(e, LLMError):
-                raise
-            raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
+            # Process the stream and yield chunks immediately for TTFT
+            try:
+                async for chunk in self.interface.process(stream):  # TODO: add ttft span
+                    # Yield each chunk immediately as it arrives
+                    yield chunk
+            except BaseException as e:
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+                latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
+                await self.llm_client.log_provider_trace_async(
+                    request_data=request_data,
+                    response_json=None,
+                    llm_config=self.llm_config,
+                    latency_ms=latency_ms,
+                    error_msg=str(e),
+                    error_type=type(e).__name__,
+                )
+                if isinstance(e, asyncio.CancelledError):
+                    raise
+                if isinstance(e, LLMError):
+                    raise
+                raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
+            else:
+                # After streaming completes, extract the accumulated data
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+        finally:
+            if not stream_started:
+                return
 
-        # After streaming completes, extract the accumulated data
-        self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+            if self.llm_request_finish_timestamp_ns is None:
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
-        # extract tool calls from interface (supports both single and parallel calls)
-        self.tool_calls = self._extract_tool_calls()
-        # preserve legacy single-call field for existing consumers
-        self.tool_call = self.tool_calls[-1] if self.tool_calls else None
+            # extract tool calls from interface (supports both single and parallel calls)
+            try:
+                self.tool_calls = self._extract_tool_calls()
+            except Exception:
+                self.tool_calls = []
+            self.tool_call = self.tool_calls[-1] if self.tool_calls else None
 
-        # Extract reasoning content from the interface
-        # TODO this should probably just be called "content"?
-        # self.reasoning_content = self.interface.get_reasoning_content()
+            # Extract reasoning content from the interface
+            # TODO this should probably just be called "content"?
+            # self.reasoning_content = self.interface.get_reasoning_content()
 
-        # Extract all content parts
-        self.content: List[LettaMessageContentUnion] = self.interface.get_content()
+            # Extract all content parts
+            try:
+                self.content = self.interface.get_content()
+            except Exception:
+                self.content = []
 
-        # Extract usage statistics from the interface
-        # Each interface implements get_usage_statistics() with provider-specific logic
-        self.usage = self.interface.get_usage_statistics()
-        self.usage.step_count = 1
+            # Extract usage statistics from the interface
+            # Each interface implements get_usage_statistics() with provider-specific logic
+            try:
+                self.usage = self.interface.get_usage_statistics()
+            except Exception:
+                pass
+            self.usage.step_count = 1
 
-        # Store any additional data from the interface
-        self.message_id = self.interface.letta_message_id
+            # Store any additional data from the interface
+            try:
+                self.message_id = self.interface.letta_message_id
+            except Exception:
+                self.message_id = None
 
-        # Populate finish_reason for downstream continuation logic.
-        # In Responses streaming, max_output_tokens is expressed via incomplete_details.reason.
-        if hasattr(self.interface, "final_response") and self.interface.final_response is not None:
-            resp = self.interface.final_response
-            incomplete_details = getattr(resp, "incomplete_details", None)
-            incomplete_reason = getattr(incomplete_details, "reason", None) if incomplete_details else None
-            if incomplete_reason == "max_output_tokens":
-                self._finish_reason = "length"
-            elif incomplete_reason == "content_filter":
-                self._finish_reason = "content_filter"
-            elif incomplete_reason is not None:
-                # Unknown incomplete reason — preserve it as-is for diagnostics
-                self._finish_reason = incomplete_reason
-            elif getattr(resp, "status", None) == "completed":
-                self._finish_reason = "stop"
+            # Populate finish_reason for downstream continuation logic.
+            # In Responses streaming, max_output_tokens is expressed via incomplete_details.reason.
+            if hasattr(self.interface, "final_response") and self.interface.final_response is not None:
+                resp = self.interface.final_response
+                incomplete_details = getattr(resp, "incomplete_details", None)
+                incomplete_reason = getattr(incomplete_details, "reason", None) if incomplete_details else None
+                if incomplete_reason == "max_output_tokens":
+                    self._finish_reason = "length"
+                elif incomplete_reason == "content_filter":
+                    self._finish_reason = "content_filter"
+                elif incomplete_reason is not None:
+                    # Unknown incomplete reason — preserve it as-is for diagnostics
+                    self._finish_reason = incomplete_reason
+                elif getattr(resp, "status", None) == "completed":
+                    self._finish_reason = "stop"
 
-        # Log request and response data
-        self.log_provider_trace(step_id=step_id, actor=actor)
+            # Log request and response data
+            self.log_provider_trace(step_id=step_id, actor=actor)
 
     @trace_method
     def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:

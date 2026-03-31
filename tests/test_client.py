@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import httpx
 import pytest
 from dotenv import load_dotenv
-from letta_client import APIError, Letta
+from letta_client import Letta
 from letta_client.types import MessageCreateParam
 from letta_client.types.agent_state import AgentState
 from sqlalchemy import delete
@@ -422,53 +422,6 @@ def test_attach_detach_agent_memory_block(client: Letta, agent: AgentState):
     assert example_new_label not in [block.label for block in client.agents.blocks.list(agent_id=updated_agent.id).items]
 
 
-def test_update_agent_memory_limit(client: Letta):
-    """Test that we can update the limit of a block in an agent's memory"""
-
-    agent = client.agents.create(
-        model="anthropic/claude-haiku-4-5",
-        embedding="openai/text-embedding-3-small",
-        memory_blocks=[
-            {"label": "human", "value": "username: sarah", "limit": 1000},
-            {"label": "persona", "value": "you are sarah", "limit": 1000},
-        ],
-    )
-
-    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id).items]
-    example_label = current_labels[0]
-    example_new_limit = 1
-
-    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id).items]
-    example_label = current_labels[0]
-    example_new_limit = 1
-    current_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label)
-    current_block_length = len(current_block.value)
-
-    assert example_new_limit != current_block.limit
-    assert example_new_limit < current_block_length
-
-    # We expect this to throw a value error
-    with pytest.raises(APIError):
-        client.agents.blocks.update(
-            agent_id=agent.id,
-            block_label=example_label,
-            limit=example_new_limit,
-        )
-
-    # Now try the same thing with a higher limit
-    example_new_limit = current_block_length + 10000
-    assert example_new_limit > current_block_length
-    client.agents.blocks.update(
-        agent_id=agent.id,
-        block_label=example_label,
-        limit=example_new_limit,
-    )
-
-    assert example_new_limit == client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label).limit
-
-    client.agents.delete(agent.id)
-
-
 # --------------------------------------------------------------------------------------------------------------------
 # Agent Tools
 # --------------------------------------------------------------------------------------------------------------------
@@ -798,11 +751,8 @@ def test_attach_sleeptime_block(client: Letta):
         enable_sleeptime=True,
     )
 
-    # get the sleeptime agent
-    # get the multi-agent group
-    group_id = agent.multi_agent_group.id
-    group = client.groups.retrieve(group_id=group_id)
-    agent_ids = group.agent_ids
+    # get the sleeptime agent from the multi-agent group
+    agent_ids = agent.multi_agent_group.agent_ids
     sleeptime_id = next(id for id in agent_ids if id != agent.id)
 
     # attach a new block

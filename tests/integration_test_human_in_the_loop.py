@@ -81,6 +81,10 @@ def accumulate_chunks(stream):
 
         current_message_type = getattr(chunk, "message_type", None)
 
+        # Skip keepalive/initial pings — not content messages
+        if current_message_type == "ping":
+            continue
+
         if prev_message_type != current_message_type:
             # Save the previous message if it exists
             if current_message is not None:
@@ -276,11 +280,10 @@ def test_invoke_approval_request(
     # Test pending_approval relationship field
     agent_with_pending = client.agents.retrieve(agent_id=agent.id, include=["agent.pending_approval"])
     assert agent_with_pending.pending_approval is not None
-    # Client SDK returns it as a dict, so use dict access
-    assert agent_with_pending.pending_approval["tool_call"]["name"] == "get_secret_code_tool"
-    assert len(agent_with_pending.pending_approval["tool_calls"]) > 0
-    assert agent_with_pending.pending_approval["tool_calls"][0]["name"] == "get_secret_code_tool"
-    assert agent_with_pending.pending_approval["tool_calls"][0]["tool_call_id"] == response.messages[-1].tool_call.tool_call_id
+    assert agent_with_pending.pending_approval.tool_call.name == "get_secret_code_tool"
+    assert len(agent_with_pending.pending_approval.tool_calls) > 0
+    assert agent_with_pending.pending_approval.tool_calls[0].name == "get_secret_code_tool"
+    assert agent_with_pending.pending_approval.tool_calls[0].tool_call_id == response.messages[-1].tool_call.tool_call_id
 
     approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
 
@@ -1342,8 +1345,6 @@ def test_approve_with_cancellation(
     Test that when approval and cancellation happen simultaneously,
     the stream returns stop_reason: cancelled and stream_was_cancelled is set.
     """
-    import threading
-    import time
 
     last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
 
@@ -1354,15 +1355,8 @@ def test_approve_with_cancellation(
     )
     tool_call_id = response.messages[-1].tool_call.tool_call_id
 
-    # Step 2: Start cancellation in background thread
-    def cancel_after_delay():
-        time.sleep(0.3)  # Wait for stream to start
-        client.agents.messages.cancel(agent_id=agent.id)
-
-    cancel_thread = threading.Thread(target=cancel_after_delay, daemon=True)
-    cancel_thread.start()
-
-    # Step 3: Start approval stream (will be cancelled during processing)
+    # Step 2: Start approval stream and wait for first chunk (sentinel approach)
+    # This avoids race conditions with fixed delays in CI environments
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
@@ -1382,8 +1376,23 @@ def test_approve_with_cancellation(
         stream_tokens=True,
     )
 
-    # Step 4: Accumulate chunks
-    messages = accumulate_chunks(response)
+    # Step 3: Wait for first chunk before triggering cancellation
+    messages = []
+    cancel_triggered = False
+
+    for chunk in response:
+        # Handle chunks that might not have message_type (like pings)
+        if not hasattr(chunk, "message_type") or chunk.message_type == "ping":
+            continue
+
+        # Trigger cancellation after receiving first meaningful chunk
+        if not cancel_triggered:
+            cancel_triggered = True
+            client.agents.messages.cancel(agent_id=agent.id)
+
+        messages.append(chunk)
+
+    # Step 4: Accumulate remaining chunks (already collected above)
 
     # Step 5: Verify we got chunks AND a cancelled stop reason
     assert len(messages) > 1, "Should receive at least some chunks before cancellation"
@@ -1397,9 +1406,6 @@ def test_approve_with_cancellation(
     runs = client.runs.list(agent_ids=[agent.id])
     latest_run = runs.items[0]
     assert latest_run.status == "cancelled", f"Expected run status 'cancelled', got '{latest_run.status}'"
-
-    # Wait for cancel thread to finish
-    cancel_thread.join(timeout=1.0)
 
     logger.info(f"✅ Test passed: approval with cancellation handled correctly, received {len(messages)} chunks")
 
@@ -1461,8 +1467,6 @@ def test_retry_with_summarization(
     4. Verify only system and summary messages remain in context
     5. Retry the original approval response - should succeed via idempotency check
     """
-    import threading
-    import time
 
     # Step 1: Send message that triggers approval request
     response = client.agents.messages.create(
@@ -1471,15 +1475,8 @@ def test_retry_with_summarization(
     )
     tool_call_id = response.messages[-1].tool_call.tool_call_id
 
-    # Step 2: Start cancellation in background thread
-    def cancel_after_delay():
-        time.sleep(0.3)  # Wait for stream to start
-        client.agents.messages.cancel(agent_id=agent.id)
-
-    cancel_thread = threading.Thread(target=cancel_after_delay, daemon=True)
-    cancel_thread.start()
-
-    # Step 3: Start approval stream (will be cancelled during processing)
+    # Step 2: Start approval stream and wait for first chunk (sentinel approach)
+    # This avoids race conditions with fixed delays in CI environments
     response = client.agents.messages.stream(
         agent_id=agent.id,
         messages=[
@@ -1499,15 +1496,26 @@ def test_retry_with_summarization(
         stream_tokens=True,
     )
 
-    # Step 4: Accumulate chunks (stream will be cancelled)
-    messages = accumulate_chunks(response)
+    # Step 3: Wait for first chunk before triggering cancellation
+    messages = []
+    cancel_triggered = False
 
-    # Step 5: Verify we got cancelled
+    for chunk in response:
+        # Handle chunks that might not have message_type (like pings)
+        if not hasattr(chunk, "message_type") or chunk.message_type == "ping":
+            continue
+
+        # Trigger cancellation after receiving first meaningful chunk
+        if not cancel_triggered:
+            cancel_triggered = True
+            client.agents.messages.cancel(agent_id=agent.id)
+
+        messages.append(chunk)
+
+    # Step 4: Verify we got cancelled
     stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
     assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
     assert stop_reasons[0].stop_reason == "cancelled", f"Expected stop_reason 'cancelled', got '{stop_reasons[0].stop_reason}'"
-
-    cancel_thread.join(timeout=1.0)
 
     # Step 6: Verify tool return message is persisted
     all_messages = client.agents.messages.list(agent_id=agent.id, limit=100).items

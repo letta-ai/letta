@@ -10,7 +10,9 @@ from letta.schemas.enums import MessageRole, ProviderType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
+from letta.services.summarizer.constants import SUMMARY_TRUNCATION_SUFFIX
 from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_prompt_for_mode
 from letta.services.summarizer.summarizer_sliding_window import count_tokens
 from letta.services.telemetry_manager import TelemetryManager
@@ -34,6 +36,7 @@ async def self_summarize_all(
     agent_tags: Optional[List[str]] = None,
     # For cache compatibility with regular agent requests
     tools: Optional[List[dict]] = None,
+    billing_context: Optional[BillingContext] = None,
 ) -> Tuple[str, List[Message], str]:
     """Summary request is added as a user message, then the agent's LLM is called with the messages + request.
     The agent's summary response is parsed and returned.
@@ -90,6 +93,7 @@ async def self_summarize_all(
         user_id=actor.id if actor.id else None,
         compaction_settings=compaction_settings.model_dump() if compaction_settings else None,
         actor=actor,
+        billing_context=billing_context,
     )
 
     # Build request data using agent's llm_client
@@ -131,7 +135,7 @@ async def self_summarize_all(
     # Clip if needed
     if compaction_settings.clip_chars is not None and len(summary_text) > compaction_settings.clip_chars:
         logger.warning(f"CC summary length {len(summary_text)} exceeds clip length {compaction_settings.clip_chars}. Truncating.")
-        summary_text = summary_text[: compaction_settings.clip_chars] + "... [summary truncated to fit]"
+        summary_text = summary_text[: compaction_settings.clip_chars] + SUMMARY_TRUNCATION_SUFFIX
 
     # Build final messages: [system] + protected messages
     # Summary message handling is done in compact parent function
@@ -162,6 +166,7 @@ async def self_summarize_sliding_window(
     agent_tags: Optional[List[str]] = None,
     # For cache compatibility with regular agent requests
     tools: Optional[List[dict]] = None,
+    billing_context: Optional[BillingContext] = None,
 ) -> Tuple[Message, List[Message], str]:
     """Summary request is added as a user message, then the agent's LLM is called with the messages + request.
     The agent's summary response is parsed and returned.
@@ -250,6 +255,7 @@ async def self_summarize_sliding_window(
         step_id=step_id,
         agent_tags=agent_tags,
         tools=tools,
+        billing_context=billing_context,
     )
 
     # final_messages should just be the system prompt

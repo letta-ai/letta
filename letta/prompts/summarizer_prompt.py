@@ -8,7 +8,10 @@ This summary should be thorough in capturing technical details, code patterns, a
 
 2. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress? If there is a previous summary being evicted, please extract a concise version of the critical info from it.
 
-3. **Important details**: Enumerate specific files and code sections examined, modified, or created with a summary of why this file read or edit is important. Include specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.
+3. **Important details**: Enumerate specific files and code sections examined, modified, or created, as well as important plan files, GitHub issues/PR links, and Linear ticket IDs. For each item, include why it matters and any relevant names, data, configs, or facts discussed.
+   - **Preserve identifiers verbatim** (plan filename/path, exact URL, issue/PR number, ticket ID); do not paraphrase or truncate.
+   - **Preserve referenced identifiers unless explicitly resolved**: Keep exact URLs/IDs from the conversation unless there is clear evidence they are no longer relevant.
+   - Do not omit details likely to be referenced later.
 
 4. **Errors and fixes**: List all errors that you ran into, and how you fixed them. Pay special attention to specific user feedback that you received and record verbatim if useful.
 
@@ -28,7 +31,10 @@ SLIDING_PROMPT = f"""The following messages are being evicted from the BEGINNING
 
 2. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress? If there is a previous summary being evicted, please extract a concise version of the critical info from it.
 
-3. **Important details**: Enumerate specific files and code sections examined, modified, or created with a summary of why this file read or edit is important. Include specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.
+3. **Important details**: Enumerate specific files and code sections examined, modified, or created, as well as important plan files, GitHub issues/PR links, and Linear ticket IDs. For each item, include why it matters and any relevant names, data, configs, or facts discussed.
+   - **Preserve identifiers verbatim** (plan filename/path, exact URL, issue/PR number, ticket ID); do not paraphrase or truncate.
+   - **Preserve referenced identifiers unless explicitly resolved**: Keep exact URLs/IDs from the conversation unless there is clear evidence they are no longer relevant.
+   - Do not omit details likely to be referenced later.
 
 4. **Errors and fixes**: List all errors that you ran into, and how you fixed them. Pay special attention to specific user feedback that you received and record verbatim if useful.
 
@@ -47,7 +53,10 @@ You MUST include the following sections:
 
 2. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress? If there is a previous summary being evicted, please extract a concise version of the critical info from it.
 
-3. **Important details**: Enumerate specific files and code sections examined, modified, or created with a summary of why this file read or edit is important. Include specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.
+3. **Important details**: Enumerate specific files and code sections examined, modified, or created, as well as important plan files, GitHub issues/PR links, and Linear ticket IDs. For each item, include why it matters and any relevant names, data, configs, or facts discussed.
+   - **Preserve identifiers verbatim** (plan filename/path, exact URL, issue/PR number, ticket ID); do not paraphrase or truncate.
+   - **Preserve referenced identifiers unless explicitly resolved**: Keep exact URLs/IDs from the conversation unless there is clear evidence they are no longer relevant.
+   - Do not omit details likely to be referenced later.
 
 4. **Errors and fixes**: List all errors that you ran into, and how you fixed them. Pay special attention to specific user feedback that you received and record verbatim if useful.
 
@@ -67,7 +76,10 @@ You MUST include the following sections:
 
 2. **What happened**: The conversations, tasks, and exchanges that took place. What did the user ask for? What did you do? How did things progress? If there is a previous summary being evicted, please extract a concise version of the critical info from it.
 
-3. **Important details**: Enumerate specific files and code sections examined, modified, or created with a summary of why this file read or edit is important. Include specific names, data, configurations, or facts that were discussed. Don't omit details that might be referenced later.
+3. **Important details**: Enumerate specific files and code sections examined, modified, or created, as well as important plan files, GitHub issues/PR links, and Linear ticket IDs. For each item, include why it matters and any relevant names, data, configs, or facts discussed.
+   - **Preserve identifiers verbatim** (plan filename/path, exact URL, issue/PR number, ticket ID); do not paraphrase or truncate.
+   - **Preserve referenced identifiers unless explicitly resolved**: Keep exact URLs/IDs from the conversation unless there is clear evidence they are no longer relevant.
+   - Do not omit details likely to be referenced later.
 
 4. **Errors and fixes**: List all errors that you ran into, and how you fixed them. Pay special attention to specific user feedback that you received and record verbatim if useful.
 
@@ -84,6 +96,7 @@ Keep your summary under {ALL_WORD_LIMIT} words.
 IMPORTANT: Do NOT use any tools. Do NOT continue the conversation. You MUST respond with ONLY the summary as text output. Generate the summary with each section as mentioned:
 """
 
+# NOTE: Prompts below are legacy and not currently used / only references
 
 ANTHROPIC_SUMMARY_PROMPT = """You have been working on the task described above but have not yet completed it. Write a continuation summary that will allow you (or another instance of yourself) to resume work efficiently in a future context window where the conversation history will be replaced with this summary. Your summary should be structured, concise, and actionable. Include:
 

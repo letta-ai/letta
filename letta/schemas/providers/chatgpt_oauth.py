@@ -36,8 +36,14 @@ TOKEN_REFRESH_BUFFER_SECONDS = 300
 # Model list based on opencode-openai-codex-auth plugin presets
 # Reasoning effort levels are configured via llm_config.reasoning_effort
 CHATGPT_MODELS = [
+    # GPT-5.4 (supports none/low/medium/high/xhigh reasoning)
+    {"name": "gpt-5.4", "context_window": 272000},
+    {"name": "gpt-5.4-pro", "context_window": 272000},
+    {"name": "gpt-5.4-fast", "context_window": 272000},
+    {"name": "gpt-5.4-mini", "context_window": 400000},
     # GPT-5.3 codex
     {"name": "gpt-5.3-codex", "context_window": 272000},
+    {"name": "gpt-5.3-codex-spark", "context_window": 128000},
     # GPT-5.2 models (supports none/low/medium/high/xhigh reasoning)
     {"name": "gpt-5.2", "context_window": 272000},
     {"name": "gpt-5.2-codex", "context_window": 272000},

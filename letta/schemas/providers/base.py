@@ -181,6 +181,7 @@ class Provider(ProviderBase):
         from letta.schemas.providers import (
             AnthropicProvider,
             AzureProvider,
+            BasetenProvider,
             BedrockProvider,
             CerebrasProvider,
             ChatGPTOAuthProvider,
@@ -199,6 +200,7 @@ class Provider(ProviderBase):
             TogetherProvider,
             VLLMProvider,
             XAIProvider,
+            ZAICodingProvider,
             ZAIProvider,
         )
 
@@ -240,8 +242,12 @@ class Provider(ProviderBase):
                 return XAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.zai:
                 return ZAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.zai_coding:
+                return ZAICodingProvider(**self.model_dump(exclude_none=True))
             case ProviderType.lmstudio_openai:
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.baseten:
+                return BasetenProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:
                 return BedrockProvider(**self.model_dump(exclude_none=True))
             case ProviderType.minimax:

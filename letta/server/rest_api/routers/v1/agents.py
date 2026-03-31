@@ -174,6 +174,7 @@ async def list_agents(
         description="If set to True, include agents marked as hidden in the results.",
     ),
     last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
+    created_by_id: str | None = Query(None, description="Filter agents by the user who created them."),
 ):
     """
     Get a list of all agents.
@@ -209,6 +210,7 @@ async def list_agents(
         sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
         last_stop_reason=last_stop_reason,
+        created_by_id=created_by_id,
     )
 
 
@@ -232,6 +234,7 @@ async def count_agents(
         description="If set to True, include agents marked as hidden in the results.",
     ),
     last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
+    created_by_id: str | None = Query(None, description="Filter agents by the user who created them."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -241,13 +244,27 @@ async def count_agents(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    # If no filters are provided, use the simpler size_async method
+    # If no filters are provided AND we want all agents (including hidden),
+    # use the simpler size_async method which counts everything.
+    # When show_hidden_agents is False (the default), we must use
+    # count_agents_async which applies the hidden filter.
     if (
         all(
             param is None or param is False
-            for param in [name, tags, query_text, project_id, template_id, base_template_id, identity_id, identifier_keys, last_stop_reason]
+            for param in [
+                name,
+                tags,
+                query_text,
+                project_id,
+                template_id,
+                base_template_id,
+                identity_id,
+                identifier_keys,
+                last_stop_reason,
+                created_by_id,
+            ]
         )
-        and not show_hidden_agents
+        and show_hidden_agents
     ):
         return await server.agent_manager.size_async(actor=actor)
 
@@ -264,6 +281,7 @@ async def count_agents(
         identifier_keys=identifier_keys,
         show_hidden_agents=show_hidden_agents,
         last_stop_reason=last_stop_reason,
+        created_by_id=created_by_id,
     )
 
 
@@ -1580,6 +1598,7 @@ async def list_messages(
     include_err: bool | None = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -1600,11 +1619,12 @@ async def list_messages(
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
         include_err=include_err,
+        include_return_message_types=include_return_message_types,
         actor=actor,
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message", deprecated=True)
 async def modify_message(
     agent_id: AgentId,  # backwards compatible. Consider removing for v1
     message_id: MessageId,
@@ -1614,11 +1634,13 @@ async def modify_message(
 ):
     """
     Update the details of a message associated with an agent.
+
+    **Deprecated**: Messages are now considered immutable since they can be shared across
+    multiple conversations via forking. This endpoint will be removed in a future version.
     """
-    # TODO: support modifying tool calls/returns
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.message_manager.update_message_by_letta_message_async(
-        message_id=message_id, letta_message_update=request, actor=actor
+    raise HTTPException(
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+        detail="Message editing is no longer supported. Messages are immutable as they may be shared across multiple conversations via forking.",
     )
 
 
@@ -1699,6 +1721,7 @@ async def send_message(
             request=request,
             run_type="send_message",
             billing_context=headers.billing_context,
+            openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
         )
         return result
 
@@ -1768,6 +1791,8 @@ async def send_message(
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
+            override_system=request.override_system,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=headers.billing_context,
         )
@@ -1849,6 +1874,7 @@ async def send_message_streaming(
         request=request,
         run_type="send_message_streaming",
         billing_context=headers.billing_context,
+        openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
     )
 
     return result
@@ -2046,6 +2072,7 @@ async def _process_message_background(
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
     override_model: str | None = None,
+    override_system: str | None = None,
     include_compaction_messages: bool = False,
     billing_context: "BillingContext | None" = None,
 ) -> None:
@@ -2078,6 +2105,8 @@ async def _process_message_background(
             use_assistant_message=use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=include_return_message_types,
+            client_skills=[],
+            override_system=override_system,
             include_compaction_messages=include_compaction_messages,
             billing_context=billing_context,
         )
@@ -2247,6 +2276,7 @@ async def send_message_async(
             max_steps=request.max_steps,
             include_return_message_types=request.include_return_message_types,
             override_model=request.override_model,
+            override_system=request.override_system,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=headers.billing_context,
         ),
@@ -2366,11 +2396,21 @@ async def preview_model_request(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id, actor, include_relationships=["multi_agent_group", "memory", "sources"]
+        agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
     )
+
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(actor=actor, handle=request.override_model)
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
     agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
     return await agent_loop.build_request(
         input_messages=request.messages,
+        client_skills=request.client_skills,
+        client_tools=request.client_tools,
+        override_system=request.override_system,
     )
 
 
@@ -2448,6 +2488,7 @@ async def summarize_messages(
         messages=in_context_messages,
         compaction_settings=compaction_settings,
         use_summary_role=True,
+        billing_context=headers.billing_context,
     )
     num_messages_after = len(messages)
 
@@ -2523,6 +2564,6 @@ async def capture_messages(
     if sleeptime_group:
         sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
         sleeptime_agent_loop.response_messages = response_messages
-        run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
+        run_ids = await sleeptime_agent_loop.run_sleeptime_agents(billing_context=headers.billing_context)
 
     return JSONResponse({"success": True, "messages_created": len(response_messages), "run_ids": run_ids})

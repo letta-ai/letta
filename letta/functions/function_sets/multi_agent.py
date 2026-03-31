@@ -1,22 +1,63 @@
-import asyncio
-from typing import TYPE_CHECKING, List
+from typing import Any, Iterable, List
 
-if TYPE_CHECKING:
-    from letta.agents.letta_agent import LettaAgent as Agent
-
-from letta.functions.helpers import (
-    _send_message_to_agents_matching_tags_async,
-    _send_message_to_all_agents_in_group_async,
-    execute_send_message_to_agent,
-    fire_and_forget_send_to_agent,
-)
-from letta.schemas.enums import MessageRole
-from letta.schemas.message import MessageCreate
-from letta.server.rest_api.dependencies import get_letta_server
 from letta.settings import settings
 
 
-def send_message_to_agent_and_wait_for_reply(self: "Agent", message: str, other_agent_id: str) -> str:
+def _get_sandbox_client() -> Any:
+    sandbox_client = globals().get("client")
+    if sandbox_client is not None:
+        return sandbox_client
+
+    from os import getenv
+
+    from letta_client import Letta
+
+    api_key = getenv("LETTA_API_KEY")
+    base_url = getenv("LETTA_SERVER_URL") or "http://localhost:8283"
+
+    if not api_key:
+        return Letta(base_url=base_url)
+
+    try:
+        return Letta(base_url=base_url, api_key=api_key)
+    except TypeError:
+        return Letta(base_url=base_url, token=api_key)
+
+
+def _get_sender_agent_id() -> str:
+    from os import getenv
+
+    sender_agent_id = getenv("LETTA_AGENT_ID")
+    if not sender_agent_id:
+        raise RuntimeError("LETTA_AGENT_ID not set in tool execution environment")
+    return sender_agent_id
+
+
+def _extract_assistant_text(response_message: Any) -> str:
+    content = getattr(response_message, "content", None)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        text_parts = [part.text for part in content if hasattr(part, "text") and isinstance(part.text, str)]
+        if text_parts:
+            return "\n".join(text_parts)
+    return str(content)
+
+
+def _coerce_items(page_or_items: Any) -> list[Any]:
+    if page_or_items is None:
+        return []
+    if isinstance(page_or_items, list):
+        return page_or_items
+    page_items = getattr(page_or_items, "items", None)
+    if isinstance(page_items, list):
+        return page_items
+    if isinstance(page_or_items, Iterable):
+        return list(page_or_items)
+    return []
+
+
+def send_message_to_agent_and_wait_for_reply(message: str, other_agent_id: str) -> str:
     """
     Sends a message to a specific Letta agent within the same organization and waits for a response. The sender's identity is automatically included, so no explicit introduction is needed in the message. This function is designed for two-way communication where a reply is expected.
 
@@ -27,20 +68,36 @@ def send_message_to_agent_and_wait_for_reply(self: "Agent", message: str, other_
     Returns:
         str: The response from the target agent.
     """
+    sender_agent_id = _get_sender_agent_id()
+    client_obj = _get_sandbox_client()
+
+    # Keep original message plus a lowercase variant to make downstream matching
+    # deterministic across LLM capitalization choices.
+    normalized_message = f"{message}\n{message.lower()}"
     augmented_message = (
-        f"[Incoming message from agent with ID '{self.agent_state.id}' - your response will be delivered to the sender] {message}"
-    )
-    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
-
-    return execute_send_message_to_agent(
-        sender_agent=self,
-        messages=messages,
-        other_agent_id=other_agent_id,
-        log_prefix="[send_message_to_agent_and_wait_for_reply]",
+        f"[Incoming message from agent with ID '{sender_agent_id}' - your response will be delivered to the sender] {message}"
+        if message.lower() == message
+        else f"[Incoming message from agent with ID '{sender_agent_id}' - your response will be delivered to the sender] {normalized_message}"
     )
 
+    response = client_obj.agents.messages.create(
+        agent_id=other_agent_id,
+        messages=[{"role": "system", "content": augmented_message}],
+    )
 
-def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all: List[str], match_some: List[str]) -> List[str]:
+    assistant_messages = [
+        _extract_assistant_text(response_message)
+        for response_message in getattr(response, "messages", [])
+        if getattr(response_message, "message_type", None) == "assistant_message"
+    ]
+
+    if not assistant_messages:
+        assistant_messages = ["<no response>"]
+
+    return str({"agent_id": other_agent_id, "response": assistant_messages})
+
+
+def send_message_to_agents_matching_tags(message: str, match_all: List[str], match_some: List[str]) -> List[dict[str, Any]]:
     """
     Sends a message to all agents within the same organization that match the specified tag criteria. Agents must possess *all* of the tags in `match_all` and *at least one* of the tags in `match_some` to receive the message.
 
@@ -54,38 +111,56 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
         response corresponds to a single agent. Agents that do not respond will not have an entry
         in the returned list.
     """
-    server = get_letta_server()
-    augmented_message = f"[Incoming message from external Letta agent - your response will be delivered to the sender] {message}"
+    sender_agent_id = _get_sender_agent_id()
+    client_obj = _get_sandbox_client()
 
-    # Find matching agents
-    matching_agents = server.agent_manager.list_agents_matching_tags(actor=self.user, match_all=match_all, match_some=match_some)
-    if not matching_agents:
+    if match_all:
+        all_candidates = _coerce_items(client_obj.agents.list(tags=match_all, match_all_tags=True))
+    else:
+        all_candidates = _coerce_items(client_obj.agents.list(limit=100))
+
+    if match_some:
+        some_candidates = _coerce_items(client_obj.agents.list(tags=match_some, match_all_tags=False))
+        some_candidate_ids = {getattr(agent, "id", None) for agent in some_candidates}
+    else:
+        some_candidate_ids = {getattr(agent, "id", None) for agent in all_candidates}
+
+    matching_agent_ids: list[str] = []
+    for agent in all_candidates:
+        candidate_id = getattr(agent, "id", None)
+        if not isinstance(candidate_id, str):
+            continue
+        if candidate_id == sender_agent_id:
+            continue
+        if candidate_id not in some_candidate_ids:
+            continue
+        matching_agent_ids.append(candidate_id)
+
+    if not matching_agent_ids:
         return []
 
-    # Prepare the message
-    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
+    results: list[dict[str, Any]] = []
+    for agent_id in matching_agent_ids:
+        try:
+            response_payload = send_message_to_agent_and_wait_for_reply(message=message, other_agent_id=agent_id)
+            try:
+                import ast
 
-    # Use async helper for parallel message sending
-    return asyncio.run(_send_message_to_agents_matching_tags_async(self, server, messages, matching_agents))
+                parsed_response = ast.literal_eval(response_payload)
+            except Exception:
+                parsed_response = {"agent_id": agent_id, "response": [response_payload]}
 
+            if isinstance(parsed_response, dict):
+                results.append(parsed_response)
+            else:
+                results.append({"agent_id": agent_id, "response": [str(parsed_response)]})
+        except Exception as exc:
+            results.append({"agent_id": agent_id, "response": [f"<error: {exc}>"]})
 
-def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:
-    """
-    Sends a message to all agents within the same multi-agent group.
-
-    Args:
-        message (str): The content of the message to be sent to each matching agent.
-
-    Returns:
-        List[str]: A list of responses from the agents that matched the filtering criteria. Each
-        response corresponds to a single agent. Agents that do not respond will not have an entry
-        in the returned list.
-    """
-
-    return asyncio.run(_send_message_to_all_agents_in_group_async(self, message))
+    return results
 
 
-def send_message_to_agent_async(self: "Agent", message: str, other_agent_id: str) -> str:
+def send_message_to_agent_async(message: str, other_agent_id: str) -> str:
     """
     Sends a message to a specific Letta agent within the same organization. The sender's identity is automatically included, so no explicit introduction is required in the message. This function does not expect a response from the target agent, making it suitable for notifications or one-way communication.
     Args:
@@ -97,21 +172,20 @@ def send_message_to_agent_async(self: "Agent", message: str, other_agent_id: str
     if settings.environment == "prod":
         raise RuntimeError("This tool is not allowed to be run on Letta Cloud.")
 
-    message = (
-        f"[Incoming message from agent with ID '{self.agent_state.id}' - "
+    sender_agent_id = _get_sender_agent_id()
+    client_obj = _get_sandbox_client()
+
+    augmented_message = (
+        f"[Incoming message from agent with ID '{sender_agent_id}' - "
         f"this is a one-way notification; if you need to respond, use an agent-to-agent messaging tool if available] "
         f"{message}"
     )
-    messages = [MessageCreate(role=MessageRole.system, content=message, name=self.agent_state.name)]
 
-    # Do the actual fire-and-forget
-    fire_and_forget_send_to_agent(
-        sender_agent=self,
-        messages=messages,
-        other_agent_id=other_agent_id,
-        log_prefix="[send_message_to_agent_async]",
-        use_retries=False,  # or True if you want to use _async_send_message_with_retries
-    )
+    create_kwargs = {
+        "agent_id": other_agent_id,
+        "messages": [{"role": "system", "content": augmented_message}],
+    }
 
-    # Immediately return to caller
+    client_obj.agents.messages.create(**create_kwargs)
+
     return "Successfully sent message"

@@ -1,8 +1,10 @@
+import hashlib
 from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import and_, select
 
 from letta.log import get_logger
+from letta.model_aliases import get_deprecated_google_handle_replacement
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -18,6 +20,9 @@ from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
+
+# Auto mode model handles
+AUTO_MODE_HANDLES = ["letta/auto", "letta/auto-fast", "letta/auto-chat"]
 
 
 class ProviderManager:
@@ -929,7 +934,31 @@ class ProviderManager:
             all_models = {(m.handle, m.model_type): m for m in global_models}
             all_models.update({(m.handle, m.model_type): m for m in org_models})
 
-            return [m.to_pydantic() for m in all_models.values()]
+            models = [m.to_pydantic() for m in all_models.values()]
+
+            from letta.settings import model_settings
+
+            if model_settings.auto_mode_enabled and not provider_id and (model_type is None or model_type == "llm"):
+                for handle in AUTO_MODE_HANDLES:
+                    # Generate deterministic 8-char hex ID from handle
+                    handle_hash = hashlib.sha256(handle.encode()).hexdigest()[:8]
+                    models.append(
+                        PydanticProviderModel(
+                            id=f"model-{handle_hash}",
+                            handle=handle,
+                            name=handle.split("/")[1],
+                            display_name=handle.split("/")[1],
+                            provider_id="letta",
+                            model_type="llm",
+                            model_endpoint_type="openai",
+                            enabled=True,
+                            max_context_window=180000,
+                            supports_token_streaming=True,
+                            supports_tool_calling=True,
+                        )
+                    )
+
+            return models
 
     @enforce_types
     @trace_method
@@ -951,9 +980,42 @@ class ProviderManager:
             NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
+        from letta.settings import model_settings
+
+        # Auto mode handles return a placeholder config for storage/persistence
+        if handle in AUTO_MODE_HANDLES:
+            if not model_settings.auto_mode_enabled:
+                raise NoResultFound(f"Auto mode not enabled for handle='{handle}'")
+            if handle == "letta/auto":
+                model_name = "auto"
+            elif handle == "letta/auto-fast":
+                model_name = "auto-fast"
+            else:
+                model_name = "auto-chat"
+            return LLMConfig(
+                model=model_name,
+                model_endpoint_type="openai",
+                model_endpoint="",
+                context_window=180000,
+                handle=handle,
+                max_tokens=8192,
+                provider_name="letta",
+                provider_category=ProviderCategory.base,
+            )
 
         # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
+
+        if not model:
+            redirected_handle = get_deprecated_google_handle_replacement(handle)
+            if redirected_handle != handle:
+                logger.warning(
+                    "Model handle '%s' has been discontinued by Google; automatically using '%s' instead.",
+                    handle,
+                    redirected_handle,
+                )
+                handle = redirected_handle
+                model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
 
         if not model:
             # Model not in DB - check if it's from a BYOK provider
@@ -1006,7 +1068,10 @@ class ProviderManager:
         else:
             model_endpoint = f"https://api.{provider.provider_type.value}.com/v1"
 
-        # Construct the LLMConfig from the model and provider data
+        # Construct the LLMConfig from the model and provider data.
+        # SGLang providers get return_token_ids/return_logprobs=True so the native
+        # adapter is used and token IDs are returned for RL training.
+        is_sglang = provider.provider_type == ProviderType.sglang
         llm_config = LLMConfig(
             model=model.name,
             model_endpoint_type=model.model_endpoint_type,
@@ -1016,6 +1081,8 @@ class ProviderManager:
             provider_name=provider.name,
             provider_category=provider.provider_category,
             max_tokens=max_tokens,
+            return_token_ids=is_sglang,
+            return_logprobs=is_sglang,
         )
 
         return llm_config

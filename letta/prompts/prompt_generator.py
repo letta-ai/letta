@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import format_datetime, get_local_time_fast
+from letta.helpers.datetime_helpers import format_datetime
 from letta.otel.tracing import trace_method
 from letta.schemas.memory import Memory
 
@@ -26,6 +26,8 @@ class PromptGenerator:
     def compile_memory_metadata_block(
         memory_edit_timestamp: datetime,
         timezone: str,
+        agent_id: str,
+        conversation_id: str = "default",
         previous_message_count: int = 0,
         archival_memory_size: Optional[int] = 0,
         archive_tags: Optional[List[str]] = None,
@@ -41,6 +43,8 @@ class PromptGenerator:
         Args:
             memory_edit_timestamp: When the system prompt was last recompiled
             timezone: The timezone to use for formatting timestamps (e.g., 'America/Los_Angeles')
+            agent_id: The current agent ID
+            conversation_id: The current conversation ID, or "default"
             previous_message_count: Number of messages in recall memory (conversation history)
             archival_memory_size: Number of items in archival memory (long-term storage)
             archive_tags: List of unique tags available in archival memory
@@ -50,7 +54,8 @@ class PromptGenerator:
 
         Example Output:
             <memory_metadata>
-            - The current time is: 2024-01-15 10:30 AM PST
+            - AGENT_ID: agent-123
+            - CONVERSATION_ID: default
             - System prompt last recompiled: 2024-01-15 09:00 AM PST
             - 42 previous messages between you and the user are stored in recall memory (use tools to access them)
             - 156 total memories you created are stored in archival memory (use tools to access them)
@@ -63,9 +68,10 @@ class PromptGenerator:
         # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
         metadata_lines = [
             "<memory_metadata>",
-            f"- The current system date is: {get_local_time_fast(timezone)}",
+            f"- AGENT_ID: {agent_id}",
+            f"- CONVERSATION_ID: {conversation_id}",
             f"- System prompt last recompiled: {timestamp_str}",
-            f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
+            f"- {previous_message_count} previous messages between you and the user are stored in recall memory",
         ]
 
         # Only include archival memory line if there are archival memories
@@ -101,6 +107,7 @@ class PromptGenerator:
     def get_system_message_from_compiled_memory(
         system_prompt: str,
         memory_with_sources: str,
+        agent_id: str,
         in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
         timezone: str,
         user_defined_variables: Optional[dict] = None,
@@ -109,6 +116,7 @@ class PromptGenerator:
         previous_message_count: int = 0,
         archival_memory_size: int = 0,
         archive_tags: Optional[List[str]] = None,
+        conversation_id: str = "default",
     ) -> str:
         """Prepare the final/full system message that will be fed into the LLM API
 
@@ -130,6 +138,8 @@ class PromptGenerator:
             # TODO should this all put into the memory.__repr__ function?
             memory_metadata_string = PromptGenerator.compile_memory_metadata_block(
                 memory_edit_timestamp=in_context_memory_last_edit,
+                agent_id=agent_id,
+                conversation_id=conversation_id,
                 previous_message_count=previous_message_count,
                 archival_memory_size=archival_memory_size,
                 timezone=timezone,
@@ -171,6 +181,7 @@ class PromptGenerator:
     async def compile_system_message_async(
         system_prompt: str,
         in_context_memory: Memory,
+        agent_id: str,
         in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
         timezone: str,
         user_defined_variables: Optional[dict] = None,
@@ -182,6 +193,7 @@ class PromptGenerator:
         sources: Optional[List] = None,
         max_files_open: Optional[int] = None,
         llm_config: Optional[object] = None,
+        conversation_id: str = "default",
     ) -> str:
         tool_constraint_block = None
         if tool_rules_solver is not None:
@@ -200,6 +212,7 @@ class PromptGenerator:
         return PromptGenerator.get_system_message_from_compiled_memory(
             system_prompt=system_prompt,
             memory_with_sources=memory_with_sources,
+            agent_id=agent_id,
             in_context_memory_last_edit=in_context_memory_last_edit,
             timezone=timezone,
             user_defined_variables=user_defined_variables,
@@ -207,4 +220,5 @@ class PromptGenerator:
             template_format=template_format,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
+            conversation_id=conversation_id,
         )

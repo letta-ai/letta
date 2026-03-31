@@ -23,13 +23,6 @@ def test_chat_memory_init_and_utils(chat_memory: Memory):
     assert set(chat_memory.list_block_labels()) == {"persona", "human"}
 
 
-def test_memory_limit_validation(chat_memory: Memory):
-    with pytest.raises(ValueError):
-        ChatMemory(persona="x " * 60000, human="y " * 60000)
-    with pytest.raises(ValueError):
-        chat_memory.get_block("persona").value = "x " * 60000
-
-
 def test_get_block_not_found(chat_memory: Memory):
     with pytest.raises(KeyError):
         chat_memory.get_block("missing")
@@ -225,42 +218,8 @@ def test_current_files_open_counts_truthy_only():
     assert "- current_files_open=1" in out
 
 
-def test_compile_git_memory_filesystem_handles_leaf_directory_collisions():
-    """Git memory filesystem rendering should tolerate label prefix collisions.
-
-    Example collisions:
-    - leaf at "system" and children under "system/..."
-    - leaf at "system/human" and children under "system/human/..."
-
-    These occur naturally in git-backed memory where both index-like blocks and
-    nested blocks can exist.
-    """
-
-    m = Memory(
-        agent_type=AgentType.letta_v1_agent,
-        git_enabled=True,
-        blocks=[
-            Block(label="system", value="root", limit=100),
-            Block(label="system/human", value="human index", limit=100),
-            Block(label="system/human/context", value="context", limit=100),
-        ],
-    )
-
-    out = m.compile()
-
-    # Should include the filesystem view and not raise.
-    assert "<memory_filesystem>" in out
-    assert "system/" in out
-    assert "system.md" in out
-    assert "human.md" in out
-
-
-def test_compile_git_memory_filesystem_renders_descriptions_for_non_system_files():
-    """Files outside system/ should render their description in the filesystem tree.
-
-    e.g. `reference/api.md (Contains API specifications)`
-    System files should NOT render descriptions in the tree.
-    """
+def test_compile_git_structured_core_memory_rendering():
+    """Git-enabled agents should render persona in <self> and other system blocks in nested <memory> tags."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -268,55 +227,24 @@ def test_compile_git_memory_filesystem_renders_descriptions_for_non_system_files
         blocks=[
             Block(label="system/human", value="human data", limit=100, description="The human block"),
             Block(label="system/persona", value="persona data", limit=100, description="The persona block"),
-            Block(label="reference/api", value="api specs", limit=100, description="Contains API specifications"),
-            Block(label="notes", value="my notes", limit=100, description="Personal notes and reminders"),
         ],
     )
 
     out = m.compile()
 
-    # Filesystem tree should exist
-    assert "<memory_filesystem>" in out
+    assert "<memory>" in out
+    assert "<human>" in out
+    assert "</human>" in out
+    assert "human data" in out
 
-    # Non-system files should have descriptions rendered
-    assert "api.md (Contains API specifications)" in out
-    assert "notes.md (Personal notes and reminders)" in out
-
-    # System files should NOT have descriptions in the tree
-    assert "human.md (The human block)" not in out
-    assert "persona.md (The persona block)" not in out
-    # But they should still be in the tree (without description)
-    assert "human.md" in out
-    assert "persona.md" in out
+    assert "<self>" in out
+    assert "</self>" in out
+    assert "<projection>$MEMORY_DIR/system/persona.md</projection>" in out
+    assert "persona data" in out
 
 
-def test_compile_git_memory_filesystem_no_description_when_empty():
-    """Files outside system/ with no description should render without parentheses."""
-
-    m = Memory(
-        agent_type=AgentType.letta_v1_agent,
-        git_enabled=True,
-        blocks=[
-            Block(label="system/human", value="human data", limit=100),
-            Block(label="notes", value="my notes", limit=100),
-            Block(label="reference/api", value="api specs", limit=100, description="API docs"),
-        ],
-    )
-
-    out = m.compile()
-
-    # notes.md has no description, so no parentheses
-    assert "notes.md\n" in out or "notes.md\n" in out
-    # reference/api.md has a description
-    assert "api.md (API docs)" in out
-
-
-def test_compile_git_memory_filesystem_condenses_skills_to_top_level_entries():
-    """skills/ should render as top-level skill entries with description.
-
-    We intentionally avoid showing nested files under skills/ in the system
-    prompt tree to keep context concise.
-    """
+def test_compile_git_structured_skills_section():
+    """skills/ blocks should render in compile_available_skills() as filetree entries."""
 
     m = Memory(
         agent_type=AgentType.letta_v1_agent,
@@ -344,13 +272,370 @@ def test_compile_git_memory_filesystem_condenses_skills_to_top_level_entries():
         ],
     )
 
+    out = m.compile_available_skills()
+
+    assert "<available_skills>" in out
+    assert "</available_skills>" in out
+
+    # Top-level location and skill tree entries with descriptions
+    assert "${MEMORY_DIR}/skills" in out
+    assert "searching-messages/" in out
+    assert "SKILL.md (Search past messages to recall context.)" in out
+    assert "creating-skills/" in out
+    assert "SKILL.md (Guide for creating effective skills.)" in out
+
+    # Skill content should NOT be rendered (metadata only)
+    assert "# searching messages" not in out
+    assert "# creating skills" not in out
+
+    # Nested skill files should NOT appear
+    assert "references/workflows" not in out
+    assert "Nested workflow docs" not in out
+
+
+def test_compile_git_structured_archival_memory_section():
+    """Non-system, non-skills blocks should render in <external_projection> as a file tree."""
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(label="notes", value="my notes", limit=100, description="Personal notes"),
+            Block(label="reference/api", value="api specs", limit=100, description="API docs"),
+        ],
+    )
+
     out = m.compile()
 
-    # Condensed top-level skill entries with descriptions.
-    assert "searching-messages (Search past messages to recall context.)" in out
-    assert "creating-skills (Guide for creating effective skills.)" in out
+    assert "<memory>" in out
+    assert "<projection>$MEMORY_DIR/system/human.md</projection>" in out
+    assert "<external_projection>" in out
+    assert "${MEMORY_DIR}/" in out
+    assert "reference/" in out
+    assert "api.md" in out
+    assert "notes.md" in out
+    assert "${MEMORY_DIR}/reference/" not in out
+    assert "${MEMORY_DIR}/notes.md" not in out
 
-    # Do not show .md suffixes or nested skill docs in tree.
-    assert "searching-messages.md" not in out
-    assert "creating-skills.md" not in out
-    assert "references/workflows" not in out
+    # Descriptions are not rendered in the external tree.
+    assert "Personal notes" not in out
+    assert "API docs" not in out
+
+    # Archival memory content should NOT be rendered
+    assert "my notes" not in out
+    assert "api specs" not in out
+
+
+def test_compile_git_structured_client_skills():
+    """client_skills should be merged with agent skills in compile_available_skills() as trees grouped by root."""
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(
+                label="skills/searching-messages",
+                value="# searching messages",
+                limit=100,
+                description="Search past messages.",
+            ),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="playwright-skill", description="Browser automation.", location="skills/playwright-skill/SKILL.md"),
+        ClientSkillSchema(name="google", description="Google Workspace CLI.", location="skills/google/SKILL.md"),
+    ]
+
+    out = m.compile_available_skills(client_skills=client_skills)
+
+    # All skills (agent + client) merged in <available_skills>
+    assert "<available_skills>" in out
+    assert "</available_skills>" in out
+
+    # Agent skill present under memory skills root
+    assert "${MEMORY_DIR}/skills" in out
+    assert "searching-messages/" in out
+    assert "SKILL.md (Search past messages.)" in out
+
+    # Client skills grouped under their location roots
+    assert "skills" in out
+    assert "playwright-skill/" in out
+    assert "SKILL.md (Browser automation.)" in out
+    assert "google/" in out
+    assert "SKILL.md (Google Workspace CLI.)" in out
+
+
+def test_compile_git_structured_dedup_client_skills():
+    """client_skills with the same name as agent skills should be deduplicated (agent wins)."""
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(label="skills/my-skill", value="skill", limit=100, description="Agent skill."),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="my-skill", description="Client version of same skill.", location="skills/my-skill/SKILL.md"),
+    ]
+
+    out = m.compile_available_skills(client_skills=client_skills)
+
+    # Agent skill present, client duplicate deduplicated
+    assert "<available_skills>" in out
+    assert "my-skill/" in out
+    assert "SKILL.md" in out
+    # Agent skill wins — description comes from agent block, not client
+    assert "(Agent skill.)" in out
+    # Only one entry for the skill (deduplicated)
+    assert out.count("my-skill/") == 1
+
+
+def test_compile_git_structured_client_skills_omits_empty_description_location_tags():
+    """Client skills with blank description/location should still render name without empty suffix."""
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="blanky", description="", location=""),
+    ]
+
+    out = m.compile_available_skills(client_skills=client_skills)
+
+    assert "<available_skills>" in out
+    assert "blanky/" in out
+    assert "SKILL.md" in out
+    assert "SKILL.md ()" not in out
+
+
+def test_compile_available_skills_standalone():
+    """compile_available_skills() returns grouped file trees without recompiling the full prompt."""
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=100),
+            Block(label="skills/my-skill", value="skill", limit=100, description="Agent skill."),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="client-only", description="From client.", location="/tmp/client-only/SKILL.md"),
+    ]
+
+    result = m.compile_available_skills(client_skills=client_skills)
+
+    assert "<available_skills>" in result
+    assert "</available_skills>" in result
+    # Agent skill present
+    assert "my-skill/" in result
+    assert "SKILL.md (Agent skill.)" in result
+    # Client skill present
+    assert "/tmp" in result
+    assert "client-only/" in result
+    assert "SKILL.md (From client.)" in result
+
+    # No skills → empty string
+    m_empty = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[Block(label="system/human", value="human data", limit=100)],
+    )
+    assert m_empty.compile_available_skills() == ""
+    assert m_empty.compile_available_skills(client_skills=[]) == ""
+
+
+def test_compile_does_not_include_available_skills():
+    """compile() output should never persist request-scoped <available_skills> in system prompt storage."""
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=500),
+            Block(
+                label="system/project/notes",
+                value="The `<available_skills>` section is request-scoped.",
+                limit=500,
+                description="Notes that reference <available_skills> as literal text.",
+            ),
+            Block(label="system/persona", value="persona data", limit=500),
+        ],
+    )
+
+    out = m.compile()
+    assert "\n<available_skills>\n" not in out
+    assert "\n</available_skills>" not in out
+
+
+def test_append_available_skills_preserves_blocks_with_literal_skills_text():
+    """Appending request-scoped skills preserves blocks with literal tag references."""
+
+    from letta.schemas.letta_request import ClientSkillSchema
+
+    # Build a system prompt with blocks that contain literal skills XML text
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[
+            Block(label="system/human", value="human data", limit=500),
+            Block(
+                label="system/project/workflow",
+                value=(
+                    "Structured MemFS rendering: flat top-level sections;\n"
+                    "`<core_memory>`, `<archival_memory>`, `<available_skills>`;\n"
+                    "`path` -> `location`; `ClientSkillSchema` on `LettaRequest`"
+                ),
+                limit=1000,
+                description="Workflow notes.",
+            ),
+            Block(
+                label="system/project/architecture",
+                value=(
+                    "`compile_available_skills()` returns the `<available_skills>...</available_skills>` string.\n"
+                    "Request-scoped skills are appended at LLM request build time."
+                ),
+                limit=1000,
+                description="Architecture notes.",
+            ),
+            Block(label="system/persona", value="persona data", limit=500),
+        ],
+    )
+
+    client_skills = [
+        ClientSkillSchema(name="test-skill", description="A test skill.", location="skills/test-skill/SKILL.md"),
+    ]
+
+    old_text = m.compile()
+    new_skills = m.compile_available_skills(client_skills=client_skills)
+    new_text = old_text.rstrip("\n") + "\n\n" + new_skills.lstrip("\n")
+
+    # ALL blocks must survive the replacement
+    assert "<memory>" in new_text
+    assert "<human>" in new_text
+    assert "<project>" in new_text
+    assert "<workflow>" in new_text
+    assert "<architecture>" in new_text
+    assert "<self>" in new_text
+
+    # Block content with literal text references must be preserved
+    assert "`<available_skills>`" in new_text
+    assert "`<available_skills>...</available_skills>`" in new_text
+
+    # The structural <available_skills> block must be present at the end
+    structural_start = new_text.rfind("\n<available_skills>\n")
+    structural_end = new_text.find("</available_skills>", structural_start)
+    assert structural_start > 0
+    assert structural_end > structural_start
+    assert "test-skill/" in new_text[structural_start:structural_end]
+    assert "SKILL.md (A test skill.)" in new_text[structural_start:structural_end]
+
+
+def test_compile_git_structured_recompile_after_block_edit():
+    """Editing a block value should produce a different compile() output.
+
+    This validates the mechanism behind system prompt recompilation: when a
+    block is updated, the compiled memory string changes, which base_agent's
+    rebuild_memory detects via substring mismatch against the current system
+    message.
+    """
+
+    human_block = Block(label="system/human", value="original human data", limit=500, description="The human block")
+    persona_block = Block(label="system/persona", value="original persona data", limit=500, description="The persona block")
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[human_block, persona_block],
+    )
+
+    out_before = m.compile()
+
+    # Verify initial content renders
+    assert "original human data" in out_before
+    assert "original persona data" in out_before
+
+    # Simulate a block edit (as would happen via the API)
+    human_block.value = "updated human data with new info"
+    out_after = m.compile()
+
+    # Compiled output should have changed
+    assert out_before != out_after
+
+    # New value should appear, old value should not
+    assert "updated human data with new info" in out_after
+    assert "original human data" not in out_after
+
+    # Unchanged block should still be present
+    assert "original persona data" in out_after
+
+    # The old compiled string should NOT be a substring of the new one
+    # (this is the check base_agent uses to detect memory changes)
+    assert out_before not in out_after
+
+
+def test_compile_git_structured_recompile_after_block_label_change():
+    """Changing a block label should produce a different compile() output.
+
+    Label changes affect both the named section tag and the metadata index,
+    so the system prompt must be recompiled.
+    """
+
+    block = Block(label="system/human", value="human data", limit=500, description="Human context")
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[block],
+    )
+
+    out_before = m.compile()
+    assert "<human>" in out_before
+
+    # Simulate label rename
+    block.label = "system/user"
+    out_after = m.compile()
+
+    # Output should change: new tag name, new metadata
+    assert out_before != out_after
+    assert "<user>" in out_after
+    assert "</user>" in out_after
+    assert "<human>" not in out_after
+
+
+def test_compile_git_structured_recompile_after_description_change():
+    """Changing a block description should affect git-structured compile() output."""
+
+    block = Block(label="system/human", value="human data", limit=500, description="Original description")
+
+    m = Memory(
+        agent_type=AgentType.letta_v1_agent,
+        git_enabled=True,
+        blocks=[block],
+    )
+
+    out_before = m.compile()
+    assert "human data" in out_before
+
+    # Simulate description edit
+    block.description = "Updated description with more detail"
+    out_after = m.compile()
+
+    assert out_before != out_after
+    assert "human data" in out_after

@@ -1,7 +1,6 @@
-import uuid
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
@@ -21,6 +20,19 @@ class ClientToolSchema(BaseModel):
     name: str = Field(..., description="The name of the tool function")
     description: Optional[str] = Field(None, description="Description of what the tool does")
     parameters: Optional[Dict[str, Any]] = Field(None, description="JSON Schema for the function parameters")
+
+
+class ClientSkillSchema(BaseModel):
+    """Schema for a client-side skill passed in the request.
+
+    Client-side skills represent environment-provided capabilities (e.g. project-scoped
+    skills) that are not stored in the agent's MemFS but should appear in the system
+    prompt's available skills section.
+    """
+
+    name: str = Field(..., description="The name of the skill")
+    description: str = Field(..., description="Description of what the skill does")
+    location: str = Field(..., description="Path or location hint for the skill (e.g. skills/my-skill/SKILL.md)")
 
 
 class LettaRequest(BaseModel):
@@ -66,6 +78,13 @@ class LettaRequest(BaseModel):
         "execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn.",
     )
 
+    # Client-side skills
+    client_skills: Optional[List[ClientSkillSchema]] = Field(
+        None,
+        description="Client-side skills available in the environment. These are rendered in the system prompt's "
+        "available skills section alongside agent-scoped skills from MemFS.",
+    )
+
     # Model override
     override_model: Optional[str] = Field(
         None,
@@ -97,6 +116,15 @@ class LettaRequest(BaseModel):
         "Returns 'turns' field with TurnTokenData for each assistant/tool turn. "
         "Required for proper multi-turn RL training with loss masking.",
     )
+    override_system: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("override_system", "system"),
+        description=(
+            "Optional per-request system prompt override. "
+            "When set, this is passed directly to the underlying LLM request and bypasses "
+            "the persisted/compiled system message for that request."
+        ),
+    )
 
     @field_validator("messages", mode="before")
     @classmethod
@@ -127,7 +155,7 @@ class LettaRequest(BaseModel):
         # input can be either a string or List[LettaMessageContentUnion]
         if self.input is not None:
             # Both str and List[LettaMessageContentUnion] are valid content types for MessageCreate
-            self.messages = [MessageCreate(role=MessageRole.user, content=self.input, otid=str(uuid.uuid4()))]
+            self.messages = [MessageCreate(role=MessageRole.user, content=self.input)]
 
         return self
 
@@ -200,6 +228,14 @@ class RetrieveStreamRequest(BaseModel):
     agent_id: Optional[str] = Field(
         default=None,
         description="Agent ID for agent-direct mode with 'default' conversation. Use with conversation_id='default' in the URL path.",
+    )
+    run_id: Optional[str] = Field(
+        default=None,
+        description="Run ID to stream directly, bypassing run lookup. Use for recovery from duplicate requests.",
+    )
+    otid: Optional[str] = Field(
+        default=None,
+        description="Offline threading ID to look up the run_id. Bypasses active run lookup if run_id not provided.",
     )
     starting_after: int = Field(
         0, description="Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id"

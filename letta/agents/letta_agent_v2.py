@@ -33,7 +33,7 @@ from letta.schemas.agent import AgentState, UpdateAgent
 from letta.schemas.enums import AgentType, LLMCallType, MessageStreamStatus, RunStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
-from letta.schemas.letta_request import ClientToolSchema
+from letta.schemas.letta_request import ClientSkillSchema, ClientToolSchema
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
@@ -138,7 +138,14 @@ class LettaAgentV2(BaseAgentV2):
         )
 
     @trace_method
-    async def build_request(self, input_messages: list[MessageCreate]) -> dict:
+    async def build_request(
+        self,
+        input_messages: list[MessageCreate],
+        client_skills: list[ClientSkillSchema] | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
+        conversation_id: str | None = None,
+        override_system: str | None = None,
+    ) -> dict:
         """
         Build the request data for an LLM call without actually executing it.
 
@@ -146,11 +153,16 @@ class LettaAgentV2(BaseAgentV2):
 
         Args:
             input_messages: List of new messages to process
+            client_skills: Optional client-side skills to include in system prompt
+            client_tools: Optional client-side tools to include in tool list (V2 ignores, V3 uses)
+            conversation_id: Optional conversation ID (V2 ignores, V3 uses for scoped context)
 
         Returns:
             dict: The request data that would be sent to the LLM
         """
         request = {}
+        self.client_skills = client_skills or []
+        self.override_system = override_system
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
             input_messages, self.agent_state, self.message_manager, self.actor, None
         )
@@ -185,6 +197,8 @@ class LettaAgentV2(BaseAgentV2):
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -205,6 +219,9 @@ class LettaAgentV2(BaseAgentV2):
             LettaResponse: Complete response with all messages and metadata
         """
         self._initialize_state()
+        self.conversation_id = None
+        self.client_skills = client_skills or []
+        self.override_system = override_system
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
 
         in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
@@ -291,8 +308,11 @@ class LettaAgentV2(BaseAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,  # Not used in V2, but accepted for API compatibility
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
         billing_context: BillingContext | None = None,
+        openai_responses_websocket: bool = False,  # Not used in V2, but accepted for API compatibility
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -317,6 +337,9 @@ class LettaAgentV2(BaseAgentV2):
             str: JSON-formatted SSE data chunks for each completed step
         """
         self._initialize_state()
+        self.conversation_id = conversation_id
+        self.client_skills = client_skills or []
+        self.override_system = override_system
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         first_chunk = True
 
@@ -494,12 +517,17 @@ class LettaAgentV2(BaseAgentV2):
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 else None
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
+                        request_system_prompt = self.generate_request_system_prompt(
+                            client_skills=self.client_skills,
+                            current_system_message=messages[0],
+                        )
                         request_data = self.llm_client.build_request_data(
                             agent_type=self.agent_state.agent_type,
                             messages=messages,
                             llm_config=self.agent_state.llm_config,
                             tools=valid_tools,
                             force_tool_call=force_tool_call,
+                            system=request_system_prompt,
                         )
                         if dry_run:
                             yield request_data
@@ -705,6 +733,7 @@ class LettaAgentV2(BaseAgentV2):
         self.job_update_metadata = None
         self.last_function_response = None
         self.response_messages = []
+        self.override_system: str | None = None
 
     async def _check_credits(self) -> bool:
         """Check if the organization still has credits. Returns True if OK or not configured."""
@@ -761,6 +790,24 @@ class LettaAgentV2(BaseAgentV2):
         # Always scrub inner thoughts regardless of system prompt refresh
         in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, self.agent_state.llm_config)
         return in_context_messages
+
+    @trace_method
+    def generate_request_system_prompt(
+        self,
+        client_skills: list[ClientSkillSchema] | None,
+        current_system_message: Message,
+    ) -> str:
+        """Build request-scoped system prompt text without persisting request skills."""
+        if self.override_system is not None:
+            # Request-scoped system overrides must pass through exactly as provided.
+            # Do not append compiled skills in this mode.
+            return self.override_system
+
+        current_system_text = current_system_message.content[0].text
+        request_skills_block = self.agent_state.memory.compile_available_skills(client_skills=client_skills)
+        if not request_skills_block:
+            return current_system_text
+        return current_system_text.rstrip("\n") + "\n\n" + request_skills_block.lstrip("\n")
 
     @trace_method
     async def _rebuild_memory(
@@ -823,6 +870,8 @@ class LettaAgentV2(BaseAgentV2):
         new_system_message_str = PromptGenerator.get_system_message_from_compiled_memory(
             system_prompt=agent_state.system,
             memory_with_sources=curr_memory_str,
+            agent_id=agent_state.id,
+            conversation_id=self.conversation_id or "default",
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
             previous_message_count=num_messages - len(in_context_messages),

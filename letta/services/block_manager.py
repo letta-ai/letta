@@ -29,61 +29,7 @@ from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
-
-def validate_block_limit_constraint(update_data: dict, existing_block: BlockModel) -> None:
-    """
-    Validates that block limit constraints are satisfied when updating a block.
-
-    Rules:
-    - If limit is being updated, it must be >= the length of the value (existing or new)
-    - If value is being updated, its length must not exceed the limit (existing or new)
-
-    Args:
-        update_data: Dictionary of fields to update
-        existing_block: The current block being updated
-
-    Raises:
-        LettaInvalidArgumentError: If validation fails
-    """
-    # If limit is being updated, ensure it's >= current value length
-    if "limit" in update_data:
-        # Get the value that will be used (either from update_data or existing)
-        value_to_check = update_data.get("value", existing_block.value)
-        limit_to_check = update_data["limit"]
-        if value_to_check and limit_to_check < len(value_to_check):
-            raise LettaInvalidArgumentError(
-                f"Limit ({limit_to_check}) cannot be less than current value length ({len(value_to_check)} characters)",
-                argument_name="limit",
-            )
-    # If value is being updated and there's an existing limit, ensure value doesn't exceed limit
-    elif "value" in update_data and existing_block.limit:
-        if len(update_data["value"]) > existing_block.limit:
-            raise LettaInvalidArgumentError(
-                f"Value length ({len(update_data['value'])} characters) exceeds block limit ({existing_block.limit} characters)",
-                argument_name="value",
-            )
-
-
-def validate_block_creation(block_data: dict) -> None:
-    """
-    Validates that block limit constraints are satisfied when creating a block.
-
-    Rules:
-    - If both value and limit are provided, limit must be >= value length
-
-    Args:
-        block_data: Dictionary of block fields for creation
-
-    Raises:
-        LettaInvalidArgumentError: If validation fails
-    """
-    value = block_data.get("value")
-    limit = block_data.get("limit")
-
-    if value and limit and len(value) > limit:
-        raise LettaInvalidArgumentError(
-            f"Block limit ({limit}) must be greater than or equal to value length ({len(value)} characters)", argument_name="limit"
-        )
+PROMPT_AFFECTING_BLOCK_FIELDS = {"description", "label", "limit", "read_only", "value"}
 
 
 def _cursor_filter(sort_col, id_col, ref_sort_val, ref_id, forward: bool):
@@ -106,6 +52,20 @@ def _cursor_filter(sort_col, id_col, ref_sort_val, ref_id, forward: bool):
 
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
+
+    def __init__(self):
+        from letta.services.agent_manager import AgentManager
+
+        self.agent_manager = AgentManager(block_manager=self)
+
+    async def _rebuild_system_prompts_for_connected_agents(self, block_id: str, actor: PydanticUser) -> None:
+        """Rebuild system prompts for all agents connected to the given block."""
+        agent_ids = await self.get_agent_ids_for_block_async(block_id=block_id, actor=actor)
+        for agent_id in agent_ids:
+            try:
+                await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+            except Exception:
+                logger.exception(f"Failed to rebuild system prompt for agent {agent_id} after block {block_id} was updated")
 
     # ======================================================================================================================
     # Helper methods for pivot tables
@@ -183,8 +143,6 @@ class BlockManager:
                 # Extract tags before creating the ORM model (tags is not a column)
                 tags = data.pop("tags", None) or []
 
-                # Validate block creation constraints
-                validate_block_creation(data)
                 block_model = BlockModel(**data, organization_id=actor.organization_id)
                 await block_model.create_async(session, actor=actor, no_commit=True, no_refresh=True)
 
@@ -223,7 +181,6 @@ class BlockManager:
                 tags = block_data.pop("tags", None) or []
                 if tags:
                     tags_by_index[i] = tags
-                validate_block_creation(block_data)
                 validated_data.append(block_data)
 
             block_models = [BlockModel(**data, organization_id=actor.organization_id) for data in validated_data]
@@ -260,15 +217,35 @@ class BlockManager:
             # Extract tags from update data (it's not a column on the block table)
             new_tags = update_data.pop("tags", None)
 
-            # Validate limit constraints before updating
-            validate_block_limit_constraint(update_data, block)
-
-            for key, value in update_data.items():
-                setattr(block, key, value)
-
-            await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
-
+            current_tags: Optional[List[str]] = None
             if new_tags is not None:
+                result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                current_tags = sorted(row[0] for row in result.fetchall())
+
+            has_scalar_changes = any(getattr(block, key) != value for key, value in update_data.items())
+            has_prompt_changes = any(
+                key in PROMPT_AFFECTING_BLOCK_FIELDS and getattr(block, key) != value for key, value in update_data.items()
+            )
+            has_tag_changes = new_tags is not None and sorted(new_tags) != (current_tags or [])
+
+            if not has_scalar_changes and not has_tag_changes:
+                logger.debug(f"Skipping no-op block update for block {block_id}")
+                pydantic_block = block.to_pydantic()
+
+                if current_tags is None:
+                    result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                    current_tags = [row[0] for row in result.fetchall()]
+
+                pydantic_block.tags = current_tags
+                return pydantic_block
+
+            if has_scalar_changes:
+                for key, value in update_data.items():
+                    setattr(block, key, value)
+
+                await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+
+            if has_tag_changes:
                 await self._replace_block_pivot_rows_async(
                     session,
                     BlocksTags.__table__,
@@ -285,7 +262,12 @@ class BlockManager:
 
             # context manager now handles commits
             # await session.commit()
-            return pydantic_block
+
+        # Recompile system prompts for all agents connected to this block
+        if has_prompt_changes:
+            await self._rebuild_system_prompts_for_connected_agents(block_id, actor)
+
+        return pydantic_block
 
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
@@ -667,6 +649,21 @@ class BlockManager:
         return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
+    async def get_agent_ids_for_block_async(self, block_id: str, actor: PydanticUser) -> List[str]:
+        """
+        Retrieve all agent IDs associated with a given block.
+        This is a lightweight query that only returns IDs, not full agent states.
+        """
+        async with db_registry.async_session() as session:
+            query = select(BlocksAgents.agent_id).where(
+                BlocksAgents.block_id == block_id,
+            )
+            result = await session.execute(query)
+            return [row[0] for row in result.fetchall()]
+
+    @enforce_types
     @trace_method
     async def size_async(self, actor: PydanticUser) -> int:
         """
@@ -827,9 +824,6 @@ class BlockManager:
 
             for block in blocks:
                 new_val = updates[block.id]
-                if len(new_val) > block.limit:
-                    logger.warning(f"Value length ({len(new_val)}) exceeds limit ({block.limit}) for block {block.id!r}, truncating...")
-                    new_val = new_val[: block.limit]
                 block.value = new_val
 
             # context manager now handles commits

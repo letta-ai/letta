@@ -70,7 +70,7 @@ class Message(BaseModel):
 
 
 class Choice(BaseModel):
-    finish_reason: str
+    finish_reason: Optional[str] = None
     index: int
     message: Message
     logprobs: Optional[ChoiceLogprobs] = None

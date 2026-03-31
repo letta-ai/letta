@@ -62,7 +62,7 @@ from letta.schemas.letta_message_content import (
     get_letta_message_content_union_str_json_schema,
 )
 from letta.system import unpack_message
-from letta.utils import parse_json, sanitize_tool_call_id, validate_function_response
+from letta.utils import parse_json, parse_json_or_wrap_raw, sanitize_tool_call_id, validate_function_response
 
 
 def truncate_tool_return(content: Optional[str], limit: Optional[int]) -> Optional[str]:
@@ -131,6 +131,19 @@ class MessageCreateType(str, Enum):
 
 class MessageCreateBase(BaseModel):
     type: MessageCreateType = Field(..., description="The message type to be created.")
+    otid: Optional[str] = Field(
+        default=None,
+        description="The offline threading id (OTID). Set by the client to deduplicate requests. "
+        "Used for idempotency in background streaming mode — each message in a request must have a unique OTID. "
+        "Retries of the same request should reuse the same OTIDs.",
+    )
+    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
+
+    @model_validator(mode="after")
+    def generate_otid_if_missing(self):
+        if self.otid is None:
+            self.otid = str(uuid.uuid4())
+        return self
 
 
 class MessageCreate(MessageCreateBase):
@@ -151,10 +164,8 @@ class MessageCreate(MessageCreateBase):
         json_schema_extra=get_letta_message_content_union_str_json_schema(),
     )
     name: Optional[str] = Field(default=None, description="The name of the participant.")
-    otid: Optional[str] = Field(default=None, description="The offline threading id associated with this message")
     sender_id: Optional[str] = Field(default=None, description="The id of the sender of the message, can be an identity id or agent id")
     batch_item_id: Optional[str] = Field(default=None, description="The id of the LLMBatchItem that this message is associated with")
-    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)
@@ -172,7 +183,6 @@ class ApprovalCreate(MessageCreateBase):
     approve: Optional[bool] = Field(None, description="Whether the tool has been approved", deprecated=True)
     approval_request_id: Optional[str] = Field(None, description="The message ID of the approval request", deprecated=True)
     reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status", deprecated=True)
-    group_id: Optional[str] = Field(default=None, description="The multi-agent group that the message was sent in")
 
     @model_validator(mode="after")
     def migrate_deprecated_fields(self):
@@ -340,6 +350,7 @@ class Message(BaseMessage):
         include_err: Optional[bool] = None,
         text_is_assistant_message: bool = False,
         convert_summary_to_user: bool = True,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> List[LettaMessage]:
         if use_assistant_message:
             message_ids_to_remove = []
@@ -362,7 +373,7 @@ class Message(BaseMessage):
             messages = [msg for msg in messages if msg.id not in message_ids_to_remove]
 
         # Convert messages to LettaMessages
-        return [
+        letta_messages = [
             msg
             for m in messages
             for msg in m.to_letta_messages(
@@ -375,6 +386,12 @@ class Message(BaseMessage):
                 convert_summary_to_user=convert_summary_to_user,
             )
         ]
+
+        if include_return_message_types is not None:
+            # Filter to only the specified message types
+            letta_messages = [msg for msg in letta_messages if msg.message_type in include_return_message_types]
+
+        return letta_messages
 
     @staticmethod
     @trace_method
@@ -2002,7 +2019,18 @@ class Message(BaseMessage):
                             inner_thoughts_key=INNER_THOUGHTS_KWARG,
                         ).model_dump()
                     else:
-                        tool_call_input = parse_json(tool_call.function.arguments)
+                        tool_call_input = parse_json_or_wrap_raw(
+                            tool_call.function.arguments,
+                            context={
+                                "serializer": "anthropic",
+                                "message_id": self.id,
+                                "agent_id": self.agent_id,
+                                "run_id": self.run_id,
+                                "step_id": self.step_id,
+                                "tool_name": tool_call.function.name,
+                                "tool_call_id": tool_call.id,
+                            },
+                        )
 
                     if strip_request_heartbeat:
                         tool_call_input.pop(REQUEST_HEARTBEAT_PARAM, None)
@@ -2234,12 +2262,19 @@ class Message(BaseMessage):
                 for tool_call in self.tool_calls:
                     function_name = tool_call.function.name
                     function_args = tool_call.function.arguments
-                    try:
-                        # NOTE: Google AI wants actual JSON objects, not strings
-                        function_args = parse_json(function_args)
-                    except Exception:
-                        raise UserWarning(f"Failed to parse JSON function args: {function_args}")
-                        function_args = {"args": function_args}
+                    # NOTE: Google AI wants actual JSON objects, not strings
+                    function_args = parse_json_or_wrap_raw(
+                        function_args,
+                        context={
+                            "serializer": "google",
+                            "message_id": self.id,
+                            "agent_id": self.agent_id,
+                            "run_id": self.run_id,
+                            "step_id": self.step_id,
+                            "tool_name": function_name,
+                            "tool_call_id": tool_call.id,
+                        },
+                    )
 
                     if put_inner_thoughts_in_kwargs and text_content is not None:
                         assert INNER_THOUGHTS_KWARG not in function_args, function_args

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Union
 
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import and_, func, or_, select, tuple_, update
 
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
@@ -73,6 +73,7 @@ class FileAgentManager:
                         FileAgentModel.file_id == file_id,
                         FileAgentModel.file_name == file_name,
                         FileAgentModel.organization_id == actor.organization_id,
+                        FileAgentModel.is_deleted == False,
                     )
                 )
                 existing = await session.scalar(query)
@@ -170,10 +171,10 @@ class FileAgentManager:
     @enforce_types
     @trace_method
     async def detach_file(self, *, agent_id: str, file_id: str, actor: PydanticUser) -> None:
-        """Hard-delete the association."""
+        """Soft-delete the association."""
         async with db_registry.async_session() as session:
             assoc = await self._get_association_by_file_id(session, agent_id, file_id, actor)
-            await assoc.hard_delete_async(session, actor=actor)
+            await assoc.delete_async(session, actor=actor)
 
     @enforce_types
     @trace_method
@@ -191,20 +192,30 @@ class FileAgentManager:
         if not agent_file_pairs:
             return 0
 
-        async with db_registry.async_session() as session:
-            # Build compound OR conditions for each agent-file pair
-            conditions = []
-            for agent_id, file_id in agent_file_pairs:
-                conditions.append(and_(FileAgentModel.agent_id == agent_id, FileAgentModel.file_id == file_id))
+        # Batch to avoid asyncpg's 32,767 parameter limit
+        # Each tuple in the IN clause uses 2 params, so 1000 pairs = 2000 params
+        BATCH_SIZE = 1000
+        total_deleted = 0
 
-            # Create delete statement with all conditions
-            stmt = delete(FileAgentModel).where(and_(or_(*conditions), FileAgentModel.organization_id == actor.organization_id))
+        for i in range(0, len(agent_file_pairs), BATCH_SIZE):
+            batch = agent_file_pairs[i:i + BATCH_SIZE]
+            async with db_registry.async_session() as session:
+                stmt = (
+                    update(FileAgentModel)
+                    .where(
+                        and_(
+                            tuple_(FileAgentModel.agent_id, FileAgentModel.file_id).in_(batch),
+                            FileAgentModel.is_deleted == False,
+                            FileAgentModel.organization_id == actor.organization_id,
+                        )
+                    )
+                    .values(is_deleted=True)
+                    .execution_options(synchronize_session=False)
+                )
+                result = await session.execute(stmt)
+                total_deleted += result.rowcount
 
-            result = await session.execute(stmt)
-            # context manager now handles commits
-            # await session.commit()
-
-            return result.rowcount
+        return total_deleted
 
     @enforce_types
     @trace_method
@@ -248,6 +259,7 @@ class FileAgentManager:
                     FileAgentModel.file_name.in_(file_names),
                     FileAgentModel.agent_id == agent_id,
                     FileAgentModel.organization_id == actor.organization_id,
+                    FileAgentModel.is_deleted == False,
                 )
             )
 
@@ -282,6 +294,7 @@ class FileAgentManager:
             conditions = [
                 FileAgentModel.agent_id == agent_id,
                 FileAgentModel.organization_id == actor.organization_id,
+                FileAgentModel.is_deleted == False,
             ]
             if is_open_only:
                 conditions.append(FileAgentModel.is_open.is_(True))
@@ -314,6 +327,7 @@ class FileAgentManager:
                     FileAgentModel.agent_id == agent_id,
                     FileAgentModel.source_id == source_id,
                     FileAgentModel.organization_id == actor.organization_id,
+                    FileAgentModel.is_deleted == False,
                 )
             )
             result = await session.execute(stmt)
@@ -411,6 +425,7 @@ class FileAgentManager:
             conditions = [
                 FileAgentModel.file_id == file_id,
                 FileAgentModel.organization_id == actor.organization_id,
+                FileAgentModel.is_deleted == False,
             ]
             if is_open_only:
                 conditions.append(FileAgentModel.is_open.is_(True))
@@ -477,6 +492,7 @@ class FileAgentManager:
                     and_(
                         FileAgentModel.agent_id == agent_id,
                         FileAgentModel.organization_id == actor.organization_id,
+                        FileAgentModel.is_deleted == False,
                         FileAgentModel.is_open.is_(True),
                         # Only add the NOT IN filter when there are names to keep
                         ~FileAgentModel.file_name.in_(keep_file_names) if keep_file_names else True,
@@ -530,6 +546,7 @@ class FileAgentManager:
                     and_(
                         FileAgentModel.agent_id == agent_id,
                         FileAgentModel.organization_id == actor.organization_id,
+                        FileAgentModel.is_deleted == False,
                         FileAgentModel.is_open.is_(True),
                     )
                 )
@@ -544,6 +561,7 @@ class FileAgentManager:
                     FileAgentModel.agent_id == agent_id,
                     FileAgentModel.organization_id == actor.organization_id,
                     FileAgentModel.file_name == file_name,
+                    FileAgentModel.is_deleted == False,
                 )
             )
             file_to_open = await session.scalar(target_file_query)
@@ -662,6 +680,7 @@ class FileAgentManager:
             existing_q = select(FileAgentModel).where(
                 FileAgentModel.agent_id == agent_id,
                 FileAgentModel.organization_id == actor.organization_id,
+                FileAgentModel.is_deleted == False,
                 FileAgentModel.file_name.in_(seen),
             )
             existing_rows = (await session.execute(existing_q)).scalars().all()
@@ -673,6 +692,7 @@ class FileAgentManager:
                 .where(
                     FileAgentModel.agent_id == agent_id,
                     FileAgentModel.organization_id == actor.organization_id,
+                    FileAgentModel.is_deleted == False,
                     FileAgentModel.is_open.is_(True),
                 )
                 .order_by(FileAgentModel.last_accessed_at.asc())
@@ -757,6 +777,7 @@ class FileAgentManager:
                 FileAgentModel.agent_id == agent_id,
                 FileAgentModel.file_id == file_id,
                 FileAgentModel.organization_id == actor.organization_id,
+                FileAgentModel.is_deleted == False,
             )
         )
         assoc = await session.scalar(q)
@@ -770,6 +791,7 @@ class FileAgentManager:
                 FileAgentModel.agent_id == agent_id,
                 FileAgentModel.file_name == file_name,
                 FileAgentModel.organization_id == actor.organization_id,
+                FileAgentModel.is_deleted == False,
             )
         )
         assoc = await session.scalar(q)

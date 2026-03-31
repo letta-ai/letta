@@ -149,42 +149,56 @@ class ClickhouseProviderTraceBackend(ProviderTraceBackendClient):
     def _extract_usage(self, response_json: dict, provider: str) -> dict:
         """Extract usage statistics from response JSON.
 
-        Handles common formats from OpenAI, Anthropic, and other providers.
+        Handles common formats from OpenAI chat completions, OpenAI/Azure
+        Responses API, Anthropic, and compatible providers.
         """
         usage = {}
 
-        # OpenAI format: response.usage
-        if "usage" in response_json:
-            u = response_json["usage"]
-            usage["prompt_tokens"] = u.get("prompt_tokens", 0)
-            usage["completion_tokens"] = u.get("completion_tokens", 0)
-            usage["total_tokens"] = u.get("total_tokens", 0)
+        if "usage" not in response_json:
+            return usage
 
-            # OpenAI reasoning tokens
-            if "completion_tokens_details" in u:
-                details = u["completion_tokens_details"]
-                usage["reasoning_tokens"] = details.get("reasoning_tokens")
+        u = response_json["usage"]
 
-            # OpenAI cached tokens
-            if "prompt_tokens_details" in u:
-                details = u["prompt_tokens_details"]
-                usage["cached_input_tokens"] = details.get("cached_tokens")
-
-        # Anthropic format: response.usage with cache fields
-        if provider == "anthropic" and "usage" in response_json:
-            u = response_json["usage"]
-            # input_tokens can be 0 when all tokens come from cache
+        # Anthropic format: input_tokens excludes cache hits/writes, so prompt cost
+        # needs the non-cached tokens plus both cache buckets.
+        if provider == "anthropic":
             input_tokens = u.get("input_tokens", 0)
             cache_read = u.get("cache_read_input_tokens", 0)
             cache_write = u.get("cache_creation_input_tokens", 0)
-            # Total prompt = input + cached (for cost analytics)
             usage["prompt_tokens"] = input_tokens + cache_read + cache_write
-            usage["completion_tokens"] = u.get("output_tokens", usage.get("completion_tokens", 0))
+            usage["completion_tokens"] = u.get("output_tokens", 0)
             usage["cached_input_tokens"] = cache_read if cache_read else None
             usage["cache_write_tokens"] = cache_write if cache_write else None
+            usage["total_tokens"] = u.get("total_tokens") or (usage["prompt_tokens"] + usage["completion_tokens"])
+            return usage
 
-            # Recalculate total if not present
-            if "total_tokens" not in usage or usage["total_tokens"] == 0:
-                usage["total_tokens"] = usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0)
+        # OpenAI/Azure Responses API format: input/output token naming.
+        if "input_tokens" in u or "output_tokens" in u:
+            prompt_tokens = u.get("input_tokens", 0)
+            completion_tokens = u.get("output_tokens", 0)
+            usage["prompt_tokens"] = prompt_tokens
+            usage["completion_tokens"] = completion_tokens
+            usage["total_tokens"] = u.get("total_tokens") or (prompt_tokens + completion_tokens)
+
+            input_details = u.get("input_tokens_details") or {}
+            cached_tokens = input_details.get("cached_tokens")
+            usage["cached_input_tokens"] = cached_tokens
+
+            output_details = u.get("output_tokens_details") or {}
+            usage["reasoning_tokens"] = output_details.get("reasoning_tokens")
+            return usage
+
+        # OpenAI chat completions format: prompt/completion token naming.
+        usage["prompt_tokens"] = u.get("prompt_tokens", 0)
+        usage["completion_tokens"] = u.get("completion_tokens", 0)
+        usage["total_tokens"] = u.get("total_tokens", 0)
+
+        if "completion_tokens_details" in u:
+            details = u["completion_tokens_details"] or {}
+            usage["reasoning_tokens"] = details.get("reasoning_tokens")
+
+        if "prompt_tokens_details" in u:
+            details = u["prompt_tokens_details"] or {}
+            usage["cached_input_tokens"] = details.get("cached_tokens")
 
         return usage

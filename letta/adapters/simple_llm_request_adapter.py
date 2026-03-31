@@ -117,7 +117,5 @@ class SimpleLLMRequestAdapter(LettaLLMRequestAdapter):
         self.usage.cached_input_tokens, self.usage.cache_write_tokens = normalize_cache_tokens(usage.prompt_tokens_details)
         self.usage.reasoning_tokens = normalize_reasoning_tokens(usage.completion_tokens_details)
 
-        self.log_provider_trace(step_id=step_id, actor=actor)
-
         yield None
         return

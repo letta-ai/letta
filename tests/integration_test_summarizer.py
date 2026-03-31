@@ -1782,6 +1782,7 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     This test verifies that the 'all' summarization mode works correctly,
     summarizing the entire conversation into a single summary string.
     """
+    from letta.services.summarizer.constants import SUMMARY_TRUNCATION_SUFFIX
     from letta.services.summarizer.summarizer_all import summarize_all
     from letta.services.summarizer.summarizer_config import CompactionSettings
 
@@ -1789,6 +1790,9 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     handle = llm_config.handle or f"{llm_config.model_endpoint_type}/{llm_config.model}"
     summarizer_config = CompactionSettings(model=handle)
     summarizer_config.mode = "all"
+    # Keep this test deterministic across provider/model output style changes.
+    # summarize_all truncates to clip_chars, then appends a truncation suffix.
+    summarizer_config.clip_chars = 2000
 
     # Create test messages - a simple conversation
     messages = [
@@ -1827,7 +1831,9 @@ async def test_summarize_all(server: SyncServer, actor, llm_config: LLMConfig):
     assert len(new_in_context_messages) == 1
     assert summary is not None
     assert len(summary) > 0
-    assert len(summary) <= 2000
+    assert len(summary) <= summarizer_config.clip_chars + len(SUMMARY_TRUNCATION_SUFFIX)
+    if len(summary) > summarizer_config.clip_chars:
+        assert summary.endswith(SUMMARY_TRUNCATION_SUFFIX)
 
     print(f"Successfully summarized {len(messages)} messages using 'all' mode")
     print(f"Summary: {summary[:200]}..." if len(summary) > 200 else f"Summary: {summary}")

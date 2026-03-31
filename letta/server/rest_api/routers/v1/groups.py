@@ -6,7 +6,7 @@ from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.group import Group, GroupCreate, GroupUpdate, ManagerType
-from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.validators import GroupId, MessageId
@@ -165,6 +165,7 @@ async def list_group_messages(
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages", deprecated=True),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool.", deprecated=True),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument.", deprecated=True),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -175,7 +176,6 @@ async def list_group_messages(
     group = await server.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
     if group.manager_agent_id:
         return await server.get_agent_recall_async(
-            user_id=actor.id,
             agent_id=group.manager_agent_id,
             after=after,
             before=before,
@@ -186,6 +186,8 @@ async def list_group_messages(
             use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            include_return_message_types=include_return_message_types,
+            actor=actor,
         )
     else:
         return await server.group_manager.list_group_messages_async(
@@ -193,11 +195,11 @@ async def list_group_messages(
             after=after,
             before=before,
             limit=limit,
-            ascending=(order == "asc"),
             actor=actor,
             use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            include_return_message_types=include_return_message_types,
         )
 
 

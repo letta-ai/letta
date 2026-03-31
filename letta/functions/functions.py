@@ -392,6 +392,11 @@ def load_function_set(module: ModuleType) -> dict:
     function_dict = {}
 
     for attr_name in dir(module):
+        # Function-set modules often define internal helpers; only public callables
+        # should be treated as tools.
+        if attr_name.startswith("_"):
+            continue
+
         # Get the attribute
         attr = getattr(module, attr_name)
 

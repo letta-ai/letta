@@ -8,8 +8,10 @@ from letta.otel.tracing import trace_method
 from letta.schemas.enums import MessageRole
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
 from letta.services.context_window_calculator.token_counter import create_token_counter
+from letta.services.summarizer.constants import SUMMARY_TRUNCATION_SUFFIX
 from letta.services.summarizer.summarizer import simple_summary
 from letta.services.summarizer.summarizer_config import CompactionSettings
 
@@ -108,6 +110,7 @@ async def summarize_via_sliding_window(
     agent_tags: Optional[List[str]] = None,
     run_id: Optional[str] = None,
     step_id: Optional[str] = None,
+    billing_context: Optional[BillingContext] = None,
 ) -> Tuple[str, List[Message]]:
     """
     If the total tokens is greater than the context window limit (or force=True),
@@ -216,13 +219,14 @@ async def summarize_via_sliding_window(
             "sliding_window_percentage": summarizer_config.sliding_window_percentage,
             "clip_chars": summarizer_config.clip_chars,
         },
+        billing_context=billing_context,
     )
 
     logger.info(f"\n==================\nSummary message string: {summary_message_str[:100]}...\n==================\n")
 
     if summarizer_config.clip_chars is not None and len(summary_message_str) > summarizer_config.clip_chars:
         logger.warning(f"Summary length {len(summary_message_str)} exceeds clip length {summarizer_config.clip_chars}. Truncating.")
-        summary_message_str = summary_message_str[: summarizer_config.clip_chars] + "... [summary truncated to fit]"
+        summary_message_str = summary_message_str[: summarizer_config.clip_chars] + SUMMARY_TRUNCATION_SUFFIX
 
     updated_in_context_messages = in_context_messages[assistant_message_index:]
     return summary_message_str, [system_prompt, *updated_in_context_messages]

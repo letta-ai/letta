@@ -253,6 +253,8 @@ def compile_system_message(
     in_context_memory: Memory,
     in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
     timezone: str,
+    agent_id: str,
+    conversation_id: str = "default",
     user_defined_variables: Optional[dict] = None,
     append_icm_if_missing: bool = True,
     template_format: Literal["f-string", "mustache"] = "f-string",
@@ -289,6 +291,8 @@ def compile_system_message(
         # TODO should this all put into the memory.__repr__ function?
         memory_metadata_string = PromptGenerator.compile_memory_metadata_block(
             memory_edit_timestamp=in_context_memory_last_edit,
+            agent_id=agent_id,
+            conversation_id=conversation_id,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size or 0,
             timezone=timezone,
@@ -344,6 +348,8 @@ def initialize_message_sequence(
         in_context_memory=agent_state.memory,
         in_context_memory_last_edit=memory_edit_timestamp,
         timezone=agent_state.timezone,
+        agent_id=agent_state.id,
+        conversation_id="default",
         user_defined_variables=None,
         append_icm_if_missing=True,
         previous_message_count=previous_message_count,
@@ -406,6 +412,8 @@ async def initialize_message_sequence_async(
         in_context_memory=agent_state.memory,
         in_context_memory_last_edit=memory_edit_timestamp,
         timezone=agent_state.timezone,
+        agent_id=agent_state.id,
+        conversation_id="default",
         user_defined_variables=None,
         append_icm_if_missing=True,
         previous_message_count=previous_message_count,
@@ -733,6 +741,7 @@ def _apply_filters(
     template_id: Optional[str],
     base_template_id: Optional[str],
     last_stop_reason: Optional[StopReasonType] = None,
+    created_by_id: Optional[str] = None,
 ):
     """
     Apply basic filtering criteria to the agent query.
@@ -749,6 +758,7 @@ def _apply_filters(
         template_id (Optional[str]): Filter for agents using a specific template.
         base_template_id (Optional[str]): Filter for agents using a specific base template.
         last_stop_reason (Optional[StopReasonType]): Filter for agents by their last stop reason (e.g., 'requires_approval', 'error').
+        created_by_id (Optional[str]): Filter for agents created by a specific user.
 
     Returns:
         The modified query with the applied filters.
@@ -776,6 +786,9 @@ def _apply_filters(
     # Filter agents by last stop reason.
     if last_stop_reason:
         query = query.where(AgentModel.last_stop_reason == last_stop_reason)
+    # Filter agents by created_by_id.
+    if created_by_id:
+        query = query.where(AgentModel._created_by_id == created_by_id)
     return query
 
 

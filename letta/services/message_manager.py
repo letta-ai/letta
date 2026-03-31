@@ -352,7 +352,12 @@ class MessageManager:
         """Fetch a message by ID."""
         async with db_registry.async_session() as session:
             try:
-                message = await MessageModel.read_async(db_session=session, identifier=message_id, actor=actor)
+                message = await MessageModel.read_async(
+                    db_session=session,
+                    identifier=message_id,
+                    actor=actor,
+                    check_is_deleted=True,
+                )
                 return message.to_pydantic()
             except NoResultFound:
                 return None
@@ -362,7 +367,12 @@ class MessageManager:
     async def get_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order. Async version of above function."""
         async with db_registry.async_session() as session:
-            results = await MessageModel.read_multiple_async(db_session=session, identifiers=message_ids, actor=actor)
+            results = await MessageModel.read_multiple_async(
+                db_session=session,
+                identifiers=message_ids,
+                actor=actor,
+                check_is_deleted=True,
+            )
             return self._get_messages_by_id_postprocess(results, message_ids)
 
     def _get_messages_by_id_postprocess(
@@ -931,6 +941,7 @@ class MessageManager:
 
             # Build a query that directly filters the Message table by agent_id.
             query = select(MessageModel)
+            query = query.where(MessageModel.is_deleted == False)
 
             if agent_id:
                 await validate_agent_exists_async(session, agent_id, actor)
@@ -988,7 +999,10 @@ class MessageManager:
 
             # Apply 'after' pagination if specified.
             if after:
-                after_query = select(MessageModel.sequence_id).where(MessageModel.id == after)
+                after_query = select(MessageModel.sequence_id).where(
+                    MessageModel.id == after,
+                    MessageModel.is_deleted == False,
+                )
                 after_result = await session.execute(after_query)
                 after_ref = after_result.one_or_none()
                 if not after_ref:
@@ -998,7 +1012,10 @@ class MessageManager:
 
             # Apply 'before' pagination if specified.
             if before:
-                before_query = select(MessageModel.sequence_id).where(MessageModel.id == before)
+                before_query = select(MessageModel.sequence_id).where(
+                    MessageModel.id == before,
+                    MessageModel.is_deleted == False,
+                )
                 before_result = await session.execute(before_query)
                 before_ref = before_result.one_or_none()
                 if not before_ref:

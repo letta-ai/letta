@@ -1,8 +1,9 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import TypeAdapter
-from sqlalchemy import JSON, ForeignKey, Index, String
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -26,6 +27,7 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
     __table_args__ = (
         Index("ix_conversations_agent_id", "agent_id"),
         Index("ix_conversations_org_agent", "organization_id", "agent_id"),
+        Index("ix_conversations_org_agent_last_message_at", "organization_id", "agent_id", "last_message_at"),
     )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"conv-{uuid.uuid4()}")
@@ -36,6 +38,9 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
     )
     model_settings: Mapped[Optional[dict]] = mapped_column(
         JSON, nullable=True, doc="Model settings override for this conversation (provider-specific settings)"
+    )
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, doc="Timestamp of the most recent message request to this conversation"
     )
 
     # Relationships
@@ -67,4 +72,5 @@ class Conversation(SqlalchemyBase, OrganizationMixin):
             isolated_block_ids=[b.id for b in self.isolated_blocks] if self.isolated_blocks else [],
             model=self.model,
             model_settings=_model_settings_adapter.validate_python(self.model_settings) if self.model_settings else None,
+            last_message_at=self.last_message_at,
         )

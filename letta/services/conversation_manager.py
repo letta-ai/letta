@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
-    pass
+    from letta.server.server import SyncServer
 
 # Import AgentState outside TYPE_CHECKING for @enforce_types decorator
-from sqlalchemy import and_, asc, delete, desc, func, nulls_last, or_, select
+from sqlalchemy import and_, asc, delete, desc, func, nulls_last, or_, select, update
 
 from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
@@ -19,7 +19,7 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.conversation import Conversation as PydanticConversation, CreateConversation, UpdateConversation
-from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -100,6 +100,124 @@ class ConversationManager:
 
         return pydantic_conversation
 
+    @enforce_types
+    @trace_method
+    async def fork_conversation(
+        self,
+        conversation_id: str,
+        actor: PydanticUser,
+    ) -> PydanticConversation:
+        """Fork an existing conversation, creating a new conversation with shared messages.
+
+        The forked conversation gets:
+        - A new Conversation record (same agent_id as the source)
+        - A NEW system message compiled from the latest block values
+        - The same in-context Message objects as the source (shared, not copied)
+
+        Args:
+            conversation_id: The ID of the conversation to fork
+            actor: The user performing the action
+
+        Returns:
+            The newly created forked conversation
+        """
+        async with db_registry.async_session() as session:
+            source_conversation = await ConversationModel.read_async(
+                db_session=session,
+                identifier=conversation_id,
+                actor=actor,
+                check_is_deleted=True,
+            )
+            agent_id = source_conversation.agent_id
+
+            new_conversation = ConversationModel(
+                agent_id=agent_id,
+                summary=None,
+                organization_id=actor.organization_id,
+                model=source_conversation.model,
+                model_settings=source_conversation.model_settings,
+            )
+            await new_conversation.create_async(session, actor=actor, no_commit=True)
+
+            source_message_ids = await self._get_message_ids_for_conversation_with_session(
+                session=session,
+                conversation_id=conversation_id,
+                actor=actor,
+            )
+
+            # Skip the system message (always position 0); the fork gets its own.
+            message_ids_to_copy = source_message_ids[1:] if source_message_ids else []
+
+            await self._add_messages_to_conversation_with_session(
+                session=session,
+                conversation_id=new_conversation.id,
+                agent_id=agent_id,
+                message_ids=message_ids_to_copy,
+                actor=actor,
+                starting_position=1,
+            )
+
+            await session.commit()
+            await session.refresh(new_conversation)
+            pydantic_conversation = new_conversation.to_pydantic()
+
+        # Compile and persist a NEW system message for the forked conversation
+        # This captures the latest memory block state
+        await self.compile_and_save_system_message_for_conversation(
+            conversation_id=pydantic_conversation.id,
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        return pydantic_conversation
+
+    @trace_method
+    async def fork_default_conversation(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        server: "SyncServer",
+    ) -> PydanticConversation:
+        """Fork the agent's default (agent-direct) message history into a new conversation.
+
+        Reads the agent's message_ids, creates a new Conversation record, links all
+        non-system messages, and compiles a fresh system message for the fork.
+        """
+        agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor)
+        source_message_ids = agent.message_ids or []
+
+        # Skip the system message (always position 0); the fork gets its own.
+        message_ids_to_copy = source_message_ids[1:] if source_message_ids else []
+
+        async with db_registry.async_session() as session:
+            new_conversation = ConversationModel(
+                agent_id=agent_id,
+                summary=None,
+                organization_id=actor.organization_id,
+            )
+            await new_conversation.create_async(session, actor=actor, no_commit=True)
+
+            await self._add_messages_to_conversation_with_session(
+                session=session,
+                conversation_id=new_conversation.id,
+                agent_id=agent_id,
+                message_ids=message_ids_to_copy,
+                actor=actor,
+                starting_position=1,
+            )
+
+            await session.commit()
+            await session.refresh(new_conversation)
+            pydantic_conversation = new_conversation.to_pydantic()
+
+        await self.compile_and_save_system_message_for_conversation(
+            conversation_id=pydantic_conversation.id,
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        return pydantic_conversation
+
     @trace_method
     async def compile_and_save_system_message_for_conversation(
         self,
@@ -154,6 +272,8 @@ class ConversationManager:
         system_message_str = await PromptGenerator.compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
+            agent_id=agent_state.id,
+            conversation_id=conversation_id,
             in_context_memory_last_edit=get_utc_time(),
             timezone=agent_state.timezone,
             user_defined_variables=None,
@@ -169,6 +289,7 @@ class ConversationManager:
             model=agent_state.llm_config.model,
             openai_message_dict={"role": "system", "content": system_message_str},
         )
+        system_message.conversation_id = conversation_id
 
         # Persist the new system message
         persisted_messages = await message_manager.create_many_messages_async([system_message], actor=actor)
@@ -233,7 +354,7 @@ class ConversationManager:
             after: Cursor for pagination (conversation ID)
             summary_search: Optional text to search for within the summary field
             ascending: Sort order (True for oldest first, False for newest first)
-            sort_by: Field to sort by ("created_at" or "last_run_completion")
+            sort_by: Field to sort by ("created_at", "last_run_completion", or "last_message_at")
 
         Returns:
             List of conversations matching the criteria
@@ -254,6 +375,10 @@ class ConversationManager:
                     latest_run_subquery, ConversationModel.id == latest_run_subquery.c.conversation_id
                 )
                 sort_column = latest_run_subquery.c.last_run_completion
+                sort_nulls_last = True
+            elif sort_by == "last_message_at":
+                stmt = select(ConversationModel)
+                sort_column = ConversationModel.last_message_at
                 sort_nulls_last = True
             else:
                 # Simple query for created_at
@@ -327,6 +452,43 @@ class ConversationManager:
                                         and_(sort_column == after_sort_value, ConversationModel.id < after_id),
                                     )
                                 )
+                elif sort_by == "last_message_at":
+                    after_conv = await ConversationModel.read_async(
+                        db_session=session,
+                        identifier=after,
+                        actor=actor,
+                    )
+                    after_sort_value = after_conv.last_message_at
+                    after_id = after_conv.id
+                    if after_sort_value is None:
+                        if ascending:
+                            stmt = stmt.where(
+                                or_(
+                                    and_(ConversationModel.last_message_at.is_(None), ConversationModel.id > after_id),
+                                    ConversationModel.last_message_at.isnot(None),
+                                )
+                            )
+                        else:
+                            stmt = stmt.where(and_(ConversationModel.last_message_at.is_(None), ConversationModel.id < after_id))
+                    else:
+                        if ascending:
+                            stmt = stmt.where(
+                                and_(
+                                    ConversationModel.last_message_at.isnot(None),
+                                    or_(
+                                        ConversationModel.last_message_at > after_sort_value,
+                                        and_(ConversationModel.last_message_at == after_sort_value, ConversationModel.id > after_id),
+                                    ),
+                                )
+                            )
+                        else:
+                            stmt = stmt.where(
+                                or_(
+                                    ConversationModel.last_message_at.is_(None),
+                                    ConversationModel.last_message_at < after_sort_value,
+                                    and_(ConversationModel.last_message_at == after_sort_value, ConversationModel.id < after_id),
+                                )
+                            )
                 else:
                     # Simple created_at cursor
                     after_conv = await ConversationModel.read_async(
@@ -408,9 +570,34 @@ class ConversationManager:
             # Get isolated blocks before modifying conversation
             isolated_blocks = list(conversation.isolated_blocks)
 
-            # Soft delete the conversation first
-            conversation.is_deleted = True
-            await conversation.update_async(db_session=session, actor=actor)
+            # Bulk soft-delete conversation message associations.
+            await session.execute(
+                update(ConversationMessageModel)
+                .where(ConversationMessageModel.conversation_id == conversation_id)
+                .where(ConversationMessageModel.organization_id == actor.organization_id)
+                .where(ConversationMessageModel.is_deleted == False)
+                .values({ConversationMessageModel.is_deleted: True})
+            )
+
+            # Soft-delete messages that belong to this conversation AND are not
+            # shared with any other active (non-deleted) conversation.
+            # With conversation forking, messages can be referenced by multiple
+            # conversations via the conversation_messages junction table.
+            other_conv_ref = select(ConversationMessageModel.message_id).where(
+                ConversationMessageModel.conversation_id != conversation_id,
+                ConversationMessageModel.is_deleted == False,
+            )
+            await session.execute(
+                update(MessageModel)
+                .where(MessageModel.conversation_id == conversation_id)
+                .where(MessageModel.organization_id == actor.organization_id)
+                .where(MessageModel.is_deleted == False)
+                .where(~MessageModel.id.in_(other_conv_ref))
+                .values({MessageModel.is_deleted: True})
+            )
+
+            # Soft delete the conversation
+            await conversation.delete_async(db_session=session, actor=actor)
 
             # Hard-delete isolated blocks (Block model doesn't support soft-delete)
             # Following same pattern as block_manager.delete_block_async
@@ -422,6 +609,25 @@ class ConversationManager:
                 await block.hard_delete_async(db_session=session, actor=actor)
 
     # ==================== Message Management Methods ====================
+
+    async def _get_message_ids_for_conversation_with_session(
+        self,
+        session,
+        conversation_id: str,
+        actor: PydanticUser,
+    ) -> List[str]:
+        query = (
+            select(ConversationMessageModel.message_id)
+            .where(
+                ConversationMessageModel.conversation_id == conversation_id,
+                ConversationMessageModel.organization_id == actor.organization_id,
+                ConversationMessageModel.in_context == True,
+                ConversationMessageModel.is_deleted == False,
+            )
+            .order_by(ConversationMessageModel.position)
+        )
+        result = await session.execute(query)
+        return list(result.scalars().all())
 
     @enforce_types
     @trace_method
@@ -437,18 +643,11 @@ class ConversationManager:
         Only returns messages that are currently in_context.
         """
         async with db_registry.async_session() as session:
-            query = (
-                select(ConversationMessageModel.message_id)
-                .where(
-                    ConversationMessageModel.conversation_id == conversation_id,
-                    ConversationMessageModel.organization_id == actor.organization_id,
-                    ConversationMessageModel.in_context == True,
-                    ConversationMessageModel.is_deleted == False,
-                )
-                .order_by(ConversationMessageModel.position)
+            return await self._get_message_ids_for_conversation_with_session(
+                session=session,
+                conversation_id=conversation_id,
+                actor=actor,
             )
-            result = await session.execute(query)
-            return list(result.scalars().all())
 
     @enforce_types
     @trace_method
@@ -481,6 +680,40 @@ class ConversationManager:
             result = await session.execute(query)
             return [msg.to_pydantic() for msg in result.scalars().all()]
 
+    async def _add_messages_to_conversation_with_session(
+        self,
+        session,
+        conversation_id: str,
+        agent_id: str,
+        message_ids: List[str],
+        actor: PydanticUser,
+        starting_position: Optional[int] = None,
+    ) -> None:
+        if not message_ids:
+            return
+
+        if starting_position is None:
+            query = select(func.coalesce(func.max(ConversationMessageModel.position), -1)).where(
+                ConversationMessageModel.conversation_id == conversation_id,
+                ConversationMessageModel.organization_id == actor.organization_id,
+            )
+            result = await session.execute(query)
+            max_position = result.scalar()
+            if max_position is None:
+                max_position = -1
+            starting_position = max_position + 1
+
+        for i, message_id in enumerate(message_ids):
+            conv_msg = ConversationMessageModel(
+                conversation_id=conversation_id,
+                agent_id=agent_id,
+                message_id=message_id,
+                position=starting_position + i,
+                in_context=True,
+                organization_id=actor.organization_id,
+            )
+            session.add(conv_msg)
+
     @enforce_types
     @trace_method
     async def add_messages_to_conversation(
@@ -503,35 +736,15 @@ class ConversationManager:
             actor: The user performing the action
             starting_position: Optional starting position (defaults to next available)
         """
-        if not message_ids:
-            return
-
         async with db_registry.async_session() as session:
-            # Get starting position if not provided
-            if starting_position is None:
-                query = select(func.coalesce(func.max(ConversationMessageModel.position), -1)).where(
-                    ConversationMessageModel.conversation_id == conversation_id,
-                    ConversationMessageModel.organization_id == actor.organization_id,
-                )
-                result = await session.execute(query)
-                max_position = result.scalar()
-                # Use explicit None check instead of `or` to handle position=0 correctly
-                if max_position is None:
-                    max_position = -1
-                starting_position = max_position + 1
-
-            # Create ConversationMessage entries
-            for i, message_id in enumerate(message_ids):
-                conv_msg = ConversationMessageModel(
-                    conversation_id=conversation_id,
-                    agent_id=agent_id,
-                    message_id=message_id,
-                    position=starting_position + i,
-                    in_context=True,
-                    organization_id=actor.organization_id,
-                )
-                session.add(conv_msg)
-
+            await self._add_messages_to_conversation_with_session(
+                session=session,
+                conversation_id=conversation_id,
+                agent_id=agent_id,
+                message_ids=message_ids,
+                actor=actor,
+                starting_position=starting_position,
+            )
             await session.commit()
 
     @enforce_types
@@ -595,6 +808,7 @@ class ConversationManager:
         reverse: bool = False,
         group_id: Optional[str] = None,
         include_err: Optional[bool] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> List[LettaMessage]:
         """
         List all messages in a conversation with pagination support.
@@ -672,7 +886,7 @@ class ConversationManager:
 
             # Convert to LettaMessages (reverse=False keeps sub-messages in natural order)
             return PydanticMessage.to_letta_messages_from_list(
-                messages, reverse=False, include_err=include_err, text_is_assistant_message=True
+                messages, reverse=False, include_err=include_err, text_is_assistant_message=True, include_return_message_types=include_return_message_types
             )
 
     # ==================== Isolated Blocks Methods ====================

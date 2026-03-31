@@ -233,7 +233,7 @@ letta:
 # =============================================================================
 model:
   # Global settings
-  global_max_context_window_limit: 32000
+  global_max_context_window_limit: 128000
   inner_thoughts_kwarg: thinking
   default_prompt_formatter: chatml
 

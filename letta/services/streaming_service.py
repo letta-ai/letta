@@ -1,5 +1,8 @@
+import asyncio
+import hashlib
 import json
 import time
+from datetime import datetime, timezone
 from typing import AsyncIterator, Optional, Union
 from uuid import uuid4
 
@@ -10,8 +13,10 @@ from openai.types.chat.chat_completion_chunk import Choice, ChoiceDelta
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.constants import REDIS_RUN_ID_PREFIX
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
+from letta.data_sources.redis_client import AsyncRedisClient, NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
+    ConversationBusyError,
+    LettaError,
     LettaInvalidArgumentError,
     LettaServiceUnavailableError,
     LLMAuthenticationError,
@@ -20,6 +25,7 @@ from letta.errors import (
     LLMRateLimitError,
     LLMTimeoutError,
     PendingApprovalError,
+    SystemPromptTokenExceededError,
 )
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -28,7 +34,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import AgentType, MessageStreamStatus, RunStatus
 from letta.schemas.job import LettaRequestConfig
-from letta.schemas.letta_message import AssistantMessage, LettaErrorMessage, MessageType
+from letta.schemas.letta_message import AssistantMessage, LettaErrorMessage, LettaPing, MessageType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import ClientToolSchema, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
@@ -53,6 +59,122 @@ from letta.settings import settings
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
+
+
+def derive_request_token(otids: list[str]) -> str:
+    """
+    Derive a request token from all message otids for deduplication.
+
+    This ensures that two requests with different message combinations get
+    different lock tokens, even if they share the same first message.
+
+    Args:
+        otids: List of otids from all messages in the request
+
+    Returns:
+        A hash of all otids, or a random UUID if no otids provided
+    """
+    if not otids:
+        return str(uuid4())
+    combined = "|".join(otids)
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
+
+
+async def try_recover_duplicate_request(
+    redis_client: "AsyncRedisClient",
+    request_token: str,
+    lock_key: str,
+    include_pings: bool = False,
+) -> Optional[StreamingResponse]:
+    """
+    Check if an existing run already exists for this request token (same otid retry).
+    If so, return a stream attached to the existing run as a read-only reader.
+    Called BEFORE lock acquisition so duplicate requests never touch the lock.
+
+    Args:
+        redis_client: The Redis client
+        request_token: Hash of all message otids
+        lock_key: The conversation/agent ID used as lock key
+        include_pings: Whether to add keepalive pings to the stream
+
+    Returns:
+        StreamingResponse if recovery succeeded, None otherwise
+    """
+    existing_run_id = await redis_client.get_run_id_by_otid(request_token)
+    if not existing_run_id:
+        return None
+
+    logger.info(
+        f"Recovering from duplicate request: returning stream for existing run_id={existing_run_id} "
+        f"(request_token={request_token}, lock_key={lock_key})"
+    )
+    stream = redis_sse_stream_generator(
+        redis_client=redis_client,
+        run_id=existing_run_id,
+    )
+    if include_pings and settings.enable_keepalive:
+        stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=existing_run_id)
+    return StreamingResponseWithStatusCode(stream, media_type="text/event-stream")
+
+
+async def enrich_conversation_busy_error(
+    redis_client: "AsyncRedisClient",
+    error: ConversationBusyError,
+) -> ConversationBusyError:
+    """
+    Enrich a ConversationBusyError with the run_id of the lock holder if available.
+
+    Args:
+        redis_client: The Redis client
+        error: The original ConversationBusyError
+
+    Returns:
+        A new ConversationBusyError with run_id populated if found
+    """
+    existing_run_id = None
+    if error.lock_holder_token:
+        existing_run_id = await redis_client.get_run_id_by_otid(error.lock_holder_token)
+    return ConversationBusyError(
+        conversation_id=error.conversation_id,
+        lock_holder_token=error.lock_holder_token,
+        run_id=existing_run_id,
+    )
+
+
+async def prepend_initial_run_ping(
+    stream_generator: AsyncIterator[str | bytes],
+    run_id: str,
+) -> AsyncIterator[str | bytes]:
+    """
+    Emit an immediate run_id-bearing ping before the first stream chunk.
+
+    Device/listener mode currently waits for the first chunk that exposes run_id
+    before it can attach the run. Prepending a ping lets clients bind earlier
+    without changing the streaming schema surface.
+    """
+    yield (
+        "data: "
+        + LettaPing(
+            id=f"ping-{uuid4()}",
+            date=datetime.now(timezone.utc),
+            run_id=run_id,
+        ).model_dump_json()
+        + "\n\n"
+    )
+
+    try:
+        async for chunk in stream_generator:
+            yield chunk
+    except RunCancelledException as e:
+        # Forward cancellation to the inner generator so its handler fires
+        # (sets saw_done, run_status=None, emits [DONE]) before the finally block.
+        # Without this, aclose() sends GeneratorExit which skips the handler and
+        # causes the finally block to mark the run as "failed" instead of "cancelled".
+        try:
+            await stream_generator.athrow(e)
+        except (StopAsyncIteration, RunCancelledException):
+            pass
+        raise
 
 
 class StreamingService:
@@ -80,6 +202,7 @@ class StreamingService:
         conversation_id: Optional[str] = None,
         should_lock: bool = False,
         billing_context: "BillingContext | None" = None,
+        openai_responses_websocket: bool = False,
     ) -> tuple[Optional[PydanticRun], Union[StreamingResponse, LettaResponse]]:
         """
         Create a streaming response for an agent.
@@ -118,6 +241,9 @@ class StreamingService:
                 conversation_llm_config = await self.server.get_llm_config_from_handle_async(
                     actor=actor,
                     handle=conversation.model,
+                    # Preserve the agent's context window (capped at the new model's max).
+                    # Without this, the context window resets to the model/global default.
+                    context_window_limit=agent.llm_config.context_window,
                 )
                 if conversation.model_settings is not None:
                     update_params = conversation.model_settings._to_legacy_config_params()
@@ -138,18 +264,68 @@ class StreamingService:
             agent = agent.model_copy(update={"llm_config": override_llm_config})
 
         model_compatible_token_streaming = self._is_token_streaming_compatible(agent)
+        route_class = "background" if request.background else "foreground"
 
         # Determine lock key: use conversation_id if provided, else agent_id if should_lock
         lock_key = conversation_id if conversation_id else (agent_id if should_lock else None)
+
+        # Collect all otids from messages for request deduplication
+        # Each message has an otid (auto-generated if not provided)
+        message_otids = [msg.otid for msg in request.messages if msg.otid]
+
+        # Derive a request token from ALL message otids for deduplication
+        # This ensures requests with different message combinations get different tokens
+        request_token = derive_request_token(message_otids)
 
         # Attempt to acquire lock if lock_key is set
         # This prevents concurrent message processing for the same conversation/agent
         # Skip locking if Redis is not available (graceful degradation)
         if lock_key and not isinstance(redis_client, NoopAsyncRedisClient):
-            await redis_client.acquire_conversation_lock(
-                conversation_id=lock_key,
-                token=str(uuid4()),
-            )
+            # Check for existing run BEFORE acquiring the lock.
+            # Same-otid retries should never acquire the lock — just read from Redis.
+            # Only possible when background=True (Redis-backed streaming).
+            if request.background:
+                recovery_response = await try_recover_duplicate_request(
+                    redis_client=redis_client,
+                    request_token=request_token,
+                    lock_key=lock_key,
+                    include_pings=request.include_pings,
+                )
+                if recovery_response:
+                    return None, recovery_response
+
+            admission_wait_start_ns = get_utc_timestamp_ns()
+            try:
+                await redis_client.acquire_conversation_lock(
+                    conversation_id=lock_key,
+                    token=request_token,
+                )
+
+            except ConversationBusyError as e:
+                # Second-chance recovery for same-OTID retries that lost the race:
+                # The pre-lock check ran before the mapping was stored. The lock holder
+                # may still be creating the run (DB insert), so poll briefly for the mapping.
+                if request.background and request_token and e.lock_holder_token and e.lock_holder_token == request_token:
+                    for _attempt in range(3):
+                        recovery_response = await try_recover_duplicate_request(
+                            redis_client=redis_client,
+                            request_token=request_token,
+                            lock_key=lock_key,
+                            include_pings=request.include_pings,
+                        )
+                        if recovery_response:
+                            return None, recovery_response
+                        await asyncio.sleep(0.25 * (2**_attempt))  # 250ms, 500ms, 1s
+                raise await enrich_conversation_busy_error(redis_client, e)
+            finally:
+                admission_wait_ms = (get_utc_timestamp_ns() - admission_wait_start_ns) / 1_000_000
+                MetricRegistry().request_admission_wait_ms_histogram.record(
+                    admission_wait_ms,
+                    attributes={"route_class": route_class},
+                )
+                from letta.monitoring.load_gate import get_load_gate
+
+                get_load_gate().on_admission_wait(admission_wait_ms)
 
         # create run if tracking is enabled
         run = None
@@ -159,6 +335,16 @@ class StreamingService:
             if settings.track_agent_run:
                 run = await self._create_run(agent_id, request, run_type, actor, conversation_id=conversation_id)
                 await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
+
+                # Store request_token -> run_id mapping for duplicate request recovery
+                # This allows detecting exact retry vs different request
+                if request_token:
+                    await redis_client.set_otid_run_mapping(request_token, run.id)
+
+                # Store each individual otid -> run_id mapping for client convenience
+                # Client can use ANY otid from their request to recover the stream
+                for otid in message_otids:
+                    await redis_client.set_otid_run_mapping(otid, run.id)
 
             # use agent loop for streaming
             agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
@@ -174,12 +360,21 @@ class StreamingService:
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
                 actor=actor,
+                provider_name=agent.llm_config.model_endpoint_type,
                 conversation_id=conversation_id,
                 lock_key=lock_key,  # For lock release (may differ from conversation_id)
                 client_tools=request.client_tools,
+                client_skills=request.client_skills,
+                override_system=request.override_system,
                 include_compaction_messages=request.include_compaction_messages,
                 billing_context=billing_context,
+                route_class=route_class,
+                is_background=request.background,
+                openai_responses_websocket=openai_responses_websocket,
             )
+
+            if request.include_pings and run:
+                raw_stream = prepend_initial_run_ping(raw_stream, run.id)
 
             # handle background streaming if requested
             if request.background and settings.track_agent_run:
@@ -234,6 +429,9 @@ class StreamingService:
             if request.include_pings and settings.enable_keepalive:
                 stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
 
+            # Track SSE lifecycle metrics on the final stream returned to clients.
+            stream = self._create_sse_lifecycle_stream(stream, route_class=route_class)
+
             result = StreamingResponseWithStatusCode(
                 stream,
                 media_type="text/event-stream",
@@ -275,6 +473,7 @@ class StreamingService:
         agent_id: str,
         actor: User,
         request: LettaStreamingRequest,
+        billing_context: "BillingContext | None" = None,
     ) -> StreamingResponse:
         """
         Create OpenAI-compatible chat completions streaming response.
@@ -300,6 +499,7 @@ class StreamingService:
             actor=actor,
             request=request,
             run_type="openai_chat_completions",
+            billing_context=billing_context,
         )
 
         # extract the stream iterator from the response
@@ -339,11 +539,17 @@ class StreamingService:
         request_start_timestamp_ns: int,
         include_return_message_types: Optional[list[MessageType]],
         actor: User,
+        provider_name: str,
         conversation_id: Optional[str] = None,
         lock_key: Optional[str] = None,
         client_tools: Optional[list[ClientToolSchema]] = None,
+        client_skills=None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: BillingContext | None = None,
+        route_class: str = "foreground",
+        is_background: bool = False,
+        openai_responses_websocket: bool = False,
     ) -> AsyncIterator:
         """
         Create a stream with unified error handling.
@@ -359,6 +565,19 @@ class StreamingService:
             error_data = None
             saw_done = False
             saw_error = False
+            in_flight_attrs = {"route_class": route_class}
+            in_flight_counter = (
+                MetricRegistry().in_flight_background_counter if is_background else MetricRegistry().in_flight_foreground_counter
+            )
+
+            in_flight_counter.add(1, attributes=in_flight_attrs)
+            from letta.monitoring.load_gate import get_load_gate
+
+            _load_gate = get_load_gate()
+            if is_background:
+                _load_gate.on_bg_start()
+            else:
+                _load_gate.on_fg_start()
 
             try:
                 stream = agent_loop.stream(
@@ -371,8 +590,11 @@ class StreamingService:
                     include_return_message_types=include_return_message_types,
                     conversation_id=conversation_id,
                     client_tools=client_tools,
+                    client_skills=client_skills,
+                    override_system=override_system,
                     include_compaction_messages=include_compaction_messages,
                     billing_context=billing_context,
+                    openai_responses_websocket=openai_responses_websocket,
                 )
 
                 async for chunk in stream:
@@ -415,6 +637,8 @@ class StreamingService:
                     stop_reason = agent_loop.stop_reason if agent_loop.stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn)
 
             except LLMTimeoutError as e:
+                MetricRegistry().request_timeout_counter.add(1, attributes=in_flight_attrs)
+                MetricRegistry().provider_timeout_counter.add(1, attributes={"provider": provider_name})
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error)
                 error_message = LettaErrorMessage(
@@ -489,14 +713,48 @@ class StreamingService:
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
                 # Send [DONE] marker to properly close the stream
                 yield "data: [DONE]\n\n"
+            except SystemPromptTokenExceededError as e:
+                run_status = RunStatus.failed
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt)
+                error_detail = str(e) or repr(e)
+                error_message = LettaErrorMessage(
+                    run_id=run_id,
+                    error_type=StopReasonType.context_window_overflow_in_system_prompt.value,
+                    message=(
+                        "Compaction failed because the system prompt is too large for this model's context window. "
+                        "Reduce system instructions, memory blocks, or tools, or use a model with a larger context window."
+                    ),
+                    detail=error_detail,
+                )
+                error_data = {"error": error_message.model_dump()}
+                logger.warning(
+                    f"Run {run_id} stopped with system prompt overflow: {error_detail}, error_data: {error_message.model_dump()}"
+                )
+                yield f"data: {stop_reason.model_dump_json()}\n\n"
+                yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
+                # Send [DONE] marker to properly close the stream
+                yield "data: [DONE]\n\n"
             except RunCancelledException:
                 # Run was explicitly cancelled - this is not an error
                 # The cancellation has already been handled by cancellation_aware_stream_wrapper
                 logger.info(f"Run {run_id} was cancelled, exiting stream gracefully")
-                # Send [DONE] to properly close the stream
-                yield "data: [DONE]\n\n"
+                # Mark as terminal BEFORE yielding [DONE]. Some consumers stop immediately
+                # after receiving [DONE], so code after yield may never run.
+                saw_done = True
                 # Don't update run status in finally - cancellation is already recorded
                 run_status = None  # Signal to finally block to skip update
+                # Send [DONE] to properly close the stream
+                yield "data: [DONE]\n\n"
+            except asyncio.CancelledError:
+                # CancelledError is a BaseException (Python 3.9+) that bypasses
+                # `except Exception`. Caused by task cancellation or client disconnect.
+                logger.warning(
+                    f"Run {run_id} stream interrupted by asyncio.CancelledError "
+                    f"(likely client disconnect or task cancellation). "
+                    f"saw_done={saw_done}, saw_error={saw_error}, "
+                    f"agent stop_reason={agent_loop.stop_reason}"
+                )
+                raise
             except Exception as e:
                 run_status = RunStatus.failed
                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
@@ -505,7 +763,7 @@ class StreamingService:
                 error_message = LettaErrorMessage(
                     run_id=run_id,
                     error_type="internal_error",
-                    message="An unknown error occurred with the LLM streaming request.",
+                    message=error_detail if isinstance(e, LettaError) else "An unknown error occurred with the LLM streaming request.",
                     detail=error_detail,
                 )
                 error_data = {"error": error_message.model_dump()}
@@ -517,6 +775,29 @@ class StreamingService:
                 # Capture for Sentry but don't re-raise to allow stream to complete gracefully
                 capture_sentry_exception(e)
             finally:
+                # If run_status was never set and the stream ended without [DONE],
+                # mark as failed so the run doesn't stay "running" forever.
+                # For background runs, the background stream processor handles
+                # terminal state updates (and has better error context), so we
+                # only log here to avoid overwriting the correct stop_reason.
+                if run_id and self.runs_manager and run_status is None and not saw_done:
+                    if is_background:
+                        logger.warning(
+                            f"Run {run_id} stream ended without setting run_status or emitting [DONE]. "
+                            f"Skipping run update — background stream processor will handle terminal state."
+                        )
+                    else:
+                        logger.warning(f"Run {run_id} stream ended without setting run_status or emitting [DONE]. Marking as failed.")
+                        run_status = RunStatus.failed
+                        stop_reason = LettaStopReason(stop_reason=StopReasonType.error)
+                        error_data = {
+                            "error": {
+                                "run_id": run_id,
+                                "error_type": "stream_incomplete",
+                                "message": "Stream ended unexpectedly without a terminal event.",
+                            }
+                        }
+
                 # always update run status, whether success or failure
                 if run_id and self.runs_manager and run_status:
                     # Extract stop_reason enum value from LettaStopReason object
@@ -528,6 +809,12 @@ class StreamingService:
                         actor=actor,
                     )
 
+                in_flight_counter.add(-1, attributes=in_flight_attrs)
+                if is_background:
+                    _load_gate.on_bg_end()
+                else:
+                    _load_gate.on_fg_end()
+
         return error_aware_stream()
 
     def _is_token_streaming_compatible(self, agent: AgentState) -> bool:
@@ -538,6 +825,7 @@ class StreamingService:
             "bedrock",
             "deepseek",
             "zai",
+            "zai_coding",
             "chatgpt_oauth",
             "minimax",
             "openrouter",
@@ -547,6 +835,96 @@ class StreamingService:
             "google_vertex",
         ]
         return base_compatible or google_letta_v1
+
+    @staticmethod
+    def _map_sse_error_type_to_disconnect_reason(error_type: Optional[str]) -> str:
+        """Map stream error types to SSE disconnect reason taxonomy."""
+        if error_type == "llm_timeout":
+            return "timeout"
+        if error_type in {
+            "llm_error",
+            "llm_rate_limit",
+            "llm_authentication",
+            "llm_empty_response",
+            "internal_error",
+            "stream_incomplete",
+            StopReasonType.context_window_overflow_in_system_prompt.value,
+        }:
+            return "upstream_error"
+        return "unknown"
+
+    @staticmethod
+    def _extract_sse_error_type(chunk: str) -> Optional[str]:
+        """Extract Letta stream error_type from an SSE error chunk."""
+        if not ("\nevent: error" in chunk or chunk.startswith("event: error")):
+            return None
+
+        for line in chunk.splitlines():
+            if not line.startswith("data: "):
+                continue
+            try:
+                payload = json.loads(line[len("data: ") :])
+            except json.JSONDecodeError:
+                continue
+
+            if isinstance(payload, dict):
+                error_type = payload.get("error_type")
+                if isinstance(error_type, str):
+                    return error_type
+        return None
+
+    def _create_sse_lifecycle_stream(self, stream_generator: AsyncIterator, route_class: str) -> AsyncIterator:
+        """Wrap a stream generator with SSE lifecycle metrics instrumentation."""
+
+        async def instrumented_stream():
+            start_ns = get_utc_timestamp_ns()
+            attrs = {"route_class": route_class}
+            saw_done = False
+            saw_error = False
+            error_type = None
+            disconnect_reason = None
+
+            MetricRegistry().sse_active_sessions_counter.add(1, attributes=attrs)
+
+            try:
+                async for chunk in stream_generator:
+                    if isinstance(chunk, str):
+                        if "\ndata: [DONE]" in chunk or chunk.startswith("data: [DONE]"):
+                            saw_done = True
+                        if "\nevent: error" in chunk or chunk.startswith("event: error"):
+                            saw_error = True
+                            parsed_error_type = self._extract_sse_error_type(chunk)
+                            if parsed_error_type:
+                                error_type = parsed_error_type
+
+                    yield chunk
+            except asyncio.CancelledError:
+                disconnect_reason = "client_cancel"
+                raise
+            except (BrokenPipeError, ConnectionError, ConnectionResetError):
+                disconnect_reason = "network_error"
+                raise
+            except TimeoutError:
+                disconnect_reason = "timeout"
+                raise
+            finally:
+                MetricRegistry().sse_active_sessions_counter.add(-1, attributes=attrs)
+
+                duration_ms = (get_utc_timestamp_ns() - start_ns) / 1_000_000
+                MetricRegistry().sse_duration_ms_histogram.record(duration_ms, attributes=attrs)
+
+                if disconnect_reason is None and saw_error:
+                    disconnect_reason = self._map_sse_error_type_to_disconnect_reason(error_type)
+                if disconnect_reason is None and not saw_done:
+                    disconnect_reason = "unknown"
+
+                if disconnect_reason:
+                    MetricRegistry().sse_disconnect_counter.add(
+                        1,
+                        attributes={"reason": disconnect_reason, "route_class": route_class},
+                    )
+
+        return instrumented_stream()
 
     async def _create_run(
         self, agent_id: str, request: LettaStreamingRequest, run_type: str, actor: User, conversation_id: Optional[str] = None

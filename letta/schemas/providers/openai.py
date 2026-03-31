@@ -54,12 +54,12 @@ class OpenAIProvider(Provider):
     def _openai_default_max_output_tokens(model_name: str) -> int:
         """Return a sensible max-output-tokens default for OpenAI models.
 
-        gpt-5.2* / gpt-5.3* support 128k output tokens, except the
+        gpt-5.2* / gpt-5.3* / gpt-5.4* support 128k output tokens, except the
         `-chat` variants which are capped at 16k.
         """
         import re
 
-        if re.match(r"^gpt-5\.[23]", model_name) and "-chat" not in model_name:
+        if re.match(r"^gpt-5\.[234]", model_name) and "-chat" not in model_name:
             return 128000
         return 16384
 
@@ -97,17 +97,25 @@ class OpenAIProvider(Provider):
         # Decrypt API key before using
         api_key = await self.api_key_enc.get_plaintext_async() if self.api_key_enc else None
 
-        response = await openai_get_model_list_async(
-            self.base_url,
-            api_key=api_key,
-            extra_params=extra_params,
-            # fix_url=True,  # NOTE: make sure together ends with /v1
-        )
+        try:
+            response = await openai_get_model_list_async(
+                self.base_url,
+                api_key=api_key,
+                extra_params=extra_params,
+                # fix_url=True,  # NOTE: make sure together ends with /v1
+            )
 
-        # TODO (cliandy): this is brittle as TogetherAI seems to result in a list instead of having a 'data' field
-        data = response.get("data", response)
-        assert isinstance(data, list)
-        return data
+            # TODO (cliandy): this is brittle as TogetherAI seems to result in a list instead of having a 'data' field
+            data = response.get("data", response)
+            assert isinstance(data, list)
+            return data
+        except Exception as e:
+            # Baseten dedicated deployments don't expose /models — return empty list
+            # so the provider can still be used with explicit model handles
+            if "baseten.co" in self.base_url:
+                logger.info(f"Baseten dedicated endpoint does not support /models listing: {e}")
+                return [{"id": "zai-org/GLM-5", "context_length": 180000}]
+            raise
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         data = await self._get_models_async()
@@ -198,7 +206,9 @@ class OpenAIProvider(Provider):
 
             # We'll set the model endpoint based on the base URL
             # Note: openai-proxy just means that the model is using the OpenAIProvider
-            if self.base_url != "https://api.openai.com/v1":
+            if self.base_url.endswith("api.baseten.co/environments/production/sync/v1"):
+                handle = self.get_handle(model_name, base_name="baseten")
+            elif self.base_url != "https://api.openai.com/v1":
                 handle = self.get_handle(model_name, base_name="openai-proxy")
             else:
                 handle = self.get_handle(model_name)
@@ -216,6 +226,19 @@ class OpenAIProvider(Provider):
 
             config = self._set_model_parameter_tuned_defaults(model_name, config)
             configs.append(config)
+
+        # Add synthetic fast variants (e.g. gpt-5.4-fast with service_tier="priority")
+        fast_configs = []
+        for config in configs:
+            if config.model == "gpt-5.4":
+                fast_config = config.model_copy(
+                    update={
+                        "model": "gpt-5.4-fast",
+                        "handle": self.get_handle("gpt-5.4-fast"),
+                    }
+                )
+                fast_configs.append(fast_config)
+        configs.extend(fast_configs)
 
         # for OpenAI, sort in reverse order
         if self.base_url == "https://api.openai.com/v1":
@@ -265,12 +288,16 @@ class OpenAIProvider(Provider):
 
     def get_model_context_window_size(self, model_name: str) -> int | None:
         """Get the context window size for a model (sync fallback)."""
+        basename = model_name.rsplit("/", 1)[-1].lower()
+        if basename in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[basename]
         return LLM_MAX_CONTEXT_WINDOW["DEFAULT"]
 
     async def get_model_context_window_size_async(self, model_name: str) -> int | None:
         """Get the context window size for a model.
 
         Uses litellm model specifications which covers all OpenAI models.
+        Falls back to LLM_MAX_CONTEXT_WINDOW with normalized name matching.
         """
         from letta.model_specs.litellm_model_specs import get_context_window
 
@@ -278,9 +305,14 @@ class OpenAIProvider(Provider):
         if context_window is not None:
             return context_window
 
-        # Simple fallback
+        # Try matching against LLM_MAX_CONTEXT_WINDOW with basename
+        # e.g. "zai-org/GLM-5" -> "glm-5", "accounts/fireworks/models/glm-5" -> "glm-5"
+        basename = model_name.rsplit("/", 1)[-1].lower()
+        if basename in LLM_MAX_CONTEXT_WINDOW:
+            return LLM_MAX_CONTEXT_WINDOW[basename]
+
         logger.debug(
-            "Model %s not found in litellm specs. Using default of %s",
+            "Model %s not found in litellm specs or context window map. Using default of %s",
             model_name,
             LLM_MAX_CONTEXT_WINDOW["DEFAULT"],
         )

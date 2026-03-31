@@ -38,6 +38,20 @@ class ZAIClient(OpenAIClient):
         """Returns True if the model is a ZAI reasoning model (GLM-4.5+)."""
         return is_zai_reasoning_model(llm_config.model)
 
+    def _get_api_key(self, llm_config: LLMConfig) -> str | None:
+        """Resolve API key, preferring BYOK overrides when available."""
+        api_key, _, _ = self.get_byok_overrides(llm_config)
+        if not api_key:
+            api_key = model_settings.zai_api_key
+        return api_key
+
+    async def _get_api_key_async(self, llm_config: LLMConfig) -> str | None:
+        """Resolve API key asynchronously, preferring BYOK overrides when available."""
+        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
+        if not api_key:
+            api_key = model_settings.zai_api_key
+        return api_key
+
     @trace_method
     def build_request_data(
         self,
@@ -48,8 +62,18 @@ class ZAIClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+        data = super().build_request_data(
+            agent_type,
+            messages,
+            llm_config,
+            tools,
+            force_tool_call,
+            requires_subsequent_tool_call,
+            tool_return_truncation_chars,
+            system,
+        )
 
         # Add thinking configuration for ZAI GLM-4.5+ models
         # Must explicitly send type: "disabled" when reasoning is off, as GLM-4.7 has thinking on by default
@@ -73,6 +97,18 @@ class ZAIClient(OpenAIClient):
         # default of 65536, silently truncating input to ~137K of the 200K context window.
         if "max_completion_tokens" in data:
             data["max_tokens"] = data.pop("max_completion_tokens")
+
+        # Strip reasoning fields from input messages — ZAI rejects these as invalid parameters (error 1210)
+        if "messages" in data:
+            for msg in data["messages"]:
+                if isinstance(msg, dict):
+                    for field in (
+                        "reasoning_content",
+                        "reasoning_content_signature",
+                        "redacted_reasoning_content",
+                        "omitted_reasoning_content",
+                    ):
+                        msg.pop(field, None)
 
         # Sanitize empty text content — ZAI rejects empty text blocks
         if "messages" in data:
@@ -107,7 +143,7 @@ class ZAIClient(OpenAIClient):
         """
         Performs underlying synchronous request to Z.ai API and returns raw response dict.
         """
-        api_key = model_settings.zai_api_key
+        api_key = self._get_api_key(llm_config)
         client = OpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
 
         response: ChatCompletion = client.chat.completions.create(**request_data)
@@ -120,7 +156,7 @@ class ZAIClient(OpenAIClient):
         """
         request_data = sanitize_unicode_surrogates(request_data)
 
-        api_key = model_settings.zai_api_key
+        api_key = await self._get_api_key_async(llm_config)
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
 
         response: ChatCompletion = await client.chat.completions.create(**request_data)
@@ -133,7 +169,7 @@ class ZAIClient(OpenAIClient):
         """
         request_data = sanitize_unicode_surrogates(request_data)
 
-        api_key = model_settings.zai_api_key
+        api_key = await self._get_api_key_async(llm_config)
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
             **request_data, stream=True, stream_options={"include_usage": True}

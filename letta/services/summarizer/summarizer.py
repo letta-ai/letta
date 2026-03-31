@@ -12,16 +12,16 @@ from letta.constants import (
     MESSAGE_SUMMARY_REQUEST_ACK,
     TOOL_RETURN_TRUNCATION_CHARS,
 )
-from letta.errors import ContextWindowExceededError
+from letta.errors import ContextWindowExceededError, LLMProviderOverloaded, LLMRateLimitError
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.prompts import gpt_summarize
-from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ProviderType
+from letta.schemas.enums import AgentType, LLMCallType, MessageRole, ProviderCategory, ProviderType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
@@ -357,24 +357,60 @@ def simple_formatter(
         [message for message in messages if message.role != MessageRole.system or include_system],
         tool_return_truncation_chars=tool_return_truncation_chars,
     )
-    return "<start_transcript>\n" + "\n".join(json.dumps(msg) for msg in parsed_messages) + "\n<end_transcript>\n. Generate the summary."
+
+    # Format as compact plaintext instead of JSON to reduce token overhead.
+    # Falls back to json.dumps if any message has an unexpected structure.
+    lines = []
+    for msg in parsed_messages:
+        try:
+            role = msg.get("role", "?") if isinstance(msg, dict) else "?"
+            content = msg.get("content") if isinstance(msg, dict) else None
+            # Normalize list-of-blocks content (multimodal) to string
+            if isinstance(content, list):
+                content = " ".join(b.get("text", str(b)) if isinstance(b, dict) else str(b) for b in content)
+            content = content or ""
+            tool_calls = msg.get("tool_calls") if isinstance(msg, dict) else None
+            if tool_calls and isinstance(tool_calls, list):
+                call_parts = []
+                for tc in tool_calls:
+                    fn = (tc.get("function") or {}) if isinstance(tc, dict) else {}
+                    call_parts.append(f"{fn.get('name', '?')}({fn.get('arguments', '')})")
+                content = (content + " " if content else "") + "-> " + ", ".join(call_parts)
+            if content:
+                lines.append(f"[{role}] {content}")
+        except Exception:
+            lines.append(json.dumps(msg))
+
+    return "<start_transcript>\n" + "\n".join(lines) + "\n<end_transcript>\n. Generate the summary."
 
 
 def middle_truncate_text(
     text: str,
-    budget_chars: int,
+    budget_bytes: int,
     head_frac: float = 0.3,
     tail_frac: float = 0.3,
 ) -> tuple[str, int]:
-    """Middle-truncate a string to fit within a character budget.
+    """Middle-truncate a string to fit within a byte budget.
 
-    Keeps the first `head_frac` and last `tail_frac` portions (by budget chars)
-    and drops the middle. Returns (truncated_text, dropped_char_count).
+    Uses UTF-8 byte length to determine whether truncation is needed, which
+    correctly accounts for multi-byte characters.
+    The byte budget is converted to a character budget using the
+    text's actual bytes-per-char ratio, then slicing is done on characters
+    to avoid splitting multi-byte sequences.
 
-    Fractions are relative to budget, not original text length.
+    Keeps the first ``head_frac`` and last ``tail_frac`` portions and drops
+    the middle.  Returns (truncated_text, dropped_char_count).
     """
-    if budget_chars <= 0 or len(text) <= budget_chars:
+    if budget_bytes <= 0:
         return text, 0
+
+    text_bytes = len(text.encode("utf-8"))
+    if text_bytes <= budget_bytes:
+        return text, 0
+
+    # Convert byte budget -> char budget
+    bytes_per_char = text_bytes / len(text) if text else 1.0
+    budget_chars = max(1, int(budget_bytes / bytes_per_char))
 
     head_len = max(0, int(budget_chars * head_frac))
     tail_len = max(0, int(budget_chars * tail_frac))
@@ -461,11 +497,13 @@ async def simple_summary(
     run_id: str | None = None,
     step_id: str | None = None,
     compaction_settings: dict | None = None,
+    billing_context: BillingContext | None = None,
 ) -> str:
     """Generate a simple summary from a list of messages.
 
     Intentionally kept functional due to the simplicity of the prompt.
     """
+    from letta.prompts.summarizer_prompt import ALL_PROMPT
     from letta.services.telemetry_manager import TelemetryManager
 
     # Create an LLMClient from the config
@@ -488,10 +526,11 @@ async def simple_summary(
         org_id=actor.organization_id if actor else None,
         user_id=actor.id if actor else None,
         compaction_settings=compaction_settings,
+        billing_context=billing_context,
     )
 
     # Prepare the messages payload to send to the LLM
-    system_prompt = prompt or gpt_summarize.SYSTEM
+    system_prompt = prompt or ALL_PROMPT
     # Build the initial transcript without clamping to preserve fidelity
     # TODO proactively clip here?
     summary_transcript = simple_formatter(messages)
@@ -521,7 +560,7 @@ async def simple_summary(
 
     request_data = llm_client.build_request_data(AgentType.letta_v1_agent, input_messages_obj, summarizer_llm_config, tools=[])
     try:
-        summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
+        summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client, actor=actor)
     except Exception as e:
         # handle LLM error (likely a context window exceeded error)
         try:
@@ -559,22 +598,25 @@ async def simple_summary(
             )
 
             try:
-                summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
+                summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client, actor=actor)
             except Exception as fallback_error_a:
-                # Fallback B: hard-truncate the user transcript to fit a conservative char budget
+                # Fallback B: hard-truncate the user transcript to fit a conservative byte budget.
+                # We use bytes (not chars) to be more applicable across languages.
                 logger.warning(f"Clamped tool returns still overflowed ({fallback_error_a}). Falling back to transcript truncation.")
                 logger.info(f"Full fallback summarization payload: {request_data}")
 
-                # Compute a conservative char budget for the transcript based on context window
+                # Compute a conservative byte budget for the transcript based on context window
                 try:
-                    budget_chars = int(summarizer_llm_config.context_window * 0.6 * 4)
+                    budget_bytes = int(summarizer_llm_config.context_window * 0.6 * 4)
                 except Exception:
-                    budget_chars = 48000
+                    budget_bytes = 48000
 
-                overhead = len(system_prompt) + (len(MESSAGE_SUMMARY_REQUEST_ACK) if include_ack else 0) + 1024
-                budget_chars = max(2000, budget_chars - overhead)
+                overhead_bytes = (
+                    len(system_prompt.encode("utf-8")) + (len(MESSAGE_SUMMARY_REQUEST_ACK.encode("utf-8")) if include_ack else 0) + 1024
+                )
+                budget_bytes = max(2000, budget_bytes - overhead_bytes)
 
-                truncated_transcript, _ = middle_truncate_text(summary_transcript, budget_chars=budget_chars, head_frac=0.3, tail_frac=0.3)
+                truncated_transcript, _ = middle_truncate_text(summary_transcript, budget_bytes=budget_bytes, head_frac=0.3, tail_frac=0.3)
 
                 if include_ack:
                     input_messages = [
@@ -596,7 +638,9 @@ async def simple_summary(
                     tools=[],
                 )
                 try:
-                    summary = await _run_summarizer_request(request_data, input_messages_obj, summarizer_llm_config, llm_client)
+                    summary = await _run_summarizer_request(
+                        request_data, input_messages_obj, summarizer_llm_config, llm_client, actor=actor
+                    )
                 except Exception as fallback_error_b:
                     logger.error(f"Transcript truncation fallback also failed: {fallback_error_b}. Propagating error.")
                     logger.info(f"Full fallback summarization payload: {request_data}")
@@ -667,13 +711,114 @@ def format_transcript(messages: List[Message], include_system: bool = False) -> 
     return lines
 
 
+BEDROCK_SUMMARIZER_FALLBACK_HANDLE = "bedrock/us.anthropic.claude-opus-4-5-20251101-v1:0"
+
+# Providers that support summarization fallback (str values for ProviderType comparison)
+_FALLBACK_PROVIDER_TYPES = frozenset({"anthropic", "zai", "zai_coding"})
+
+
+async def _get_summarizer_fallback_config(llm_config: LLMConfig, actor: User) -> LLMConfig | None:
+    """Get a fallback LLMConfig for summarization when the primary provider is overloaded.
+
+    Anthropic -> Bedrock (Opus 4.5), ZAI/ZAI Coding -> Baseten (GLM-5 serverless).
+    Returns None if no fallback is available.
+    """
+    endpoint_type = str(llm_config.model_endpoint_type)
+
+    if endpoint_type == "anthropic":
+        from letta.services.provider_manager import ProviderManager
+
+        return await ProviderManager().get_llm_config_from_handle(BEDROCK_SUMMARIZER_FALLBACK_HANDLE, actor)
+
+    if endpoint_type in ("zai", "zai_coding"):
+        from letta.services.llm_router.llm_router_client import _build_baseten_config
+
+        return _build_baseten_config()
+
+    return None
+
+
 @trace_method
-async def _run_summarizer_request(req_data: dict, req_messages_obj: list[Message], llm_config: LLMConfig, llm_client: LLMClient) -> str:
+async def _run_summarizer_request(
+    req_data: dict,
+    req_messages_obj: list[Message],
+    llm_config: LLMConfig,
+    llm_client: LLMClient,
+    actor: User | None = None,
+    is_fallback: bool = False,
+) -> str:
     """Run summarization request and return assistant text.
 
     For Anthropic, use provider-side streaming to avoid long-request failures
     (Anthropic requires streaming for requests that may exceed ~10 minutes).
+
+    If the primary provider is overloaded, falls back to an alternate provider:
+    - Anthropic -> Bedrock (Opus 4.5)
+    - ZAI -> Baseten (GLM-5 serverless)
     """
+
+    try:
+        return await _execute_summarizer_request(req_data, req_messages_obj, llm_config, llm_client)
+    except Exception as e:
+        if not isinstance(e, (LLMProviderOverloaded, LLMRateLimitError)):
+            handled = llm_client.handle_llm_error(e, llm_config=llm_config)
+            if not isinstance(handled, (LLMProviderOverloaded, LLMRateLimitError)):
+                raise
+            e = handled
+
+        if (
+            is_fallback
+            or str(llm_config.model_endpoint_type) not in _FALLBACK_PROVIDER_TYPES
+            or actor is None
+            or llm_config.provider_category == ProviderCategory.byok
+        ):
+            raise
+
+        original_error = e
+
+        try:
+            fallback_config = await _get_summarizer_fallback_config(llm_config, actor)
+            if fallback_config is None:
+                raise original_error
+
+            logger.warning(
+                f"{llm_config.model_endpoint_type} overloaded during summarization, "
+                f"falling back to {fallback_config.model_endpoint_type}/{fallback_config.model}: {original_error}"
+            )
+
+            fallback_client = LLMClient.create(
+                provider_type=ProviderType(fallback_config.model_endpoint_type),
+                put_inner_thoughts_first=True,
+                actor=getattr(llm_client, "actor", None),
+            )
+            fallback_client.set_telemetry_context(
+                telemetry_manager=llm_client._telemetry_manager,
+                agent_id=llm_client._telemetry_agent_id,
+                agent_tags=llm_client._telemetry_agent_tags,
+                run_id=llm_client._telemetry_run_id,
+                step_id=llm_client._telemetry_step_id,
+                call_type=LLMCallType.summarization,
+                org_id=llm_client._telemetry_org_id,
+                user_id=llm_client._telemetry_user_id,
+                billing_context=llm_client._telemetry_billing_context,
+            )
+
+            fallback_llm_config = LLMConfig(**fallback_config.model_dump())
+            fallback_llm_config.put_inner_thoughts_in_kwargs = False
+            fallback_llm_config.enable_reasoner = False
+
+            fallback_req = fallback_client.build_request_data(AgentType.letta_v1_agent, req_messages_obj, fallback_llm_config, tools=[])
+            return await _run_summarizer_request(
+                fallback_req, req_messages_obj, fallback_llm_config, fallback_client, actor=actor, is_fallback=True
+            )
+        except Exception as fallback_error:
+            logger.warning(f"Summarization fallback failed: {fallback_error}, re-raising original error")
+            raise original_error from fallback_error
+
+
+@trace_method
+async def _execute_summarizer_request(req_data: dict, req_messages_obj: list[Message], llm_config: LLMConfig, llm_client: LLMClient) -> str:
+    """Execute the actual LLM request for summarization."""
 
     if llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
         logger.info(
@@ -690,6 +835,7 @@ async def _run_summarizer_request(req_data: dict, req_messages_obj: list[Message
             requires_approval_tools=[],
             run_id=None,
             step_id=None,
+            llm_config=llm_config,
         )
 
         # AnthropicClient.stream_async sets request_data["stream"] = True internally.

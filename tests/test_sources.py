@@ -278,20 +278,26 @@ def test_attach_existing_files_creates_source_blocks_correctly(
 
     # Attach after uploading the file
     client.agents.folders.attach(folder_id=source.id, agent_id=agent_state.id)
+
+    # Get agent state to retrieve file config defaults (dynamic based on model context window)
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    max_files_open = agent_state.max_files_open
+    chars_limit = agent_state.per_file_view_window_char_limit
+
     raw_system_message = get_raw_system_message(client, agent_state.id, recompile=True)
 
     # Assert that the expected chunk is in the raw system message
-    expected_chunk = """<directories>
+    expected_chunk = f"""<directories>
 <file_limits>
 - current_files_open=1
-- max_files_open=5
+- max_files_open={max_files_open}
 </file_limits>
 <directory name="test_source">
 <file status="open" name="test_source/test.txt">
 <metadata>
 - read_only=true
 - chars_current=45
-- chars_limit=15000
+- chars_limit={chars_limit}
 </metadata>
 <value>
 [Viewing file start (out of 1 lines)]
@@ -342,19 +348,25 @@ def test_delete_source_removes_source_blocks_correctly(
 
     # Upload the files
     upload_file_and_wait(client, source.id, file_path)
+
+    # Get agent state to retrieve file config defaults (dynamic based on model context window)
+    agent_state = client.agents.retrieve(agent_id=agent_state.id)
+    max_files_open = agent_state.max_files_open
+    chars_limit = agent_state.per_file_view_window_char_limit
+
     raw_system_message = get_raw_system_message(client, agent_state.id, recompile=True)
     # Assert that the expected chunk is in the raw system message
-    expected_chunk = """<directories>
+    expected_chunk = f"""<directories>
 <file_limits>
 - current_files_open=1
-- max_files_open=5
+- max_files_open={max_files_open}
 </file_limits>
 <directory name="test_source">
 <file status="open" name="test_source/test.txt">
 <metadata>
 - read_only=true
 - chars_current=45
-- chars_limit=15000
+- chars_limit={chars_limit}
 </metadata>
 <value>
 [Viewing file start (out of 1 lines)]
@@ -454,7 +466,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, disable_turbopuf
         messages=[
             MessageCreate(
                 role="user",
-                content=f"Use ONLY the open_files tool to open the file named {file.file_name} with offset {offset} and length {length}",
+                content=f"Use ONLY the open_files tool to open the file named test_source/{file.file_name} with offset {offset} and length {length}",
             )
         ],
     )

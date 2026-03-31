@@ -1,13 +1,11 @@
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase
-
-INT32_MAX = 2147483647
 
 # block of the LLM context
 
@@ -50,14 +48,6 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
-    @field_validator("limit", mode="after")
-    @classmethod
-    def validate_limit_int32(cls, v: int) -> int:
-        """Ensure limit is within PostgreSQL INTEGER (int32) range."""
-        if v > INT32_MAX:
-            raise ValueError(f"limit must be <= {INT32_MAX} (int32 max), got {v}")
-        return v
-
     @field_validator("value", mode="before")
     @classmethod
     def sanitize_value_null_bytes(cls, v):
@@ -65,29 +55,6 @@ class BaseBlock(LettaBase, validate_assignment=True):
         if isinstance(v, str):
             return v.replace("\x00", "")
         return v
-
-    @model_validator(mode="before")
-    @classmethod
-    def verify_char_limit(cls, data: Any) -> Any:
-        """Validate the character limit before model instantiation.
-
-        Notes:
-        - Runs on raw input; do not mutate input.
-        - For update schemas (e.g., BlockUpdate), `value` and `limit` may be absent.
-          In that case, only validate when both are provided.
-        """
-        if isinstance(data, dict):
-            limit = data.get("limit")
-            value = data.get("value")
-
-            # Only enforce the char limit when both are present.
-            # Pydantic will separately enforce required fields where applicable.
-            if limit is not None and value is not None and isinstance(value, str):
-                if len(value) > limit:
-                    error_msg = f"Edit failed: Exceeds {limit} character limit (requested {len(value)})"
-                    raise ValueError(error_msg)
-
-        return data
 
     def __setattr__(self, name, value):
         """Run validation if self.value is updated"""

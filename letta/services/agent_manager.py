@@ -23,6 +23,7 @@ from letta.constants import (
     FILES_TOOLS,
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
+    SUBAGENT_ROLE_TAG,
 )
 from letta.errors import LettaError
 from letta.helpers import ToolRulesSolver
@@ -73,7 +74,7 @@ from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, 
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
-from letta.services.block_manager import BlockManager, validate_block_limit_constraint
+from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.services.conversation_manager import ConversationManager
@@ -441,6 +442,7 @@ class AgentManager:
 
         identity_ids = agent_create.identity_ids or []
         tag_values = agent_create.tags or []
+        force_hidden_for_subagent = SUBAGENT_ROLE_TAG in tag_values
 
         # if the agent type is workflow, we set the autoclear to forced true
         if agent_create.agent_type == AgentType.workflow_agent:
@@ -489,22 +491,16 @@ class AgentManager:
                     check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
 
                 # Update agent's compaction settings with defaults if needed
-                from letta.schemas.enums import ProviderType
                 from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_summarizer_model
 
                 effective_compaction_settings = agent_create.compaction_settings
                 # Use provider_name if set, otherwise fall back to model_endpoint_type
                 provider_name = agent_create.llm_config.provider_name or agent_create.llm_config.model_endpoint_type
+                default_model = get_default_summarizer_model(provider_name)
 
-                # Convert to ProviderType enum to get default summarizer model
-                try:
-                    default_model = get_default_summarizer_model(provider_type=ProviderType(provider_name))
-                except (ValueError, TypeError):  # unknown provider
-                    default_model = None
-
-                # Use agent's model as fallback
+                # Use agent's model handle as fallback
                 if not default_model:
-                    default_model = agent_create.llm_config.model
+                    default_model = agent_create.llm_config.handle
 
                 if effective_compaction_settings is None:
                     # If no settings provided, INITIALIZE with default model
@@ -515,7 +511,6 @@ class AgentManager:
 
                 # Will set mode-specific default prompt if no prompt is provided
                 effective_compaction_settings = effective_compaction_settings.set_mode_specific_prompt()
-
                 new_agent = AgentModel(
                     name=agent_create.name,
                     system=derive_system_message(
@@ -531,7 +526,7 @@ class AgentManager:
                     description=agent_create.description,
                     metadata_=agent_create.metadata,
                     tool_rules=tool_rules,
-                    hidden=agent_create.hidden,
+                    hidden=True if force_hidden_for_subagent else agent_create.hidden,
                     project_id=agent_create.project_id,
                     template_id=agent_create.template_id,
                     base_template_id=agent_create.base_template_id,
@@ -788,6 +783,53 @@ class AgentManager:
                     agent.agent_type,
                 )
 
+            # Set new default compaction model if needed
+            # But respect explicit compaction model updates
+            explicit_compaction_model_update = (
+                agent_update.compaction_settings is not None and "model" in agent_update.compaction_settings.model_fields_set
+            )
+
+            # If agent provider changed, refresh default-derived compaction model
+            # so compaction stays aligned with the agent's active provider
+            if not explicit_compaction_model_update and agent_update.llm_config is not None:
+                old_provider_name = agent.llm_config.provider_name or agent.llm_config.model_endpoint_type
+                new_provider_name = agent_update.llm_config.provider_name or agent_update.llm_config.model_endpoint_type
+                llm_provider_changed = new_provider_name != old_provider_name
+
+                if llm_provider_changed:
+                    from letta.services.summarizer.summarizer_config import CompactionSettings, get_default_summarizer_model
+
+                    # catch old agent handle if on create, provider had no default --> resorted to agent's handle/model
+                    old_default_model = get_default_summarizer_model(old_provider_name) or (
+                        agent.llm_config.handle or agent.llm_config.model
+                    )
+                    new_default_model = get_default_summarizer_model(new_provider_name) or agent_update.llm_config.handle
+
+                    existing_compaction_model = (
+                        agent_update.compaction_settings.model
+                        if (agent_update.compaction_settings is not None and "model" in agent_update.compaction_settings.model_fields_set)
+                        else (agent.compaction_settings.model if agent.compaction_settings is not None else None)
+                    )
+
+                    should_refresh_compaction_model = existing_compaction_model is None or (
+                        old_default_model is not None and existing_compaction_model == old_default_model
+                    )
+
+                    if should_refresh_compaction_model:
+                        if agent_update.compaction_settings is None:
+                            # Fill in agent compaction settings if needed (old agents)
+                            if agent.compaction_settings is None:
+                                agent_update.compaction_settings = CompactionSettings(model=new_default_model)
+                            else:
+                                # Override model settings w/ new default model (bc of provider change)
+                                agent_update.compaction_settings = agent.compaction_settings.model_copy(
+                                    update={"model": new_default_model, "model_settings": None}
+                                )
+                        else:  # partial update of compaction settings
+                            agent_update.compaction_settings.model = new_default_model
+                            if "model_settings" not in agent_update.compaction_settings.model_fields_set:
+                                agent_update.compaction_settings.model_settings = None
+
             # Upsert compaction_settings: merge incoming partial update with existing settings
             if agent_update.compaction_settings is not None:
                 # If mode changed, update the prompt to the default for the new mode
@@ -999,6 +1041,7 @@ class AgentManager:
         sort_by: Optional[str] = "created_at",
         show_hidden_agents: Optional[bool] = None,
         last_stop_reason: Optional[StopReasonType] = None,
+        created_by_id: Optional[str] = None,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -1031,7 +1074,7 @@ class AgentManager:
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
-            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason, created_by_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_relationship_filters(query, include_relationships, include)
@@ -1070,6 +1113,7 @@ class AgentManager:
         identifier_keys: Optional[List[str]] = None,
         show_hidden_agents: Optional[bool] = None,
         last_stop_reason: Optional[StopReasonType] = None,
+        created_by_id: Optional[str] = None,
     ) -> int:
         """
         Count agents matching the specified filters using an efficient database-level COUNT query.
@@ -1096,7 +1140,7 @@ class AgentManager:
             query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # Apply filters
-            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason)
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id, last_stop_reason, created_by_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
 
@@ -1444,6 +1488,8 @@ class AgentManager:
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
+            agent_id=agent_state.id,
+            conversation_id="default",
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
             sources=agent_state.sources,
@@ -1533,6 +1579,8 @@ class AgentManager:
         new_system_message_str = PromptGenerator.get_system_message_from_compiled_memory(
             system_prompt=agent_state.system,
             memory_with_sources=curr_memory_str,
+            agent_id=agent_state.id,
+            conversation_id="default",
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
             previous_message_count=num_messages - len(agent_state.message_ids),
@@ -2068,9 +2116,6 @@ class AgentManager:
                 raise NoResultFound(f"No block with label '{block_label}' found for agent '{agent_id}'")
 
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
-
-            # Validate limit constraints before updating
-            validate_block_limit_constraint(update_data, matched_block)
 
             # If a custom block manager is injected (e.g. GitEnabledBlockManager), route
             # through it so git-backed memory semantics apply.

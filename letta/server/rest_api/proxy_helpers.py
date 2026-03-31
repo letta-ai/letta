@@ -338,6 +338,7 @@ async def persist_messages_background(
     assistant_message: str,
     model_name: str,
     proxy_name: str,
+    billing_context=None,
 ):
     """
     Background task to persist messages without blocking the response.
@@ -361,6 +362,7 @@ async def persist_messages_background(
             user_messages=user_messages,
             assistant_message=assistant_message,
             model=model_name,
+            billing_context=billing_context,
         )
         if result.get("success"):
             logger.info(f"[{proxy_name}] Persisted messages: {result['messages_created']} messages saved")

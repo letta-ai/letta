@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
+from letta.errors import ContextWindowExceededError
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -12,6 +13,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.user import User
 from letta.services.summarizer.self_summarizer import self_summarize_all, self_summarize_sliding_window
 from letta.services.summarizer.summarizer_all import summarize_all
@@ -49,6 +51,9 @@ async def build_summarizer_llm_config(
     then apply any explicit ``compaction_settings.model_settings`` via
     ``_to_legacy_config_params``.
 
+    For auto mode agents, routes summarization to Haiku 4.5 instead of the
+    agent's model, falling back to zai/glm-5 if Haiku is unavailable.
+
     Args:
         agent_llm_config: The agent's LLM configuration to use as base.
         summarizer_config: Compaction settings with optional model override.
@@ -57,19 +62,26 @@ async def build_summarizer_llm_config(
     Returns:
         LLMConfig configured for summarization.
     """
-    from letta.schemas.enums import ProviderType
+    # Auto mode agents: route summarization to Haiku 4.5 instead of the LLM router's
+    # default (GLM-5). Haiku is cheaper and well-suited for summarization.
+    if agent_llm_config.handle and agent_llm_config.handle.startswith("letta/auto"):
+        from letta.services.provider_manager import ProviderManager
+
+        try:
+            return await ProviderManager().get_llm_config_from_handle("anthropic/claude-haiku-4-5", actor)
+        except Exception as e:
+            logger.warning(f"Failed to resolve haiku for auto mode summarizer: {e}. Falling back to zai/glm-5.")
+            try:
+                return await ProviderManager().get_llm_config_from_handle("zai/glm-5", actor)
+            except Exception:
+                pass
 
     # If no summarizer model specified, use lightweight provider-specific defaults
     if not summarizer_config.model:
         provider_name = agent_llm_config.provider_name or agent_llm_config.model_endpoint_type
-        try:
-            provider_type = ProviderType(provider_name)
-            default_model = get_default_summarizer_model(provider_type=provider_type)
-            if default_model:
-                # Use default model
-                summarizer_config = summarizer_config.model_copy(update={"model": default_model})
-        except (ValueError, TypeError):
-            pass  # Unknown provider - will fall back to agent's model below
+        default_model = get_default_summarizer_model(provider_name)
+        if default_model:
+            summarizer_config = summarizer_config.model_copy(update={"model": default_model})
 
     # If still no model after defaults, use agent's model
     if not summarizer_config.model:
@@ -80,17 +92,28 @@ async def build_summarizer_llm_config(
         from letta.services.provider_manager import ProviderManager
 
         provider_manager = ProviderManager()
-        try:
-            # automatically sets the context window to the max available for the summarizer model
-            base = await provider_manager.get_llm_config_from_handle(
-                handle=summarizer_config.model,
-                actor=actor,
-            )
-        except Exception as e:
-            logger.warning(
-                f"Failed to load LLM config for summarizer handle '{summarizer_config.model}': {e}. Falling back to agent's LLM config."
-            )
-            return agent_llm_config
+
+        # If the summarizer model is an auto mode handle, resolve to haiku
+        # (safety net for stale compaction_settings that still reference letta/auto)
+        if summarizer_config.model and summarizer_config.model.startswith("letta/auto"):
+            try:
+                base = await provider_manager.get_llm_config_from_handle("anthropic/claude-haiku-4-5", actor)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to resolve haiku for auto mode summarizer handle '{summarizer_config.model}': {e}. Falling back to zai/glm-5."
+                )
+                base = await provider_manager.get_llm_config_from_handle("zai/glm-5", actor)
+        else:
+            try:
+                base = await provider_manager.get_llm_config_from_handle(
+                    handle=summarizer_config.model,
+                    actor=actor,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to load LLM config for summarizer handle '{summarizer_config.model}': {e}. Falling back to agent's LLM config."
+                )
+                return agent_llm_config
 
         # If explicit model_settings are provided for the summarizer, apply
         # them just like server.create_agent_async does for agents.
@@ -128,6 +151,7 @@ async def compact_messages(
     trigger: Optional[str] = None,
     context_tokens_before: Optional[int] = None,
     messages_count_before: Optional[int] = None,
+    billing_context: Optional[BillingContext] = None,
 ) -> CompactResult:
     """Compact in-context messages using summarization.
 
@@ -163,6 +187,8 @@ async def compact_messages(
     )
 
     summarization_mode_used = summarizer_config.mode
+    if summarizer_config.prompt is None:
+        summarizer_config.prompt = get_default_prompt_for_mode(summarizer_config.mode)
     if summarizer_config.mode == "self_compact_all":
         try:
             summary, compacted_messages = await self_summarize_all(
@@ -179,9 +205,10 @@ async def compact_messages(
                 timezone=timezone,
                 agent_tags=agent_tags,
                 tools=tools,
+                billing_context=billing_context,
             )
         except Exception as e:
-            logger.error(f"Self summarization failed with exception: {str(e)}. Falling back to self sliding window mode.")
+            logger.warning(f"Self summarization failed with exception: {str(e)}. Falling back to self sliding window mode.")
             try:
                 fallback_config = summarizer_config.model_copy(
                     update={
@@ -203,10 +230,11 @@ async def compact_messages(
                     timezone=timezone,
                     agent_tags=agent_tags,
                     tools=tools,
+                    billing_context=billing_context,
                 )
                 summarization_mode_used = "self_compact_sliding_window"
             except Exception as e:
-                logger.error(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+                logger.warning(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
                 fallback_config = summarizer_config.model_copy(
                     update={
                         "mode": "all",
@@ -222,6 +250,7 @@ async def compact_messages(
                     agent_tags=agent_tags,
                     run_id=run_id,
                     step_id=step_id,
+                    billing_context=billing_context,
                 )
                 summarization_mode_used = "all"
     elif summarizer_config.mode == "self_compact_sliding_window":
@@ -240,10 +269,13 @@ async def compact_messages(
                 timezone=timezone,
                 agent_tags=agent_tags,
                 tools=tools,
+                billing_context=billing_context,
             )
+        except ContextWindowExceededError:
+            raise
         except Exception as e:
             # Prompts for all and self mode should be similar --> can use original prompt
-            logger.error(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+            logger.warning(f"Self sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
             fallback_config = summarizer_config.model_copy(
                 update={
                     "mode": "all",
@@ -259,6 +291,7 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
             summarization_mode_used = "all"
     elif summarizer_config.mode == "all":
@@ -271,6 +304,7 @@ async def compact_messages(
             agent_tags=agent_tags,
             run_id=run_id,
             step_id=step_id,
+            billing_context=billing_context,
         )
     elif summarizer_config.mode == "sliding_window":
         try:
@@ -284,9 +318,14 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
+        except ContextWindowExceededError:
+            # If sliding window failed because the transcript was too large for
+            # the summarizer's context window, falling back to all mode will fail harder.
+            raise
         except Exception as e:
-            logger.error(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
+            logger.warning(f"Sliding window summarization failed with exception: {str(e)}. Falling back to all mode.")
             fallback_config = summarizer_config.model_copy(
                 update={
                     "mode": "all",
@@ -302,6 +341,7 @@ async def compact_messages(
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
             summarization_mode_used = "all"
     else:
@@ -318,7 +358,7 @@ async def compact_messages(
 
     # If the trigger_threshold is provided, verify the new token count is below it
     if trigger_threshold is not None and context_token_estimate is not None and context_token_estimate >= trigger_threshold:
-        logger.error(
+        logger.warning(
             "Summarization failed to sufficiently reduce context size: "
             f"post-summarization tokens={context_token_estimate}, "
             f"threshold={trigger_threshold}. "
@@ -329,13 +369,14 @@ async def compact_messages(
         if summarization_mode_used == "sliding_window":
             summary, compacted_messages = await summarize_all(
                 actor=actor,
-                llm_config=agent_llm_config,
+                llm_config=summarizer_llm_config,
                 summarizer_config=summarizer_config,
                 in_context_messages=compacted_messages,
                 agent_id=agent_id,
                 agent_tags=agent_tags,
                 run_id=run_id,
                 step_id=step_id,
+                billing_context=billing_context,
             )
             summarization_mode_used = "all"
 
@@ -357,13 +398,16 @@ async def compact_messages(
             if system_prompt_token_estimate is not None and system_prompt_token_estimate >= agent_llm_config.context_window:
                 from letta.errors import SystemPromptTokenExceededError
 
+                logger.warning(
+                    f"System prompt ({system_prompt_token_estimate} tokens) exceeds context window ({agent_llm_config.context_window})"
+                )
                 raise SystemPromptTokenExceededError(
                     system_prompt_token_estimate=system_prompt_token_estimate,
                     context_window=agent_llm_config.context_window,
                 )
 
             # Log error but don't brick the agent
-            logger.error(f"Failed to summarize messages after fallback: {context_token_estimate} > {trigger_threshold}")
+            logger.critical(f"Failed to summarize messages after fallback: {context_token_estimate} > {trigger_threshold}")
         else:
             logger.info(f"Summarization fallback succeeded: {context_token_estimate} < {trigger_threshold}")
 

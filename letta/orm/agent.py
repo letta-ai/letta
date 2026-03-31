@@ -49,6 +49,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         Index("ix_agents_created_at", "created_at", "id"),
         Index("ix_agents_organization_id_deployment_id", "organization_id", "deployment_id"),
         Index("ix_agents_project_id", "project_id"),
+        Index("ix_agents_organization_id_created_by_id", "organization_id", "_created_by_id"),
     )
 
     # agent generates its own id
@@ -181,6 +182,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
     batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="raise")
     file_agents: Mapped[List["FileAgent"]] = relationship(
         "FileAgent",
+        primaryjoin="and_(Agent.id == foreign(FileAgent.agent_id), FileAgent.is_deleted == False)",
         back_populates="agent",
         cascade="all, delete-orphan",
         lazy="selectin",

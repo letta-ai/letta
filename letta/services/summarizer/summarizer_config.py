@@ -8,12 +8,26 @@ from letta.schemas.model import ModelSettingsUnion
 from letta.settings import summarizer_settings
 
 
-def get_default_summarizer_model(provider_type: ProviderType) -> str | None:
-    """Get default model for summarization for given provider type."""
+def get_default_summarizer_model(provider_type: ProviderType | str | None) -> str | None:
+    """Get default model for summarization for a provider.
+
+    Accepts either ProviderType enum values or raw provider strings.
+    Returns None for unknown/unsupported providers.
+    """
+    if provider_type is None:
+        return None
+
+    if isinstance(provider_type, str):
+        try:
+            provider_type = ProviderType(provider_type)
+        except (ValueError, TypeError):
+            return None
+
     summarizer_defaults = {
         ProviderType.anthropic: "anthropic/claude-haiku-4-5",
         ProviderType.openai: "openai/gpt-5-mini",
         ProviderType.google_ai: "google_ai/gemini-2.5-flash",
+        ProviderType.letta: "letta/auto",
     }
     return summarizer_defaults.get(provider_type)
 

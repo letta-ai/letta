@@ -2510,7 +2510,7 @@ wheels = [
 
 [[package]]
 name = "letta"
-version = "0.16.6"
+version = "0.16.7"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -2548,7 +2548,7 @@ dependencies = [
     { name = "mistralai" },
     { name = "nltk" },
     { name = "numpy" },
-    { name = "openai" },
+    { name = "openai", extra = ["realtime"] },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-instrumentation-requests" },
@@ -2708,7 +2708,7 @@ requires-dist = [
     { name = "langchain", marker = "extra == 'external-tools'", specifier = ">=0.3.7" },
     { name = "langchain-community", marker = "extra == 'desktop'", specifier = ">=0.3.7" },
     { name = "langchain-community", marker = "extra == 'external-tools'", specifier = ">=0.3.7" },
-    { name = "letta-client", specifier = ">=1.6.3" },
+    { name = "letta-client", specifier = ">=1.7.12" },
     { name = "llama-index", specifier = ">=0.12.2" },
     { name = "llama-index-embeddings-openai", specifier = ">=0.3.1" },
     { name = "locust", marker = "extra == 'desktop'", specifier = ">=2.31.5" },
@@ -2721,7 +2721,7 @@ requires-dist = [
     { name = "modal", marker = "extra == 'modal'", specifier = ">=1.1.0" },
     { name = "nltk", specifier = ">=3.8.1" },
     { name = "numpy", specifier = ">=2.1.0" },
-    { name = "openai", specifier = ">=2.11.0" },
+    { name = "openai", extras = ["realtime"], specifier = ">=2.24.0" },
     { name = "opentelemetry-api", specifier = "==1.30.0" },
     { name = "opentelemetry-exporter-otlp", specifier = "==1.30.0" },
     { name = "opentelemetry-instrumentation-requests", specifier = "==0.51b0" },
@@ -2786,7 +2786,7 @@ provides-extras = ["postgres", "redis", "pinecone", "sqlite", "experimental", "s
 
 [[package]]
 name = "letta-client"
-version = "1.6.3"
+version = "1.7.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2796,9 +2796,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/14/e3/ac97d0a8581ff93bf236054afbbda4dc2d989a74fbf65d1c76aba58ea8b0/letta_client-1.6.3.tar.gz", hash = "sha256:882db8393d5394d1ed4be8891a52f05a32430fa886c217fbc272351e8835c801", size = 256291, upload-time = "2026-01-03T00:02:22.13Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/8e/13e5889698191ec983d3f715ee8cb222ba3381b729fcf01435efb60aa05d/letta_client-1.7.12.tar.gz", hash = "sha256:18cc6bcec292c531b69edf62f3faa001d67979c492671c49e9a7571659fea49a", size = 273091, upload-time = "2026-03-09T00:54:05.972Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/6f/7a0dab25ff1c2a1f410ed866c4ed7912e40d427959160da3d641e37ff682/letta_client-1.6.3-py3-none-any.whl", hash = "sha256:2530073d789c1dedabcba4b6d5440bf17354e5e54afded62495abee150b2f9c5", size = 394935, upload-time = "2026-01-03T00:02:20.577Z" },
+    { url = "https://files.pythonhosted.org/packages/96/cb/eb0df973536f6fbac07e11a73ce74a6e7ea2ed103d729fbb6c3d924dbc8a/letta_client-1.7.12-py3-none-any.whl", hash = "sha256:b793fdbad24f128b412ba5d67a216cf71d33427cbb63ce5ab633e045c47681b4", size = 395495, upload-time = "2026-03-09T00:54:04.539Z" },
 ]
 
 [[package]]
@@ -3771,7 +3771,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "2.11.0"
+version = "2.25.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3783,9 +3783,14 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f4/8c/aa6aea6072f985ace9d6515046b9088ff00c157f9654da0c7b1e129d9506/openai-2.11.0.tar.gz", hash = "sha256:b3da01d92eda31524930b6ec9d7167c535e843918d7ba8a76b1c38f1104f321e", size = 624540, upload-time = "2025-12-11T19:11:58.539Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/2b/a442b206ed74908dd79e2ad1ef3ffaeae66422b1fb506af981f0ef671ba0/openai-2.25.0.tar.gz", hash = "sha256:c3e1965d83c333dbd341eb2c7c8aceb783c272cd57fc57353404d9a443634e29", size = 666577, upload-time = "2026-03-05T18:35:38.292Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/f1/d9251b565fce9f8daeb45611e3e0d2f7f248429e40908dcee3b6fe1b5944/openai-2.11.0-py3-none-any.whl", hash = "sha256:21189da44d2e3d027b08c7a920ba4454b8b7d6d30ae7e64d9de11dbe946d4faa", size = 1064131, upload-time = "2025-12-11T19:11:56.816Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/e6/ca496976bacdd7f86d4fa69359c2d9b5a547d7acbf0ae5cac7bff107ff50/openai-2.25.0-py3-none-any.whl", hash = "sha256:7c7c01a0a4b69771a29913e28d06bc1e9cee8781b4d206bb56cb946d8d2fcb23", size = 1136347, upload-time = "2026-03-05T18:35:36.497Z" },
+]
+
+[package.optional-dependencies]
+realtime = [
+    { name = "websockets" },
 ]
 
 [[package]]

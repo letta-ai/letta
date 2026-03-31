@@ -180,6 +180,7 @@ class LLMBatchManager:
                 .join(LLMBatchItem, MessageModel.batch_item_id == LLMBatchItem.id)
                 .join(LLMBatchJob, LLMBatchItem.llm_batch_id == LLMBatchJob.id)
                 .where(LLMBatchJob.letta_batch_job_id == letta_batch_job_id)
+                .where(MessageModel.is_deleted == False)
             )
 
             if actor is not None:

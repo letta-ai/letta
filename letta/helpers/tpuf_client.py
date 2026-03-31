@@ -6,7 +6,7 @@ import logging
 import random
 from datetime import datetime, timezone
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, List, Literal, Optional, Tuple, TypeVar
 
 if TYPE_CHECKING:
     from letta.schemas.tool import Tool as PydanticTool
@@ -244,6 +244,42 @@ class TurbopufferClient:
 
         if not self.api_key:
             raise ValueError("Turbopuffer API key not provided")
+
+    async def hint_cache_warm(self, *, collection: Literal["messages"], scope: dict[str, str]) -> dict:
+        """Fire a cache warm hint for a supported search collection.
+
+        This signals to turbopuffer that latency-sensitive queries are coming,
+        so it can warm the cache before the first search request lands.
+
+        Args:
+            collection: Search collection whose cache should be warmed
+            scope: Collection-specific namespace resolution inputs
+
+        Returns:
+            {"status": "ACCEPTED", "namespace": "...", "collection": "messages"} on success
+        """
+        from turbopuffer import AsyncTurbopuffer
+
+        namespace_name = await self._get_cache_warm_namespace_name(collection=collection, scope=scope)
+
+        try:
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                ns = client.namespace(namespace_name)
+                result = await ns.hint_cache_warm()
+                return {"status": result.status, "namespace": namespace_name, "collection": collection}
+        except Exception as e:
+            logger.error(f"Failed to warm turbopuffer cache for collection {collection} in namespace {namespace_name}: {e}")
+            raise
+
+    async def _get_cache_warm_namespace_name(self, *, collection: Literal["messages"], scope: dict[str, str]) -> str:
+        """Resolve the namespace for a supported cache-warm collection."""
+        if collection == "messages":
+            return await self._get_message_namespace_name(scope["organization_id"])
+
+        raise LettaInvalidArgumentError(
+            f"Unsupported cache warm collection: {collection}",
+            argument_name="collection",
+        )
 
     @trace_method
     async def _generate_embeddings(self, texts: List[str], actor: "PydanticUser") -> List[List[float]]:
@@ -670,6 +706,7 @@ class TurbopufferClient:
         project_ids_list = []
         template_ids_list = []
         conversation_ids_list = []
+        is_deleted_list = []
 
         for (original_idx, text), embedding in zip(filtered_messages, embeddings):
             message_id = message_ids[original_idx]
@@ -696,6 +733,7 @@ class TurbopufferClient:
             project_ids_list.append(project_id)
             template_ids_list.append(template_id)
             conversation_ids_list.append(conversation_id)
+            is_deleted_list.append(False)
 
         # build column-based upsert data
         upsert_columns = {
@@ -706,6 +744,7 @@ class TurbopufferClient:
             "agent_id": agent_ids_list,
             "role": message_roles,
             "created_at": created_at_timestamps,
+            "is_deleted": is_deleted_list,
         }
 
         # only include conversation_id if it's provided
@@ -734,6 +773,7 @@ class TurbopufferClient:
                     schema={
                         "text": {"type": "string", "full_text_search": True},
                         "conversation_id": {"type": "string"},
+                        "is_deleted": {"type": "bool"},
                     },
                 )
                 logger.info(f"Successfully inserted {len(ids)} messages to Turbopuffer for agent {agent_id}")
@@ -1010,6 +1050,9 @@ class TurbopufferClient:
             raise
 
     @trace_method
+    # TODO: Once existing TPUF namespaces are backfilled with is_deleted attribute,
+    # add is_deleted=False filter to query_messages_by_agent_id and query_messages_by_org_id.
+    # Until then, soft-deleted messages are filtered out via DB post-filter in MessageManager.search_messages_async.
     async def query_messages_by_agent_id(
         self,
         agent_id: str,

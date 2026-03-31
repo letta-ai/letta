@@ -23,6 +23,7 @@ from letta.schemas.agent import CreateAgent, InternalTemplateAgentCreate, Update
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
+    AgentType,
     MessageRole,
 )
 from letta.schemas.letta_message_content import TextContent
@@ -728,6 +729,39 @@ async def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture
     assert updated_agent.updated_at > last_updated_timestamp
 
 
+async def test_create_agent_with_subagent_role_tag_forces_hidden_true(server: SyncServer, default_user, default_block):
+    create_agent_request = CreateAgent(
+        name="test_subagent_hidden_on_create",
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        include_base_tools=False,
+        tags=["role:subagent", "test"],
+        hidden=False,
+    )
+
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    assert created_agent.hidden is True
+
+
+async def test_update_agent_with_subagent_role_tag_does_not_force_hidden_true(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user
+):
+    agent, _ = comprehensive_test_agent_fixture
+    assert agent.hidden is None
+
+    update_agent_request = UpdateAgent(
+        tags=["role:subagent", "test"],
+    )
+    updated_agent = await server.agent_manager.update_agent_async(agent.id, update_agent_request, actor=default_user)
+
+    assert updated_agent.hidden is None
+
+
 @pytest.mark.asyncio
 async def test_create_agent_with_compaction_settings(server: SyncServer, default_user, default_block):
     """Test that agents can be created with custom compaction_settings"""
@@ -881,6 +915,138 @@ async def test_update_agent_partial_compaction_settings_same_mode(server: SyncSe
     assert final_agent.compaction_settings.prompt_acknowledgement == original_compaction_settings.prompt_acknowledgement
     assert final_agent.compaction_settings.mode == "sliding_window"
     assert final_agent.compaction_settings.model == "openai/gpt-4o-mini"
+
+
+@pytest.mark.asyncio
+async def test_update_agent_switches_default_compaction_model_on_llm_change(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user
+):
+    """If compaction model is default-derived, switching agent provider/model should refresh it."""
+    from letta.schemas.enums import ProviderType
+    from letta.services.summarizer.summarizer_config import get_default_summarizer_model
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    # Fixture uses OpenAI model; compaction defaults should follow OpenAI provider defaults.
+    assert agent.compaction_settings is not None
+    assert agent.compaction_settings.model == get_default_summarizer_model(ProviderType.openai)
+
+    updated_llm_config = agent.llm_config.model_copy(
+        update={
+            "model": "claude-sonnet-4-5",
+            "model_endpoint_type": "anthropic",
+            "provider_name": "anthropic",
+            "handle": "anthropic/claude-sonnet-4-5",
+        }
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(llm_config=updated_llm_config),
+        actor=default_user,
+    )
+
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.model == get_default_summarizer_model(ProviderType.anthropic)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_preserves_custom_compaction_model_on_llm_change(
+    server: SyncServer, comprehensive_test_agent_fixture, default_user
+):
+    """If compaction model is custom, switching agent provider/model should not overwrite it."""
+    agent, _ = comprehensive_test_agent_fixture
+
+    custom_model = "openai/gpt-4o-mini"
+    agent_with_custom_compaction = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(compaction_settings=CompactionSettings(model=custom_model)),
+        actor=default_user,
+    )
+    assert agent_with_custom_compaction.compaction_settings is not None
+    assert agent_with_custom_compaction.compaction_settings.model == custom_model
+
+    updated_llm_config = agent.llm_config.model_copy(
+        update={
+            "model": "claude-sonnet-4-5",
+            "model_endpoint_type": "anthropic",
+            "provider_name": "anthropic",
+            "handle": "anthropic/claude-sonnet-4-5",
+        }
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(llm_config=updated_llm_config),
+        actor=default_user,
+    )
+
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.model == custom_model
+
+
+@pytest.mark.asyncio
+async def test_update_agent_switches_default_compaction_model_on_llm_change_with_partial_compaction_update(
+    server: SyncServer,
+    comprehensive_test_agent_fixture,
+    default_user,
+):
+    """If compaction update omits model, provider/model switch should still refresh default-derived compaction model."""
+    from letta.schemas.enums import ProviderType
+    from letta.services.summarizer.summarizer_config import get_default_prompt_for_mode, get_default_summarizer_model
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    updated_llm_config = agent.llm_config.model_copy(
+        update={
+            "model": "claude-sonnet-4-5",
+            "model_endpoint_type": "anthropic",
+            "provider_name": "anthropic",
+            "handle": "anthropic/claude-sonnet-4-5",
+        }
+    )
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(
+            llm_config=updated_llm_config,
+            compaction_settings=CompactionSettings(mode="all"),
+        ),
+        actor=default_user,
+    )
+
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.mode == "all"
+    assert updated_agent.compaction_settings.prompt == get_default_prompt_for_mode("all")
+    assert updated_agent.compaction_settings.model == get_default_summarizer_model(ProviderType.anthropic)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_does_not_switch_default_compaction_model_on_same_provider_model_change(
+    server: SyncServer,
+    comprehensive_test_agent_fixture,
+    default_user,
+):
+    """If only model changes (same provider), compaction default model should not be refreshed."""
+    from letta.schemas.enums import ProviderType
+    from letta.services.summarizer.summarizer_config import get_default_summarizer_model
+
+    agent, _ = comprehensive_test_agent_fixture
+
+    assert agent.compaction_settings is not None
+    assert agent.compaction_settings.model == get_default_summarizer_model(ProviderType.openai)
+
+    updated_llm_config = agent.llm_config.model_copy(update={"model": "gpt-4o", "handle": "openai/gpt-4o"})
+
+    updated_agent = await server.agent_manager.update_agent_async(
+        agent_id=agent.id,
+        agent_update=UpdateAgent(llm_config=updated_llm_config),
+        actor=default_user,
+    )
+
+    assert updated_agent.llm_config.model == "gpt-4o"
+    assert updated_agent.compaction_settings is not None
+    assert updated_agent.compaction_settings.model == get_default_summarizer_model(ProviderType.openai)
 
 
 @pytest.mark.asyncio
@@ -1275,6 +1441,53 @@ async def test_list_agents_by_last_stop_reason(server: SyncServer, default_user)
     all_agents = await server.agent_manager.list_agents_async(actor=default_user)
     all_names = {agent.name for agent in all_agents}
     assert {"agent_requires_approval", "agent_error", "agent_no_stop_reason"}.issubset(all_names)
+
+
+@pytest.mark.asyncio
+async def test_list_agents_by_created_by_id(server: SyncServer, default_user, other_user):
+    """Test filtering agents by created_by_id."""
+    # Create agent as default_user
+    await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_by_default_user",
+            agent_type=AgentType.letta_v1_agent,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    # Create agent as other_user
+    await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent_by_other_user",
+            agent_type=AgentType.letta_v1_agent,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+            include_base_tools=False,
+        ),
+        actor=other_user,
+    )
+
+    # Filter by default_user's id
+    default_user_agents = await server.agent_manager.list_agents_async(actor=default_user, created_by_id=default_user.id)
+    default_user_names = {agent.name for agent in default_user_agents}
+    assert "agent_by_default_user" in default_user_names
+    assert "agent_by_other_user" not in default_user_names
+
+    # Filter by other_user's id
+    other_user_agents = await server.agent_manager.list_agents_async(actor=other_user, created_by_id=other_user.id)
+    other_user_names = {agent.name for agent in other_user_agents}
+    assert "agent_by_other_user" in other_user_names
+    assert "agent_by_default_user" not in other_user_names
+
+    # No filter - both users' agents visible
+    all_agents = await server.agent_manager.list_agents_async(actor=default_user)
+    all_names = {agent.name for agent in all_agents}
+    assert {"agent_by_default_user", "agent_by_other_user"}.issubset(all_names)
 
 
 @pytest.mark.asyncio
@@ -1954,6 +2167,7 @@ async def test_agent_state_schema_unchanged(server: SyncServer):
         "return_logprobs",
         "top_logprobs",
         "return_token_ids",
+        "tool_call_parser",
     }
     actual_llm_config_fields = set(llm_config_fields.keys())
     if actual_llm_config_fields != expected_llm_config_fields:

@@ -39,7 +39,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentType, JobStatus, ProviderCategory, ProviderType, ToolSourceType
 from letta.schemas.group import GroupCreate, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
+from letta.schemas.letta_message import LettaMessage, MessageType, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message
@@ -48,6 +48,7 @@ from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
+    BasetenProvider,
     BedrockProvider,
     DeepSeekProvider,
     GoogleAIProvider,
@@ -347,6 +348,13 @@ class SyncServer(object):
                     api_key_enc=Secret.from_plaintext(model_settings.minimax_api_key),
                 )
             )
+        if model_settings.baseten_api_key:
+            self._enabled_providers.append(
+                BasetenProvider(
+                    name="baseten",
+                    api_key_enc=Secret.from_plaintext(model_settings.baseten_api_key),
+                )
+            )
         if model_settings.zai_api_key:
             self._enabled_providers.append(
                 ZAIProvider(
@@ -364,19 +372,21 @@ class SyncServer(object):
             )
 
     async def init_async(self, init_with_default_org_and_user: bool = True):
+        # unfortunately we must always create default org/user
+        self.default_org = await self.organization_manager.create_default_organization_async()
+        self.default_user = await self.user_manager.create_default_actor_async()
+        print(f"Default user: {self.default_user} and org: {self.default_org}")
+
+        # Sync environment-based providers to database (idempotent, safe for multi-pod startup)
+        await self.provider_manager.sync_base_providers(base_providers=self._enabled_providers, actor=self.default_user)
+
+        # Sync provider models to database
+        await self._sync_provider_models_async()
+
+        await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
+
         # Make default user and org
         if init_with_default_org_and_user:
-            self.default_org = await self.organization_manager.create_default_organization_async()
-            self.default_user = await self.user_manager.create_default_actor_async()
-            print(f"Default user: {self.default_user} and org: {self.default_org}")
-            await self.tool_manager.upsert_base_tools_async(actor=self.default_user)
-
-            # Sync environment-based providers to database (idempotent, safe for multi-pod startup)
-            await self.provider_manager.sync_base_providers(base_providers=self._enabled_providers, actor=self.default_user)
-
-            # Sync provider models to database
-            await self._sync_provider_models_async()
-
             # For OSS users, create a local sandbox config
             oss_default_user = await self.user_manager.get_default_actor_async()
             use_venv = False if not tool_settings.tool_exec_venv_name else True
@@ -629,6 +639,11 @@ class SyncServer(object):
             except Exception:
                 pass
 
+            # Recompile the system prompt now that git_enabled=True, so the
+            # persisted system message uses the git-style memory rendering
+            # instead of the legacy <memory_blocks> format.
+            await self.agent_manager.rebuild_system_prompt_async(agent_id=main_agent.id, actor=actor, force=True, update_timestamp=True)
+
         log_event(name="start insert_files_into_context_window db")
         # Use folder_ids if provided, otherwise fall back to deprecated source_ids for backwards compatibility
         folder_ids_to_attach = request.folder_ids if request.folder_ids else request.source_ids
@@ -657,9 +672,12 @@ class SyncServer(object):
         request: UpdateAgent,
         actor: User,
     ) -> AgentState:
-        # Build llm_config from convenience fields if llm_config is not provided
+        # Build llm_config from convenience fields if llm_config is not provided.
+        # Use model_fields_set to distinguish "max_tokens omitted" from "max_tokens: null"
+        # so the client can explicitly clear a stale max_tokens on model switch.
+        max_tokens_explicitly_set = "max_tokens" in request.model_fields_set
         if request.llm_config is None and (
-            request.model is not None or request.context_window_limit is not None or request.max_tokens is not None
+            request.model is not None or request.context_window_limit is not None or max_tokens_explicitly_set
         ):
             if request.model is None:
                 agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -672,6 +690,10 @@ class SyncServer(object):
             log_event(name="start get_llm_config_from_handle", attributes=config_params)
             request.llm_config = await self.get_llm_config_from_handle_async(actor=actor, **config_params)
             log_event(name="end get_llm_config_from_handle", attributes=config_params)
+            # Explicitly clear max_tokens when the caller sent null (get_llm_config_from_handle
+            # skips null values, so we apply it here after the config is built).
+            if max_tokens_explicitly_set and request.max_tokens is None:
+                request.llm_config.max_tokens = None
 
         # update with model_settings
         if request.model_settings is not None:
@@ -682,7 +704,7 @@ class SyncServer(object):
             else:
                 # TODO: Refactor update_agent to accept partial llm_config so we
                 # don't need to fetch the full agent just to preserve max_tokens.
-                if request.max_tokens is None and "max_output_tokens" not in request.model_settings.model_fields_set:
+                if not max_tokens_explicitly_set and "max_output_tokens" not in request.model_settings.model_fields_set:
                     agent = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
                     request.llm_config.max_tokens = agent.llm_config.max_tokens
             update_llm_config_params = request.model_settings._to_legacy_config_params()
@@ -926,6 +948,7 @@ class SyncServer(object):
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
         conversation_id: Optional[str] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=agent_id,
@@ -952,6 +975,7 @@ class SyncServer(object):
                 reverse=reverse,
                 include_err=include_err,
                 text_is_assistant_message=text_is_assistant_message,
+                include_return_message_types=include_return_message_types,
             )
 
         if reverse:
@@ -973,6 +997,7 @@ class SyncServer(object):
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         include_err: Optional[bool] = None,
         conversation_id: Optional[str] = None,
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> Union[List[Message], List[LettaMessage]]:
         records = await self.message_manager.list_messages(
             agent_id=None,
@@ -999,6 +1024,7 @@ class SyncServer(object):
                 reverse=reverse,
                 include_err=include_err,
                 text_is_assistant_message=text_is_assistant_message,
+                include_return_message_types=include_return_message_types,
             )
 
         if reverse:
@@ -1240,9 +1266,26 @@ class SyncServer(object):
             )
 
             # Build LLMConfig objects from database
+            from letta.services.provider_manager import AUTO_MODE_HANDLES
+
             provider_cache: Dict[str, Provider] = {}
             typed_provider_cache: Dict[str, Any] = {}
             for model in provider_models:
+                # Handle synthetic auto mode models separately
+                if model.handle in AUTO_MODE_HANDLES:
+                    llm_config = LLMConfig(
+                        model=model.name,
+                        model_endpoint_type=model.model_endpoint_type,
+                        model_endpoint="",
+                        context_window=model.max_context_window or 180000,
+                        handle=model.handle,
+                        provider_name="letta",
+                        provider_category=ProviderCategory.base,
+                        max_tokens=8192,
+                    )
+                    llm_models.append(llm_config)
+                    continue
+
                 # Get provider details (with caching to avoid N+1 queries)
                 if model.provider_id not in provider_cache:
                     provider_cache[model.provider_id] = await self.provider_manager.get_provider_async(model.provider_id, actor)
@@ -1480,11 +1523,11 @@ class SyncServer(object):
             raise
 
         if context_window_limit is not None:
-            if context_window_limit > llm_config.context_window:
-                raise LettaInvalidArgumentError(
-                    f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})",
-                    argument_name="context_window_limit",
-                )
+            # if context_window_limit > llm_config.context_window:
+            #     raise LettaInvalidArgumentError(
+            #         f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})",
+            #         argument_name="context_window_limit",
+            #     )
             llm_config.context_window = context_window_limit
         else:
             llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)

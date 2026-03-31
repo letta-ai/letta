@@ -11,8 +11,16 @@ from collections import defaultdict
 from typing import Optional
 
 from letta.log import get_logger
+from letta.otel.metric_registry import MetricRegistry
 
 logger = get_logger(__name__)
+
+
+# Lazy import to avoid circular deps at module load time.
+def _get_readiness_settings():
+    from letta.settings import readiness_settings
+
+    return readiness_settings
 
 
 class EventLoopWatchdog:
@@ -31,13 +39,17 @@ class EventLoopWatchdog:
         self.timeout_threshold = timeout_threshold
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
-        self._last_heartbeat = time.time()
-        self._heartbeat_scheduled_at = time.time()
+        # Use monotonic time for watchdog timing to avoid wall-clock jumps (e.g. NTP)
+        # producing negative lag samples.
+        self._last_heartbeat = time.monotonic()
+        self._heartbeat_scheduled_at = time.monotonic()
         self._heartbeat_lock = threading.Lock()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._monitoring = False
         self._last_dump_time = 0.0  # Cooldown between task dumps
         self._saturation_start: Optional[float] = None  # Track when saturation began
+        self._degraded_since: Optional[float] = None  # Track when we entered sustained overload
+        self._recovery_since: Optional[float] = None  # Track when we started recovering
 
     def start(self, loop: asyncio.AbstractEventLoop):
         """Start the watchdog thread."""
@@ -47,7 +59,7 @@ class EventLoopWatchdog:
         self._loop = loop
         self._monitoring = True
         self._stop_event.clear()
-        now = time.time()
+        now = time.monotonic()
         self._last_heartbeat = now
         self._heartbeat_scheduled_at = now
 
@@ -75,12 +87,18 @@ class EventLoopWatchdog:
         if not self._monitoring:
             return
 
-        now = time.time()
+        now = time.monotonic()
         with self._heartbeat_lock:
             # Calculate event loop lag: time between when we scheduled this callback and when it ran
-            lag = now - self._heartbeat_scheduled_at
+            lag = max(0.0, now - self._heartbeat_scheduled_at)
             self._last_heartbeat = now
             self._heartbeat_scheduled_at = now + 1.0
+
+            try:
+                MetricRegistry().event_loop_lag_ms_histogram.record(lag * 1000, attributes={"source": "watchdog_heartbeat"})
+            except Exception:
+                # Observability must never interfere with watchdog safety.
+                pass
 
             # Log if lag is significant (> 2 seconds means event loop is saturated)
             if lag > 2.0:
@@ -102,27 +120,42 @@ class EventLoopWatchdog:
                     last_beat = self._last_heartbeat
                     scheduled_at = self._heartbeat_scheduled_at
 
-                now = time.time()
+                now = time.monotonic()
                 time_since_heartbeat = now - last_beat
                 # Calculate current lag: how far behind schedule is the heartbeat?
-                current_lag = now - scheduled_at
+                current_lag = max(0.0, now - scheduled_at)
                 max_lag_seen = max(max_lag_seen, current_lag)
 
                 # Try to estimate event loop load (safe from separate thread)
                 task_count = -1
+                executor_backlog = -1
                 try:
                     if self._loop and not self._loop.is_closed():
                         # all_tasks returns only unfinished tasks
                         all_tasks = asyncio.all_tasks(self._loop)
                         task_count = len(all_tasks)
+                        executor_backlog = self._get_executor_backlog(self._loop)
                 except Exception:
                     # Accessing loop from thread can be fragile, don't fail
                     pass
 
+                if executor_backlog >= 0:
+                    try:
+                        MetricRegistry().executor_backlog_gauge.set(executor_backlog, attributes={"source": "default_executor"})
+                    except Exception:
+                        pass
+
+                if task_count >= 0:
+                    try:
+                        MetricRegistry().asyncio_task_count_gauge.set(task_count)
+                    except Exception:
+                        pass
+
                 # ALWAYS log every check to prove watchdog is alive
                 logger.debug(
                     f"WATCHDOG_CHECK: heartbeat_age={time_since_heartbeat:.1f}s, current_lag={current_lag:.2f}s, "
-                    f"max_lag={max_lag_seen:.2f}s, consecutive_hangs={consecutive_hangs}, tasks={task_count}"
+                    f"max_lag={max_lag_seen:.2f}s, consecutive_hangs={consecutive_hangs}, "
+                    f"tasks={task_count}, executor_backlog={executor_backlog}"
                 )
 
                 # Log at INFO if we see significant lag (> 2 seconds indicates saturation)
@@ -142,12 +175,18 @@ class EventLoopWatchdog:
                         self._dump_asyncio_tasks()  # Dump async tasks
                         self._dump_state()  # Dump thread stacks
                         self._last_dump_time = now
+
+                    # Readiness gating: transition to degraded after sustained overload
+                    self._maybe_degrade_readiness(now, current_lag_ms=current_lag * 1000)
                 else:
                     # Reset saturation tracking when recovered
                     if self._saturation_start is not None:
                         duration = now - self._saturation_start
                         logger.info(f"Event loop saturation ended after {duration:.1f}s")
                         self._saturation_start = None
+
+                    # Readiness gating: attempt recovery when lag is healthy
+                    self._maybe_recover_readiness(now)
 
                 if time_since_heartbeat > self.timeout_threshold:
                     consecutive_hangs += 1
@@ -169,6 +208,73 @@ class EventLoopWatchdog:
 
             except Exception as e:
                 logger.error(f"Watchdog error: {e}")
+
+    def _maybe_degrade_readiness(self, now: float, current_lag_ms: float) -> None:
+        """Transition to degraded when event loop lag exceeds threshold for sustained period."""
+        try:
+            rs = _get_readiness_settings()
+            if not rs.enforcement_enabled or not rs.event_loop_lag_gating_enabled:
+                return
+            if current_lag_ms < rs.event_loop_lag_threshold_ms:
+                return
+
+            from letta.monitoring.readiness_state import get_readiness_state, mark_degraded
+
+            if get_readiness_state() not in ("ready", "degraded"):
+                return  # Don't override draining/warming/manual_disable
+
+            if self._degraded_since is None:
+                self._degraded_since = now
+                self._recovery_since = None
+                return
+
+            elapsed = now - self._degraded_since
+            if elapsed >= rs.degraded_stabilization_seconds and get_readiness_state() == "ready":
+                mark_degraded(f"event_loop_lag:{current_lag_ms:.0f}ms")
+        except Exception:
+            pass  # Readiness gating must never crash the watchdog
+
+    def _maybe_recover_readiness(self, now: float) -> None:
+        """Recover from event-loop-lag-induced degraded state after sustained healthy period."""
+        try:
+            rs = _get_readiness_settings()
+            if not rs.enforcement_enabled or not rs.event_loop_lag_gating_enabled:
+                return
+
+            from letta.monitoring.readiness_state import clear_degraded, get_readiness_state
+
+            self._degraded_since = None  # Reset overload timer
+
+            if get_readiness_state() != "degraded":
+                self._recovery_since = None
+                return
+
+            if self._recovery_since is None:
+                self._recovery_since = now
+                return
+
+            elapsed = now - self._recovery_since
+            if elapsed >= rs.recovery_stabilization_seconds:
+                clear_degraded("event_loop_lag")
+                self._recovery_since = None
+        except Exception:
+            pass  # Readiness gating must never crash the watchdog
+
+    @staticmethod
+    def _get_executor_backlog(loop: asyncio.AbstractEventLoop) -> int:
+        """Best-effort backlog size for the loop's default executor work queue."""
+        default_executor = getattr(loop, "_default_executor", None)
+        if default_executor is None:
+            return 0
+
+        work_queue = getattr(default_executor, "_work_queue", None)
+        if work_queue is None or not hasattr(work_queue, "qsize"):
+            return 0
+
+        try:
+            return int(work_queue.qsize())
+        except Exception:
+            return 0
 
     def _dump_state(self):
         """Dump state with stack traces when hang detected."""

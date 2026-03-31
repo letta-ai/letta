@@ -207,6 +207,7 @@ class StepManager:
             "provider_name": provider_name,
             "provider_category": provider_category,
             "model": model,
+            "model_handle": model_handle,
             "model_endpoint": model_endpoint,
             "context_window_limit": context_window_limit,
             "completion_tokens": usage.completion_tokens,
@@ -327,6 +328,7 @@ class StepManager:
                 ascending=ascending,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 step_id=step_id,
             )
             return [message.to_pydantic() for message in messages]
@@ -472,6 +474,44 @@ class StepManager:
         webhook_service = WebhookService()
         await webhook_service.notify_step_complete(step_id)
         return pydantic_step
+
+    @enforce_types
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
+    @trace_method
+    async def update_step_resolved_model_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        provider_name: str,
+        provider_category: str,
+        model: str,
+        model_endpoint: Optional[str],
+        model_handle: Optional[str] = None,
+    ) -> None:
+        """Update a step with resolved model info (e.g. after auto mode resolution).
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            provider_name: The resolved provider name
+            provider_category: The resolved provider category
+            model: The resolved model name
+            model_endpoint: The resolved model endpoint
+            model_handle: The resolved model handle
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.provider_name = provider_name
+            step.provider_category = provider_category
+            step.model = model
+            step.model_endpoint = model_endpoint
+            if model_handle is not None:
+                step.model_handle = model_handle
 
     @enforce_types
     @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
@@ -751,6 +791,20 @@ class NoopStepManager(StepManager):
         usage: UsageStatistics,
         stop_reason: Optional[LettaStopReason] = None,
     ) -> PydanticStep:
+        return
+
+    @enforce_types
+    @trace_method
+    async def update_step_resolved_model_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        provider_name: str,
+        provider_category: str,
+        model: str,
+        model_endpoint: Optional[str],
+        model_handle: Optional[str] = None,
+    ) -> None:
         return
 
     @enforce_types

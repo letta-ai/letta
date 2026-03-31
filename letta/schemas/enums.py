@@ -53,10 +53,12 @@ class PrimitiveType(str, Enum):
 class ProviderType(str, Enum):
     anthropic = "anthropic"
     azure = "azure"
+    baseten = "baseten"
     bedrock = "bedrock"
     cerebras = "cerebras"
     chatgpt_oauth = "chatgpt_oauth"
     deepseek = "deepseek"
+    fireworks = "fireworks"
     google_ai = "google_ai"
     google_vertex = "google_vertex"
     groq = "groq"
@@ -73,6 +75,7 @@ class ProviderType(str, Enum):
     openrouter = "openrouter"
     xai = "xai"
     zai = "zai"
+    zai_coding = "zai_coding"
 
 
 class AgentType(str, Enum):

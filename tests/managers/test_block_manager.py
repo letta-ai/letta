@@ -560,31 +560,6 @@ async def test_update_block(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_update_block_limit(server: SyncServer, default_user):
-    block_manager = BlockManager()
-    block = await block_manager.create_or_update_block_async(
-        PydanticBlock(label="persona", value="Original Content", limit=20000), actor=default_user
-    )
-
-    limit = len("Updated Content") * 2000
-    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description")
-
-    # Check that exceeding the block limit raises an exception
-    with pytest.raises(LettaInvalidArgumentError):
-        await block_manager.update_block_async(block_id=block.id, block_update=update_data, actor=default_user)
-
-    # Ensure the update works when within limits
-    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description", limit=limit)
-    await block_manager.update_block_async(block_id=block.id, block_update=update_data, actor=default_user)
-
-    # Retrieve the updated block and validate the update
-    updated_block = await block_manager.get_block_by_id_async(actor=default_user, block_id=block.id)
-
-    assert updated_block.value == "Updated Content" * 2000
-    assert updated_block.description == "Updated description"
-
-
-@pytest.mark.asyncio
 async def test_update_block_limit_does_not_reset(server: SyncServer, default_user):
     block_manager = BlockManager()
     new_content = "Updated Content" * 2000
@@ -704,7 +679,9 @@ async def test_batch_create_multiple_blocks(server: SyncServer, default_user):
     assert expected_labels.issubset(all_labels)
 
 
-async def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncServer, default_user: PydanticUser, caplog):
+async def test_bulk_update_skips_missing_and_updates_without_truncation_then_returns_none(
+    server: SyncServer, default_user: PydanticUser, caplog
+):
     mgr = BlockManager()
 
     # create one block with a small limit
@@ -713,7 +690,7 @@ async def test_bulk_update_skips_missing_and_truncates_then_returns_none(server:
         actor=default_user,
     )
 
-    # prepare updates: one real id with an over‐limit value, plus one missing id
+    # prepare updates: one real id with an over-limit value, plus one missing id
     long_val = random_string(10)  # length > limit==5
     updates = {
         b.id: long_val,
@@ -725,14 +702,13 @@ async def test_bulk_update_skips_missing_and_truncates_then_returns_none(server:
     # default return_hydrated=False → should be None
     assert result is None
 
-    # warnings should mention skipping the missing ID and truncation
+    # warnings should mention skipping the missing ID
     assert "skipping during bulk update" in caplog.text
-    assert "truncating" in caplog.text
 
-    # confirm the value was truncated to `limit` characters
+    # confirm the value was not truncated
     reloaded = await mgr.get_block_by_id_async(actor=default_user, block_id=b.id)
-    assert len(reloaded.value) == 5
-    assert reloaded.value == long_val[:5]
+    assert len(reloaded.value) == len(long_val)
+    assert reloaded.value == long_val
 
 
 @pytest.mark.skip(reason="TODO: implement for async")

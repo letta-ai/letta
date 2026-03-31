@@ -21,10 +21,19 @@ from letta.agents.helpers import (
 )
 from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEARTBEAT_PARAM
-from letta.errors import ContextWindowExceededError, LLMEmptyResponseError, LLMError, SystemPromptTokenExceededError
+from letta.errors import (
+    ContextWindowExceededError,
+    LLMEmptyResponseError,
+    LLMError,
+    LLMProviderOverloaded,
+    LLMRateLimitError,
+    LLMServerError,
+    SystemPromptTokenExceededError,
+)
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
 from letta.helpers.tool_execution_helper import enable_strict_mode
+from letta.llm_api.llm_client import LLMClient
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -40,7 +49,7 @@ from letta.schemas.letta_message import (
     extract_compaction_stats_from_packed_json,
 )
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
-from letta.schemas.letta_request import ClientToolSchema
+from letta.schemas.letta_request import ClientSkillSchema, ClientToolSchema
 from letta.schemas.letta_response import LettaResponse, TurnTokenData
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, ToolReturn
@@ -58,9 +67,12 @@ from letta.server.rest_api.utils import (
 )
 from letta.services.conversation_manager import ConversationManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
+from letta.services.llm_router import get_llm_routing_client
+from letta.services.provider_manager import AUTO_MODE_HANDLES
 from letta.services.summarizer.compact import compact_messages
 from letta.services.summarizer.summarizer_config import CompactionSettings
 from letta.services.summarizer.summarizer_sliding_window import count_tokens
+from letta.services.summarizer.thresholds import get_compaction_trigger_threshold
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
 from letta.utils import safe_create_task_with_return, validate_function_response
@@ -120,6 +132,8 @@ class LettaAgentV3(LettaAgentV2):
         self.conversation_id: str | None = None
         # Client-side tools passed in the request (executed by client, not server)
         self.client_tools: list[ClientToolSchema] = []
+        # Client-side skills passed in the request (rendered in system prompt)
+        self.client_skills: list[ClientSkillSchema] = []
         # Log probabilities from the most recent LLM call (for RL training)
         self.logprobs: ChoiceLogprobs | None = None
         # Multi-turn token tracking for RL training (accumulated across all LLM calls)
@@ -139,6 +153,72 @@ class LettaAgentV3(LettaAgentV2):
         return max(5000, cap)
 
     @trace_method
+    async def build_request(
+        self,
+        input_messages: list[MessageCreate],
+        client_skills: list[ClientSkillSchema] | None = None,
+        client_tools: list[ClientToolSchema] | None = None,
+        conversation_id: str | None = None,
+        override_system: str | None = None,
+    ) -> dict:
+        """
+        Build the request data for an LLM call without actually executing it.
+
+        Overrides V2 to support conversation-scoped messages, conversation-isolated
+        blocks, and client-side tools — matching the real execution path in step().
+
+        Args:
+            input_messages: List of new messages to process
+            client_skills: Optional client-side skills to include in system prompt
+            client_tools: Optional client-side tools to merge into tool list
+            conversation_id: Optional conversation ID for conversation-scoped context
+
+        Returns:
+            dict: The request data that would be sent to the LLM
+        """
+        from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
+
+        self._initialize_state()
+        self.client_tools = client_tools or []
+        self.client_skills = client_skills or []
+        self.override_system = override_system
+        self.conversation_id = conversation_id
+
+        # Apply conversation-specific block overrides (same as step())
+        if conversation_id:
+            self.agent_state = await ConversationManager().apply_isolated_blocks_to_agent_state(
+                agent_state=self.agent_state,
+                conversation_id=conversation_id,
+                actor=self.actor,
+            )
+
+        in_context_messages, input_messages_to_persist = await _prepare_in_context_messages_no_persist_async(
+            input_messages, self.agent_state, self.message_manager, self.actor, None, conversation_id=conversation_id
+        )
+
+        response = self._step(
+            run_id=None,
+            messages=in_context_messages + input_messages_to_persist,
+            llm_adapter=LettaLLMRequestAdapter(
+                llm_client=self.llm_client,
+                llm_config=self.agent_state.llm_config,
+                call_type=LLMCallType.agent_step,
+                agent_id=self.agent_state.id,
+                agent_tags=self.agent_state.tags,
+                org_id=self.actor.organization_id,
+                user_id=self.actor.id,
+            ),
+            dry_run=True,
+            enforce_run_id_set=False,
+        )
+        request = {}
+        async for chunk in response:
+            request = chunk
+            break
+
+        return request
+
+    @trace_method
     async def step(
         self,
         input_messages: list[MessageCreate],
@@ -149,6 +229,8 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
@@ -174,6 +256,8 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
+        self.client_skills = client_skills or []
+        self.override_system = override_system
 
         # Apply conversation-specific block overrides if conversation_id is provided
         if conversation_id:
@@ -202,11 +286,13 @@ class LettaAgentV3(LettaAgentV2):
 
         self.in_context_messages = curr_in_context_messages
 
-        # Check if we should use SGLang native adapter for multi-turn RL training
+        # Check if we should use SGLang native adapter for multi-turn RL training.
+        # Matches handles starting with "sglang/" OR providers named like "*sglang*"
+        # (e.g. "slime-sglang" used in training).
+        _handle = self.agent_state.llm_config.handle or ""
+        _provider = (self.agent_state.llm_config.provider_name or "").lower()
         use_sglang_native = (
-            self.agent_state.llm_config.return_token_ids
-            and self.agent_state.llm_config.handle
-            and self.agent_state.llm_config.handle.startswith("sglang/")
+            self.agent_state.llm_config.return_token_ids and _handle and (_handle.startswith("sglang/") or "sglang" in _provider)
         )
         self.return_token_ids = use_sglang_native
 
@@ -215,6 +301,7 @@ class LettaAgentV3(LettaAgentV2):
             llm_adapter = SGLangNativeAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                model_settings=self.agent_state.model_settings,
                 call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
@@ -261,6 +348,7 @@ class LettaAgentV3(LettaAgentV2):
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_compaction_messages=include_compaction_messages,
+                billing_context=billing_context,
             )
             input_messages_to_persist = []  # clear after first step
 
@@ -364,8 +452,11 @@ class LettaAgentV3(LettaAgentV2):
         request_start_timestamp_ns: int | None = None,
         conversation_id: str | None = None,
         client_tools: list[ClientToolSchema] | None = None,
+        client_skills: list[ClientSkillSchema] | None = None,
+        override_system: str | None = None,
         include_compaction_messages: bool = False,
         billing_context: BillingContext | None = None,
+        openai_responses_websocket: bool = False,
     ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -386,6 +477,7 @@ class LettaAgentV3(LettaAgentV2):
             conversation_id: Optional conversation ID for conversation-scoped messaging
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
+            openai_responses_websocket: If True, use WebSocket transport for OpenAI Responses API.
 
         Yields:
             str: JSON-formatted SSE data chunks for each completed step
@@ -393,6 +485,8 @@ class LettaAgentV3(LettaAgentV2):
         self._initialize_state()
         self.conversation_id = conversation_id
         self.client_tools = client_tools or []
+        self.client_skills = client_skills or []
+        self.override_system = override_system
         request_span = self._request_checkpoint_start(request_start_timestamp_ns=request_start_timestamp_ns)
         response_letta_messages = []
         first_chunk = True
@@ -424,12 +518,14 @@ class LettaAgentV3(LettaAgentV2):
                 org_id=self.actor.organization_id,
                 user_id=self.actor.id,
                 billing_context=billing_context,
+                use_openai_responses_websocket=openai_responses_websocket,
             )
         elif use_sglang_native:
             # Use SGLang native adapter for multi-turn RL training
             llm_adapter = SGLangNativeAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
+                model_settings=self.agent_state.model_settings,
                 call_type=LLMCallType.agent_step,
                 agent_id=self.agent_state.id,
                 agent_tags=self.agent_state.tags,
@@ -493,6 +589,7 @@ class LettaAgentV3(LettaAgentV2):
                     include_return_message_types=include_return_message_types,
                     request_start_timestamp_ns=request_start_timestamp_ns,
                     include_compaction_messages=include_compaction_messages,
+                    billing_context=billing_context,
                 )
                 input_messages_to_persist = []  # clear after first step
                 async for chunk in response:
@@ -557,28 +654,41 @@ class LettaAgentV3(LettaAgentV2):
             # Set stop_reason if not already set
             if self.stop_reason is None:
                 # Classify error type
-                if isinstance(e, LLMError):
+                if isinstance(e, SystemPromptTokenExceededError):
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.context_window_overflow_in_system_prompt.value)
+                elif isinstance(e, LLMError):
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
                 else:
                     self.stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
 
             if first_chunk:
                 # Raise if no chunks sent yet (response not started, can return error status code)
+                await llm_adapter.aclose()
                 raise
             else:
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
 
                 # Mid-stream error: yield error event to client in SSE format
+                user_visible_error_message = "An error occurred during agent execution."
+                error_type = "internal_error"
+                if isinstance(e, SystemPromptTokenExceededError):
+                    error_type = StopReasonType.context_window_overflow_in_system_prompt.value
+                    user_visible_error_message = (
+                        "Compaction failed because the system prompt is too large for this model's context window. "
+                        "Reduce system instructions, memory blocks, or tools, or use a model with a larger context window."
+                    )
+
                 error_message = LettaErrorMessage(
                     run_id=run_id,
-                    error_type="internal_error",
-                    message="An error occurred during agent execution.",
+                    error_type=error_type,
+                    message=user_visible_error_message,
                     detail=error_detail,
                 )
                 yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
 
                 # Return immediately - don't fall through to finish chunks
                 # This prevents sending end_turn finish chunks after an error
+                await llm_adapter.aclose()
                 return
 
         # Cleanup and finalize (only runs if no exception occurred)
@@ -624,6 +734,9 @@ class LettaAgentV3(LettaAgentV2):
             )
             yield f"event: error\ndata: {error_message.model_dump_json()}\n\n"
             # Note: we don't send finish chunks here since we already errored
+        finally:
+            # Ensure adapter resources (e.g. WebSocket connections) are cleaned up
+            await llm_adapter.aclose()
 
     async def _check_for_system_prompt_overflow(self, system_message):
         """
@@ -792,6 +905,7 @@ class LettaAgentV3(LettaAgentV2):
         dry_run: bool = False,
         enforce_run_id_set: bool = True,
         include_compaction_messages: bool = False,
+        billing_context: Optional["BillingContext"] = None,
     ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
@@ -820,6 +934,8 @@ class LettaAgentV3(LettaAgentV2):
 
         if self.context_token_estimate is None:
             self.logger.warning("Context token estimate is not set")
+
+        compaction_trigger_threshold = get_compaction_trigger_threshold(self.agent_state.llm_config)
 
         step_progression = StepProgression.START
         caught_exception = None
@@ -850,7 +966,7 @@ class LettaAgentV3(LettaAgentV2):
             # NOTE: We skip system prompt refresh during normal steps to preserve prefix caching.
             # The system prompt is only rebuilt after compaction or message reset.
             try:
-                messages = await self._refresh_messages(messages, force_system_prompt_refresh=False)
+                messages = await self._refresh_messages(messages)
             except Exception as e:
                 self.logger.warning(f"Failed to refresh messages at step start: {e}")
 
@@ -923,17 +1039,72 @@ class LettaAgentV3(LettaAgentV2):
                     step_id=step_id, run_id=run_id
                 )
 
+                # Auto mode: resolve handle to actual model config
+                auto_mode_handle = self.agent_state.llm_config.handle
+                is_auto_mode = auto_mode_handle in AUTO_MODE_HANDLES
+                is_primary = False
+                primary_handle = ""
+
+                if is_auto_mode:
+                    resolved_llm_config = None
+                    try:
+                        routing_client = await get_llm_routing_client()
+                        active_llm_config, is_primary, primary_handle = await routing_client.resolve_auto_mode_config(
+                            stored_llm_config=self.agent_state.llm_config,
+                            actor=self.actor,
+                        )
+                        resolved_llm_config = active_llm_config
+                        if not is_primary:
+                            self.logger.info(f"[LLM ROUTER]: primary {primary_handle} rerouted, falling back to {active_llm_config.handle}")
+                        # Content-based rerouting (e.g. images → vision-capable model)
+                        active_llm_config = routing_client.apply_reroute_rules(
+                            resolved_config=active_llm_config,
+                            messages=messages,
+                            stored_llm_config=self.agent_state.llm_config,
+                            agent_state=self.agent_state,
+                        )
+                        resolved_llm_config = active_llm_config
+                        active_llm_client = LLMClient.create(
+                            provider_type=active_llm_config.model_endpoint_type,
+                            put_inner_thoughts_first=True,
+                            actor=self.actor,
+                        )
+                        # Update the adapter to use the resolved client and config
+                        llm_adapter.llm_client = active_llm_client
+                        llm_adapter.llm_config = active_llm_config
+                    finally:
+                        # Update persisted step with resolved model info so billing can
+                        # identify the actual model and charge at the correct rate,
+                        # even if resolution fails partway through.
+                        if resolved_llm_config is not None:
+                            await self.step_manager.update_step_resolved_model_async(
+                                actor=self.actor,
+                                step_id=step_id,
+                                provider_name=resolved_llm_config.model_endpoint_type,
+                                provider_category=resolved_llm_config.provider_category or "base",
+                                model=resolved_llm_config.model,
+                                model_endpoint=resolved_llm_config.model_endpoint,
+                            )
+                else:
+                    active_llm_config = self.agent_state.llm_config
+                    active_llm_client = self.llm_client
+
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 and self._require_tool_call else None
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
-                        request_data = self.llm_client.build_request_data(
+                        request_system_prompt = self.generate_request_system_prompt(
+                            client_skills=self.client_skills,
+                            current_system_message=messages[0],
+                        )
+                        request_data = active_llm_client.build_request_data(
                             agent_type=self.agent_state.agent_type,
                             messages=messages,
-                            llm_config=self.agent_state.llm_config,
+                            llm_config=active_llm_config,
                             tools=valid_tools,
                             force_tool_call=force_tool_call,
                             requires_subsequent_tool_call=self._require_tool_call,
                             tool_return_truncation_chars=self._compute_tool_return_truncation_chars(),
+                            system=request_system_prompt,
                         )
                         # TODO: Extend to more providers, and also approval tool rules
                         # TODO: this entire code block should be inside of the clients
@@ -945,30 +1116,30 @@ class LettaAgentV3(LettaAgentV2):
                             )
 
                             # Anthropic/Bedrock/MiniMax parallel tool use (MiniMax uses Anthropic-compatible API)
-                            if self.agent_state.llm_config.model_endpoint_type in ["anthropic", "bedrock", "minimax"]:
+                            if active_llm_config.model_endpoint_type in ["anthropic", "bedrock", "minimax"]:
                                 if (
                                     isinstance(request_data.get("tool_choice"), dict)
                                     and "disable_parallel_tool_use" in request_data["tool_choice"]
                                 ):
                                     # Gate parallel tool use on both: no tool rules and toggled on
-                                    if no_tool_rules and self.agent_state.llm_config.parallel_tool_calls:
+                                    if no_tool_rules and active_llm_config.parallel_tool_calls:
                                         request_data["tool_choice"]["disable_parallel_tool_use"] = False
                                     else:
                                         # Explicitly disable when tool rules present or llm_config toggled off
                                         request_data["tool_choice"]["disable_parallel_tool_use"] = True
 
                             # OpenAI parallel tool use
-                            elif self.agent_state.llm_config.model_endpoint_type == "openai":
+                            elif active_llm_config.model_endpoint_type == "openai":
                                 # For OpenAI, we control parallel tool calling via parallel_tool_calls field
                                 # Only allow parallel tool calls when no tool rules and enabled in config
                                 if "parallel_tool_calls" in request_data:
-                                    if no_tool_rules and self.agent_state.llm_config.parallel_tool_calls:
+                                    if no_tool_rules and active_llm_config.parallel_tool_calls:
                                         request_data["parallel_tool_calls"] = True
                                     else:
                                         request_data["parallel_tool_calls"] = False
 
                             # Gemini (Google AI/Vertex) parallel tool use
-                            elif self.agent_state.llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
+                            elif active_llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
                                 # Gemini supports parallel tool calling natively through multiple parts in the response
                                 # We just need to ensure the config flag is set for tracking purposes
                                 # The actual handling happens in GoogleVertexClient.convert_response_to_chat_completion
@@ -997,6 +1168,10 @@ class LettaAgentV3(LettaAgentV2):
                             if llm_adapter.supports_token_streaming():
                                 if include_return_message_types is None or chunk.message_type in include_return_message_types:
                                     yield chunk
+                        # Report success to circuit breaker (only for models with fallback routes)
+                        routing_client = await get_llm_routing_client()
+                        if routing_client.get_fallback_handle(active_llm_config.handle):
+                            await routing_client.record_success(active_llm_config.handle)
                         # If you've reached this point without an error, break out of retry loop
                         break
                     except ValueError as e:
@@ -1004,6 +1179,37 @@ class LettaAgentV3(LettaAgentV2):
                         raise e
                     except LLMEmptyResponseError as e:
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
+                        raise e
+                    except (LLMRateLimitError, LLMServerError, LLMProviderOverloaded) as e:
+                        # Check if there's a fallback route for the current model
+                        routing_client = await get_llm_routing_client()
+                        current_handle = active_llm_config.handle
+                        fallback_handle = routing_client.get_fallback_handle(current_handle)
+
+                        if fallback_handle:
+                            await routing_client.record_failure(current_handle)
+
+                            fallback_config = await routing_client.get_fallback_config_for_handle(
+                                fallback_handle=fallback_handle,
+                                stored_llm_config=self.agent_state.llm_config,
+                                actor=self.actor,
+                            )
+                            self.logger.warning(
+                                f"[LLM ROUTER]: {current_handle} failed ({type(e).__name__}), falling back to {fallback_config.handle}"
+                            )
+
+                            # Switch to fallback for this attempt and any subsequent retries (e.g. compaction)
+                            active_llm_config = fallback_config
+                            active_llm_client = LLMClient.create(
+                                provider_type=fallback_config.model_endpoint_type,
+                                put_inner_thoughts_first=True,
+                                actor=self.actor,
+                            )
+                            llm_adapter.llm_client = active_llm_client
+                            llm_adapter.llm_config = active_llm_config
+                            is_primary = False
+                            continue
+                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
                         raise e
                     except LLMError as e:
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
@@ -1034,13 +1240,14 @@ class LettaAgentV3(LettaAgentV2):
 
                                 summary_message, messages, summary_text = await self.compact(
                                     messages,
-                                    trigger_threshold=self.agent_state.llm_config.context_window,
+                                    trigger_threshold=compaction_trigger_threshold,
                                     run_id=run_id,
                                     step_id=step_id,
                                     use_summary_role=include_compaction_messages,
                                     trigger="context_window_exceeded",
                                     context_tokens_before=context_tokens_before,
                                     messages_count_before=messages_count_before,
+                                    billing_context=billing_context,
                                 )
 
                                 # Recompile the persisted system prompt after compaction so subsequent
@@ -1127,7 +1334,7 @@ class LettaAgentV3(LettaAgentV2):
 
                 # Enforce parallel_tool_calls=false by truncating to first tool call
                 # Some providers (e.g. Gemini) don't respect this setting via API, so we enforce it client-side
-                if len(tool_calls) > 1 and not self.agent_state.llm_config.parallel_tool_calls:
+                if len(tool_calls) > 1 and not active_llm_config.parallel_tool_calls:
                     self.logger.warning(
                         f"LLM returned {len(tool_calls)} tool calls but parallel_tool_calls=false. "
                         f"Truncating to first tool call: {tool_calls[0].function.name}"
@@ -1229,9 +1436,11 @@ class LettaAgentV3(LettaAgentV2):
                         yield message
 
             # check compaction
-            if self.context_token_estimate is not None and self.context_token_estimate > self.agent_state.llm_config.context_window:
+            if self.context_token_estimate is not None and self.context_token_estimate > compaction_trigger_threshold:
                 self.logger.info(
-                    f"Context window exceeded (current: {self.context_token_estimate}, threshold: {self.agent_state.llm_config.context_window}), trying to compact messages"
+                    "Compaction threshold exceeded "
+                    f"(current: {self.context_token_estimate}, threshold: {compaction_trigger_threshold}, "
+                    f"context_window: {self.agent_state.llm_config.context_window}), trying to compact messages"
                 )
 
                 # Capture pre-compaction state for metadata
@@ -1254,13 +1463,14 @@ class LettaAgentV3(LettaAgentV2):
 
                     summary_message, messages, summary_text = await self.compact(
                         messages,
-                        trigger_threshold=self.agent_state.llm_config.context_window,
+                        trigger_threshold=compaction_trigger_threshold,
                         run_id=run_id,
                         step_id=step_id,
                         use_summary_role=include_compaction_messages,
                         trigger="post_step_context_check",
                         context_tokens_before=context_tokens_before,
                         messages_count_before=messages_count_before,
+                        billing_context=billing_context,
                     )
 
                     # Recompile the persisted system prompt after compaction so subsequent
@@ -1875,6 +2085,7 @@ class LettaAgentV3(LettaAgentV2):
         trigger: Optional[str] = None,
         context_tokens_before: Optional[int] = None,
         messages_count_before: Optional[int] = None,
+        billing_context: Optional["BillingContext"] = None,
     ) -> tuple[Message, list[Message], str]:
         """Compact the current in-context messages for this agent.
 
@@ -1914,6 +2125,7 @@ class LettaAgentV3(LettaAgentV2):
             trigger=trigger,
             context_tokens_before=context_tokens_before,
             messages_count_before=messages_count_before,
+            billing_context=billing_context,
         )
 
         # Update the agent's context token estimate

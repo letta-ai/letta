@@ -1,9 +1,10 @@
 """
-Integration tests for system prompt prefix caching optimization.
+Integration tests for system prompt prefix caching and recompilation.
 
-These tests verify that the system prompt is NOT rebuilt on every step,
-only after compaction or message reset. This helps preserve prefix caching
-for LLM providers.
+These tests verify:
+1. The system prompt template is NOT rebuilt on every step (prefix caching optimization)
+2. The core memory section IS recompiled when blocks are edited via the agent API
+3. The system prompt IS rebuilt after message reset
 """
 
 import pytest
@@ -38,15 +39,21 @@ class TestSystemPromptPrefixCaching:
 
     def test_system_prompt_stable_after_memory_tool_and_messages(self, client: Letta, agent):
         """
+        The system prompt *template* should not change during normal execution.
+
+        NOTE: This test uses client.blocks.modify() (the global blocks endpoint),
+        which does NOT trigger system prompt recompilation. For the agent-specific
+        endpoint that DOES trigger recompilation, see
+        test_core_memory_recompiled_after_agent_block_edit.
+
         Test workflow:
         1. Get initial system prompt and human block value
         2. Tell agent to update its memory block using the memory tool
-        3. Verify block was modified but system prompt hasn't changed
+        3. Verify block was modified but system prompt template hasn't changed
         4. Send another message to the agent
-        5. Verify system prompt still hasn't changed
-        6. Manually update a block via API
-        7. Send another message and verify system prompt still hasn't changed
-           (memory block changes are deferred to compaction)
+        5. Verify system prompt template still hasn't changed
+        6. Manually update a block via global blocks API (no recompile trigger)
+        7. Send another message and verify system prompt template still hasn't changed
         """
         # Step 1: Get initial context window, system prompt, and human block value
         initial_context = client.agents.context.retrieve(agent.id)
@@ -136,6 +143,55 @@ class TestSystemPromptPrefixCaching:
         system_prompt_after_manual = context_after_manual_update.system_prompt
         assert system_prompt_after_manual == initial_system_prompt, (
             "System prompt should NOT change after manual block update (deferred to compaction)"
+        )
+
+    def test_core_memory_recompiled_after_agent_block_edit(self, client: Letta, agent):
+        """
+        Editing a block via the agent-specific endpoint should trigger system prompt
+        recompilation. The core_memory section should reflect the updated block content.
+
+        The agent-specific endpoint (PATCH /agents/{id}/core-memory/blocks/{label})
+        explicitly calls rebuild_system_prompt_async, unlike the global blocks endpoint.
+        """
+        # Step 1: Get initial context window
+        initial_context = client.agents.context.retrieve(agent.id)
+        initial_core_memory = initial_context.core_memory
+        assert initial_core_memory, "Initial core memory should not be empty"
+
+        # Step 2: Get the human block
+        human_block = None
+        for block in agent.memory.blocks:
+            if block.label == "human":
+                human_block = block
+                break
+        assert human_block, "Agent should have a 'human' memory block"
+        initial_block_value = human_block.value
+
+        # Step 3: Update block via agent-specific endpoint (triggers recompilation)
+        unique_marker = "RECOMPILE_TEST_MARKER_67890"
+        new_value = initial_block_value + f"\n{unique_marker}: User prefers dark mode."
+        client.agents.blocks.update(
+            agent_id=agent.id,
+            block_label="human",
+            value=new_value,
+        )
+
+        # Step 4: Verify the block was updated
+        updated_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label="human")
+        assert unique_marker in updated_block.value, "Block should contain the new marker"
+
+        # Step 5: Get context window and verify core memory was recompiled
+        updated_context = client.agents.context.retrieve(agent.id)
+        updated_core_memory = updated_context.core_memory
+
+        assert updated_core_memory != initial_core_memory, (
+            "Core memory should change after block edit via agent endpoint (recompilation triggered)"
+        )
+        assert unique_marker in updated_core_memory, "Recompiled core memory should contain the updated block content"
+
+        # Step 6: System prompt template should NOT change (only memory content changes)
+        assert updated_context.system_prompt == initial_context.system_prompt, (
+            "System prompt template should remain the same — only core memory content changes"
         )
 
     def test_system_prompt_updates_after_reset(self, client: Letta, agent):

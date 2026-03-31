@@ -1,6 +1,6 @@
+import asyncio
 from datetime import timedelta
-from typing import Annotated, List, Literal, Optional
-from uuid import uuid4
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -10,13 +10,13 @@ from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.constants import REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaExpiredError, LettaInvalidArgumentError, NoActiveRunsToCancelError
+from letta.errors import ConversationBusyError, LettaExpiredError, LettaInvalidArgumentError, NoActiveRunsToCancelError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.conversation import Conversation, CreateConversation, UpdateConversation
 from letta.schemas.enums import RunStatus
 from letta.schemas.job import LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion, MessageType
 from letta.schemas.letta_request import ConversationMessageRequest, LettaStreamingRequest, RetrieveStreamRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.provider_trace import BillingContext
@@ -71,7 +71,7 @@ async def list_conversations(
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for conversations. 'asc' for oldest first, 'desc' for newest first"
     ),
-    order_by: Literal["created_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
+    order_by: Literal["created_at", "last_run_completion", "last_message_at"] = Query("created_at", description="Field to sort by"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -115,6 +115,48 @@ async def update_conversation(
     return await conversation_manager.update_conversation(
         conversation_id=conversation_id,
         conversation_update=conversation_update,
+        actor=actor,
+    )
+
+
+@router.post("/{conversation_id}/fork", response_model=Conversation, operation_id="fork_conversation")
+async def fork_conversation(
+    conversation_id: ConversationIdOrDefault,
+    agent_id: Optional[str] = Query(None, description="Agent ID for agent-direct mode with 'default' conversation"),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Fork an existing conversation.
+
+    Creates a new conversation that shares the same in-context messages as the source
+    conversation, but with a newly compiled system message reflecting the latest memory
+    block values. The forked conversation belongs to the same agent as the source.
+
+    **Agent-direct mode**: Pass conversation_id="default" with agent_id query parameter
+    to fork the agent's default (agent-direct) message history into a new conversation.
+
+    **Deprecated**: Passing an agent ID as conversation_id still works but will be removed.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Agent-direct mode: conversation_id="default" + agent_id param (preferred)
+    # OR conversation_id="agent-*" (backwards compat, deprecated)
+    resolved_agent_id = None
+    if conversation_id == "default" and agent_id:
+        resolved_agent_id = agent_id
+    elif conversation_id.startswith("agent-"):
+        resolved_agent_id = conversation_id
+
+    if resolved_agent_id:
+        return await conversation_manager.fork_default_conversation(
+            agent_id=resolved_agent_id,
+            actor=actor,
+            server=server,
+        )
+
+    return await conversation_manager.fork_conversation(
+        conversation_id=conversation_id,
         actor=actor,
     )
 
@@ -169,6 +211,7 @@ async def list_conversation_messages(
     include_err: Optional[bool] = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
 ):
     """
     List all messages in a conversation.
@@ -198,10 +241,11 @@ async def list_conversation_messages(
             before=before,
             limit=limit,
             group_id=group_id,
-            conversation_id=None,  # Default conversation (no isolation)
+            conversation_id="default",  # Filter to default conversation messages only
             reverse=(order == "desc"),
             return_message_object=False,
             include_err=include_err,
+            include_return_message_types=include_return_message_types,
             actor=actor,
         )
 
@@ -214,6 +258,7 @@ async def list_conversation_messages(
         reverse=(order == "desc"),
         group_id=group_id,
         include_err=include_err,
+        include_return_message_types=include_return_message_types,
     )
 
 
@@ -223,6 +268,7 @@ async def _send_agent_direct_message(
     server: SyncServer,
     actor,
     billing_context: "BillingContext | None" = None,
+    openai_responses_websocket: bool = False,
 ) -> StreamingResponse | LettaResponse:
     """
     Handle agent-direct messaging with locking but without conversation features.
@@ -247,6 +293,8 @@ async def _send_agent_direct_message(
             include_return_message_types=request.include_return_message_types,
             override_model=request.override_model,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
+            override_system=request.override_system,
         )
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
@@ -257,6 +305,7 @@ async def _send_agent_direct_message(
             conversation_id=None,
             should_lock=True,
             billing_context=billing_context,
+            openai_responses_websocket=openai_responses_websocket,
         )
         return result
 
@@ -275,12 +324,24 @@ async def _send_agent_direct_message(
         )
         agent = agent.model_copy(update={"llm_config": override_llm_config})
 
+    # Collect all otids from messages for request deduplication
+    message_otids = [msg.otid for msg in request.messages if msg.otid]
+
+    # Derive a request token from ALL message otids for deduplication
+    from letta.services.streaming_service import derive_request_token, enrich_conversation_busy_error
+
+    request_token = derive_request_token(message_otids)
+
     # Acquire lock using agent_id as lock key
     if not isinstance(redis_client, NoopAsyncRedisClient):
-        await redis_client.acquire_conversation_lock(
-            conversation_id=agent_id,
-            token=str(uuid4()),
-        )
+        try:
+            await redis_client.acquire_conversation_lock(
+                conversation_id=agent_id,
+                token=request_token,
+            )
+
+        except ConversationBusyError as e:
+            raise await enrich_conversation_busy_error(redis_client, e)
 
     try:
         # Create a run for execution tracking
@@ -302,6 +363,15 @@ async def _send_agent_direct_message(
         # Set run_id in Redis for cancellation support
         await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
+        # Store request_token -> run_id mapping for duplicate request recovery
+        if request_token and run:
+            await redis_client.set_otid_run_mapping(request_token, run.id)
+
+        # Store each individual otid -> run_id mapping for client convenience
+        if run:
+            for otid in message_otids:
+                await redis_client.set_otid_run_mapping(otid, run.id)
+
         agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
         return await agent_loop.step(
             request.messages,
@@ -310,6 +380,8 @@ async def _send_agent_direct_message(
             use_assistant_message=request.use_assistant_message,
             include_return_message_types=request.include_return_message_types,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
+            override_system=request.override_system,
             conversation_id=None,
             include_compaction_messages=request.include_compaction_messages,
             billing_context=billing_context,
@@ -372,11 +444,19 @@ async def send_conversation_message(
             server=server,
             actor=actor,
             billing_context=headers.billing_context,
+            openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
         )
 
     # Normal conversation mode
     conversation = await conversation_manager.get_conversation_by_id(
         conversation_id=conversation_id,
+        actor=actor,
+    )
+
+    # Mark conversation message activity at request time
+    conversation = await conversation_manager.update_conversation(
+        conversation_id=conversation_id,
+        conversation_update=UpdateConversation(last_message_at=get_utc_time()),
         actor=actor,
     )
 
@@ -396,6 +476,8 @@ async def send_conversation_message(
             include_return_message_types=request.include_return_message_types,
             override_model=request.override_model,
             client_tools=request.client_tools,
+            client_skills=request.client_skills,
+            override_system=request.override_system,
         )
         streaming_service = StreamingService(server)
         run, result = await streaming_service.create_agent_stream(
@@ -405,6 +487,7 @@ async def send_conversation_message(
             run_type="send_conversation_message",
             conversation_id=conversation_id,
             billing_context=headers.billing_context,
+            openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
         )
         return result
 
@@ -420,6 +503,9 @@ async def send_conversation_message(
         conversation_llm_config = await server.get_llm_config_from_handle_async(
             actor=actor,
             handle=conversation.model,
+            # Preserve the agent's context window (capped at the new model's max).
+            # Without this, the context window resets to the model/global default.
+            context_window_limit=agent.llm_config.context_window,
         )
         if conversation.model_settings is not None:
             update_params = conversation.model_settings._to_legacy_config_params()
@@ -465,9 +551,107 @@ async def send_conversation_message(
         use_assistant_message=request.use_assistant_message,
         include_return_message_types=request.include_return_message_types,
         client_tools=request.client_tools,
+        client_skills=request.client_skills,
+        override_system=request.override_system,
         conversation_id=conversation_id,
         include_compaction_messages=request.include_compaction_messages,
         billing_context=headers.billing_context,
+    )
+
+
+@router.post(
+    "/{conversation_id}/messages/preview-raw-payload",
+    response_model=Dict[str, Any],
+    operation_id="preview_conversation_model_request",
+)
+async def preview_conversation_model_request(
+    conversation_id: ConversationIdOrDefault,
+    request: ConversationMessageRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Inspect the raw LLM request payload for a conversation message without sending it.
+
+    This endpoint processes the message through the same path as send_conversation_message
+    (including conversation-scoped messages, isolated blocks, model overrides, and
+    client tools/skills) but stops before the LLM call and returns the raw request
+    payload. Useful for debugging and verifying what the LLM will actually see.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    if not request.messages or len(request.messages) == 0:
+        raise HTTPException(status_code=422, detail="Messages must not be empty")
+
+    # Agent-direct mode (same logic as send_conversation_message)
+    resolved_agent_id = None
+    if conversation_id == "default" and request.agent_id:
+        resolved_agent_id = request.agent_id
+    elif conversation_id.startswith("agent-"):
+        resolved_agent_id = conversation_id
+
+    if resolved_agent_id:
+        # Agent-direct mode: load agent directly, no conversation features
+        agent = await server.agent_manager.get_agent_by_id_async(
+            resolved_agent_id,
+            actor,
+            include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
+        )
+
+        if request.override_model:
+            override_llm_config = await server.get_llm_config_from_handle_async(actor=actor, handle=request.override_model)
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+        agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+        return await agent_loop.build_request(
+            input_messages=request.messages,
+            client_skills=request.client_skills,
+            client_tools=request.client_tools,
+            override_system=request.override_system,
+        )
+
+    # Normal conversation mode
+    conversation = await conversation_manager.get_conversation_by_id(
+        conversation_id=conversation_id,
+        actor=actor,
+    )
+
+    agent = await server.agent_manager.get_agent_by_id_async(
+        conversation.agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
+    )
+
+    # Apply conversation-level model override (same as send_conversation_message)
+    if conversation.model and not request.override_model:
+        conversation_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=conversation.model,
+            # Preserve the agent's context window (capped at the new model's max).
+            # Without this, the context window resets to the model/global default.
+            context_window_limit=agent.llm_config.context_window,
+        )
+        if conversation.model_settings is not None:
+            update_params = conversation.model_settings._to_legacy_config_params()
+            if "max_output_tokens" not in conversation.model_settings.model_fields_set:
+                update_params.pop("max_tokens", None)
+            conversation_llm_config = conversation_llm_config.model_copy(update=update_params)
+        agent = agent.model_copy(update={"llm_config": conversation_llm_config})
+
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=request.override_model,
+        )
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+    agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+    return await agent_loop.build_request(
+        input_messages=request.messages,
+        client_skills=request.client_skills,
+        client_tools=request.client_tools,
+        override_system=request.override_system,
+        conversation_id=conversation_id,
     )
 
 
@@ -515,55 +699,22 @@ async def retrieve_conversation_stream(
     This endpoint allows you to reconnect to an active background stream
     for a conversation, enabling recovery from network interruptions.
 
-    **Agent-direct mode**: Pass conversation_id="default" with agent_id in request body
+    **Agent-direct mode**: Pass conversation_id=\"default\" with agent_id in request body
     to retrieve the stream for the agent's most recent active run.
+
+    **Direct run access**: Pass run_id directly to skip run lookup entirely.
+    Useful for recovery from duplicate request 409 errors.
+
+    **OTID lookup**: Pass otid to look up the run_id from Redis.
+    Useful when you have the otid from a 409 error response.
 
     **Deprecated**: Passing an agent ID as conversation_id still works but will be removed.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     runs_manager = RunManager()
-
-    # Agent-direct mode: conversation_id="default" + agent_id in body (preferred)
-    # OR conversation_id="agent-*" (backwards compat, deprecated)
-    resolved_agent_id = None
-    if conversation_id == "default" and request and request.agent_id:
-        resolved_agent_id = request.agent_id
-    elif conversation_id.startswith("agent-"):
-        resolved_agent_id = conversation_id
-
-    # Find the most recent active run
-    if resolved_agent_id:
-        # Agent-direct mode: find runs by agent_id
-        active_runs = await runs_manager.list_runs(
-            actor=actor,
-            agent_id=resolved_agent_id,
-            statuses=[RunStatus.created, RunStatus.running],
-            limit=1,
-            ascending=False,
-        )
-    else:
-        # Normal mode: find runs by conversation_id
-        active_runs = await runs_manager.list_runs(
-            actor=actor,
-            conversation_id=conversation_id,
-            statuses=[RunStatus.created, RunStatus.running],
-            limit=1,
-            ascending=False,
-        )
-
-    if not active_runs:
-        raise LettaInvalidArgumentError("No active runs found for this conversation.")
-
-    run = active_runs[0]
-
-    if not run.background:
-        raise LettaInvalidArgumentError("Run was not created in background mode, so it cannot be retrieved.")
-
-    if run.created_at < get_utc_time() - timedelta(hours=3):
-        raise LettaExpiredError("Run was created more than 3 hours ago, and is now expired.")
-
     redis_client = await get_redis_client()
 
+    # Check Redis availability early
     if isinstance(redis_client, NoopAsyncRedisClient):
         raise HTTPException(
             status_code=503,
@@ -574,9 +725,89 @@ async def retrieve_conversation_stream(
             ),
         )
 
+    run_id = None
+    run = None
+
+    # Priority 1: Direct run_id provided (bypasses all lookups)
+    if request and request.run_id:
+        run_id = request.run_id
+        # Fetch run to check expiration
+        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
+        if not run:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id} not found.",
+            )
+
+    # Priority 2: OTID provided (look up run_id from Redis)
+    # Retry with backoff: the mapping may not be stored yet if the request
+    # that created the run is still inside _create_run() (DB insert).
+    elif request and request.otid:
+        for _attempt in range(3):
+            run_id = await redis_client.get_run_id_by_otid(request.otid)
+            if run_id:
+                break
+            await asyncio.sleep(0.25 * (2**_attempt))  # 250ms, 500ms, 1s
+        if not run_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No run found for otid={request.otid}. The run may have expired or never existed.",
+            )
+        # Fetch run to check expiration
+        run = await runs_manager.get_run_by_id(run_id=run_id, actor=actor)
+        if not run:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id} (from otid={request.otid}) not found.",
+            )
+
+    # Priority 3: Fall back to active run lookup
+    else:
+        # Agent-direct mode: conversation_id="default" + agent_id in body (preferred)
+        # OR conversation_id="agent-*" (backwards compat, deprecated)
+        resolved_agent_id = None
+        if conversation_id == "default" and request and request.agent_id:
+            resolved_agent_id = request.agent_id
+        elif conversation_id.startswith("agent-"):
+            resolved_agent_id = conversation_id
+
+        # Find the most recent active run
+        if resolved_agent_id:
+            # Agent-direct mode: find runs by agent_id
+            active_runs = await runs_manager.list_runs(
+                actor=actor,
+                agent_id=resolved_agent_id,
+                statuses=[RunStatus.created, RunStatus.running],
+                limit=1,
+                ascending=False,
+            )
+        else:
+            # Normal mode: find runs by conversation_id
+            active_runs = await runs_manager.list_runs(
+                actor=actor,
+                conversation_id=conversation_id,
+                statuses=[RunStatus.created, RunStatus.running],
+                limit=1,
+                ascending=False,
+            )
+
+        if not active_runs:
+            raise LettaInvalidArgumentError("No active runs found for this conversation.")
+
+        run = active_runs[0]
+        run_id = run.id
+
+        # For active run lookup, require background mode
+        if not run.background:
+            raise LettaInvalidArgumentError("Run was not created in background mode, so it cannot be retrieved.")
+
+    # Check expiration for all paths
+    if run and run.created_at < get_utc_time() - timedelta(hours=3):
+        raise LettaExpiredError("Run was created more than 3 hours ago, and is now expired.")
+
     stream = redis_sse_stream_generator(
         redis_client=redis_client,
-        run_id=run.id,
+        run_id=run_id,
         starting_after=request.starting_after if request else None,
         poll_interval=request.poll_interval if request else None,
         batch_size=request.batch_size if request else None,
@@ -588,13 +819,13 @@ async def retrieve_conversation_stream(
         stream = cancellation_aware_stream_wrapper(
             stream_generator=stream,
             run_manager=server.run_manager,
-            run_id=run.id,
+            run_id=run_id,
             actor=actor,
-            cancellation_event=get_cancellation_event_for_run(run.id),
+            cancellation_event=get_cancellation_event_for_run(run_id),
         )
 
     if request and request.include_pings and settings.enable_keepalive:
-        stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run.id)
+        stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval, run_id=run_id)
 
     return StreamingResponseWithStatusCode(
         stream,
@@ -709,6 +940,92 @@ class CompactionResponse(BaseModel):
     num_messages_after: int
 
 
+@router.post(
+    "/{conversation_id}/recompile",
+    response_model=str,
+    operation_id="recompile_conversation",
+)
+async def recompile_conversation(
+    conversation_id: ConversationIdOrDefault,
+    request: Optional[CompactionRequest] = Body(default=None),
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+    dry_run: bool = Query(
+        False,
+        description="If True, do not persist changes; still returns the compiled system prompt.",
+    ),
+):
+    """Manually trigger system prompt recompilation for a conversation."""
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    resolved_agent_id = None
+    if conversation_id == "default" and request and request.agent_id:
+        resolved_agent_id = request.agent_id
+    elif conversation_id.startswith("agent-"):
+        resolved_agent_id = conversation_id
+
+    if resolved_agent_id:
+        _, system_message, _, _ = await server.agent_manager.rebuild_system_prompt_async(
+            agent_id=resolved_agent_id,
+            actor=actor,
+            force=True,
+            update_timestamp=True,
+            dry_run=dry_run,
+        )
+
+        if system_message is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No system message found for agent '{resolved_agent_id}'")
+
+        return system_message.to_openai_dict().get("content", "")
+
+    conversation = await conversation_manager.get_conversation_by_id(
+        conversation_id=conversation_id,
+        actor=actor,
+    )
+
+    _, system_message, _, _ = await server.agent_manager.rebuild_system_prompt_async(
+        agent_id=conversation.agent_id,
+        actor=actor,
+        force=True,
+        update_timestamp=True,
+        dry_run=True,
+    )
+
+    if system_message is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No system message found for conversation '{conversation_id}'")
+
+    compiled_content = system_message.to_openai_dict().get("content", "")
+
+    if not dry_run:
+        in_context_messages = await conversation_manager.get_messages_for_conversation(
+            conversation_id=conversation_id,
+            actor=actor,
+        )
+        if not in_context_messages:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No in-context messages found for this conversation.",
+            )
+
+        existing_system_message = in_context_messages[0]
+        if existing_system_message.role != "system":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Conversation does not have a system message in the first position.",
+            )
+
+        from letta.schemas.message import MessageUpdate
+
+        message_update = MessageUpdate(content=compiled_content)
+        await server.message_manager.update_message_by_id_async(
+            message_id=existing_system_message.id,
+            message_update=message_update,
+            actor=actor,
+        )
+
+    return compiled_content
+
+
 @router.post("/{conversation_id}/compact", response_model=CompactionResponse, operation_id="compact_conversation")
 async def compact_conversation(
     conversation_id: ConversationIdOrDefault,
@@ -795,6 +1112,7 @@ async def compact_conversation(
         messages=in_context_messages,
         compaction_settings=compaction_settings,
         use_summary_role=True,
+        billing_context=headers.billing_context,
     )
     num_messages_after = len(messages)
 

@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from opentelemetry.trace import Span
@@ -16,6 +16,8 @@ from openai.types.responses import (
     ResponseContentPartAddedEvent,
     ResponseContentPartDoneEvent,
     ResponseCreatedEvent,
+    ResponseErrorEvent,
+    ResponseFailedEvent,
     ResponseFunctionCallArgumentsDeltaEvent,
     ResponseFunctionCallArgumentsDoneEvent,
     ResponseFunctionToolCall,
@@ -25,6 +27,7 @@ from openai.types.responses import (
     ResponseOutputItemDoneEvent,
     ResponseOutputMessage,
     ResponseOutputText,
+    ResponseQueuedEvent,
     ResponseReasoningItem,
     ResponseReasoningSummaryPartAddedEvent,
     ResponseReasoningSummaryPartDoneEvent,
@@ -179,7 +182,8 @@ class OpenAIStreamingInterface:
         self._function_name_parts.append(s)
 
     def _append_function_id(self, s: str) -> None:
-        self._function_id_parts.append(s)
+        if not self._function_id_parts:
+            self._function_id_parts.append(s)
 
     def _append_current_function_arguments(self, s: str) -> None:
         self._current_function_arguments_parts.append(s)
@@ -327,8 +331,9 @@ class OpenAIStreamingInterface:
 
         # track usage
         if chunk.usage:
-            self.input_tokens += chunk.usage.prompt_tokens
-            self.output_tokens += chunk.usage.completion_tokens
+            # chunk usage displays the cumulative tokens so far (not tokens for individual chunk)
+            self.input_tokens = chunk.usage.prompt_tokens
+            self.output_tokens = chunk.usage.completion_tokens
 
         if chunk.choices:
             choice = chunk.choices[0]
@@ -675,7 +680,7 @@ class SimpleOpenAIStreamingInterface:
             ctx = self._tool_calls_acc[idx]
             name = "".join(ctx.get("name_parts", [])) if "name_parts" in ctx else ctx.get("name", "")
             args = "".join(ctx.get("arguments_parts", [])) if "arguments_parts" in ctx else ctx.get("arguments", "")
-            call_id = "".join(ctx.get("id_parts", [])) if "id_parts" in ctx else ctx.get("id", "")
+            call_id = ctx["id_parts"][0] if ctx.get("id_parts") else ctx.get("id", "")
             if call_id and name:
                 result.append(ToolCall(id=call_id, function=FunctionCall(arguments=args or "", name=name)))
         return result
@@ -840,8 +845,9 @@ class SimpleOpenAIStreamingInterface:
 
         # track usage
         if chunk.usage:
-            self.input_tokens += chunk.usage.prompt_tokens
-            self.output_tokens += chunk.usage.completion_tokens
+            # chunk usage displays the cumulative tokens so far (not tokens for individual chunk)
+            self.input_tokens = chunk.usage.prompt_tokens
+            self.output_tokens = chunk.usage.completion_tokens
             # Store raw usage for transparent provider trace logging
             try:
                 self.raw_usage = chunk.usage.model_dump(exclude_none=True)
@@ -869,21 +875,6 @@ class SimpleOpenAIStreamingInterface:
             choice = chunk.choices[0]
             message_delta = choice.delta
 
-            if message_delta.content is not None and message_delta.content != "":
-                if prev_message_type and prev_message_type != "assistant_message":
-                    message_index += 1
-                assistant_msg = AssistantMessage(
-                    id=self.letta_message_id,
-                    content=message_delta.content,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                self.content_messages.append(assistant_msg)
-                prev_message_type = assistant_msg.message_type
-                yield assistant_msg
-
             if hasattr(chunk, "choices") and len(chunk.choices) > 0 and hasattr(chunk.choices[0], "delta"):
                 delta = chunk.choices[0].delta
                 # Check for reasoning_content (standard) or reasoning (OpenRouter)
@@ -904,6 +895,21 @@ class SimpleOpenAIStreamingInterface:
                     self.content_messages.append(reasoning_msg)
                     prev_message_type = reasoning_msg.message_type
                     yield reasoning_msg
+
+            if message_delta.content is not None and message_delta.content != "":
+                if prev_message_type and prev_message_type != "assistant_message":
+                    message_index += 1
+                assistant_msg = AssistantMessage(
+                    id=self.letta_message_id,
+                    content=message_delta.content,
+                    date=datetime.now(timezone.utc).isoformat(),
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    run_id=self.run_id,
+                    step_id=self.step_id,
+                )
+                self.content_messages.append(assistant_msg)
+                prev_message_type = assistant_msg.message_type
+                yield assistant_msg
 
             if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
                 # Accumulate per-index tool call fragments and emit deltas
@@ -930,10 +936,11 @@ class SimpleOpenAIStreamingInterface:
                     if tool_call.function and tool_call.function.arguments:
                         acc["arguments_parts"].append(tool_call.function.arguments)
                     if tool_call.id:
-                        acc["id_parts"].append(tool_call.id)
+                        if not acc["id_parts"]:
+                            acc["id_parts"].append(tool_call.id)
 
                     # Resolve stable id from accumulator; OpenAI may omit id on argument-only deltas
-                    resolved_id = "".join(acc.get("id_parts", [])) if acc.get("id_parts") else None
+                    resolved_id = acc["id_parts"][0] if acc.get("id_parts") else None
                     # If we don't yet have an id for this tool_call index, skip emitting unusable delta
                     if resolved_id is None:
                         continue
@@ -1145,12 +1152,15 @@ class SimpleOpenAIResponsesStreamingInterface:
 
     async def process(
         self,
-        stream: AsyncStream[ResponseStreamEvent],
+        stream: "AsyncStream[ResponseStreamEvent] | Any",
         ttft_span: Optional["Span"] = None,
     ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
         """
         Iterates over the OpenAI stream, yielding SSE events.
         It also collects tokens and detects if a tool call is triggered.
+
+        ``stream`` may be an ``AsyncStream`` (HTTP SSE) or an ``AsyncStreamCompat``
+        wrapper (WebSocket mode).  Both support ``async with`` + ``async for``.
         """
         # Fallback input token counting - this should only be required for non-OpenAI providers using the OpenAI client (e.g. LMStudio)
         if self.is_openai_proxy:
@@ -1246,6 +1256,10 @@ class SimpleOpenAIResponsesStreamingInterface:
 
         elif isinstance(event, ResponseInProgressEvent):
             # No-op, just an indicator that we've started
+            return
+
+        elif isinstance(event, ResponseQueuedEvent):
+            # No-op, emitted in WebSocket mode when the response is queued
             return
 
         elif isinstance(event, ResponseOutputItemAddedEvent):
@@ -1494,6 +1508,32 @@ class SimpleOpenAIResponsesStreamingInterface:
         elif isinstance(event, ResponseOutputItemDoneEvent):
             # Inclusive, so skip
             return
+
+        # Error / failure events (WebSocket mode may emit these explicitly)
+        elif isinstance(event, ResponseFailedEvent):
+            error_info = getattr(event.response, "error", None)
+            error_msg = str(error_info) if error_info else "unknown"
+            logger.error(f"OpenAI Responses API returned a failed response: {error_msg}")
+
+            # Still extract partial response + usage if available
+            self.final_response = event.response
+            self.model = event.response.model
+            self.message_id = event.response.id
+            usage = event.response.usage
+            if usage is not None:
+                self.input_tokens = usage.input_tokens
+                self.output_tokens = usage.output_tokens
+
+            from letta.errors import LLMError
+
+            raise LLMError(f"OpenAI Responses API failed: {error_msg}")
+
+        elif isinstance(event, ResponseErrorEvent):
+            error_detail = getattr(event, "message", None) or str(event)
+            logger.error(f"OpenAI Responses API error event: {error_detail}")
+            from letta.errors import LLMError
+
+            raise LLMError(f"OpenAI Responses API error: {error_detail}")
 
         # Generic finish
         elif isinstance(event, (ResponseCompletedEvent, ResponseIncompleteEvent)):

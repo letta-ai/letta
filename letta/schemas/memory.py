@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 from io import StringIO
 from typing import List, Optional, Union
@@ -202,49 +203,159 @@ class Memory(BaseModel, validate_assignment=True):
         s.write("\n</memory_blocks>")
 
     def _render_memory_blocks_git(self, s: StringIO):
-        """Render memory blocks as individual file tags with YAML frontmatter.
+        """Render git-backed system memory with structured tags.
 
-        Each block is rendered as <label.md>---frontmatter---value</label.md>,
-        matching the format stored in the git repo. Labels without a 'system/'
-        prefix get one added automatically.
+        - `system/persona` is rendered in a dedicated `<self>` section.
+        - Other `system/*` blocks are rendered under `<memory>` with nested tags
+          derived from their slash-separated labels (dropping the `system/`
+          prefix).
+        - Files outside `system/` and `skills/` are rendered under
+          `<memory><external>...</external></memory>` as a file tree.
         """
         renderable = self._get_renderable_blocks()
         if not renderable:
             return
 
-        for idx, block in enumerate(renderable):
-            label = block.label or "block"
-            # Ensure system/ prefix
-            if not label.startswith("system/"):
-                label = f"system/{label}"
-            tag = f"{label}.md"
-            value = block.value or ""
+        s.write("\n\nReminder: <projection> contains the local path of the memory file projection.")
 
-            s.write(f"\n\n<{tag}>\n")
+        # 1) Dedicated <self> section from system/persona
+        persona_block = next((b for b in renderable if (b.label or "") == "system/persona"), None)
+        if persona_block is not None:
+            s.write("\n\n<self>\n")
+            s.write("<projection>$MEMORY_DIR/system/persona.md</projection>\n")
+            s.write((persona_block.value or "").rstrip("\n"))
+            s.write("\n</self>")
 
-            # Build frontmatter (same fields as serialize_block)
-            front_lines = []
-            if block.description:
-                front_lines.append(f"description: {block.description}")
-            if getattr(block, "read_only", False):
-                front_lines.append("read_only: true")
+        # 2) Render all other system/* blocks as nested tags under <memory>
+        non_persona = [b for b in renderable if (b.label or "") != "system/persona"]
+        external_blocks = [
+            b
+            for b in self.blocks
+            if (b.label or "") and not (b.label or "").startswith("system/") and not (b.label or "").startswith("skills/")
+        ]
+        if not non_persona and not external_blocks:
+            return
 
-            if front_lines:
-                s.write("---\n")
-                s.write("\n".join(front_lines))
-                s.write("\n---\n")
+        LEAF_KEY = "__value__"
+        LEAF_DESC_KEY = "__description__"
+        LEAF_LABEL_KEY = "__label__"
 
-            s.write(f"{value}\n")
-            s.write(f"</{tag}>")
+        def _build_tree(blocks: list[Block], strip_prefix: str | None = None) -> dict:
+            tree: dict = {}
+            for block in blocks:
+                label = block.label or ""
+                if strip_prefix:
+                    if not label.startswith(strip_prefix):
+                        continue
+                    label = label.removeprefix(strip_prefix)
 
-    def _render_memory_filesystem(self, s: StringIO):
+                parts = [p for p in label.split("/") if p]
+                if not parts:
+                    continue
+
+                node = tree
+                for part in parts[:-1]:
+                    if part not in node or not isinstance(node[part], dict):
+                        node[part] = {}
+                    node = node[part]
+
+                leaf = parts[-1]
+                leaf_node = node.get(leaf)
+                desc = (block.description or "").strip()
+                original_label = block.label or ""
+                if leaf_node is None:
+                    node[leaf] = {
+                        LEAF_KEY: block.value or "",
+                        LEAF_DESC_KEY: desc,
+                        LEAF_LABEL_KEY: original_label,
+                    }
+                elif isinstance(leaf_node, dict):
+                    leaf_node[LEAF_KEY] = block.value or ""
+                    leaf_node[LEAF_DESC_KEY] = desc
+                    leaf_node[LEAF_LABEL_KEY] = original_label
+                else:
+                    node[leaf] = {
+                        LEAF_KEY: block.value or "",
+                        LEAF_DESC_KEY: desc,
+                        LEAF_LABEL_KEY: original_label,
+                    }
+            return tree
+
+        system_tree = _build_tree(non_persona, strip_prefix="system/")
+
+        def _render_nested(node: dict, indent: int = 0, path_parts: list[str] | None = None):
+            pad = "  " * indent
+            curr_parts = path_parts or []
+            for key in sorted(k for k in node.keys() if k not in (LEAF_KEY, LEAF_DESC_KEY, LEAF_LABEL_KEY)):
+                child = node[key]
+                child_parts = [*curr_parts, key]
+                s.write(f"{pad}<{key}>\n")
+                if isinstance(child, dict):
+                    if LEAF_KEY in child:
+                        projection_path = "/".join(child_parts)
+                        s.write(f"{pad}  <projection>$MEMORY_DIR/system/{projection_path}.md</projection>\n")
+
+                    desc = str(child.get(LEAF_DESC_KEY) or "").rstrip("\n")
+                    if desc:
+                        s.write(f"{pad}  <description>{desc}</description>\n")
+                    if LEAF_KEY in child:
+                        value = str(child[LEAF_KEY] or "").rstrip("\n")
+                        if value:
+                            s.write(f"{pad}  {value}\n")
+                    _render_nested(child, indent + 1, child_parts)
+                s.write(f"{pad}</{key}>\n")
+
+        s.write("\n\n<memory>\n")
+        _render_nested(system_tree)
+
+        # 3) External memory file tree (all files outside system/ and skills/)
+        if external_blocks:
+            s.write("<external_projection>\n")
+
+            tree: dict = {}
+            for block in sorted(external_blocks, key=lambda b: b.label or ""):
+                label = (block.label or "").strip()
+                if not label:
+                    continue
+
+                parts = [p for p in label.split("/") if p]
+                if not parts:
+                    continue
+
+                node = tree
+                for part in parts[:-1]:
+                    node = node.setdefault(part, {})
+                node[f"{parts[-1]}.md"] = None
+
+            def _render_tree(node: dict, prefix: str = ""):
+                dirs = sorted(k for k, v in node.items() if isinstance(v, dict))
+                files = sorted(k for k, v in node.items() if v is None)
+                entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+
+                for i, (name, is_dir) in enumerate(entries):
+                    is_last = i == len(entries) - 1
+                    connector = "└── " if is_last else "├── "
+                    if is_dir:
+                        s.write(f"{prefix}{connector}{name}/\n")
+                        extension = "    " if is_last else "│   "
+                        _render_tree(node[name], prefix + extension)
+                    else:
+                        s.write(f"{prefix}{connector}{name}\n")
+
+            s.write("${MEMORY_DIR}/\n")
+            _render_tree(tree)
+            s.write("</external_projection>\n")
+
+        s.write("</memory>")
+
+    def _render_memory_filesystem(self, s: StringIO, client_skills=None):
         """Render a filesystem tree view of all memory blocks.
 
         Only rendered for git-memory-enabled agents. Uses box-drawing
         characters (├──, └──, │) like the Unix `tree` command, while keeping
         deterministic ordering (directories first, then files, alphabetically).
         """
-        if not self.blocks:
+        if not self.blocks and not client_skills:
             return
 
         # Build tree structure from block labels.
@@ -369,6 +480,111 @@ class Memory(BaseModel, validate_assignment=True):
         _render_tree(tree)
         s.write("</memory_filesystem>")
 
+    def compile_available_skills(self, client_skills=None) -> str:
+        """Render the <available_skills> block from agent-scoped and client-provided skills.
+
+        Returns the full string including leading newlines and XML tags, or an
+        empty string if there are no skills to render.
+        """
+        all_skill_entries: list[tuple[str, str, str]] = []  # (name, description, location)
+        seen_skill_names: set[str] = set()
+
+        # Agent-scoped skills from memFS blocks.
+        for block in self.blocks:
+            label = block.label or ""
+            if not label.startswith("skills/"):
+                continue
+
+            parts = label.split("/")
+            if len(parts) < 2:
+                continue
+
+            skill_name = parts[1]
+            # Only include top-level skill entries, skip nested files.
+            is_top_level = len(parts) == 2 or (len(parts) == 3 and parts[2] == "SKILL")
+            if not is_top_level or skill_name in seen_skill_names:
+                continue
+
+            seen_skill_names.add(skill_name)
+            desc = (getattr(block, "description", None) or "").strip().split("\n")[0].strip()
+            location = f"${{MEMORY_DIR}}/skills/{skill_name}/SKILL.md"
+            all_skill_entries.append((skill_name, desc, location))
+
+        # Client-provided skills.
+        if client_skills:
+            for cs in client_skills:
+                name = cs.name
+                if name in seen_skill_names:
+                    continue
+
+                seen_skill_names.add(name)
+                desc = (cs.description or "").strip().split("\n")[0].strip()
+                location = (cs.location or "").strip() or f"${{MEMORY_DIR}}/skills/{name}/SKILL.md"
+                all_skill_entries.append((name, desc, location))
+
+        if not all_skill_entries:
+            return ""
+
+        def _skill_root(skill_name: str, location: str) -> tuple[str, str]:
+            norm = location.strip()
+            if norm.endswith("/SKILL.md"):
+                skill_dir = os.path.dirname(norm)
+                root = os.path.dirname(skill_dir)
+                rel = os.path.relpath(norm, root)
+                if os.path.basename(skill_dir) == skill_name.split("/")[-1]:
+                    return root, rel
+            root = os.path.dirname(norm)
+            rel = os.path.basename(norm)
+            return root, rel
+
+        grouped: dict[str, list[tuple[str, str]]] = {}
+        for name, desc, location in all_skill_entries:
+            root, relative_path = _skill_root(name, location)
+            grouped.setdefault(root, []).append((relative_path, desc))
+
+        s = StringIO()
+        s.write("\n\n<available_skills>\n")
+
+        root_paths = sorted(grouped.keys())
+        for root_index, root in enumerate(root_paths):
+            s.write(f"{root}\n")
+
+            # Build a tree for each top-level location root.
+            tree: dict = {}
+            for rel_path, desc in sorted(grouped[root], key=lambda e: e[0]):
+                parts = [p for p in rel_path.split("/") if p]
+                if not parts:
+                    continue
+
+                node = tree
+                for part in parts[:-1]:
+                    node = node.setdefault(part, {})
+                node[parts[-1]] = desc
+
+            def _render_tree(node: dict, prefix: str = ""):
+                dirs = sorted(k for k, v in node.items() if isinstance(v, dict))
+                files = sorted(k for k, v in node.items() if isinstance(v, str))
+                entries = [(d, True) for d in dirs] + [(f, False) for f in files]
+
+                for i, (name, is_dir) in enumerate(entries):
+                    is_last = i == len(entries) - 1
+                    connector = "└── " if is_last else "├── "
+                    if is_dir:
+                        s.write(f"{prefix}{connector}{name}/\n")
+                        extension = "    " if is_last else "│   "
+                        _render_tree(node[name], prefix + extension)
+                    else:
+                        desc = (node[name] or "").strip()
+                        desc_suffix = f" ({desc})" if desc else ""
+                        s.write(f"{prefix}{connector}{name}{desc_suffix}\n")
+
+            _render_tree(tree)
+            if root_index != len(root_paths) - 1:
+                s.write("\n")
+
+        s.write("</available_skills>")
+        return s.getvalue()
+
     def _render_directories_common(self, s: StringIO, sources, max_files_open):
         s.write("\n\n<directories>\n")
         if max_files_open is not None:
@@ -469,7 +685,7 @@ class Memory(BaseModel, validate_assignment=True):
             s.write("</directory>\n")
         s.write("</directories>")
 
-    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
+    def compile(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None, client_skills=None) -> str:
         """Efficiently render memory, tool rules, and sources into a prompt string."""
         s = StringIO()
 
@@ -488,13 +704,16 @@ class Memory(BaseModel, validate_assignment=True):
         # Memory blocks (not for react/workflow). Always include wrapper for preview/tests.
         if not is_react:
             if self.git_enabled:
-                # Git-enabled: filesystem tree + file-style block rendering
-                self._render_memory_filesystem(s)
+                # Git-enabled: structured self + memory rendering
                 self._render_memory_blocks_git(s)
             elif is_line_numbered:
                 self._render_memory_blocks_line_numbered(s)
             else:
                 self._render_memory_blocks_standard(s)
+
+            # NOTE: available_skills is request-scoped and injected dynamically
+            # by the agent at LLM request build time. It is intentionally NOT
+            # persisted into compiled system prompt storage.
 
         if tool_usage_rules is not None:
             desc = getattr(tool_usage_rules, "description", None) or ""
@@ -513,7 +732,7 @@ class Memory(BaseModel, validate_assignment=True):
         return s.getvalue()
 
     @trace_method
-    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None) -> str:
+    async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None, llm_config=None, client_skills=None) -> str:
         """Async version that offloads to a thread for CPU-bound string building."""
         return await asyncio.to_thread(
             self.compile,
@@ -521,6 +740,7 @@ class Memory(BaseModel, validate_assignment=True):
             sources=sources,
             max_files_open=max_files_open,
             llm_config=llm_config,
+            client_skills=client_skills,
         )
 
     def list_block_labels(self) -> List[str]:

@@ -25,7 +25,8 @@ PROVIDER_ORDER = {
     "xai": 12,
     "lmstudio": 13,
     "zai": 14,
-    "openrouter": 15,
+    "zai_coding": 15,
+    "openrouter": 16,
 }
 
 ADMIN_PREFIX = "/v1/admin"
@@ -35,6 +36,7 @@ OPENAI_API_PREFIX = "/openai"
 
 MCP_CONFIG_NAME = "mcp_config.json"
 MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
+SUBAGENT_ROLE_TAG = "role:subagent"
 
 LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
@@ -257,6 +259,10 @@ LLM_MAX_CONTEXT_WINDOW = {
     "glm-4.7": 180000,
     "glm-5": 180000,
     "glm-5-code": 180000,
+    # kimi (moonshot)
+    "kimi-k2.5": 262144,
+    "kimi-k2-thinking": 256000,
+    "kimi-k2-0905": 262144,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # gpt-5
     "gpt-5": 272000,
@@ -280,6 +286,12 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gpt-5.2-codex": 272000,
     # gpt-5.3
     "gpt-5.3-codex": 272000,
+    # gpt-5.4
+    "gpt-5.4": 1050000,
+    "gpt-5.4-fast": 1050000,
+    "gpt-5.4-2026-03-05": 1050000,
+    "gpt-5.4-mini": 400000,
+    "gpt-5.4-nano": 400000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
@@ -387,7 +399,6 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gemini-2.5-flash-lite-preview-09-2025": 1048576,
     "gemini-2.5-computer-use-preview-10-2025": 1048576,
     # gemini 3
-    "gemini-3-pro-preview": 1048576,
     "gemini-3.1-pro-preview": 1048576,
     "gemini-3-flash-preview": 1048576,
     # gemini latest aliases
@@ -462,6 +473,10 @@ REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 # Conversation lock constants
 CONVERSATION_LOCK_PREFIX = "conversation:lock:"
 CONVERSATION_LOCK_TTL_SECONDS = 300  # 5 minutes
+
+# OTID -> run_id mapping (for recovering from duplicate requests)
+OTID_RUN_PREFIX = "otid:run:"
+OTID_RUN_TTL_SECONDS = 10800  # 3 hours (same as stream TTL)
 
 # Memory repo locks - prevents concurrent modifications to git-based memory
 MEMORY_REPO_LOCK_PREFIX = "memory_repo:lock:"

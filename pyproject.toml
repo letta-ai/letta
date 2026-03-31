@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.16.6"
+version = "0.16.7"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
@@ -43,8 +43,8 @@ dependencies = [
     "llama-index>=0.12.2",
     "llama-index-embeddings-openai>=0.3.1",
     "anthropic>=0.75.0",
-    "letta-client>=1.6.3",
-    "openai>=2.11.0",
+    "letta-client>=1.7.12",
+    "openai[realtime]>=2.24.0",
     "opentelemetry-api==1.30.0",
     "opentelemetry-sdk==1.30.0",
     "opentelemetry-instrumentation-requests==0.51b0",

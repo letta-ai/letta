@@ -114,6 +114,7 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = 1
     top_p: Optional[float] = 1
     user: Optional[str] = None  # unique ID of the end-user (for monitoring)
+    service_tier: Optional[str] = None
 
     # function-calling related
     tools: Optional[List[Tool]] = None

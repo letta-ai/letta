@@ -5,6 +5,7 @@
 import asyncio
 import json
 import re
+import time
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from typing import Dict, Optional
@@ -51,6 +52,7 @@ async def add_keepalive_to_stream(
     stream_generator: AsyncIterator[str | bytes],
     run_id: str,
     keepalive_interval: float = 30.0,
+    max_stream_silence: float = 1800.0,
 ) -> AsyncIterator[str | bytes]:
     """
     Adds periodic keepalive messages to a stream to prevent connection timeouts.
@@ -59,9 +61,14 @@ async def add_keepalive_to_stream(
     whether data is flowing. This ensures connections stay alive during long
     operations like tool execution.
 
+    If no non-keepalive data is received from the wrapped stream for
+    ``max_stream_silence`` seconds, the wrapper terminates the stream to avoid
+    keeping connections alive indefinitely on ping-only hangs.
+
     Args:
         stream_generator: The original stream generator to wrap
         keepalive_interval: Seconds between keepalive messages (default: 30)
+        max_stream_silence: Maximum seconds with no stream data before terminating (default: 1800)
 
     Yields:
         Original stream chunks interspersed with keepalive messages
@@ -71,6 +78,7 @@ async def add_keepalive_to_stream(
     queue = asyncio.Queue(maxsize=1)
     stream_exhausted = False
     last_seq_id = None
+    last_data_time = time.monotonic()
 
     async def stream_reader():
         """Read from the original stream and put items in the queue."""
@@ -95,6 +103,8 @@ async def add_keepalive_to_stream(
                     # Stream finished
                     break
                 elif msg_type == "data":
+                    last_data_time = time.monotonic()
+
                     # Track seq_id from chunks for ping messages
                     if isinstance(data, str):
                         seq_id_match = re.search(r'"seq_id":(\d+)', data)  # Look for "seq_id":<number> pattern in the SSE chunk
@@ -106,6 +116,15 @@ async def add_keepalive_to_stream(
             except asyncio.TimeoutError:
                 # No data received within keepalive interval
                 if not stream_exhausted:
+                    silence = time.monotonic() - last_data_time
+                    if silence > max_stream_silence:
+                        logger.warning(
+                            f"Stream for run {run_id} has emitted only keepalives for {silence:.0f}s "
+                            f"(limit {max_stream_silence}s), terminating keepalive wrapper"
+                        )
+                        reader_task.cancel()
+                        break
+
                     # Send keepalive ping with the last seq_id to allow clients to track progress
                     yield f"data: {LettaPing(id=f'ping-{uuid4()}', date=datetime.now(timezone.utc), run_id=run_id, seq_id=last_seq_id).model_dump_json()}\n\n"
                 else:

@@ -57,6 +57,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         self.step_manager = step_manager
         self.telemetry_manager = telemetry_manager
         self.current_run_id = current_run_id
+        self._billing_context: BillingContext | None = None
         # Group settings
         assert group.manager_type == ManagerType.sleeptime, f"Expected group manager type to be 'sleeptime', got {group.manager_type}"
         self.group = group
@@ -73,6 +74,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         run_ids = []
+        self._billing_context = billing_context
 
         # Prepare new messages
         new_messages = []
@@ -126,6 +128,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                         last_response_messages,
                         last_processed_message_id,
                         use_assistant_message,
+                        billing_context,
                     )
                     run_ids.append(run_id)
 
@@ -168,6 +171,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
         include_return_message_types: list[MessageType] | None = None,
+        billing_context: BillingContext | None = None,
     ) -> AsyncGenerator[str, None]:
         # Prepare new messages
         new_messages = []
@@ -197,6 +201,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
             use_assistant_message=use_assistant_message,
             request_start_timestamp_ns=request_start_timestamp_ns,
             include_return_message_types=include_return_message_types,
+            billing_context=billing_context,
         ):
             yield chunk
 
@@ -220,6 +225,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                     last_response_messages,
                     last_processed_message_id,
                     use_assistant_message,
+                    billing_context,
                 )
 
     async def _issue_background_task(
@@ -228,6 +234,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         response_messages: list[Message],
         last_processed_message_id: str,
         use_assistant_message: bool = True,
+        billing_context: BillingContext | None = None,
     ) -> str:
         run = Run(
             user_id=self.actor.id,
@@ -247,6 +254,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 last_processed_message_id=last_processed_message_id,
                 run_id=run.id,
                 use_assistant_message=True,
+                billing_context=billing_context,
             ),
             label=f"participant_agent_step_{sleeptime_agent_id}",
         )
@@ -260,6 +268,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         last_processed_message_id: str,
         run_id: str,
         use_assistant_message: bool = True,
+        billing_context: BillingContext | None = None,
     ) -> str:
         try:
             # Update job status
@@ -315,6 +324,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 input_messages=sleeptime_agent_messages,
                 use_assistant_message=use_assistant_message,
                 run_id=run_id,
+                billing_context=billing_context,
             )
 
             # Update job status

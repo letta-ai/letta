@@ -178,6 +178,9 @@ async def lifespan(app_: FastAPI):
     FastAPI lifespan context manager with setup before the app starts pre-yield and on shutdown after the yield.
     """
     worker_id = os.getpid()
+    from letta.monitoring.readiness_state import initialize_readiness_state, set_readiness_state
+
+    initialize_readiness_state(reason="warming", source="lifespan_startup")
 
     # Initialize event loop watchdog
     try:
@@ -207,7 +210,12 @@ async def lifespan(app_: FastAPI):
     try:
         from sqlalchemy import text
 
-        from letta.server.db import db_registry
+        from letta.otel.db_pool_monitoring import setup_pool_monitoring
+        from letta.server.db import db_registry, engine as db_engine
+
+        if settings.enable_db_pool_monitoring:
+            setup_pool_monitoring(db_engine.sync_engine, engine_name="core")
+            logger.info(f"[Worker {worker_id}] DB pool monitoring initialized")
 
         async with db_registry.async_session() as session:
             result = await session.execute(text("SHOW statement_timeout"))
@@ -244,10 +252,13 @@ async def lifespan(app_: FastAPI):
         logger.info(f"[Worker {worker_id}] Scheduler initialization completed")
     except Exception as e:
         logger.error(f"[Worker {worker_id}] Scheduler initialization failed: {e}", exc_info=True)
+
+    set_readiness_state(reason="ready", source="lifespan_startup_complete")
     logger.info(f"[Worker {worker_id}] Lifespan startup completed")
     yield
 
     # Cleanup on shutdown
+    set_readiness_state(reason="draining", source="lifespan_shutdown")
     logger.info(f"[Worker {worker_id}] Starting lifespan shutdown")
 
     # Stop watchdog thread (important for clean test/worker shutdown)
@@ -571,7 +582,15 @@ def create_application() -> "FastAPI":
     app.add_exception_handler(UniqueConstraintViolationError, _error_handler_409)
     app.add_exception_handler(IntegrityError, _error_handler_409)
     app.add_exception_handler(ConcurrentUpdateError, _error_handler_409)
-    app.add_exception_handler(ConversationBusyError, _error_handler_409)
+
+    async def _conversation_busy_handler(request: Request, exc: ConversationBusyError):
+        logger.error(f"{type(exc).__name__}", exc_info=exc)
+        content = {"detail": str(exc)}
+        if exc.run_id:
+            content["run_id"] = exc.run_id
+        return JSONResponse(status_code=409, content=content)
+
+    app.add_exception_handler(ConversationBusyError, _conversation_busy_handler)
     app.add_exception_handler(MemoryRepoBusyError, _error_handler_409)
     app.add_exception_handler(PendingApprovalError, _error_handler_409)
     app.add_exception_handler(NoActiveRunsToCancelError, _error_handler_409)
@@ -763,7 +782,7 @@ def create_application() -> "FastAPI":
     @app.exception_handler(LLMError)
     async def llm_error_handler(request: Request, exc: LLMError):
         return JSONResponse(
-            status_code=502,
+            status_code=500,
             content={
                 "error": {
                     "type": "llm_error",

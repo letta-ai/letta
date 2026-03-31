@@ -162,11 +162,29 @@ class LLMTraceWriter:
                     logger.warning(f"LLMTraceWriter: Retry {attempt + 1}/{MAX_RETRIES}, backoff {backoff}s: {e}")
                     await asyncio.sleep(backoff)
                 else:
-                    logger.error(f"LLMTraceWriter: Dropping trace after {MAX_RETRIES} retries: {e}")
+                    logger.warning(
+                        "LLMTraceWriter: Dropping trace after %s retries for model=%s step_id=%s: %s",
+                        MAX_RETRIES,
+                        trace.model,
+                        trace.step_id,
+                        e,
+                    )
 
     async def shutdown_async(self) -> None:
         """Gracefully shutdown the writer."""
         self._shutdown = True
+
+        # Ensure any background write tasks complete before closing the client.
+        pending_tasks = [task for task in _background_tasks if not task.done()]
+        if pending_tasks:
+            logger.warning(
+                "LLMTraceWriter: Flushing %s pending trace write task(s) during shutdown",
+                len(pending_tasks),
+            )
+            flush_results = await asyncio.gather(*pending_tasks, return_exceptions=True)
+            for result in flush_results:
+                if isinstance(result, Exception):
+                    logger.warning(f"LLMTraceWriter: Background trace write task failed during shutdown: {result}")
 
         # Close client
         if self._client:
@@ -185,6 +203,21 @@ class LLMTraceWriter:
 
         self._shutdown = True
 
+        try:
+            asyncio.run(self.shutdown_async())
+        except Exception as e:
+            logger.warning(f"LLMTraceWriter: Async shutdown during atexit failed: {e}")
+
+            if self._client:
+                try:
+                    self._client.close()
+                except Exception as inner_error:
+                    logger.warning(f"LLMTraceWriter: Error closing client during atexit sync fallback: {inner_error}")
+                self._client = None
+        else:
+            return
+
+        # If running inside an active event loop, close only the client as a fallback.
         if self._client:
             try:
                 self._client.close()

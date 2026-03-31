@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import asyncio
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
@@ -6,6 +9,7 @@ from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.llm_api.openai_ws_session import OpenAIWSSessionManager
 from letta.otel.tracing import log_attributes, safe_json_dumps, trace_method
 from letta.schemas.enums import LLMCallType, ProviderType
 from letta.schemas.letta_message import LettaMessage
@@ -37,6 +41,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         org_id: str | None = None,
         user_id: str | None = None,
         billing_context: "BillingContext | None" = None,
+        use_openai_responses_websocket: bool = False,
     ) -> None:
         super().__init__(
             llm_client,
@@ -50,6 +55,21 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             billing_context=billing_context,
         )
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
+        self.use_openai_responses_websocket: bool = use_openai_responses_websocket
+        self._ws_session: OpenAIWSSessionManager | None = None  # lazy, created on first WS call
+
+    async def _get_or_create_ws_session(self) -> OpenAIWSSessionManager:
+        """Lazily create and return the WebSocket session for reuse across steps."""
+        if self._ws_session is None:
+            kwargs = await self.llm_client._prepare_client_kwargs_async(self.llm_config)
+            self._ws_session = OpenAIWSSessionManager(client_kwargs=kwargs)
+        return self._ws_session
+
+    async def aclose(self) -> None:
+        """Close the WebSocket session if one was opened."""
+        if self._ws_session is not None:
+            await self._ws_session.aclose()
+            self._ws_session = None
 
     async def invoke_llm(
         self,
@@ -82,7 +102,12 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 run_id=self.run_id,
                 step_id=step_id,
             )
-        elif self.llm_config.model_endpoint_type in [ProviderType.openai, ProviderType.openrouter]:
+        elif self.llm_config.model_endpoint_type in [
+            ProviderType.openai,
+            ProviderType.openrouter,
+            ProviderType.baseten,
+            ProviderType.fireworks,
+        ]:
             # For non-v1 agents, always use Chat Completions streaming interface
             self.interface = OpenAIStreamingInterface(
                 use_assistant_message=use_assistant_message,
@@ -116,51 +141,69 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 error_msg=str(e),
                 error_type=type(e).__name__,
             )
-            raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
-
-        # Process the stream and yield chunks immediately for TTFT
-        # Wrap in error handling to convert provider errors to common LLMError types
-        try:
-            async for chunk in self.interface.process(stream):  # TODO: add ttft span
-                # Yield each chunk immediately as it arrives
-                yield chunk
-        except Exception as e:
-            self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
-            latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
-            await self.llm_client.log_provider_trace_async(
-                request_data=request_data,
-                response_json=None,
-                llm_config=self.llm_config,
-                latency_ms=latency_ms,
-                error_msg=str(e),
-                error_type=type(e).__name__,
-            )
             if isinstance(e, LLMError):
                 raise
             raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
 
-        # After streaming completes, extract the accumulated data
-        self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+        stream_started = True
 
-        # Extract tool call from the interface
         try:
-            self.tool_call = self.interface.get_tool_call_object()
-        except ValueError:
-            # No tool call, handle upstream
-            self.tool_call = None
+            # Process the stream and yield chunks immediately for TTFT
+            # Wrap in error handling to convert provider errors to common LLMError types
+            try:
+                async for chunk in self.interface.process(stream):  # TODO: add ttft span
+                    # Yield each chunk immediately as it arrives
+                    yield chunk
+            except BaseException as e:
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+                latency_ms = int((self.llm_request_finish_timestamp_ns - request_start_ns) / 1_000_000)
+                await self.llm_client.log_provider_trace_async(
+                    request_data=request_data,
+                    response_json=None,
+                    llm_config=self.llm_config,
+                    latency_ms=latency_ms,
+                    error_msg=str(e),
+                    error_type=type(e).__name__,
+                )
+                if isinstance(e, asyncio.CancelledError):
+                    raise
+                if isinstance(e, LLMError):
+                    raise
+                raise self.llm_client.handle_llm_error(e, llm_config=self.llm_config)
+            else:
+                # After streaming completes, extract the accumulated data
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
+        finally:
+            if not stream_started:
+                return
 
-        # Extract reasoning content from the interface
-        self.reasoning_content = self.interface.get_reasoning_content()
+            if self.llm_request_finish_timestamp_ns is None:
+                self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
-        # Extract usage statistics from the streaming interface
-        self.usage = self.interface.get_usage_statistics()
-        self.usage.step_count = 1
+            # Extract best-effort request results for trace logging
+            try:
+                self.tool_call = self.interface.get_tool_call_object()
+            except Exception:
+                self.tool_call = None
 
-        # Store any additional data from the interface
-        self.message_id = self.interface.letta_message_id
+            try:
+                self.reasoning_content = self.interface.get_reasoning_content()
+            except Exception:
+                self.reasoning_content = []
 
-        # Log request and response data
-        self.log_provider_trace(step_id=step_id, actor=actor)
+            try:
+                self.usage = self.interface.get_usage_statistics()
+            except Exception:
+                pass
+            self.usage.step_count = 1
+
+            try:
+                self.message_id = self.interface.letta_message_id
+            except Exception:
+                self.message_id = None
+
+            # Log request and response data
+            self.log_provider_trace(step_id=step_id, actor=actor)
 
     def supports_token_streaming(self) -> bool:
         return True
@@ -223,6 +266,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                         org_id=self.org_id,
                         user_id=self.user_id,
                         llm_config=self.llm_config.model_dump() if self.llm_config else None,
+                        billing_context=self.billing_context,
                     ),
                 ),
                 label="create_provider_trace",

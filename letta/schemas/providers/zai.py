@@ -19,6 +19,8 @@ MODEL_CONTEXT_WINDOWS = {
     "glm-4.7": 180000,
     "glm-5": 180000,
     "glm-5-code": 180000,
+    "glm-5-turbo": 180000,
+    "glm-5.1": 180000,
 }
 
 
@@ -72,3 +74,10 @@ class ZAIProvider(OpenAIProvider):
             )
 
         return configs
+
+
+class ZAICodingProvider(ZAIProvider):
+    """Z.ai Coding Plan provider - uses coding-specific endpoint."""
+
+    provider_type: Literal[ProviderType.zai_coding] = Field(ProviderType.zai_coding, description="The type of the provider.")
+    base_url: str = Field("https://api.z.ai/api/coding/paas/v4/", description="Base URL for the Z.ai Coding API.")

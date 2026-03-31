@@ -32,8 +32,18 @@ class GroqClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+        data = super().build_request_data(
+            agent_type,
+            messages,
+            llm_config,
+            tools,
+            force_tool_call,
+            requires_subsequent_tool_call,
+            tool_return_truncation_chars,
+            system,
+        )
 
         # Groq only supports string values for tool_choice: "none", "auto", "required"
         # Convert object-format tool_choice (used for force_tool_call) to "required"

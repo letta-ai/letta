@@ -1,5 +1,4 @@
 GOOGLE_MODEL_TO_CONTEXT_LENGTH = {
-    "gemini-3-pro-preview": 1048576,
     "gemini-3.1-pro-preview": 1048576,
     "gemini-3-flash-preview": 1048576,
     "gemini-2.5-pro": 1048576,

@@ -9,6 +9,7 @@ from contextlib import aclosing
 from typing import Dict, List, Optional
 
 from letta.data_sources.redis_client import AsyncRedisClient
+from letta.errors import LettaError
 from letta.log import get_logger
 from letta.schemas.enums import RunStatus
 from letta.schemas.letta_message import LettaErrorMessage
@@ -320,6 +321,60 @@ async def create_background_stream_processor(
         # Write [DONE] marker to properly close the stream for clients reading from Redis
         await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
         saw_done = True
+    except asyncio.CancelledError:
+        # Task-level cancellation can happen for different reasons:
+        # - runtime/pod shutdown
+        # - parent task cancellation
+        # - rare cancellation races
+        # Distinguish explicit user run cancellation from infrastructure/task interruption.
+        logger.warning(f"Background stream processor for run {run_id} was cancelled")
+
+        run_was_explicitly_cancelled = False
+        if run_manager and actor:
+            try:
+                run = await run_manager.get_run_by_id(run_id=run_id, actor=actor)
+                run_was_explicitly_cancelled = run.status == RunStatus.cancelled
+            except Exception as lookup_err:
+                logger.warning(f"Failed to inspect run status during cancellation for run {run_id}: {lookup_err}")
+
+        if run_was_explicitly_cancelled:
+            stop_reason = StopReasonType.cancelled.value
+            logger.info(f"Run {run_id} was already cancelled; writing terminal cancelled marker")
+            try:
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"data: {LettaStopReason(stop_reason=StopReasonType.cancelled).model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+            except Exception as write_err:
+                logger.warning(f"Failed to write terminal cancelled marker for run {run_id}: {write_err}")
+            saw_done = True
+        else:
+            stop_reason = StopReasonType.error.value
+            error_message = LettaErrorMessage(
+                run_id=run_id,
+                error_type="stream_task_cancelled",
+                message="Background stream processing was interrupted before completion. Please retry.",
+                detail=None,
+            )
+            error_metadata = {"error": error_message.model_dump()}
+            try:
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"data: {LettaStopReason(stop_reason=StopReasonType.error).model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(
+                    run_id=run_id,
+                    data=f"event: error\ndata: {error_message.model_dump_json()}\n\n",
+                    is_complete=False,
+                )
+                await writer.write_chunk(run_id=run_id, data="data: [DONE]\n\n", is_complete=True)
+            except Exception as write_err:
+                logger.warning(f"Failed to write terminal error marker after cancellation for run {run_id}: {write_err}")
+            saw_error = True
+            saw_done = True
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
@@ -327,7 +382,7 @@ async def create_background_stream_processor(
         error_message = LettaErrorMessage(
             run_id=run_id,
             error_type="internal_error",
-            message="An unknown error occurred with the LLM streaming request.",
+            message=str(e) if isinstance(e, LettaError) else "An unknown error occurred with the LLM streaming request.",
             detail=str(e),
         )
         await writer.write_chunk(
@@ -344,11 +399,22 @@ async def create_background_stream_processor(
                 run_id=run_id,
                 update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error.value, metadata={"error": str(e)}),
                 actor=actor,
-                conversation_id=conversation_id,
             )
     finally:
         if should_stop_writer:
             await writer.stop()
+
+        # Release the conversation lock BEFORE run status bookkeeping.
+        # The client sees [DONE] and immediately submits the next message
+        # (e.g., tool results). If we hold the lock through the DB commit,
+        # the client hits a 409 race (~1-2s window). The bookkeeping
+        # (run status, metrics, last_stop_reason) is safe to race with
+        # the next request — they touch different rows/fields.
+        if conversation_id:
+            try:
+                await redis_client.release_conversation_lock(conversation_id)
+            except Exception as lock_error:
+                logger.warning(f"Failed to release conversation lock for {conversation_id}: {lock_error}")
 
         # Derive a final stop_reason if one wasn't observed explicitly
         final_stop_reason = stop_reason
@@ -359,7 +425,7 @@ async def create_background_stream_processor(
                 # Treat DONE without an explicit stop_reason as an error to avoid masking failures
                 final_stop_reason = StopReasonType.error.value
 
-        # Update run status to reflect terminal outcome
+        # Update run status to reflect terminal outcome (lock already released)
         if run_manager and actor and final_stop_reason:
             # Resolve stop_reason using canonical enum mapping to avoid drift.
             try:
@@ -376,7 +442,6 @@ async def create_background_stream_processor(
                 run_id=run_id,
                 update=RunUpdate(**update_kwargs),
                 actor=actor,
-                conversation_id=conversation_id,
             )
 
         # Belt-and-suspenders: always append a terminal [DONE] chunk to ensure clients terminate

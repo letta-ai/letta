@@ -76,7 +76,9 @@ class LettaMessage(BaseModel):
         date (datetime): The date the message was created in ISO format
         name (Optional[str]): The name of the sender of the message
         message_type (MessageType): The type of the message
-        otid (Optional[str]): The offline threading id associated with this message
+        otid (Optional[str]): The offline threading id (OTID) associated with this message. Set by the client to deduplicate
+            requests. This key is used for idempotency in background mode for streaming — it is critical that each message
+            in a request has a unique OTID. The only exception is retries of the same request, which should reuse the same OTIDs.
         sender_id (Optional[str]): The id of the sender of the message, can be an identity id or agent id
         step_id (Optional[str]): The step id associated with the message
         is_err (Optional[bool]): Whether the message is an errored message or not. Used for debugging purposes only.
@@ -86,7 +88,12 @@ class LettaMessage(BaseModel):
     date: datetime
     name: str | None = None
     message_type: MessageType = Field(..., description="The type of the message.")
-    otid: str | None = None
+    otid: str | None = Field(
+        None,
+        description="The offline threading id (OTID). Set by the client to deduplicate requests. "
+        "Used for idempotency in background streaming mode — each message in a request must have a unique OTID. "
+        "Retries of the same request should reuse the same OTIDs.",
+    )
     sender_id: str | None = None
     step_id: str | None = None
     is_err: bool | None = None

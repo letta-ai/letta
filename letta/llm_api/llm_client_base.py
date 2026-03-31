@@ -299,6 +299,7 @@ class LLMClientBase:
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.

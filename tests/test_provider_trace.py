@@ -23,6 +23,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
+from letta.services.provider_trace_backends.clickhouse import ClickhouseProviderTraceBackend
 
 
 def _run_server():
@@ -400,3 +401,78 @@ class TestProviderTraceEdgeCases:
 
         trace = client.telemetry.retrieve_provider_trace(step_id=step_id)
         assert trace is not None
+
+
+class TestClickhouseProviderTraceUsageParsing:
+    """Unit tests for ClickHouse analytics usage extraction."""
+
+    def test_extract_usage_parses_azure_responses_api_shape(self):
+        backend = ClickhouseProviderTraceBackend()
+
+        usage = backend._extract_usage(
+            {
+                "usage": {
+                    "input_tokens": 101218,
+                    "input_tokens_details": {"cached_tokens": 100992},
+                    "output_tokens": 16,
+                    "output_tokens_details": {"reasoning_tokens": 0},
+                    "total_tokens": 101234,
+                }
+            },
+            provider="azure",
+        )
+
+        assert usage == {
+            "prompt_tokens": 101218,
+            "completion_tokens": 16,
+            "total_tokens": 101234,
+            "cached_input_tokens": 100992,
+            "reasoning_tokens": 0,
+        }
+
+    def test_extract_usage_preserves_openai_chat_completions_shape(self):
+        backend = ClickhouseProviderTraceBackend()
+
+        usage = backend._extract_usage(
+            {
+                "usage": {
+                    "prompt_tokens": 5681,
+                    "completion_tokens": 80,
+                    "total_tokens": 5761,
+                    "prompt_tokens_details": {"cached_tokens": 42},
+                    "completion_tokens_details": {"reasoning_tokens": 7},
+                }
+            },
+            provider="openai",
+        )
+
+        assert usage == {
+            "prompt_tokens": 5681,
+            "completion_tokens": 80,
+            "total_tokens": 5761,
+            "cached_input_tokens": 42,
+            "reasoning_tokens": 7,
+        }
+
+    def test_extract_usage_adds_anthropic_cache_tokens_into_prompt_total(self):
+        backend = ClickhouseProviderTraceBackend()
+
+        usage = backend._extract_usage(
+            {
+                "usage": {
+                    "input_tokens": 100,
+                    "output_tokens": 25,
+                    "cache_read_input_tokens": 50,
+                    "cache_creation_input_tokens": 10,
+                }
+            },
+            provider="anthropic",
+        )
+
+        assert usage == {
+            "prompt_tokens": 160,
+            "completion_tokens": 25,
+            "cached_input_tokens": 50,
+            "cache_write_tokens": 10,
+            "total_tokens": 185,
+        }

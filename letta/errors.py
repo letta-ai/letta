@@ -36,9 +36,10 @@ class LettaError(Exception):
         super().__init__(message)
 
     def __str__(self) -> str:
-        if self.code:
-            return f"{self.code.value}: {self.message}"
-        return self.message
+        base = f"{self.code.value}: {self.message}" if self.code else self.message
+        if isinstance(self.details, dict) and self.details.get("is_byok"):
+            return f"{base} [BYOK]"
+        return base
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(message='{self.message}', code='{self.code}', details={self.details})"
@@ -80,16 +81,29 @@ class ConcurrentUpdateError(LettaError):
 class ConversationBusyError(LettaError):
     """Error raised when attempting to send a message while another request is already processing for the same conversation."""
 
-    def __init__(self, conversation_id: str, lock_holder_token: Optional[str] = None):
+    def __init__(
+        self,
+        conversation_id: str,
+        lock_holder_token: Optional[str] = None,
+        run_id: Optional[str] = None,
+    ):
         self.conversation_id = conversation_id
         self.lock_holder_token = lock_holder_token
-        message = "Cannot send a new message: Another request is currently being processed for this conversation. Please wait for the current request to complete."
+        self.run_id = run_id
+
+        # Build message with available info
+        if run_id:
+            message = f"Cannot send a new message: Another request (run_id={run_id}) is currently being processed for this conversation. Please wait for it to complete."
+        else:
+            message = "Cannot send a new message: Another request is currently being processed for this conversation. Please wait for the current request to complete."
+
         code = ErrorCode.CONFLICT
         details = {
             "error_code": "CONVERSATION_BUSY",
             "conversation_id": conversation_id,
-            "lock_holder_token": lock_holder_token,
         }
+        if run_id:
+            details["run_id"] = run_id
         super().__init__(message=message, code=code, details=details)
 
 

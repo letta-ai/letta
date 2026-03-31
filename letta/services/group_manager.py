@@ -13,7 +13,7 @@ from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.group import Group as PydanticGroup, GroupCreate, GroupUpdate, InternalTemplateGroupCreate, ManagerType
-from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -207,6 +207,7 @@ class GroupManager:
         use_assistant_message: bool = True,
         assistant_message_tool_name: str = "send_message",
         assistant_message_tool_kwarg: str = "message",
+        include_return_message_types: Optional[List[MessageType]] = None,
     ) -> list[LettaMessage]:
         async with db_registry.async_session() as session:
             filters = {
@@ -218,6 +219,7 @@ class GroupManager:
                 before=before,
                 after=after,
                 limit=limit,
+                check_is_deleted=True,
                 **filters,
             )
 
@@ -226,6 +228,7 @@ class GroupManager:
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                include_return_message_types=include_return_message_types,
             )
 
             # TODO: filter messages to return a clean conversation history

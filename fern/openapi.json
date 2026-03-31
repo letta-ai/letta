@@ -4334,6 +4334,24 @@
               "title": "Last Stop Reason"
             },
             "description": "Filter agents by their last stop reason."
+          },
+          {
+            "name": "created_by_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by the user who created them.",
+              "title": "Created By Id"
+            },
+            "description": "Filter agents by the user who created them."
           }
         ],
         "responses": {
@@ -4608,6 +4626,24 @@
               "title": "Last Stop Reason"
             },
             "description": "Filter agents by their last stop reason."
+          },
+          {
+            "name": "created_by_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by the user who created them.",
+              "title": "Created By Id"
+            },
+            "description": "Filter agents by the user who created them."
           }
         ],
         "responses": {
@@ -7816,6 +7852,27 @@
               "title": "Include Err"
             },
             "description": "Whether to include error messages and error statuses. For debugging purposes only."
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -7908,8 +7965,9 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Modify Message",
-        "description": "Update the details of a message associated with an agent.",
+        "description": "Update the details of a message associated with an agent.\n\n**Deprecated**: Messages are now considered immutable since they can be shared across\nmultiple conversations via forking. This endpoint will be removed in a future version.",
         "operationId": "modify_message",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_id",
@@ -8805,7 +8863,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": ["created_at", "last_run_completion"],
+              "enum": ["created_at", "last_run_completion", "last_message_at"],
               "type": "string",
               "description": "Field to sort by",
               "default": "created_at",
@@ -8987,6 +9045,75 @@
         }
       }
     },
+    "/v1/conversations/{conversation_id}/fork": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Fork Conversation",
+        "description": "Fork an existing conversation.\n\nCreates a new conversation that shares the same in-context messages as the source\nconversation, but with a newly compiled system message reflecting the latest memory\nblock values. The forked conversation belongs to the same agent as the source.\n\n**Agent-direct mode**: Pass conversation_id=\"default\" with agent_id query parameter\nto fork the agent's default (agent-direct) message history into a new conversation.\n\n**Deprecated**: Passing an agent ID as conversation_id still works but will be removed.",
+        "operationId": "fork_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 42,
+              "pattern": "^(default|conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated).",
+              "examples": [
+                "default",
+                "conv-123e4567-e89b-42d3-8456-426614174000",
+                "agent-123e4567-e89b-42d3-8456-426614174000"
+              ],
+              "title": "Conversation Id"
+            },
+            "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated)."
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID for agent-direct mode with 'default' conversation",
+              "title": "Agent Id"
+            },
+            "description": "Agent ID for agent-direct mode with 'default' conversation"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/conversations/{conversation_id}/messages": {
       "get": {
         "tags": ["conversations"],
@@ -9147,6 +9274,27 @@
               "title": "Include Err"
             },
             "description": "Whether to include error messages and error statuses. For debugging purposes only."
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -9240,11 +9388,74 @@
         }
       }
     },
+    "/v1/conversations/{conversation_id}/messages/preview-raw-payload": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Preview Conversation Model Request",
+        "description": "Inspect the raw LLM request payload for a conversation message without sending it.\n\nThis endpoint processes the message through the same path as send_conversation_message\n(including conversation-scoped messages, isolated blocks, model overrides, and\nclient tools/skills) but stops before the LLM call and returns the raw request\npayload. Useful for debugging and verifying what the LLM will actually see.",
+        "operationId": "preview_conversation_model_request",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 42,
+              "pattern": "^(default|conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated).",
+              "examples": [
+                "default",
+                "conv-123e4567-e89b-42d3-8456-426614174000",
+                "agent-123e4567-e89b-42d3-8456-426614174000"
+              ],
+              "title": "Conversation Id"
+            },
+            "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Preview Conversation Model Request"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/conversations/{conversation_id}/stream": {
       "post": {
         "tags": ["conversations"],
         "summary": "Retrieve Conversation Stream",
-        "description": "Resume the stream for the most recent active run in a conversation.\n\nThis endpoint allows you to reconnect to an active background stream\nfor a conversation, enabling recovery from network interruptions.\n\n**Agent-direct mode**: Pass conversation_id=\"default\" with agent_id in request body\nto retrieve the stream for the agent's most recent active run.\n\n**Deprecated**: Passing an agent ID as conversation_id still works but will be removed.",
+        "description": "Resume the stream for the most recent active run in a conversation.\n\nThis endpoint allows you to reconnect to an active background stream\nfor a conversation, enabling recovery from network interruptions.\n\n**Agent-direct mode**: Pass conversation_id=\"default\" with agent_id in request body\nto retrieve the stream for the agent's most recent active run.\n\n**Direct run access**: Pass run_id directly to skip run lookup entirely.\nUseful for recovery from duplicate request 409 errors.\n\n**OTID lookup**: Pass otid to look up the run_id from Redis.\nUseful when you have the otid from a 409 error response.\n\n**Deprecated**: Passing an agent ID as conversation_id still works but will be removed.",
         "operationId": "retrieve_conversation_stream",
         "parameters": [
           {
@@ -9398,6 +9609,87 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Cancel Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/recompile": {
+      "post": {
+        "tags": ["conversations"],
+        "summary": "Recompile Conversation",
+        "description": "Manually trigger system prompt recompilation for a conversation.",
+        "operationId": "recompile_conversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 42,
+              "pattern": "^(default|conv-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$",
+              "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated).",
+              "examples": [
+                "default",
+                "conv-123e4567-e89b-42d3-8456-426614174000",
+                "agent-123e4567-e89b-42d3-8456-426614174000"
+              ],
+              "title": "Conversation Id"
+            },
+            "description": "The conversation identifier. Can be a conversation ID ('conv-<uuid4>'), 'default' for agent-direct mode (with agent_id parameter), or an agent ID ('agent-<uuid4>') for backwards compatibility (deprecated)."
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If True, do not persist changes; still returns the compiled system prompt.",
+              "default": false,
+              "title": "Dry Run"
+            },
+            "description": "If True, do not persist changes; still returns the compiled system prompt."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/letta__server__rest_api__routers__v1__conversations__CompactionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Recompile Conversation"
                 }
               }
             }
@@ -10222,6 +10514,27 @@
             },
             "description": "The name of the message argument.",
             "deprecated": true
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -14752,8 +15065,28 @@
       "get": {
         "tags": ["health"],
         "summary": "Check Health",
-        "description": "Async health check endpoint.",
+        "description": "Liveness endpoint; returns 200 when process is responsive.",
         "operationId": "check_health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ready/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Check Readiness",
+        "description": "Readiness endpoint gated by internal readiness state when enforcement is enabled.",
+        "operationId": "check_readiness",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -17122,6 +17455,27 @@
               "title": "Conversation Id"
             },
             "description": "Conversation ID to filter messages by"
+          },
+          {
+            "name": "include_return_message_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message types to include in response. When null, all message types are returned.",
+              "title": "Include Return Message Types"
+            },
+            "description": "Message types to include in response. When null, all message types are returned."
           }
         ],
         "responses": {
@@ -17156,7 +17510,7 @@
       "post": {
         "tags": ["messages"],
         "summary": "Search All Messages",
-        "description": "Search messages across the organization with optional agent filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\nThis is a cloud-only feature.",
+        "description": "Search messages across the organization with optional agent filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\n\nThis is a cloud-only feature.",
         "operationId": "search_all_messages",
         "parameters": [],
         "requestBody": {
@@ -21809,6 +22163,9 @@
                     "type": "string",
                     "enum": ["letta-code"]
                   },
+                  "server_version": {
+                    "type": "string"
+                  },
                   "events": {
                     "type": "array",
                     "items": {
@@ -21833,6 +22190,9 @@
                                   "type": "string"
                                 },
                                 "agent_id": {
+                                  "type": "string"
+                                },
+                                "surface": {
                                   "type": "string"
                                 },
                                 "startup_command": {
@@ -21870,6 +22230,9 @@
                                   "type": "string"
                                 },
                                 "agent_id": {
+                                  "type": "string"
+                                },
+                                "surface": {
                                   "type": "string"
                                 },
                                 "duration": {
@@ -21938,6 +22301,9 @@
                                 "agent_id": {
                                   "type": "string"
                                 },
+                                "surface": {
+                                  "type": "string"
+                                },
                                 "tool_name": {
                                   "type": "string"
                                 },
@@ -22004,6 +22370,9 @@
                                 "model_id": {
                                   "type": "string"
                                 },
+                                "surface": {
+                                  "type": "string"
+                                },
                                 "recent_chunks": {
                                   "type": "array",
                                   "items": {
@@ -22041,6 +22410,9 @@
                                   "type": "string"
                                 },
                                 "agent_id": {
+                                  "type": "string"
+                                },
+                                "surface": {
                                   "type": "string"
                                 },
                                 "input_length": {
@@ -22142,6 +22514,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
                     "email": {
                       "type": "string"
                     },
@@ -22161,15 +22536,24 @@
                     "current_project_id": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "billing_tier": {
+                      "type": "string"
+                    },
+                    "remaining_credits": {
+                      "type": "number"
                     }
                   },
                   "required": [
+                    "id",
                     "email",
                     "name",
                     "organization_name",
                     "organization_id",
                     "current_project_name",
-                    "current_project_id"
+                    "current_project_id",
+                    "billing_tier",
+                    "remaining_credits"
                   ]
                 }
               }
@@ -26800,6 +27184,11 @@
                                       "reason": {
                                         "type": "string",
                                         "nullable": true
+                                      },
+                                      "updated_input": {
+                                        "type": "object",
+                                        "additionalProperties": {},
+                                        "nullable": true
                                       }
                                     },
                                     "required": ["approve", "tool_call_id"]
@@ -26906,86 +27295,6 @@
         }
       }
     },
-    "/v1/environments/{connectionId}/mode": {
-      "post": {
-        "description": "Change the permission mode of a specific environment connection",
-        "summary": "Change Environment Mode",
-        "tags": ["environments"],
-        "parameters": [
-          {
-            "name": "connectionId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "environments.sendModeChange",
-        "requestBody": {
-          "description": "Body",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "mode": {
-                    "type": "string",
-                    "enum": [
-                      "default",
-                      "acceptEdits",
-                      "plan",
-                      "bypassPermissions"
-                    ]
-                  }
-                },
-                "required": ["mode"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["success", "message"]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "errorCode": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["errorCode", "message"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/environments/{id}": {
       "delete": {
         "description": "Removes environment from list of environments",
@@ -27068,6 +27377,350 @@
                     }
                   },
                   "required": ["errorCode", "message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandboxes": {
+      "post": {
+        "description": "Create a new Modal Sandbox that runs letta remote automatically",
+        "summary": "Create Sandbox",
+        "tags": ["sandboxes"],
+        "parameters": [],
+        "operationId": "sandboxes.createSandbox",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentId": {
+                    "type": "string"
+                  },
+                  "connectionName": {
+                    "type": "string"
+                  }
+                },
+                "required": ["agentId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sandboxId": {
+                      "type": "string"
+                    },
+                    "deviceId": {
+                      "type": "string"
+                    },
+                    "connectionName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sandboxId", "deviceId", "connectionName"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "List all sandboxes for the organization",
+        "summary": "List Sandboxes",
+        "tags": ["sandboxes"],
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "sandboxes.listSandboxes",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sandboxes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "sandboxId": {
+                            "type": "string"
+                          },
+                          "agentId": {
+                            "type": "string"
+                          },
+                          "connectionName": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "organizationId": {
+                            "type": "string"
+                          },
+                          "connectionId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "podId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "connectedAt": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "lastHeartbeat": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "lastSeenAt": {
+                            "type": "number"
+                          },
+                          "firstSeenAt": {
+                            "type": "number"
+                          },
+                          "currentMode": {
+                            "type": "string",
+                            "enum": [
+                              "default",
+                              "acceptEdits",
+                              "plan",
+                              "bypassPermissions"
+                            ]
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "properties": {
+                              "os": {
+                                "type": "string"
+                              },
+                              "lettaCodeVersion": {
+                                "type": "string"
+                              },
+                              "nodeVersion": {
+                                "type": "string"
+                              },
+                              "workingDirectory": {
+                                "type": "string"
+                              },
+                              "gitBranch": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sandboxId",
+                          "agentId",
+                          "connectionName",
+                          "deviceId",
+                          "organizationId",
+                          "connectionId",
+                          "podId",
+                          "connectedAt",
+                          "lastHeartbeat",
+                          "lastSeenAt",
+                          "firstSeenAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["sandboxes"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandboxes/{sandboxId}/terminate": {
+      "post": {
+        "description": "Terminate a Modal Sandbox",
+        "summary": "Terminate Sandbox",
+        "tags": ["sandboxes"],
+        "parameters": [
+          {
+            "name": "sandboxId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "sandboxes.terminateSandbox",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errorCode": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["errorCode", "message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/device-storage-key": {
+      "get": {
+        "description": "Returns an HMAC-derived AES-256-GCM key scoped to the authenticated user and device. Used to encrypt/decrypt local IndexedDB caches on the client.",
+        "summary": "Get Device Storage Key",
+        "tags": ["deviceStorage"],
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "deviceStorage.getDeviceStorageKey",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["key"]
                 }
               }
             }
@@ -27572,6 +28225,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -27602,6 +28258,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -27613,6 +28272,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -27621,6 +28281,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -28175,6 +28836,30 @@
             "description": "The message type to be created.",
             "default": "approval"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "approvals": {
             "anyOf": [
               {
@@ -28242,18 +28927,6 @@
             "title": "Reason",
             "description": "An optional explanation for the provided approval status",
             "deprecated": true
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id",
-            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",
@@ -28298,7 +28971,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -28430,7 +29104,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -28866,7 +29541,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -29168,6 +29844,38 @@
         "type": "object",
         "required": ["tool_name", "type"],
         "title": "BaseToolRuleSchema"
+      },
+      "BasetenModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": true
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "baseten",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "baseten"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          }
+        },
+        "type": "object",
+        "title": "BasetenModelSettings",
+        "description": "Baseten model configuration (OpenAI-compatible)."
       },
       "BatchJob": {
         "properties": {
@@ -31421,6 +32129,29 @@
         "required": ["finish_reason", "index", "message"],
         "title": "Choice"
       },
+      "ClientSkillSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the skill"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Description of what the skill does"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "Path or location hint for the skill (e.g. skills/my-skill/SKILL.md)"
+          }
+        },
+        "type": "object",
+        "required": ["name", "description", "location"],
+        "title": "ClientSkillSchema",
+        "description": "Schema for a client-side skill passed in the request.\n\nClient-side skills represent environment-provided capabilities (e.g. project-scoped\nskills) that are not stored in the agent's MemFS but should appear in the system\nprompt's available skills section."
+      },
       "ClientToolSchema": {
         "properties": {
           "name": {
@@ -31525,6 +32256,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -31555,6 +32289,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -31566,6 +32303,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -31574,6 +32312,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -31662,6 +32401,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -31692,6 +32434,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -31703,6 +32448,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -31711,6 +32457,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -32360,6 +33107,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -32390,6 +33140,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -32401,6 +33154,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -32409,6 +33163,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -32421,6 +33176,19 @@
             ],
             "title": "Model Settings",
             "description": "The model settings for this conversation (overrides agent's model settings)."
+          },
+          "last_message_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message At",
+            "description": "Timestamp of the most recent message request sent to this conversation."
           }
         },
         "additionalProperties": false,
@@ -32576,6 +33344,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -32617,6 +33400,18 @@
             "title": "Return Token Ids",
             "description": "If True, returns token IDs and logprobs for ALL LLM generations in the agent step, not just the last one. Uses SGLang native /generate endpoint. Returns 'turns' field with TurnTokenData for each assistant/tool turn. Required for proper multi-turn RL training with loss masking.",
             "default": false
+          },
+          "override_system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override System",
+            "description": "Optional per-request system prompt override. When set, this is passed directly to the underlying LLM request and bypasses the persisted/compiled system message for that request."
           },
           "agent_id": {
             "anyOf": [
@@ -33066,6 +33861,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -33096,6 +33894,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -33107,6 +33908,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -33115,6 +33917,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -33765,6 +34568,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -33795,6 +34601,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -33806,6 +34615,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -33814,6 +34624,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -34740,7 +35551,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -36743,7 +37555,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -37691,6 +38504,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -37721,6 +38537,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -37732,6 +38551,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -37740,6 +38560,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -38671,6 +39492,9 @@
               "deepseek",
               "xai",
               "zai",
+              "zai_coding",
+              "baseten",
+              "fireworks",
               "openrouter",
               "chatgpt_oauth"
             ],
@@ -38933,6 +39757,18 @@
             "title": "Return Token Ids",
             "description": "Whether to return token IDs for all LLM generations via SGLang native endpoint. Required for multi-turn RL training with loss masking. Only works with SGLang provider.",
             "default": false
+          },
+          "tool_call_parser": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Parser",
+            "description": "SGLang tool call parser name (e.g. 'glm47', 'qwen25', 'hermes'). Used by the SGLang native adapter to parse tool calls from raw model output."
           }
         },
         "type": "object",
@@ -39087,6 +39923,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -39128,6 +39979,18 @@
             "title": "Return Token Ids",
             "description": "If True, returns token IDs and logprobs for ALL LLM generations in the agent step, not just the last one. Uses SGLang native /generate endpoint. Returns 'turns' field with TurnTokenData for each assistant/tool turn. Required for proper multi-turn RL training with loss masking.",
             "default": false
+          },
+          "override_system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override System",
+            "description": "Optional per-request system prompt override. When set, this is passed directly to the underlying LLM request and bypasses the persisted/compiled system message for that request."
           },
           "callback_url": {
             "anyOf": [
@@ -39306,6 +40169,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -39347,6 +40225,18 @@
             "title": "Return Token Ids",
             "description": "If True, returns token IDs and logprobs for ALL LLM generations in the agent step, not just the last one. Uses SGLang native /generate endpoint. Returns 'turns' field with TurnTokenData for each assistant/tool turn. Required for proper multi-turn RL training with loss masking.",
             "default": false
+          },
+          "override_system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override System",
+            "description": "Optional per-request system prompt override. When set, this is passed directly to the underlying LLM request and bypasses the persisted/compiled system message for that request."
           },
           "agent_id": {
             "type": "string",
@@ -39495,7 +40385,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -39705,6 +40596,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -39746,6 +40652,18 @@
             "title": "Return Token Ids",
             "description": "If True, returns token IDs and logprobs for ALL LLM generations in the agent step, not just the last one. Uses SGLang native /generate endpoint. Returns 'turns' field with TurnTokenData for each assistant/tool turn. Required for proper multi-turn RL training with loss masking.",
             "default": false
+          },
+          "override_system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override System",
+            "description": "Optional per-request system prompt override. When set, this is passed directly to the underlying LLM request and bypasses the persisted/compiled system message for that request."
           }
         },
         "type": "object",
@@ -40005,6 +40923,21 @@
             "title": "Client Tools",
             "description": "Client-side tools that the agent can call. When the agent calls a client-side tool, execution pauses and returns control to the client to execute the tool and provide the result via a ToolReturn."
           },
+          "client_skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClientSkillSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Skills",
+            "description": "Client-side skills available in the environment. These are rendered in the system prompt's available skills section alongside agent-scoped skills from MemFS."
+          },
           "override_model": {
             "anyOf": [
               {
@@ -40046,6 +40979,18 @@
             "title": "Return Token Ids",
             "description": "If True, returns token IDs and logprobs for ALL LLM generations in the agent step, not just the last one. Uses SGLang native /generate endpoint. Returns 'turns' field with TurnTokenData for each assistant/tool turn. Required for proper multi-turn RL training with loss masking.",
             "default": false
+          },
+          "override_system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override System",
+            "description": "Optional per-request system prompt override. When set, this is passed directly to the underlying LLM request and bypasses the persisted/compiled system message for that request."
           },
           "streaming": {
             "type": "boolean",
@@ -40954,6 +41899,30 @@
             "description": "The message type to be created.",
             "default": "message"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "role": {
             "type": "string",
             "enum": ["user", "system", "assistant"],
@@ -40987,18 +41956,6 @@
             "title": "Name",
             "description": "The name of the participant."
           },
-          "otid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Otid",
-            "description": "The offline threading id associated with this message"
-          },
           "sender_id": {
             "anyOf": [
               {
@@ -41022,18 +41979,6 @@
             ],
             "title": "Batch Item Id",
             "description": "The id of the LLMBatchItem that this message is associated with"
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id",
-            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",
@@ -41053,6 +41998,13 @@
           "summary"
         ],
         "title": "MessageRole"
+      },
+      "MessageSearchCacheWarmScope": {
+        "properties": {},
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MessageSearchCacheWarmScope",
+        "description": "Messages currently infer scope from the authenticated actor."
       },
       "MessageSearchRequest": {
         "properties": {
@@ -41367,6 +42319,7 @@
               "koboldcpp",
               "vllm",
               "hugging-face",
+              "baseten",
               "minimax",
               "mistral",
               "together",
@@ -41374,6 +42327,7 @@
               "deepseek",
               "xai",
               "zai",
+              "zai_coding",
               "openrouter",
               "chatgpt_oauth"
             ],
@@ -41627,6 +42581,18 @@
             "title": "Return Token Ids",
             "description": "Whether to return token IDs for all LLM generations via SGLang native endpoint. Required for multi-turn RL training with loss masking. Only works with SGLang provider.",
             "default": false
+          },
+          "tool_call_parser": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Parser",
+            "description": "SGLang tool call parser name (e.g. 'glm47', 'qwen25', 'hermes'). Used by the SGLang native adapter to parse tool calls from raw model output."
           },
           "max_context_window": {
             "type": "integer",
@@ -43072,10 +44038,12 @@
         "enum": [
           "anthropic",
           "azure",
+          "baseten",
           "bedrock",
           "cerebras",
           "chatgpt_oauth",
           "deepseek",
+          "fireworks",
           "google_ai",
           "google_vertex",
           "groq",
@@ -43091,7 +44059,8 @@
           "sglang",
           "openrouter",
           "xai",
-          "zai"
+          "zai",
+          "zai_coding"
         ],
         "title": "ProviderType"
       },
@@ -43231,7 +44200,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -43478,6 +44448,30 @@
             ],
             "title": "Agent Id",
             "description": "Agent ID for agent-direct mode with 'default' conversation. Use with conversation_id='default' in the URL path."
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "Run ID to stream directly, bypassing run lookup. Use for recovery from duplicate requests."
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "Offline threading ID to look up the run_id. Bypasses active run lookup if run_id not provided."
           },
           "starting_after": {
             "type": "integer",
@@ -43884,6 +44878,93 @@
         "enum": ["created", "running", "completed", "failed", "cancelled"],
         "title": "RunStatus",
         "description": "Status of the run."
+      },
+      "SGLangModelSettings": {
+        "properties": {
+          "max_output_tokens": {
+            "type": "integer",
+            "title": "Max Output Tokens",
+            "description": "The maximum number of tokens the model can generate.",
+            "default": 4096
+          },
+          "parallel_tool_calls": {
+            "type": "boolean",
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel tool calling.",
+            "default": true
+          },
+          "provider_type": {
+            "type": "string",
+            "const": "sglang",
+            "title": "Provider Type",
+            "description": "The type of the provider.",
+            "default": "sglang"
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature of the model.",
+            "default": 0.7
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/OpenAIReasoning",
+            "description": "The reasoning configuration for the model.",
+            "default": {
+              "reasoning_effort": "high"
+            }
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the model."
+          },
+          "strict": {
+            "type": "boolean",
+            "title": "Strict",
+            "description": "Enable strict mode for tool calling. When true, tool outputs are guaranteed to match JSON schemas.",
+            "default": true
+          },
+          "tool_call_parser": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Parser",
+            "description": "SGLang tool call parser name (for example 'glm47', 'qwen25', or 'hermes')."
+          }
+        },
+        "type": "object",
+        "title": "SGLangModelSettings",
+        "description": "SGLang model configuration (OpenAI-compatible runtime with SGLang-specific parsing)."
       },
       "SSEMCPServer": {
         "properties": {
@@ -44397,6 +45478,46 @@
         "type": "object",
         "required": ["query"],
         "title": "SearchAllMessagesRequest"
+      },
+      "SearchCacheWarmRequest": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "const": "messages",
+            "title": "Collection",
+            "description": "Embedded collection whose cache should be warmed."
+          },
+          "scope": {
+            "$ref": "#/components/schemas/MessageSearchCacheWarmScope",
+            "description": "Collection-specific scope. Messages currently infer organization from the authenticated actor."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["collection", "scope"],
+        "title": "SearchCacheWarmRequest",
+        "description": "Request for warming an internal search cache."
+      },
+      "SearchCacheWarmResponse": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "const": "messages",
+            "title": "Collection"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "warmed": {
+            "type": "boolean",
+            "title": "Warmed"
+          }
+        },
+        "type": "object",
+        "required": ["collection", "status", "warmed"],
+        "title": "SearchCacheWarmResponse",
+        "description": "Response for internal search cache warming."
       },
       "SkillSchema": {
         "properties": {
@@ -45796,7 +46917,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -45984,7 +47106,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -46672,7 +47795,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -47117,6 +48241,30 @@
             "description": "The message type to be created.",
             "default": "tool_return"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "tool_returns": {
             "items": {
               "$ref": "#/components/schemas/letta__schemas__letta_message__ToolReturn"
@@ -47169,7 +48317,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -48123,6 +49272,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -48153,6 +49305,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -48164,6 +49319,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -48172,6 +49328,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -48463,6 +49620,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -48493,6 +49653,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -48504,6 +49667,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -48512,6 +49676,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -48524,6 +49689,19 @@
             ],
             "title": "Model Settings",
             "description": "The model settings for this conversation (overrides agent's model settings)."
+          },
+          "last_message_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message At",
+            "description": "Timestamp of the most recent message request sent to this conversation."
           }
         },
         "type": "object",
@@ -48857,7 +50035,8 @@
                 "type": "null"
               }
             ],
-            "title": "Otid"
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
           },
           "sender_id": {
             "anyOf": [
@@ -49671,6 +50850,9 @@
                     "$ref": "#/components/schemas/OpenAIModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/SGLangModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/AnthropicModelSettings"
                   },
                   {
@@ -49701,6 +50883,9 @@
                     "$ref": "#/components/schemas/BedrockModelSettings"
                   },
                   {
+                    "$ref": "#/components/schemas/BasetenModelSettings"
+                  },
+                  {
                     "$ref": "#/components/schemas/OpenRouterModelSettings"
                   },
                   {
@@ -49712,6 +50897,7 @@
                   "mapping": {
                     "anthropic": "#/components/schemas/AnthropicModelSettings",
                     "azure": "#/components/schemas/AzureModelSettings",
+                    "baseten": "#/components/schemas/BasetenModelSettings",
                     "bedrock": "#/components/schemas/BedrockModelSettings",
                     "chatgpt_oauth": "#/components/schemas/ChatGPTOAuthModelSettings",
                     "deepseek": "#/components/schemas/DeepseekModelSettings",
@@ -49720,6 +50906,7 @@
                     "groq": "#/components/schemas/GroqModelSettings",
                     "openai": "#/components/schemas/OpenAIModelSettings",
                     "openrouter": "#/components/schemas/OpenRouterModelSettings",
+                    "sglang": "#/components/schemas/SGLangModelSettings",
                     "together": "#/components/schemas/TogetherModelSettings",
                     "xai": "#/components/schemas/XAIModelSettings",
                     "zai": "#/components/schemas/ZAIModelSettings"
@@ -50127,6 +51314,30 @@
             "description": "The message type to be created.",
             "default": "message"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id (OTID). Set by the client to deduplicate requests. Used for idempotency in background streaming mode — each message in a request must have a unique OTID. Retries of the same request should reuse the same OTIDs."
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
           "role": {
             "$ref": "#/components/schemas/MessageRole",
             "description": "The role of the participant."
@@ -50158,18 +51369,6 @@
             "title": "Name",
             "description": "The name of the participant."
           },
-          "otid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Otid",
-            "description": "The offline threading id associated with this message"
-          },
           "sender_id": {
             "anyOf": [
               {
@@ -50193,18 +51392,6 @@
             ],
             "title": "Batch Item Id",
             "description": "The id of the LLMBatchItem that this message is associated with"
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id",
-            "description": "The multi-agent group that the message was sent in"
           },
           "id": {
             "type": "string",

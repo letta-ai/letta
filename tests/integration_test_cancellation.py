@@ -69,6 +69,9 @@ async def accumulate_chunks(chunks: Any) -> List[Any]:
     prev_message_type = None
     async for chunk in chunks:
         current_message_type = chunk.message_type
+        # Skip keepalive/initial pings — not content messages
+        if current_message_type == "ping":
+            continue
         if prev_message_type != current_message_type:
             messages.append(current_message)
             current_message = chunk
