@@ -14,12 +14,12 @@ body:
     attributes:
       label: AI Disclosure
       description: |
-        We require all issue authors to disclose AI usage per our [AI Policy](../blob/main/AI_POLICY.md).
+        We require all issue authors to disclose AI usage per our [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md).
         Check **all** that apply.
       options:
         - label: This issue was written entirely by a human
         - label: This issue was written with AI assistance (e.g. Copilot, ChatGPT, Claude) and **reviewed and edited by a human**
-        - label: I have read the [AI Policy](../blob/main/AI_POLICY.md) and agree to its terms
+        - label: I have read the [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md) and agree to its terms
           required: true
     validations:
       required: true

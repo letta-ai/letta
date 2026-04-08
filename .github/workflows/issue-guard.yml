@@ -87,15 +87,15 @@ jobs:
             }
 
             // Check 2: AI disclosure checkbox (the required one: "I have read the AI Policy")
-            // YAML form checkboxes render as "- [X] text" when checked
-            const aiPolicyChecked = /- \[X\] I have read the \[AI Policy\]/.test(body);
+            // YAML form checkboxes render as "- [x] text" when checked.
+            const aiPolicyChecked = /- \[[xX]\] I have read the \[AI Policy\]/.test(body);
             if (!aiPolicyChecked) {
               failures.push('AI Policy acknowledgment checkbox not checked');
             }
 
             // Check 3: At least one of the two disclosure options is checked
-            const humanWritten = /- \[X\] This issue was written entirely by a human/.test(body);
-            const aiAssisted = /- \[X\] This issue was written with AI assistance/.test(body);
+            const humanWritten = /- \[[xX]\] This issue was written entirely by a human/.test(body);
+            const aiAssisted = /- \[[xX]\] This issue was written with AI assistance/.test(body);
             if (!humanWritten && !aiAssisted) {
               failures.push('No AI disclosure option selected (must indicate whether issue is human-written or AI-assisted)');
             }
@@ -130,12 +130,26 @@ jobs:
               body: comment,
             });
 
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.number,
-              labels: ['spam'],
-            });
+            // Best-effort labeling: prefer "spam", then fall back to labels
+            // that commonly exist on repos.
+            let labelApplied = false;
+            for (const label of ['spam', 'auto-closed', 'invalid']) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: [label],
+                });
+                labelApplied = true;
+                break;
+              } catch (e) {
+                console.log(`Label '${label}' unavailable or failed to apply, trying next`);
+              }
+            }
+            if (!labelApplied) {
+              console.log('No close label could be applied; continuing with close/lock');
+            }
 
             await github.rest.issues.update({
               owner: context.repo.owner,
