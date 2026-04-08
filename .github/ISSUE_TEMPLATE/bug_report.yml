@@ -1,0 +1,101 @@
+name: Bug Report
+description: Create a report to help us improve
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Reporting a bug with Letta Code?**
+        > Please file your issue at **[letta-ai/letta-code](https://github.com/letta-ai/letta-code/issues)** instead!
+        > This repository is for the core Letta server only.
+
+  - type: checkboxes
+    id: ai-disclosure
+    attributes:
+      label: AI Disclosure
+      description: |
+        We require all issue authors to disclose AI usage per our [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md).
+        Check **all** that apply.
+      options:
+        - label: This issue was written entirely by a human
+        - label: This issue was written with AI assistance (e.g. Copilot, ChatGPT, Claude) and **reviewed and edited by a human**
+        - label: I have read the [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md) and agree to its terms
+          required: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: human-verification
+    attributes:
+      label: Human Verification
+      description: |
+        To help us combat spam, please copy and paste the following phrase **exactly** into the box below:
+        `I have read the AI policy and I confirm this issue was reviewed by a human.`
+      placeholder: "I have read the AI policy and I confirm this issue was reviewed by a human."
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running Letta?
+      options:
+        - Docker
+        - From source
+        - Desktop
+        - pip (legacy)
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      placeholder: e.g. macOS 15.4, Ubuntu 24.04, Windows 11
+
+  - type: input
+    id: version
+    attributes:
+      label: Letta Version
+      description: Run `letta version` or check your Docker image tag.
+      placeholder: e.g. 0.16.7
+
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Which LLM model are you using?
+      placeholder: e.g. gpt-4o, claude-sonnet-4-20250514, local llama
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Start Letta server with ...
+        2. Create an agent with ...
+        3. Send message ...
+        4. See error ...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs / Screenshots
+      description: Paste any relevant log output, error messages, or screenshots.
+      render: shell
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem. Attach `.af` agent files if applicable.

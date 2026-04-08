@@ -1,0 +1,168 @@
+name: "Issue Guard"
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/TRUSTED_CONTRIBUTORS
+
+      - name: Check issue compliance
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const author = issue.user.login;
+            const body = issue.body || '';
+
+            // --- Allowlist checks ---
+
+            // 1. Bots are allowed (e.g. dependabot, renovate)
+            if (issue.user.type === 'Bot') {
+              console.log(`Skipping: ${author} is a bot`);
+              return;
+            }
+
+            // 2. Check if author has write+ access to the repo.
+            //    This catches org members who have repo access via teams,
+            //    and works with the default GITHUB_TOKEN (no extra scopes).
+            try {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: author,
+              });
+              if (['admin', 'write', 'maintain'].includes(data.permission)) {
+                console.log(`Skipping: ${author} has '${data.permission}' permission on repo`);
+                return;
+              }
+            } catch (e) {
+              console.log(`Collaborator check failed (${e.status}), continuing`);
+            }
+
+            // 3. Check org membership via public membership API (no auth needed).
+            //    Catches org members even if they don't have direct repo access.
+            try {
+              await github.rest.orgs.checkPublicMembershipForUser({
+                org: 'letta-ai',
+                username: author,
+              });
+              console.log(`Skipping: ${author} is a public letta-ai org member`);
+              return;
+            } catch (e) {
+              // 404 = not a public member
+            }
+
+            // 4. Check TRUSTED_CONTRIBUTORS file
+            const fs = require('fs');
+            try {
+              const trusted = fs.readFileSync('.github/TRUSTED_CONTRIBUTORS', 'utf8')
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line && !line.startsWith('#'));
+              if (trusted.includes(author)) {
+                console.log(`Skipping: ${author} is in TRUSTED_CONTRIBUTORS`);
+                return;
+              }
+            } catch (e) {
+              console.log('No TRUSTED_CONTRIBUTORS file found, continuing');
+            }
+
+            // --- Validation checks ---
+
+            const failures = [];
+
+            // Check 1: Magic phrase
+            const magicPhrase = 'I have read the AI policy and I confirm this issue was reviewed by a human.';
+            if (!body.includes(magicPhrase)) {
+              failures.push('Missing human verification phrase');
+            }
+
+            // Check 2: AI disclosure checkbox (the required one: "I have read the AI Policy")
+            // YAML form checkboxes render as "- [x] text" when checked.
+            const aiPolicyChecked = /- \[[xX]\] I have read the \[AI Policy\]/.test(body);
+            if (!aiPolicyChecked) {
+              failures.push('AI Policy acknowledgment checkbox not checked');
+            }
+
+            // Check 3: At least one of the two disclosure options is checked
+            const humanWritten = /- \[[xX]\] This issue was written entirely by a human/.test(body);
+            const aiAssisted = /- \[[xX]\] This issue was written with AI assistance/.test(body);
+            if (!humanWritten && !aiAssisted) {
+              failures.push('No AI disclosure option selected (must indicate whether issue is human-written or AI-assisted)');
+            }
+
+            if (failures.length === 0) {
+              console.log(`Issue #${issue.number} passed all checks`);
+              return;
+            }
+
+            // --- Close and lock ---
+
+            console.log(`Issue #${issue.number} failed checks: ${failures.join(', ')}`);
+
+            const comment = [
+              `**This issue was automatically closed** because it does not meet our submission requirements.\n`,
+              `**What failed:**`,
+              ...failures.map(f => `- ${f}`),
+              ``,
+              `**To submit an issue, please:**`,
+              `1. Use one of the [issue templates](https://github.com/${context.repo.owner}/${context.repo.repo}/issues/new/choose)`,
+              `2. Fill out the **AI Disclosure** checkboxes`,
+              `3. Copy the **Human Verification** phrase exactly as shown`,
+              `4. Read our [AI Policy](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AI_POLICY.md)`,
+              ``,
+              `If you believe this was a mistake, please reach out on [Discord](https://discord.gg/9GEQrxmVyE).`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: comment,
+            });
+
+            // Best-effort labeling: prefer "spam", then fall back to labels
+            // that commonly exist on repos.
+            let labelApplied = false;
+            for (const label of ['spam', 'auto-closed', 'invalid']) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: [label],
+                });
+                labelApplied = true;
+                break;
+              } catch (e) {
+                console.log(`Label '${label}' unavailable or failed to apply, trying next`);
+              }
+            }
+            if (!labelApplied) {
+              console.log('No close label could be applied; continuing with close/lock');
+            }
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed',
+            });
+
+            await github.rest.issues.lock({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              lock_reason: 'spam',
+            });
+
+            console.log(`Issue #${issue.number} closed and locked`);

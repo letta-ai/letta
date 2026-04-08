@@ -1,6 +1,12 @@
-# 🚀 How to Contribute to Letta
+# How to Contribute to Letta
 
 Thank you for investing time in contributing to our project! Here's a guide to get you started.
+
+## AI Policy
+
+**All contributions must comply with our [AI Usage Policy](AI_POLICY.md).**
+
+In short: AI tools are welcome, but you must disclose their use, and a human must fully understand and review all submitted work. Issues and PRs that appear to be unreviewed AI output will be closed. See the full policy for details.
 
 ## 1. 🚀 Getting Started
 

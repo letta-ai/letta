@@ -1,0 +1,65 @@
+name: Feature Request
+description: Suggest an idea for this project
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Requesting a feature for Letta Code?**
+        > Please file your issue at **[letta-ai/letta-code](https://github.com/letta-ai/letta-code/issues)** instead!
+        > This repository is for the core Letta server only.
+
+  - type: checkboxes
+    id: ai-disclosure
+    attributes:
+      label: AI Disclosure
+      description: |
+        We require all issue authors to disclose AI usage per our [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md).
+        Check **all** that apply.
+      options:
+        - label: This issue was written entirely by a human
+        - label: This issue was written with AI assistance (e.g. Copilot, ChatGPT, Claude) and **reviewed and edited by a human**
+        - label: I have read the [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md) and agree to its terms
+          required: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: human-verification
+    attributes:
+      label: Human Verification
+      description: |
+        To help us combat spam, please copy and paste the following phrase **exactly** into the box below:
+        `I have read the AI policy and I confirm this issue was reviewed by a human.`
+      placeholder: "I have read the AI policy and I confirm this issue was reviewed by a human."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Describe it clearly.
+      placeholder: I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context or screenshots about the feature request.
