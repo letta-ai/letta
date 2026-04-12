@@ -704,19 +704,13 @@ def create_application() -> "FastAPI":
 
     @app.exception_handler(LLMRateLimitError)
     async def llm_rate_limit_error_handler(request: Request, exc: LLMRateLimitError):
-        is_byok = exc.details.get("is_byok") if isinstance(exc.details, dict) else None
-        if is_byok:
-            message = (
-                "Rate limit exceeded on your API key. Please check your provider's rate limits and billing, or reduce request frequency."
-            )
-        else:
-            message = "Rate limit exceeded for LLM model provider. Please wait before making another request."
+        # Forward the actual LLM error message to the client
         return JSONResponse(
             status_code=429,
             content={
                 "error": {
                     "type": "llm_rate_limit",
-                    "message": message,
+                    "message": exc.message,
                     "detail": str(exc),
                 }
             },

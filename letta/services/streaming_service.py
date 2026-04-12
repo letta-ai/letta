@@ -659,7 +659,7 @@ class StreamingService:
                 error_message = LettaErrorMessage(
                     run_id=run_id,
                     error_type="llm_rate_limit",
-                    message="Rate limit exceeded for LLM model provider. Please wait before making another request.",
+                    message=e.message,
                     detail=str(e),
                 )
                 error_data = {"error": error_message.model_dump()}
