@@ -69,6 +69,9 @@ async def accumulate_chunks(chunks: Any) -> List[Any]:
     prev_message_type = None
     async for chunk in chunks:
         current_message_type = chunk.message_type
+        # Skip keepalive/initial pings — not content messages
+        if current_message_type == "ping":
+            continue
         if prev_message_type != current_message_type:
             messages.append(current_message)
             current_message = chunk
@@ -198,3 +201,8 @@ async def test_background_streaming_cancellation(
     response = await client.runs.messages.stream(run_id=run_id, starting_after=0)
     messages_from_stream = await accumulate_chunks(response)
     assert len(messages_from_stream) > 0
+
+    # Verify the stream contains stop_reason: cancelled (from our new cancellation logic)
+    stop_reasons = [msg for msg in messages_from_stream if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason in stream, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "cancelled", f"Expected stop_reason 'cancelled', got '{stop_reasons[0].stop_reason}'"

@@ -46,8 +46,8 @@ class Archive(SqlalchemyBase, OrganizationMixin):
         default=VectorDBProvider.NATIVE,
         doc="The vector database provider used for this archive's passages",
     )
-    embedding_config: Mapped[dict] = mapped_column(
-        EmbeddingConfigColumn, nullable=False, doc="Embedding configuration for passages in this archive"
+    embedding_config: Mapped[Optional[dict]] = mapped_column(
+        EmbeddingConfigColumn, nullable=True, doc="Embedding configuration for passages in this archive"
     )
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="Additional metadata for the archive")
     _vector_db_namespace: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Private field for vector database namespace")

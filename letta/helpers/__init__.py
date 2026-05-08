@@ -1,1 +1,1 @@
-from letta.helpers.tool_rule_solver import ToolRulesSolver
+from letta.helpers.tool_rule_solver import ToolRulesSolver as ToolRulesSolver

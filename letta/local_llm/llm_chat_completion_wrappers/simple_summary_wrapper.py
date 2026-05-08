@@ -101,14 +101,14 @@ class SimpleSummaryWrapper(LLMChatCompletionWrapper):
                         content_json = json_loads(message["content"])
                         content_simple = content_json["message"]
                         prompt += f"\nUSER: {content_simple}"
-                    except:
+                    except Exception:
                         prompt += f"\nUSER: {message['content']}"
             elif message["role"] == "assistant":
                 prompt += f"\nASSISTANT: {message['content']}"
                 # need to add the function call if there was one
-                if "function_call" in message and message["function_call"]:
+                if message.get("function_call"):
                     prompt += f"\n{create_function_call(message['function_call'])}"
-                elif "tool_calls" in message and message["tool_calls"]:
+                elif message.get("tool_calls"):
                     prompt += f"\n{create_function_call(message['tool_calls'][0]['function'])}"
             elif message["role"] in ["function", "tool"]:
                 # TODO find a good way to add this

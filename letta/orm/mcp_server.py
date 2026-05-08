@@ -1,4 +1,3 @@
-import json
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import JSON, String, Text, UniqueConstraint

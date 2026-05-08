@@ -1303,6 +1303,9 @@ paths:
   /v1/_internal_blocks/{block_id}/agents:
     get:
       x-fern-ignore: true
+  /v1/_internal_search/cache-warm:
+    post:
+      x-fern-ignore: true
   /v1/_internal_agents/{agent_id}/core-memory/blocks/{block_label}:
     patch:
       x-fern-ignore: true

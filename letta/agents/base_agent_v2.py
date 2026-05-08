@@ -11,7 +11,8 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 
 if TYPE_CHECKING:
-    from letta.schemas.letta_request import ClientToolSchema
+    from letta.schemas.letta_request import ClientSkillSchema, ClientToolSchema
+    from letta.schemas.provider_trace import BillingContext
 
 
 class BaseAgentV2(ABC):
@@ -24,11 +25,21 @@ class BaseAgentV2(ABC):
         self.agent_state = agent_state
         self.actor = actor
         self.logger = get_logger(agent_state.id)
+        self.conversation_id: str | None = None
+
+    @property
+    def agent_id(self) -> str:
+        """Return the agent ID for backward compatibility with code expecting self.agent_id."""
+        return self.agent_state.id
 
     @abstractmethod
     async def build_request(
         self,
         input_messages: list[MessageCreate],
+        client_skills: list["ClientSkillSchema"] | None = None,
+        client_tools: list["ClientToolSchema"] | None = None,
+        conversation_id: str | None = None,
+        override_system: str | None = None,
     ) -> dict:
         """
         Execute the agent loop in dry_run mode, returning just the generated request
@@ -46,6 +57,10 @@ class BaseAgentV2(ABC):
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
+        client_skills: list["ClientSkillSchema"] | None = None,
+        override_system: str | None = None,
+        include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
+        billing_context: "BillingContext | None" = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -53,6 +68,7 @@ class BaseAgentV2(ABC):
         Args:
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
+            include_compaction_messages: Not used in V2, but accepted for API compatibility.
         """
         raise NotImplementedError
 
@@ -66,8 +82,13 @@ class BaseAgentV2(ABC):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
- conversation_id: str | None = None,
+        conversation_id: str | None = None,
         client_tools: list["ClientToolSchema"] | None = None,
+        client_skills: list["ClientSkillSchema"] | None = None,
+        override_system: str | None = None,
+        include_compaction_messages: bool = False,  # Not used in V2, but accepted for API compatibility
+        billing_context: "BillingContext | None" = None,
+        openai_responses_websocket: bool = False,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
@@ -78,5 +99,7 @@ class BaseAgentV2(ABC):
         Args:
             client_tools: Optional list of client-side tools. When called, execution pauses
                 for client to provide tool returns.
+            include_compaction_messages: Not used in V2, but accepted for API compatibility.
+            openai_responses_websocket: If True, use WebSocket transport for OpenAI Responses API.
         """
         raise NotImplementedError

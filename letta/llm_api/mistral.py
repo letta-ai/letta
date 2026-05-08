@@ -10,7 +10,7 @@ async def mistral_get_model_list_async(url: str, api_key: str) -> dict:
     url = smart_urljoin(url, "models")
 
     headers = {"Content-Type": "application/json"}
-    if api_key is not None:
+    if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
     logger.debug("Sending request to %s", url)

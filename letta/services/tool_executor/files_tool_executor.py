@@ -189,7 +189,7 @@ class LettaFileToolExecutor(ToolExecutor):
             visible_content = "\n".join(content_lines)
 
             # Handle LRU eviction and file opening
-            closed_files, was_already_open, previous_ranges = await self.files_agents_manager.enforce_max_open_files_and_open(
+            closed_files, _was_already_open, previous_ranges = await self.files_agents_manager.enforce_max_open_files_and_open(
                 agent_id=agent_state.id,
                 file_id=file_id,
                 file_name=file_name,
@@ -683,7 +683,7 @@ class LettaFileToolExecutor(ToolExecutor):
         summary = f"Found {total_hits} matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
 
         # combine all results
-        formatted_results = [summary, "=" * len(summary)] + results
+        formatted_results = [summary, "=" * len(summary), *results]
 
         self.logger.info(f"Turbopuffer search completed: {total_hits} matches across {file_count} files")
         return "\n".join(formatted_results)
@@ -780,7 +780,7 @@ class LettaFileToolExecutor(ToolExecutor):
         summary = f"Found {total_hits} Pinecone matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
 
         # Combine all results
-        formatted_results = [summary, "=" * len(summary)] + results
+        formatted_results = [summary, "=" * len(summary), *results]
 
         self.logger.info(f"Pinecone search completed: {total_hits} matches across {file_count} files")
         return "\n".join(formatted_results)
@@ -846,7 +846,7 @@ class LettaFileToolExecutor(ToolExecutor):
         summary = f"Found {total_passages} semantic matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
 
         # Combine all results
-        formatted_results = [summary, "=" * len(summary)] + results
+        formatted_results = [summary, "=" * len(summary), *results]
 
         self.logger.info(f"Semantic search completed: {total_passages} matches across {file_count} files")
 

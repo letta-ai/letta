@@ -167,9 +167,7 @@ class SandboxConfigManager:
 
     @enforce_types
     @trace_method
-    async def get_sandbox_config_by_type_async(
-        self, type: SandboxType, actor: Optional[PydanticUser] = None
-    ) -> Optional[PydanticSandboxConfig]:
+    async def get_sandbox_config_by_type_async(self, type: SandboxType, actor: PydanticUser) -> Optional[PydanticSandboxConfig]:
         """Retrieve a sandbox config by its type."""
         async with db_registry.async_session() as session:
             try:
@@ -345,7 +343,7 @@ class SandboxConfigManager:
     @raise_on_invalid_id(param_name="sandbox_config_id", expected_prefix=PrimitiveType.SANDBOX_CONFIG)
     @trace_method
     async def get_sandbox_env_var_by_key_and_sandbox_config_id_async(
-        self, key: str, sandbox_config_id: str, actor: Optional[PydanticUser] = None
+        self, key: str, sandbox_config_id: str, actor: PydanticUser
     ) -> Optional[PydanticEnvVar]:
         """Retrieve a sandbox environment variable by its key and sandbox_config_id."""
         async with db_registry.async_session() as session:

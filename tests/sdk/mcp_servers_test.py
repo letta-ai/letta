@@ -187,7 +187,7 @@ def get_attr(obj, attr):
     return getattr(obj, attr, None)
 
 
-def create_stdio_server_request(server_name: str, command: str = "npx", args: List[str] = None) -> Dict[str, Any]:
+def create_stdio_server_request(server_name: str, command: str = "npx", args: List[str] | None = None) -> Dict[str, Any]:
     """Create a stdio MCP server configuration object.
 
     Returns a dict with server_name and config following CreateMCPServerRequest schema.
@@ -203,7 +203,7 @@ def create_stdio_server_request(server_name: str, command: str = "npx", args: Li
     }
 
 
-def create_sse_server_request(server_name: str, server_url: str = None) -> Dict[str, Any]:
+def create_sse_server_request(server_name: str, server_url: str | None = None) -> Dict[str, Any]:
     """Create an SSE MCP server configuration object.
 
     Returns a dict with server_name and config following CreateMCPServerRequest schema.
@@ -220,7 +220,7 @@ def create_sse_server_request(server_name: str, server_url: str = None) -> Dict[
     }
 
 
-def create_streamable_http_server_request(server_name: str, server_url: str = None) -> Dict[str, Any]:
+def create_streamable_http_server_request(server_name: str, server_url: str | None = None) -> Dict[str, Any]:
     """Create a streamable HTTP MCP server configuration object.
 
     Returns a dict with server_name and config following CreateMCPServerRequest schema.
@@ -508,7 +508,7 @@ def test_invalid_server_type(client: Letta):
         client.mcp_servers.create(**invalid_config)
         # If we get here without an exception, the test should fail
         assert False, "Expected an error when creating server with missing required fields"
-    except (BadRequestError, UnprocessableEntityError, TypeError, ValueError) as e:
+    except (BadRequestError, UnprocessableEntityError, TypeError, ValueError):
         # Expected to fail - this is good
         test_passed = True
 

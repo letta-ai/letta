@@ -84,7 +84,7 @@ def agent_factory(client: Letta):
     for agent_state in created_agents:
         try:
             client.agents.delete(agent_state.id)
-        except:
+        except Exception:
             pass  # Agent might have already been deleted
 
 

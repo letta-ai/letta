@@ -122,6 +122,19 @@ class ModalFunctionExecutor:
             if inject_agent_state:
                 kwargs["agent_state"] = agent_state
 
+            try:
+                from letta.functions.ast_parsers import coerce_dict_args_by_annotations
+
+                annotations = getattr(func, "__annotations__", {})
+                kwargs = coerce_dict_args_by_annotations(
+                    kwargs,
+                    annotations,
+                    allow_unsafe_eval=True,
+                    extra_globals=func.__globals__,
+                )
+            except Exception:
+                pass
+
             if is_async:
                 result = asyncio.run(func(**kwargs))
             else:
@@ -212,7 +225,7 @@ def setup_signal_handlers():
         # Enable fault handler with file output
         try:
             faulthandler.enable(file=sys.stderr, all_threads=True)
-        except:
+        except Exception:
             pass  # Faulthandler might not be available
 
         # Set resource limits to prevent runaway processes
@@ -221,7 +234,7 @@ def setup_signal_handlers():
             resource.setrlimit(resource.RLIMIT_AS, (1024 * 1024 * 1024, 1024 * 1024 * 1024))
             # Limit stack size to 8MB (default is often unlimited)
             resource.setrlimit(resource.RLIMIT_STACK, (8 * 1024 * 1024, 8 * 1024 * 1024))
-        except:
+        except Exception:
             pass  # Resource limits might not be available
 
         # Set environment variables

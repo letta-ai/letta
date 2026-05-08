@@ -12,7 +12,7 @@ from letta.schemas.file import FileAgent as PydanticFileAgent
 from letta.utils import truncate_file_visible_content
 
 if TYPE_CHECKING:
-    pass
+    from letta.orm.agent import Agent
 
 
 class FileAgent(SqlalchemyBase, OrganizationMixin):

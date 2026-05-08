@@ -44,7 +44,7 @@ class Passage(PassageBase):
     embedding: Optional[List[float]] = Field(..., description="The embedding of the passage.")
     embedding_config: Optional[EmbeddingConfig] = Field(..., description="The embedding configuration used by the passage.")
 
-    created_at: datetime = Field(default_factory=get_utc_time, description="The creation date of the passage.")
+    created_at: Optional[datetime] = Field(default_factory=get_utc_time, description="The creation date of the passage.")
 
     @field_validator("embedding", mode="before")
     @classmethod
@@ -83,6 +83,7 @@ class PassageCreate(PassageBase):
     # optionally provide embeddings
     embedding: Optional[List[float]] = Field(None, description="The embedding of the passage.")
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the passage.")
+    created_at: Optional[datetime] = Field(None, description="Optional creation datetime for the passage.")
 
 
 class PassageUpdate(PassageCreate):

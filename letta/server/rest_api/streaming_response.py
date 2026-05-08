@@ -4,8 +4,11 @@
 
 import asyncio
 import json
+import re
+import time
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
+from typing import Dict, Optional
 from uuid import uuid4
 
 import anyio
@@ -25,11 +28,22 @@ from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
 
+# Global registry of cancellation events per run_id
+# Note: Events are small and we don't bother cleaning them up
+_cancellation_events: Dict[str, asyncio.Event] = {}
+
+
+def get_cancellation_event_for_run(run_id: str) -> asyncio.Event:
+    """Get or create a cancellation event for a run."""
+    if run_id not in _cancellation_events:
+        _cancellation_events[run_id] = asyncio.Event()
+    return _cancellation_events[run_id]
+
 
 class RunCancelledException(Exception):
     """Exception raised when a run is explicitly cancelled (not due to client timeout)"""
 
-    def __init__(self, run_id: str, message: str = None):
+    def __init__(self, run_id: str, message: str | None = None):
         self.run_id = run_id
         super().__init__(message or f"Run {run_id} was explicitly cancelled")
 
@@ -38,6 +52,7 @@ async def add_keepalive_to_stream(
     stream_generator: AsyncIterator[str | bytes],
     run_id: str,
     keepalive_interval: float = 30.0,
+    max_stream_silence: float = 1800.0,
 ) -> AsyncIterator[str | bytes]:
     """
     Adds periodic keepalive messages to a stream to prevent connection timeouts.
@@ -46,9 +61,14 @@ async def add_keepalive_to_stream(
     whether data is flowing. This ensures connections stay alive during long
     operations like tool execution.
 
+    If no non-keepalive data is received from the wrapped stream for
+    ``max_stream_silence`` seconds, the wrapper terminates the stream to avoid
+    keeping connections alive indefinitely on ping-only hangs.
+
     Args:
         stream_generator: The original stream generator to wrap
         keepalive_interval: Seconds between keepalive messages (default: 30)
+        max_stream_silence: Maximum seconds with no stream data before terminating (default: 1800)
 
     Yields:
         Original stream chunks interspersed with keepalive messages
@@ -57,6 +77,8 @@ async def add_keepalive_to_stream(
     # A small maxsize prevents unbounded memory growth if the client is slow
     queue = asyncio.Queue(maxsize=1)
     stream_exhausted = False
+    last_seq_id = None
+    last_data_time = time.monotonic()
 
     async def stream_reader():
         """Read from the original stream and put items in the queue."""
@@ -81,13 +103,30 @@ async def add_keepalive_to_stream(
                     # Stream finished
                     break
                 elif msg_type == "data":
+                    last_data_time = time.monotonic()
+
+                    # Track seq_id from chunks for ping messages
+                    if isinstance(data, str):
+                        seq_id_match = re.search(r'"seq_id":(\d+)', data)  # Look for "seq_id":<number> pattern in the SSE chunk
+                        if seq_id_match:
+                            last_seq_id = int(seq_id_match.group(1))
+
                     yield data
 
             except asyncio.TimeoutError:
                 # No data received within keepalive interval
                 if not stream_exhausted:
-                    # Send keepalive ping in the same format as [DONE]
-                    yield f"data: {LettaPing(id=f'ping-{uuid4()}', date=datetime.now(timezone.utc), run_id=run_id).model_dump_json()}\n\n"
+                    silence = time.monotonic() - last_data_time
+                    if silence > max_stream_silence:
+                        logger.warning(
+                            f"Stream for run {run_id} has emitted only keepalives for {silence:.0f}s "
+                            f"(limit {max_stream_silence}s), terminating keepalive wrapper"
+                        )
+                        reader_task.cancel()
+                        break
+
+                    # Send keepalive ping with the last seq_id to allow clients to track progress
+                    yield f"data: {LettaPing(id=f'ping-{uuid4()}', date=datetime.now(timezone.utc), run_id=run_id, seq_id=last_seq_id).model_dump_json()}\n\n"
                 else:
                     # Stream is done but queue might be processing
                     # Check if there's anything left
@@ -117,6 +156,7 @@ async def cancellation_aware_stream_wrapper(
     run_id: str,
     actor: User,
     cancellation_check_interval: float = 0.5,
+    cancellation_event: Optional[asyncio.Event] = None,
 ) -> AsyncIterator[str | bytes]:
     """
     Wraps a stream generator to provide real-time run cancellation checking.
@@ -148,11 +188,22 @@ async def cancellation_aware_stream_wrapper(
                     run = await run_manager.get_run_by_id(run_id=run_id, actor=actor)
                     if run.status == RunStatus.cancelled:
                         logger.info(f"Stream cancelled for run {run_id}, interrupting stream")
+
+                        # Signal cancellation via shared event if available
+                        if cancellation_event:
+                            cancellation_event.set()
+                            logger.info(f"Set cancellation event for run {run_id}")
+
                         # Send cancellation event to client
-                        cancellation_event = {"message_type": "stop_reason", "stop_reason": "cancelled"}
-                        yield f"data: {json.dumps(cancellation_event)}\n\n"
-                        # Raise custom exception for explicit run cancellation
-                        raise RunCancelledException(run_id, f"Run {run_id} was cancelled")
+                        stop_event = {"message_type": "stop_reason", "stop_reason": "cancelled"}
+                        yield f"data: {json.dumps(stop_event)}\n\n"
+
+                        # Inject exception INTO the generator so its except blocks can catch it
+                        try:
+                            await stream_generator.athrow(RunCancelledException(run_id, f"Run {run_id} was cancelled"))
+                        except (StopAsyncIteration, RunCancelledException):
+                            # Generator closed gracefully or raised the exception back
+                            break
                 except RunCancelledException:
                     # Re-raise cancellation immediately, don't catch it
                     raise
@@ -165,9 +216,10 @@ async def cancellation_aware_stream_wrapper(
             yield chunk
 
     except RunCancelledException:
-        # Re-raise RunCancelledException to distinguish from client timeout
+        # Don't re-raise - we already injected the exception into the generator
+        # The generator has handled it and set its stream_was_cancelled flag
         logger.info(f"Stream for run {run_id} was explicitly cancelled and cleaned up")
-        raise
+        # Don't raise - let it exit gracefully
     except asyncio.CancelledError:
         # Re-raise CancelledError (likely client timeout) to ensure proper cleanup
         logger.info(f"Stream for run {run_id} was cancelled (likely client timeout) and cleaned up")
@@ -195,7 +247,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                 await asyncio.shield(self._protected_stream_response(send))
             except asyncio.CancelledError:
                 logger.info("Stream response was cancelled, but shielded task should continue")
-            except anyio.ClosedResourceError:
+            except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                 logger.info("Client disconnected, but shielded task should continue")
                 self._client_connected = False
             except PendingApprovalError as e:
@@ -239,7 +291,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                         "more_body": more_body,
                     }
                 )
-            except anyio.ClosedResourceError:
+            except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                 logger.info("Client disconnected during initial response, continuing processing without sending more chunks")
                 self._client_connected = False
 
@@ -269,10 +321,9 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                                 "more_body": more_body,
                             }
                         )
-                    except anyio.ClosedResourceError:
+                    except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                         logger.info("Client disconnected, continuing processing without sending more data")
                         self._client_connected = False
-                        # Continue processing but don't try to send more data
 
         # Handle explicit run cancellations (should not throw error)
         except RunCancelledException as exc:
@@ -299,7 +350,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                             "more_body": more_body,
                         }
                     )
-                except anyio.ClosedResourceError:
+                except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                     self._client_connected = False
             return
 
@@ -336,7 +387,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                             "more_body": more_body,
                         }
                     )
-                except anyio.ClosedResourceError:
+                except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                     self._client_connected = False
 
             capture_sentry_exception(exc)
@@ -344,5 +395,5 @@ class StreamingResponseWithStatusCode(StreamingResponse):
         if more_body and self._client_connected:
             try:
                 await send({"type": "http.response.body", "body": b"", "more_body": False})
-            except anyio.ClosedResourceError:
+            except (anyio.ClosedResourceError, anyio.BrokenResourceError):
                 self._client_connected = False

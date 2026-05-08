@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.message import Message
 from letta.schemas.provider_trace import ProviderTrace
-from letta.schemas.step import Step, StepBase
+from letta.schemas.step import Step
 from letta.schemas.step_metrics import StepMetrics
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
@@ -106,7 +106,7 @@ async def retrieve_trace_for_step(
             provider_trace = await server.telemetry_manager.get_provider_trace_by_step_id_async(
                 step_id=step_id, actor=await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
             )
-        except:
+        except Exception:
             pass
 
     return provider_trace

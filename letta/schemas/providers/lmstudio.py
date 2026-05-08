@@ -92,7 +92,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
             check = self._do_model_checks_for_name_and_context_size(model, length_key="max_context_length")
             if check is None:
                 continue
-            model_name, context_window_size = check
+            model_name, _context_window_size = check
 
             configs.append(
                 EmbeddingConfig(

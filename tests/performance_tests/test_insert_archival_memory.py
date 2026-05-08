@@ -111,7 +111,7 @@ async def test_insert_archival_memories_concurrent(client):
     cdf_y = np.arange(1, len(durs_sorted) + 1) / len(durs_sorted)
 
     # Plot all 6 subplots
-    fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+    _fig, axes = plt.subplots(2, 3, figsize=(15, 8))
     axs = axes.ravel()
 
     # 1) Kickoff timeline

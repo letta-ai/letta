@@ -7,8 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from letta.helpers.singleton import singleton
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
+from letta.orm.run import Run as RunModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.orm.step_metrics import StepMetrics as StepMetricsModel
@@ -19,6 +23,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.step_metrics import StepMetrics as PydanticStepMetrics
+from letta.schemas.usage import normalize_cache_tokens, normalize_reasoning_tokens
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.server.rest_api.middleware.request_id import get_request_id
@@ -107,6 +112,26 @@ class StepManager:
         error_type: Optional[str] = None,
         error_data: Optional[Dict] = None,
     ) -> PydanticStep:
+        # Extract normalized usage fields
+        cached_input_tokens = None
+        cache_write_tokens = None
+        reasoning_tokens = None
+        prompt_tokens_details = None
+        completion_tokens_details = None
+
+        if usage.prompt_tokens_details:
+            prompt_tokens_details = usage.prompt_tokens_details.model_dump()
+            cached_input, cache_write = normalize_cache_tokens(usage.prompt_tokens_details)
+            if cached_input > 0:
+                cached_input_tokens = cached_input
+            if cache_write > 0:
+                cache_write_tokens = cache_write
+        if usage.completion_tokens_details:
+            completion_tokens_details = usage.completion_tokens_details.model_dump()
+            reasoning = normalize_reasoning_tokens(usage.completion_tokens_details)
+            if reasoning > 0:
+                reasoning_tokens = reasoning
+
         step_data = {
             "origin": None,
             "organization_id": actor.organization_id,
@@ -115,11 +140,17 @@ class StepManager:
             "provider_name": provider_name,
             "provider_category": provider_category,
             "model": model,
+            "model_handle": None,
             "model_endpoint": model_endpoint,
             "context_window_limit": context_window_limit,
             "completion_tokens": usage.completion_tokens,
             "prompt_tokens": usage.prompt_tokens,
             "total_tokens": usage.total_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "cache_write_tokens": cache_write_tokens,
+            "reasoning_tokens": reasoning_tokens,
+            "prompt_tokens_details": prompt_tokens_details,
+            "completion_tokens_details": completion_tokens_details,
             "run_id": run_id,
             "tags": [],
             "tid": None,
@@ -166,6 +197,7 @@ class StepManager:
         error_type: Optional[str] = None,
         error_data: Optional[Dict] = None,
         allow_partial: Optional[bool] = False,
+        model_handle: Optional[str] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -175,6 +207,7 @@ class StepManager:
             "provider_name": provider_name,
             "provider_category": provider_category,
             "model": model,
+            "model_handle": model_handle,
             "model_endpoint": model_endpoint,
             "context_window_limit": context_window_limit,
             "completion_tokens": usage.completion_tokens,
@@ -203,11 +236,15 @@ class StepManager:
                 except NoResultFound:
                     pass
 
+            if run_id:
+                run_exists = await session.get(RunModel, run_id)
+                if not run_exists:
+                    logger.warning("Step run_id %s references non-existent run, setting to None", run_id)
+                    step_data["run_id"] = None
+
             new_step = StepModel(**step_data)
             await new_step.create_async(session, no_commit=True, no_refresh=True)
             pydantic_step = new_step.to_pydantic()
-            # context manager now handles commits
-            # await session.commit()
             return pydantic_step
 
     @enforce_types
@@ -291,6 +328,7 @@ class StepManager:
                 ascending=ascending,
                 limit=limit,
                 actor=actor,
+                check_is_deleted=True,
                 step_id=step_id,
             )
             return [message.to_pydantic() for message in messages]
@@ -416,8 +454,18 @@ class StepManager:
             # Persist detailed token breakdowns if available
             if usage.prompt_tokens_details:
                 step.prompt_tokens_details = usage.prompt_tokens_details.model_dump()
+                # Extract normalized cache tokens
+                cached_input, cache_write = normalize_cache_tokens(usage.prompt_tokens_details)
+                if cached_input > 0:
+                    step.cached_input_tokens = cached_input
+                if cache_write > 0:
+                    step.cache_write_tokens = cache_write
             if usage.completion_tokens_details:
                 step.completion_tokens_details = usage.completion_tokens_details.model_dump()
+                # Extract normalized reasoning tokens
+                reasoning = normalize_reasoning_tokens(usage.completion_tokens_details)
+                if reasoning > 0:
+                    step.reasoning_tokens = reasoning
 
             # context manager now handles commits
             # await session.commit()
@@ -426,6 +474,44 @@ class StepManager:
         webhook_service = WebhookService()
         await webhook_service.notify_step_complete(step_id)
         return pydantic_step
+
+    @enforce_types
+    @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
+    @trace_method
+    async def update_step_resolved_model_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        provider_name: str,
+        provider_category: str,
+        model: str,
+        model_endpoint: Optional[str],
+        model_handle: Optional[str] = None,
+    ) -> None:
+        """Update a step with resolved model info (e.g. after auto mode resolution).
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            provider_name: The resolved provider name
+            provider_category: The resolved provider category
+            model: The resolved model name
+            model_endpoint: The resolved model endpoint
+            model_handle: The resolved model handle
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.provider_name = provider_name
+            step.provider_category = provider_category
+            step.model = model
+            step.model_endpoint = model_endpoint
+            if model_handle is not None:
+                step.model_handle = model_handle
 
     @enforce_types
     @raise_on_invalid_id(param_name="step_id", expected_prefix=PrimitiveType.STEP)
@@ -554,6 +640,12 @@ class StepManager:
                 "template_id": template_id,
                 "base_template_id": base_template_id,
             }
+
+            if run_id:
+                run_exists = await session.get(RunModel, run_id)
+                if not run_exists:
+                    logger.warning("StepMetrics run_id %s references non-existent run, setting to None", run_id)
+                    metrics_data["run_id"] = None
 
             metrics = StepMetricsModel(**metrics_data)
             await metrics.create_async(session)
@@ -699,6 +791,20 @@ class NoopStepManager(StepManager):
         usage: UsageStatistics,
         stop_reason: Optional[LettaStopReason] = None,
     ) -> PydanticStep:
+        return
+
+    @enforce_types
+    @trace_method
+    async def update_step_resolved_model_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        provider_name: str,
+        provider_category: str,
+        model: str,
+        model_endpoint: Optional[str],
+        model_handle: Optional[str] = None,
+    ) -> None:
         return
 
     @enforce_types

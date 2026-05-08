@@ -3,7 +3,12 @@ import json
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
+    from letta.schemas.usage import LettaUsageStatistics
 
 from anthropic import AsyncStream
 from anthropic.types.beta import (
@@ -25,6 +30,7 @@ from anthropic.types.beta import (
 )
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.errors import LLMEmptyResponseError
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.schemas.letta_message import (
@@ -41,6 +47,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import JSONParser, PydanticJSONParser
+from letta.server.rest_api.streaming_response import RunCancelledException
 
 logger = get_logger(__name__)
 
@@ -98,6 +105,10 @@ class AnthropicStreamingInterface:
         self.inner_thoughts_complete = False
         self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
 
+        # Track whether any content was produced (text or tool calls)
+        # Used to detect empty responses from models like Opus 4.6
+        self.has_content = False
+
         # Buffer to handle partial XML tags across chunks
         self.partial_tag_buffer = ""
 
@@ -115,7 +126,7 @@ class AnthropicStreamingInterface:
             # Attempt to use OptimisticJSONParser to handle incomplete/malformed JSON
             try:
                 tool_input = self.json_parser.parse(args_str)
-            except:
+            except Exception:
                 logger.warning(
                     f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
                     f"name={self.tool_call_name}. Raw input: {args_str!r}. Error: {e}"
@@ -126,6 +137,25 @@ class AnthropicStreamingInterface:
         else:
             arguments = str(json.dumps(tool_input, indent=2))
         return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=arguments, name=self.tool_call_name))
+
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Anthropic: input_tokens is NON-cached only in streaming
+        # This interface doesn't track cache tokens, so we just use the raw values
+        return LettaUsageStatistics(
+            prompt_tokens=self.input_tokens or 0,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=(self.input_tokens or 0) + (self.output_tokens or 0),
+            cached_input_tokens=None,  # This interface doesn't track cache tokens
+            cache_write_tokens=None,
+            reasoning_tokens=None,
+        )
 
     def _check_inner_thoughts_complete(self, combined_args: str) -> bool:
         """
@@ -218,10 +248,10 @@ class AnthropicStreamingInterface:
                                     message_index += 1
                                 prev_message_type = new_message_type
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
-                        logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                        logger.info("Cancelled stream attempt but overriding (%s) %s: %s", type(e).__name__, e, traceback.format_exc())
                         async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type
                             if new_message_type != prev_message_type:
@@ -243,7 +273,13 @@ class AnthropicStreamingInterface:
                     attributes={"stop_reason": StopReasonType.error.value, "error": str(e), "stacktrace": traceback.format_exc()},
                 )
             yield LettaStopReason(stop_reason=StopReasonType.error)
-            raise e
+
+            # Transform Anthropic errors into our custom error types for consistent handling
+            from letta.llm_api.anthropic_client import AnthropicClient
+
+            client = AnthropicClient()
+            transformed_error = client.handle_llm_error(e)
+            raise transformed_error
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")
 
@@ -267,9 +303,11 @@ class AnthropicStreamingInterface:
 
             if isinstance(content, BetaTextBlock):
                 self.anthropic_mode = EventMode.TEXT
+                self.has_content = True  # Track that we received text content
                 # TODO: Can capture citations, etc.
             elif isinstance(content, BetaToolUseBlock):
                 self.anthropic_mode = EventMode.TOOL_USE
+                self.has_content = True  # Track that we received tool use content
                 self.tool_call_id = content.id
                 self.tool_call_name = content.name
                 self.inner_thoughts_complete = False
@@ -404,17 +442,21 @@ class AnthropicStreamingInterface:
                         if current_inner_thoughts:
                             tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
 
+                        tool_call_delta = ToolCallDelta(
+                            name=self.tool_call_name,
+                            tool_call_id=self.tool_call_id,
+                            arguments=tool_call_args,
+                        )
+
                         approval_msg = ApprovalRequestMessage(
                             id=self.letta_message_id,
                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             date=datetime.now(timezone.utc).isoformat(),
                             name=self.tool_call_name,
-                            tool_call=ToolCallDelta(
-                                name=self.tool_call_name,
-                                tool_call_id=self.tool_call_id,
-                                arguments=tool_call_args,
-                            ),
+                            tool_call=tool_call_delta,
+                            tool_calls=tool_call_delta,
                             run_id=self.run_id,
+                            step_id=self.step_id,
                         )
                         prev_message_type = approval_msg.message_type
                         yield approval_msg
@@ -472,8 +514,12 @@ class AnthropicStreamingInterface:
                         tool_call_msg = ApprovalRequestMessage(
                             id=self.letta_message_id,
                             tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
+                            tool_calls=ToolCallDelta(
+                                name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json
+                            ),
                             date=datetime.now(timezone.utc).isoformat(),
                             run_id=self.run_id,
+                            step_id=self.step_id,
                         )
                     else:
                         tool_call_delta = ToolCallDelta(
@@ -550,13 +596,23 @@ class AnthropicStreamingInterface:
             # message_delta event are *cumulative*." So we assign, not accumulate.
             self.output_tokens = event.usage.output_tokens
         elif isinstance(event, BetaRawMessageStopEvent):
-            # Don't do anything here! We don't want to stop the stream.
-            pass
+            # Check if any content was produced during the stream
+            # Empty responses (no text and no tool calls) should raise an error
+            if not self.has_content:
+                raise LLMEmptyResponseError(
+                    message=f"LLM provider returned empty content in streaming response (model: {self.model}, message_id: {self.message_id})"
+                )
         elif isinstance(event, BetaRawContentBlockStopEvent):
             # If we're exiting a tool use block and there are still buffered messages,
-            # we should flush them now
+            # we should flush them now.
+            # Ensure each flushed chunk has an otid before yielding.
             if self.anthropic_mode == EventMode.TOOL_USE and self.tool_call_buffer:
                 for buffered_msg in self.tool_call_buffer:
+                    if not buffered_msg.otid:
+                        if prev_message_type and prev_message_type != buffered_msg.message_type:
+                            message_index += 1
+                        buffered_msg.otid = Message.generate_otid_from_id(buffered_msg.id, message_index)
+                    prev_message_type = buffered_msg.message_type
                     yield buffered_msg
                 self.tool_call_buffer = []
 
@@ -622,7 +678,7 @@ class SimpleAnthropicStreamingInterface:
             # Attempt to use OptimisticJSONParser to handle incomplete/malformed JSON
             try:
                 tool_input = self.json_parser.parse(args_str)
-            except:
+            except Exception:
                 logger.warning(
                     f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
                     f"name={self.tool_call_name}. Raw input: {args_str!r}. Error: {e}"
@@ -633,6 +689,25 @@ class SimpleAnthropicStreamingInterface:
         else:
             arguments = str(json.dumps(tool_input, indent=2))
         return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=arguments, name=self.tool_call_name))
+
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Anthropic: input_tokens is NON-cached only in streaming
+        # This interface doesn't track cache tokens, so we just use the raw values
+        return LettaUsageStatistics(
+            prompt_tokens=self.input_tokens or 0,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=(self.input_tokens or 0) + (self.output_tokens or 0),
+            cached_input_tokens=None,  # This interface doesn't track cache tokens
+            cache_write_tokens=None,
+            reasoning_tokens=None,
+        )
 
     def get_reasoning_content(self) -> list[TextContent | ReasoningContent | RedactedReasoningContent]:
         def _process_group(
@@ -724,10 +799,10 @@ class SimpleAnthropicStreamingInterface:
                                 prev_message_type = new_message_type
                             # print(f"Yielding message: {message}")
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
-                        logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                        logger.info("Cancelled stream attempt but overriding (%s) %s: %s", type(e).__name__, e, traceback.format_exc())
                         async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type
                             if new_message_type != prev_message_type:
@@ -773,10 +848,12 @@ class SimpleAnthropicStreamingInterface:
 
             if isinstance(content, BetaTextBlock):
                 self.anthropic_mode = EventMode.TEXT
+                self.has_content = True  # Track that we received text content
                 # TODO: Can capture citations, etc.
 
             elif isinstance(content, BetaToolUseBlock):
                 self.anthropic_mode = EventMode.TOOL_USE
+                self.has_content = True  # Track that we received tool use content
                 self.tool_call_id = content.id
                 self.tool_call_name = content.name
 
@@ -786,6 +863,7 @@ class SimpleAnthropicStreamingInterface:
                     tool_call_msg = ApprovalRequestMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
+                        tool_calls=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
@@ -870,6 +948,7 @@ class SimpleAnthropicStreamingInterface:
                     tool_call_msg = ApprovalRequestMessage(
                         id=self.letta_message_id,
                         tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
+                        tool_calls=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                         run_id=self.run_id,
@@ -948,8 +1027,12 @@ class SimpleAnthropicStreamingInterface:
             self.output_tokens = event.usage.output_tokens
 
         elif isinstance(event, BetaRawMessageStopEvent):
-            # Don't do anything here! We don't want to stop the stream.
-            pass
+            # Check if any content was produced during the stream
+            # Empty responses (no text and no tool calls) should raise an error
+            if not self.has_content:
+                raise LLMEmptyResponseError(
+                    message=f"LLM provider returned empty content in streaming response (model: {self.model}, message_id: {self.message_id})"
+                )
 
         elif isinstance(event, BetaRawContentBlockStopEvent):
             self.anthropic_mode = None

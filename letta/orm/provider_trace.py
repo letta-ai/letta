@@ -1,4 +1,8 @@
 import uuid
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from letta.orm.organization import Organization
 
 from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,7 +24,26 @@ class ProviderTrace(SqlalchemyBase, OrganizationMixin):
     )
     request_json: Mapped[dict] = mapped_column(JSON, doc="JSON content of the provider request")
     response_json: Mapped[dict] = mapped_column(JSON, doc="JSON content of the provider response")
-    step_id: Mapped[str] = mapped_column(String, nullable=True, doc="ID of the step that this trace is associated with")
+    step_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the step that this trace is associated with")
+
+    # Telemetry context fields
+    agent_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the agent that generated this trace")
+    agent_tags: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, doc="Tags associated with the agent for filtering")
+    call_type: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Type of call (agent_step, summarization, etc.)")
+    run_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the run this trace is associated with")
+    source: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, doc="Source service that generated this trace (memgpt-server, lettuce-py)"
+    )
+
+    # v2 protocol fields
+    org_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the organization")
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="ID of the user who initiated the request")
+    compaction_settings: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, doc="Compaction/summarization settings (summarization calls only)"
+    )
+    llm_config: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, doc="LLM configuration used for this call (non-summarization calls only)"
+    )
 
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", lazy="selectin")

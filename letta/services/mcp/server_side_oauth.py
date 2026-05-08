@@ -11,10 +11,10 @@ by a web frontend rather than opening a local browser.
 import asyncio
 import time
 from typing import Callable, Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from mcp.client.auth import OAuthClientProvider
-from mcp.shared.auth import OAuthClientMetadata
+import httpx
+from fastmcp.client.auth.oauth import OAuth
 from pydantic import AnyHttpUrl
 
 from letta.log import get_logger
@@ -30,18 +30,18 @@ logger = get_logger(__name__)
 MCPManagerType = "MCPServerManager"
 
 
-class ServerSideOAuth(OAuthClientProvider):
+class ServerSideOAuth(OAuth):
     """
     OAuth client that forwards authorization URL via callback instead of opening browser,
     and receives auth code from external source instead of running local callback server.
 
-    This class subclasses MCP's OAuthClientProvider directly (bypassing FastMCP's OAuth class)
-    to use DatabaseTokenStorage for persistent token storage instead of file-based storage.
+    This class extends FastMCP's OAuth class to:
+    - Use DatabaseTokenStorage for persistent token storage instead of file-based storage
+    - Override redirect_handler to store URLs in the database instead of opening a browser
+    - Override callback_handler to poll database for auth codes instead of running a local server
 
-    This class works in a server-side context where:
-    - The authorization URL should be returned to a web client instead of opening a browser
-    - The authorization code is received via a webhook/callback endpoint instead of a local server
-    - Tokens are stored in the database for persistence across server restarts and instances
+    By extending FastMCP's OAuth, we inherit its _initialize() fix that properly sets
+    token_expiry_time, enabling automatic token refresh when tokens expire.
 
     Args:
         mcp_url: The MCP server URL to authenticate against
@@ -52,6 +52,8 @@ class ServerSideOAuth(OAuthClientProvider):
         url_callback: Optional callback function called with the authorization URL
         logo_uri: Optional logo URI to include in OAuth client metadata
         scopes: OAuth scopes to request
+        exclude_resource_param: If True, prevents the RFC 8707 resource parameter from being
+            added to OAuth requests. Some servers (like Supabase) reject this parameter.
     """
 
     def __init__(
@@ -64,69 +66,132 @@ class ServerSideOAuth(OAuthClientProvider):
         url_callback: Optional[Callable[[str], None]] = None,
         logo_uri: Optional[str] = None,
         scopes: Optional[str | list[str]] = None,
+        exclude_resource_param: bool = True,
     ):
         self.session_id = session_id
         self.mcp_manager = mcp_manager
         self.actor = actor
         self._redirect_uri = redirect_uri
         self._url_callback = url_callback
+        self._exclude_resource_param = exclude_resource_param
 
-        # Parse URL to get server base URL
-        parsed_url = urlparse(mcp_url)
-        server_base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        self.server_base_url = server_base_url
-
-        # Build scopes string
-        scopes_str: str
-        if isinstance(scopes, list):
-            scopes_str = " ".join(scopes)
-        elif scopes is not None:
-            scopes_str = str(scopes)
-        else:
-            scopes_str = ""
-
-        # Create client metadata with the web app's redirect URI
-        client_metadata = OAuthClientMetadata(
-            client_name="Letta",
-            redirect_uris=[AnyHttpUrl(redirect_uri)],
-            grant_types=["authorization_code", "refresh_token"],
-            response_types=["code"],
-            scope=scopes_str,
-        )
-        if logo_uri:
-            client_metadata.logo_uri = logo_uri
-
-        # Use DatabaseTokenStorage for persistent storage in the database
-        storage = DatabaseTokenStorage(session_id, mcp_manager, actor)
-
-        # Initialize parent OAuthClientProvider directly (bypassing FastMCP's OAuth class)
-        # This allows us to use DatabaseTokenStorage instead of FileTokenStorage
+        # Initialize parent OAuth class (this creates FileTokenStorage internally)
         super().__init__(
-            server_url=server_base_url,
-            client_metadata=client_metadata,
-            storage=storage,
-            redirect_handler=self.redirect_handler,
-            callback_handler=self.callback_handler,
+            mcp_url=mcp_url,
+            scopes=scopes,
+            client_name="Letta",
         )
+
+        # Replace the file-based storage with database storage
+        # This must be done after super().__init__ since it creates the context
+        self.context.storage = DatabaseTokenStorage(session_id, mcp_manager, actor)
+
+        # Override redirect URI in client metadata to use our web app's callback
+        self.context.client_metadata.redirect_uris = [AnyHttpUrl(redirect_uri)]
+
+        # Clear empty scope - some OAuth servers (like Supabase) reject empty scope strings
+        # Setting to None lets the server use its default scopes
+        if not scopes:
+            self.context.client_metadata.scope = None
+
+        # Set logo URI if provided
+        if logo_uri:
+            self.context.client_metadata.logo_uri = logo_uri
+
+    async def _initialize(self) -> None:
+        """Load stored tokens and client info, properly setting token expiry."""
+        await super()._initialize()
+
+        # Some OAuth servers (like Supabase) don't accept the RFC 8707 resource parameter
+        # Clear protected_resource_metadata to prevent the SDK from adding it to requests
+        if self._exclude_resource_param:
+            self.context.protected_resource_metadata = None
+
+    async def _handle_protected_resource_response(self, response: httpx.Response) -> None:
+        """Handle protected resource metadata response.
+
+        This overrides the parent's method to:
+        1. Let OAuth server discovery work (extracts auth_server_url from metadata)
+        2. Then clear protected_resource_metadata to prevent RFC 8707 resource parameter
+           from being added to token exchange and other requests.
+
+        Some OAuth servers (like Supabase) reject the resource parameter entirely.
+        """
+        # Call parent to process metadata and extract auth_server_url
+        await super()._handle_protected_resource_response(response)
+
+        # Clear the metadata to prevent resource parameter in subsequent requests
+        # The auth_server_url is already extracted, so OAuth discovery still works
+        if self._exclude_resource_param:
+            logger.debug("Clearing protected_resource_metadata to prevent resource parameter in token exchange")
+            self.context.protected_resource_metadata = None
+
+    async def _handle_token_response(self, response: httpx.Response) -> None:
+        """Handle token exchange response, accepting both 200 and 201 status codes.
+
+        Some OAuth servers (like Supabase) return 201 Created instead of 200 OK
+        for successful token exchange. The MCP SDK only accepts 200, so we override
+        this method to accept both.
+        """
+        # Accept both 200 and 201 as success (Supabase returns 201)
+        if response.status_code == 201:
+            logger.debug("Token exchange returned 201 Created, treating as success")
+            # Monkey-patch the status code to 200 so parent method accepts it
+            response.status_code = 200
+
+        await super()._handle_token_response(response)
 
     async def redirect_handler(self, authorization_url: str) -> None:
         """Store authorization URL in database and call optional callback.
 
         This overrides the parent's redirect_handler which would open a browser.
         Instead, we:
-        1. Store the URL in the database for the API to return
-        2. Call an optional callback (e.g., to yield to an SSE stream)
+        1. Extract the state from the authorization URL (generated by MCP SDK)
+        2. Optionally strip the resource parameter (some servers reject it)
+        3. Store the URL and state in the database for the API to return
+        4. Call an optional callback (e.g., to yield to an SSE stream)
 
         Args:
             authorization_url: The OAuth authorization URL to redirect the user to
         """
         logger.info(f"OAuth redirect handler called with URL: {authorization_url}")
 
-        # Store URL in database for API response
-        session_update = MCPOAuthSessionUpdate(authorization_url=authorization_url)
+        # Strip the resource parameter if exclude_resource_param is True
+        # Some OAuth servers (like Supabase) reject the RFC 8707 resource parameter
+        if self._exclude_resource_param:
+            parsed_url = urlparse(authorization_url)
+            query_params = parse_qs(parsed_url.query, keep_blank_values=True)
+
+            if "resource" in query_params:
+                logger.debug(f"Stripping resource parameter from authorization URL: {query_params['resource']}")
+                del query_params["resource"]
+
+                # Rebuild the URL without the resource parameter
+                # parse_qs returns lists, so flatten them for urlencode
+                flat_params = {k: v[0] if len(v) == 1 else v for k, v in query_params.items()}
+                new_query = urlencode(flat_params, doseq=True)
+                authorization_url = urlunparse(
+                    (
+                        parsed_url.scheme,
+                        parsed_url.netloc,
+                        parsed_url.path,
+                        parsed_url.params,
+                        new_query,
+                        parsed_url.fragment,
+                    )
+                )
+                logger.info(f"Authorization URL after stripping resource: {authorization_url}")
+
+        # Extract the state parameter from the authorization URL
+        parsed_url = urlparse(authorization_url)
+        query_params = parse_qs(parsed_url.query)
+        oauth_state = query_params.get("state", [None])[0]
+
+        # Store URL and state in database for API response
+        session_update = MCPOAuthSessionUpdate(authorization_url=authorization_url, state=oauth_state)
         await self.mcp_manager.update_oauth_session(self.session_id, session_update, self.actor)
 
-        logger.info(f"OAuth authorization URL stored for session {self.session_id}")
+        logger.info(f"OAuth authorization URL stored for session {self.session_id} with state {oauth_state}")
 
         # Call the callback if provided (e.g., to yield URL to SSE stream)
         if self._url_callback:

@@ -25,7 +25,7 @@
     "context_window": 30000,
     "put_inner_thoughts_in_kwargs": true,
     "handle": "anthropic/claude-sonnet-4-20250514",
-    "temperature": 0.7,
+    "temperature": 1.0,
     "max_tokens": 8192,
     "enable_reasoner": false,
     "reasoning_effort": null,
@@ -799,7 +799,7 @@
               "type": "string",
               "description": "Section of the memory to be edited, identified by its label."
             },
-            "new_str": {
+            "new_string": {
               "type": "string",
               "description": "The text to insert."
             },
@@ -810,7 +810,7 @@
           },
           "required": [
             "label",
-            "new_str"
+            "new_string"
           ]
         },
         "type": null,
@@ -911,19 +911,19 @@
               "type": "string",
               "description": "Section of the memory to be edited, identified by its label."
             },
-            "old_str": {
+            "old_string": {
               "type": "string",
               "description": "The text to replace (must match exactly, including whitespace and indentation)."
             },
-            "new_str": {
+            "new_string": {
               "type": "string",
               "description": "The new text to insert in place of the old text. Do not include line number prefixes."
             }
           },
           "required": [
             "label",
-            "old_str",
-            "new_str"
+            "old_string",
+            "new_string"
           ]
         },
         "type": null,

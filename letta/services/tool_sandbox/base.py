@@ -1,12 +1,16 @@
+import importlib
+import inspect
 import os
 import pickle
 import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
+from letta.constants import LETTA_MULTI_AGENT_TOOL_MODULE_NAME
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import ToolSourceType, ToolType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -63,18 +67,32 @@ class AsyncToolSandboxBase(ABC):
                     f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
                 )
 
-            # Check for reserved keyword arguments
-            tool_arguments = parse_function_arguments(self.tool.source_code, self.tool.name)
+            if not self.tool.source_code and self.tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
+                module = importlib.import_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME)
+                self.tool.source_code = inspect.getsource(module)
 
-            # TODO: deprecate this
-            if "agent_state" in tool_arguments:
-                self.inject_agent_state = True
-            else:
+            # TypeScript tools do not support agent_state or agent_id injection as function params
+            # (these are Python-only features). Instead, agent_id is exposed via LETTA_AGENT_ID env var.
+            if self.is_typescript_tool():
                 self.inject_agent_state = False
+                self.inject_agent_id = False
+            else:
+                # Check for reserved keyword arguments (Python tools only)
+                tool_arguments = parse_function_arguments(self.tool.source_code, self.tool.name)
+
+                # TODO: deprecate this
+                # Note: AgentState injection is a legacy feature for Python tools only.
+                if "agent_state" in tool_arguments:
+                    self.inject_agent_state = True
+                else:
+                    self.inject_agent_state = False
+
+                self.inject_agent_id = "agent_id" in tool_arguments
 
             # Always inject Letta client (available as `client` variable in sandbox)
+            # For Python: letta_client package
+            # For TypeScript: @letta-ai/letta-client package
             self.inject_letta_client = True
-            self.inject_agent_id = "agent_id" in tool_arguments
 
             self.is_async_function = self._detect_async_function()
         self._initialized = True
@@ -98,13 +116,23 @@ class AsyncToolSandboxBase(ABC):
         """
         raise NotImplementedError
 
+    def is_typescript_tool(self) -> bool:
+        """Check if the tool is a TypeScript tool based on source_type."""
+        if self.tool and self.tool.source_type:
+            return self.tool.source_type == ToolSourceType.typescript or self.tool.source_type == "typescript"
+        return False
+
     @trace_method
     async def generate_execution_script(self, agent_state: Optional[AgentState], wrap_print_with_markers: bool = False) -> str:
         """
         Generate code to run inside of execution sandbox. Serialize the agent state and arguments, call the tool,
-        then base64-encode/pickle the result. Constructs the python file.
+        then base64-encode/pickle the result. Constructs the python file (or TypeScript for TS tools).
         """
         await self._init_async()
+
+        # Route to TypeScript generator for TypeScript tools
+        if self.is_typescript_tool():
+            return await self._generate_typescript_execution_script(agent_state)
         future_import = False
         schema_code = None
 
@@ -181,7 +209,7 @@ class AsyncToolSandboxBase(ABC):
             lines.append("import asyncio")
 
         if inject_agent_state:
-            lines.extend(["import letta", "from letta import *"])  # noqa: F401
+            lines.extend(["import letta", "from letta import *"])
 
         # Import Letta client if available (wrapped in try/except for sandboxes without letta_client installed)
         if inject_letta_client:
@@ -237,6 +265,27 @@ class AsyncToolSandboxBase(ABC):
 
         if tool_source_code:
             lines.append(tool_source_code.rstrip())
+
+        if self.args:
+            raw_args = ", ".join([f"{name!r}: {name}" for name in self.args])
+            lines.extend(
+                [
+                    f"__letta_raw_args = {{{raw_args}}}",
+                    "try:",
+                    "    from letta.functions.ast_parsers import coerce_dict_args_by_annotations",
+                    f"    __letta_func = {self.tool.name}",
+                    "    __letta_annotations = getattr(__letta_func, '__annotations__', {})",
+                    "    __letta_coerced_args = coerce_dict_args_by_annotations(",
+                    "        __letta_raw_args,",
+                    "        __letta_annotations,",
+                    "        allow_unsafe_eval=True,",
+                    "        extra_globals=__letta_func.__globals__,",
+                    "    )",
+                ]
+            )
+            for name in self.args:
+                lines.append(f"    {name} = __letta_coerced_args.get({name!r}, {name})")
+            lines.extend(["except Exception:", "    pass"])
 
         if not self.is_async_function:
             # sync variant
@@ -321,6 +370,25 @@ class AsyncToolSandboxBase(ABC):
 
         return "\n".join(lines) + "\n"
 
+    async def _generate_typescript_execution_script(self, agent_state: Optional[AgentState]) -> str:
+        """
+        Generate TypeScript code to run inside of execution sandbox.
+
+        TypeScript tools:
+        - Do NOT support agent_state injection (stateless)
+        - agent_id is available via process.env.LETTA_AGENT_ID
+        - Return JSON-serialized results instead of pickle
+        - Require explicit json_schema (no docstring parsing)
+        """
+        from letta.services.tool_sandbox.typescript_generator import generate_typescript_execution_script
+
+        return generate_typescript_execution_script(
+            tool_name=self.tool.name,
+            tool_source_code=self.tool.source_code,
+            args=self.args,
+            json_schema=self.tool.json_schema,
+        )
+
     def initialize_param(self, name: str, raw_value: JsonValue) -> str:
         """
         Produce code for initializing a single parameter in the generated script.
@@ -377,7 +445,7 @@ class AsyncToolSandboxBase(ABC):
                 if isinstance(node, ast.AsyncFunctionDef) and node.name == self.tool.name:
                     return True
             return False
-        except:
+        except Exception:
             return False
 
     def use_top_level_await(self) -> bool:

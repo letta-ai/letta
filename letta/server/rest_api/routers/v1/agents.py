@@ -1,29 +1,23 @@
 import asyncio
 import json
-import traceback
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
+import orjson
 from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
-from marshmallow import ValidationError
-from orjson import orjson
-from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import IntegrityError, OperationalError
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.agents.letta_agent import LettaAgent
-from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.agents.letta_agent_v3 import LettaAgentV3
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
 from letta.errors import (
-    AgentExportIdMappingError,
-    AgentExportProcessingError,
-    AgentFileImportError,
-    AgentNotFoundForExportError,
+    HandleNotFoundError,
+    LLMError,
     NoActiveRunsToCancelError,
     PendingApprovalError,
 )
@@ -34,10 +28,10 @@ from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentRelationships, AgentState, CreateAgent, UpdateAgent
-from letta.schemas.agent_file import AgentFileSchema
-from letta.schemas.block import BaseBlock, Block, BlockResponse, BlockUpdate
+from letta.schemas.agent_file import AgentFileSchema, SkillSchema
+from letta.schemas.block import BlockResponse, BlockUpdate
 from letta.schemas.enums import AgentType, MessageRole, RunStatus
-from letta.schemas.file import AgentFileAttachment, FileMetadataBase, PaginatedAgentFiles
+from letta.schemas.file import AgentFileAttachment, PaginatedAgentFiles
 from letta.schemas.group import Group
 from letta.schemas.job import LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
@@ -55,10 +49,12 @@ from letta.schemas.memory import (
 )
 from letta.schemas.message import Message, MessageCreate, MessageCreateType, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.run import Run as PydanticRun, RunUpdate
-from letta.schemas.source import BaseSource, Source
-from letta.schemas.tool import BaseTool, Tool
+from letta.schemas.source import Source
+from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
+from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -77,6 +73,52 @@ from letta.validators import AgentId, BlockId, FileId, MessageId, SourceId, Tool
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 logger = get_logger(__name__)
+
+
+# Schemas for direct LLM generation endpoint
+class GenerateRequest(BaseModel):
+    """Request for direct LLM generation without agent processing."""
+
+    prompt: str = Field(
+        ...,
+        description="The prompt/message to send to the LLM",
+        min_length=1,
+    )
+
+    system_prompt: Optional[str] = Field(
+        None,
+        description="Optional system prompt to prepend to the conversation",
+    )
+
+    override_model: Optional[str] = Field(
+        None,
+        description="Model handle to use instead of agent's default (e.g., 'openai/gpt-4', 'anthropic/claude-3-5-sonnet')",
+    )
+
+    response_schema: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "JSON schema for structured output. When provided, the LLM will be forced to return "
+            "a response matching this schema via tool calling. The schema should follow JSON Schema "
+            "format with 'properties' and optionally 'required' fields."
+        ),
+    )
+
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt_not_empty(cls, v: str) -> str:
+        """Ensure prompt is not empty or whitespace-only."""
+        if not v or not v.strip():
+            raise ValueError("prompt cannot be empty or whitespace-only")
+        return v
+
+
+class GenerateResponse(BaseModel):
+    """Response from direct LLM generation."""
+
+    content: str = Field(..., description="The LLM's response text")
+    model: str = Field(..., description="The model that generated this response")
+    usage: LettaUsageStatistics = Field(..., description="Token usage statistics")
 
 
 @router.get("/", response_model=list[AgentState], operation_id="list_agents")
@@ -115,7 +157,7 @@ async def list_agents(
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
-    order_by: Literal["created_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
+    order_by: Literal["created_at", "updated_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
     ascending: bool = Query(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
@@ -132,6 +174,7 @@ async def list_agents(
         description="If set to True, include agents marked as hidden in the results.",
     ),
     last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
+    created_by_id: str | None = Query(None, description="Filter agents by the user who created them."),
 ):
     """
     Get a list of all agents.
@@ -167,6 +210,7 @@ async def list_agents(
         sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
         last_stop_reason=last_stop_reason,
+        created_by_id=created_by_id,
     )
 
 
@@ -190,6 +234,7 @@ async def count_agents(
         description="If set to True, include agents marked as hidden in the results.",
     ),
     last_stop_reason: Optional[StopReasonType] = Query(None, description="Filter agents by their last stop reason."),
+    created_by_id: str | None = Query(None, description="Filter agents by the user who created them."),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -199,13 +244,27 @@ async def count_agents(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    # If no filters are provided, use the simpler size_async method
+    # If no filters are provided AND we want all agents (including hidden),
+    # use the simpler size_async method which counts everything.
+    # When show_hidden_agents is False (the default), we must use
+    # count_agents_async which applies the hidden filter.
     if (
         all(
             param is None or param is False
-            for param in [name, tags, query_text, project_id, template_id, base_template_id, identity_id, identifier_keys, last_stop_reason]
+            for param in [
+                name,
+                tags,
+                query_text,
+                project_id,
+                template_id,
+                base_template_id,
+                identity_id,
+                identifier_keys,
+                last_stop_reason,
+                created_by_id,
+            ]
         )
-        and not show_hidden_agents
+        and show_hidden_agents
     ):
         return await server.agent_manager.size_async(actor=actor)
 
@@ -222,6 +281,7 @@ async def count_agents(
         identifier_keys=identifier_keys,
         show_hidden_agents=show_hidden_agents,
         last_stop_reason=last_stop_reason,
+        created_by_id=created_by_id,
     )
 
 
@@ -243,6 +303,14 @@ async def export_agent(
         description="If True, exports using the legacy single-agent 'v1' format with inline tools/blocks. If False, exports using the new multi-entity 'v2' format, with separate agents, tools, blocks, files, etc.",
         deprecated=True,
     ),
+    conversation_id: Optional[str] = Query(
+        None,
+        description="Conversation ID to export. If provided, uses messages from this conversation instead of the agent's global message history.",
+    ),
+    scrub_messages: bool = Query(
+        False,
+        description="If True, excludes all messages from the export. Useful for sharing agent configs without conversation history.",
+    ),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentFileSchema
     spec: AgentFileSchema | None = None,
@@ -254,7 +322,59 @@ async def export_agent(
     if use_legacy_format:
         raise HTTPException(status_code=400, detail="Legacy format is not supported")
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+    agent_file_schema = await server.agent_serialization_manager.export(
+        agent_ids=[agent_id],
+        actor=actor,
+        conversation_id=conversation_id,
+        scrub_messages=scrub_messages,
+    )
+    return agent_file_schema.model_dump()
+
+
+class ExportAgentRequest(BaseModel):
+    """Request body for POST /export endpoint."""
+
+    skills: List[SkillSchema] = Field(
+        default_factory=list,
+        description="Skills to include in the export. Each skill must have a name and files (including SKILL.md).",
+    )
+    conversation_id: Optional[str] = Field(
+        None,
+        description="Conversation ID to export. If provided, uses messages from this conversation instead of the agent's global message history.",
+    )
+    scrub_messages: bool = Field(
+        default=False,
+        description="If True, excludes all messages from the export. Useful for sharing agent configs without conversation history.",
+    )
+
+
+@router.post("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_with_skills")
+async def export_agent_with_skills(
+    agent_id: str = AgentId,
+    request: Optional[ExportAgentRequest] = Body(default=None),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+) -> JSONResponse:
+    """
+    Export the serialized JSON representation of an agent with optional skills.
+
+    This POST endpoint allows including skills in the export by providing them in the request body.
+    Skills are resolved client-side and passed as SkillSchema objects containing the skill files.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Use defaults if no request body provided
+    skills = request.skills if request else []
+    conversation_id = request.conversation_id if request else None
+    scrub_messages = request.scrub_messages if request else False
+
+    agent_file_schema = await server.agent_serialization_manager.export(
+        agent_ids=[agent_id],
+        actor=actor,
+        conversation_id=conversation_id,
+        skills=skills,
+        scrub_messages=scrub_messages,
+    )
     return agent_file_schema.model_dump()
 
 
@@ -304,6 +424,7 @@ async def _import_agent(
     strip_messages: bool = False,
     env_vars: Optional[dict[str, Any]] = None,
     override_embedding_handle: Optional[str] = None,
+    override_model_handle: Optional[str] = None,
 ) -> List[str]:
     """
     Import an agent using the new AgentFileSchema format.
@@ -315,6 +436,11 @@ async def _import_agent(
     else:
         embedding_config_override = None
 
+    if override_model_handle:
+        llm_config_override = await server.get_llm_config_from_handle_async(actor=actor, handle=override_model_handle)
+    else:
+        llm_config_override = None
+
     import_result = await server.agent_serialization_manager.import_file(
         schema=agent_schema,
         actor=actor,
@@ -323,6 +449,7 @@ async def _import_agent(
         override_existing_tools=override_existing_tools,
         env_vars=env_vars,
         override_embedding_config=embedding_config_override,
+        override_llm_config=llm_config_override,
         project_id=project_id,
     )
 
@@ -358,6 +485,10 @@ async def import_agent(
         None,
         description="Embedding handle to override with.",
     ),
+    model: Optional[str] = Form(
+        None,
+        description="Model handle to override the agent's default model. This allows the imported agent to use a different model while keeping other defaults (e.g., context size) from the original configuration.",
+    ),
     # Deprecated fields (maintain backward compatibility)
     append_copy_suffix: bool = Form(
         True,
@@ -372,6 +503,11 @@ async def import_agent(
     override_embedding_handle: Optional[str] = Form(
         None,
         description="Override import with specific embedding handle. Use 'embedding' instead.",
+        deprecated=True,
+    ),
+    override_model_handle: Optional[str] = Form(
+        None,
+        description="Model handle to override the agent's default model. Use 'model' instead.",
         deprecated=True,
     ),
     project_id: str | None = Form(
@@ -404,6 +540,7 @@ async def import_agent(
     # Handle backward compatibility: prefer new field names over deprecated ones
     final_name = name or override_name
     final_embedding_handle = embedding or override_embedding_handle or x_override_embedding_model
+    final_model_handle = model or override_model_handle
 
     # Parse secrets (new) or env_vars_json (deprecated)
     env_vars = None
@@ -436,6 +573,7 @@ async def import_agent(
             strip_messages=strip_messages,
             env_vars=env_vars,
             override_embedding_handle=final_embedding_handle,
+            override_model_handle=final_model_handle,
         )
     else:
         # This is a legacy AgentSchema
@@ -452,12 +590,15 @@ async def retrieve_agent_context_window(
     agent_id: AgentId,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
+    conversation_id: Optional[str] = Query(
+        None, description="Conversation ID to get context window for. If provided, uses messages from this conversation."
+    ),
 ):
     """
     Retrieve the context window of a specific agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
+    return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor, conversation_id=conversation_id)
 
 
 class CreateAgentRequest(CreateAgent):
@@ -621,7 +762,9 @@ async def run_tool_for_agent(
 
     # Get agent with all relationships
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+        agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
     )
 
     # Find the tool by name among attached tools
@@ -694,7 +837,7 @@ async def attach_source(
         await server.agent_manager.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
 
     if agent_state.enable_sleeptime:
-        source = await server.source_manager.get_source_by_id(source_id=source_id)
+        source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
         safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
     return agent_state
@@ -721,7 +864,7 @@ async def attach_folder_to_agent(
         await server.agent_manager.insert_files_into_context_window(agent_state=agent_state, file_metadata_with_content=files, actor=actor)
 
     if agent_state.enable_sleeptime:
-        source = await server.source_manager.get_source_by_id(source_id=folder_id)
+        source = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
         safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
     if is_1_0_sdk_version(headers):
@@ -752,10 +895,10 @@ async def detach_source(
 
     if agent_state.enable_sleeptime:
         try:
-            source = await server.source_manager.get_source_by_id(source_id=source_id)
+            source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
             block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
             await server.block_manager.delete_block_async(block.id, actor)
-        except:
+        except Exception:
             pass
 
     return agent_state
@@ -784,10 +927,10 @@ async def detach_folder_from_agent(
 
     if agent_state.enable_sleeptime:
         try:
-            source = await server.source_manager.get_source_by_id(source_id=folder_id)
+            source = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
             block = await server.agent_manager.get_block_with_label_async(agent_id=agent_state.id, block_label=source.name, actor=actor)
             await server.block_manager.delete_block_async(block.id, actor)
-        except:
+        except Exception:
             pass
 
     if is_1_0_sdk_version(headers):
@@ -848,7 +991,7 @@ async def open_file_for_agent(
     visible_content = truncate_file_visible_content(visible_content, True, per_file_view_window_char_limit)
 
     # Use enforce_max_open_files_and_open for efficient LRU handling
-    closed_files, was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
+    closed_files, _was_already_open, _ = await server.file_agent_manager.enforce_max_open_files_and_open(
         agent_id=agent_id,
         file_id=file_id,
         file_name=file_metadata.file_name,
@@ -1145,6 +1288,70 @@ async def modify_block_for_agent(
     return block
 
 
+@router.post(
+    "/{agent_id}/recompile",
+    response_model=str,
+    operation_id="recompile_agent",
+)
+async def recompile_agent(
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+    update_timestamp: bool = Query(
+        False,
+        description="If True, update the in-context memory last edit timestamp embedded in the system prompt.",
+    ),
+    dry_run: bool = Query(
+        False,
+        description="If True, do not persist changes; still returns the compiled system prompt.",
+    ),
+):
+    """Manually trigger system prompt recompilation for an agent."""
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    _, system_message, _, _ = await server.agent_manager.rebuild_system_prompt_async(
+        agent_id=agent_id,
+        actor=actor,
+        force=True,
+        update_timestamp=update_timestamp,
+        dry_run=dry_run,
+    )
+
+    if system_message is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No system message found for agent '{agent_id}'")
+
+    return system_message.to_openai_dict().get("content", "")
+
+
+@router.post(
+    "/{agent_id}/system-prompt/recompile",
+    response_model=str,
+    operation_id="recompile_agent_system_prompt",
+    deprecated=True,
+)
+async def recompile_agent_system_prompt(
+    agent_id: AgentId,
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+    update_timestamp: bool = Query(
+        False,
+        description="If True, update the in-context memory last edit timestamp embedded in the system prompt.",
+    ),
+    dry_run: bool = Query(
+        False,
+        description="If True, do not persist changes; still returns the compiled system prompt.",
+    ),
+):
+    """Deprecated alias for POST /v1/agents/{agent_id}/recompile."""
+    return await recompile_agent(
+        agent_id=agent_id,
+        server=server,
+        headers=headers,
+        update_timestamp=update_timestamp,
+        dry_run=dry_run,
+    )
+
+
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
 async def attach_block_to_agent(
     block_id: BlockId,
@@ -1249,7 +1456,7 @@ async def detach_identity_from_agent(
     return None
 
 
-@router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages", deprecated=True)
+@router.get("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="list_passages")
 async def list_passages(
     agent_id: AgentId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -1278,7 +1485,7 @@ async def list_passages(
     )
 
 
-@router.post("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="create_passage", deprecated=True)
+@router.post("/{agent_id}/archival-memory", response_model=list[Passage], operation_id="create_passage")
 async def create_passage(
     agent_id: AgentId,
     request: CreateArchivalMemory = Body(...),
@@ -1299,7 +1506,6 @@ async def create_passage(
     "/{agent_id}/archival-memory/search",
     response_model=ArchivalMemorySearchResponse,
     operation_id="search_archival_memory",
-    deprecated=True,
 )
 async def search_archival_memory(
     agent_id: AgentId,
@@ -1347,7 +1553,7 @@ async def search_archival_memory(
 
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
-@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage", deprecated=True)
+@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage")
 async def delete_passage(
     memory_id: str,
     agent_id: AgentId,
@@ -1392,6 +1598,7 @@ async def list_messages(
     include_err: bool | None = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -1412,11 +1619,12 @@ async def list_messages(
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
         include_err=include_err,
+        include_return_message_types=include_return_message_types,
         actor=actor,
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message", deprecated=True)
 async def modify_message(
     agent_id: AgentId,  # backwards compatible. Consider removing for v1
     message_id: MessageId,
@@ -1426,11 +1634,13 @@ async def modify_message(
 ):
     """
     Update the details of a message associated with an agent.
+
+    **Deprecated**: Messages are now considered immutable since they can be shared across
+    multiple conversations via forking. This endpoint will be removed in a future version.
     """
-    # TODO: support modifying tool calls/returns
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.message_manager.update_message_by_letta_message_async(
-        message_id=message_id, letta_message_update=request, actor=actor
+    raise HTTPException(
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+        detail="Message editing is no longer supported. Messages are immutable as they may be shared across multiple conversations via forking.",
     )
 
 
@@ -1459,6 +1669,10 @@ async def send_message(
     """
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
+
+    **Note:** Sending multiple concurrent requests to the same agent can lead to undefined behavior.
+    Each agent processes messages sequentially, and concurrent requests may interleave in unexpected ways.
+    Wait for each request to complete before sending the next one. Use separate agents or conversations for parallel processing.
 
     The response format is controlled by the `streaming` field in the request body:
     - If `streaming=false` (default): Returns a complete LettaResponse with all messages
@@ -1506,6 +1720,8 @@ async def send_message(
             actor=actor,
             request=request,
             run_type="send_message",
+            billing_context=headers.billing_context,
+            openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
         )
         return result
 
@@ -1513,23 +1729,19 @@ async def send_message(
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+        agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
     )
-    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in [
-        "anthropic",
-        "openai",
-        "together",
-        "google_ai",
-        "google_vertex",
-        "bedrock",
-        "ollama",
-        "azure",
-        "xai",
-        "zai",
-        "groq",
-        "deepseek",
-    ]
+
+    # Handle model override if specified in the request
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(
+            actor=actor,
+            handle=request.override_model,
+        )
+        # Create a copy of agent state with the overridden llm_config
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
 
     # Create a new run for execution tracking
     if settings.track_agent_run:
@@ -1553,32 +1765,37 @@ async def send_message(
     await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     run_update_metadata = None
+    result = None
+    run_status = RunStatus.failed  # Default to failed, updated on success
     try:
-        result = None
-        if agent_eligible and model_compatible:
-            agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
-            result = await agent_loop.step(
-                request.messages,
-                max_steps=request.max_steps,
-                run_id=run.id if run else None,
-                use_assistant_message=request.use_assistant_message,
-                request_start_timestamp_ns=request_start_timestamp_ns,
-                include_return_message_types=request.include_return_message_types,
-                client_tools=request.client_tools,
+        # Handle request-level logprobs override
+        if request.return_logprobs or request.return_token_ids:
+            agent = agent.model_copy(
+                update={
+                    "llm_config": agent.llm_config.model_copy(
+                        update={
+                            "return_logprobs": request.return_logprobs,
+                            "top_logprobs": request.top_logprobs,
+                            "return_token_ids": request.return_token_ids,
+                        }
+                    )
+                }
             )
-        else:
-            result = await server.send_message_to_agent(
-                agent_id=agent_id,
-                actor=actor,
-                input_messages=request.messages,
-                stream_steps=False,
-                stream_tokens=False,
-                # Support for AssistantMessage
-                use_assistant_message=request.use_assistant_message,
-                assistant_message_tool_name=request.assistant_message_tool_name,
-                assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-                include_return_message_types=request.include_return_message_types,
-            )
+
+        agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+        result = await agent_loop.step(
+            request.messages,
+            max_steps=request.max_steps,
+            run_id=run.id if run else None,
+            use_assistant_message=request.use_assistant_message,
+            request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=request.include_return_message_types,
+            client_tools=request.client_tools,
+            client_skills=request.client_skills,
+            override_system=request.override_system,
+            include_compaction_messages=request.include_compaction_messages,
+            billing_context=headers.billing_context,
+        )
         run_status = result.stop_reason.stop_reason.run_status
         return result
     except PendingApprovalError as e:
@@ -1636,6 +1853,10 @@ async def send_message_streaming(
 
     Deprecated: Use the `POST /{agent_id}/messages` endpoint with `streaming=true` in the request body instead.
 
+    **Note:** Sending multiple concurrent requests to the same agent can lead to undefined behavior.
+    Each agent processes messages sequentially, and concurrent requests may interleave in unexpected ways.
+    Wait for each request to complete before sending the next one. Use separate agents or conversations for parallel processing.
+
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
@@ -1647,11 +1868,13 @@ async def send_message_streaming(
     # use the streaming service for unified stream handling
     streaming_service = StreamingService(server)
 
-    run, result = await streaming_service.create_agent_stream(
+    _run, result = await streaming_service.create_agent_stream(
         agent_id=agent_id,
         actor=actor,
         request=request,
         run_type="send_message_streaming",
+        billing_context=headers.billing_context,
+        openai_responses_websocket=bool(headers.experimental_params and headers.experimental_params.openai_responses_websocket),
     )
 
     return result
@@ -1675,6 +1898,13 @@ async def cancel_message(
     """
     # TODO: WHY DOES THIS CANCEL A LIST OF RUNS?
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    logger.info(
+        "[Interrupt] Cancel request received for agent=%s by actor=%s (org=%s), explicit_run_ids=%s",
+        agent_id,
+        actor.id,
+        actor.organization_id,
+        request.run_ids if request else None,
+    )
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
     run_ids = request.run_ids if request else None
@@ -1726,6 +1956,75 @@ async def cancel_message(
     return results
 
 
+@router.post(
+    "/{agent_id}/generate",
+    operation_id="generate_completion",
+    responses={
+        200: {"description": "Successful generation"},
+        404: {"description": "Agent not found"},
+        422: {"description": "Invalid request parameters"},
+        502: {"description": "LLM provider error"},
+    },
+)
+async def generate_completion(
+    agent_id: AgentId,
+    server: SyncServer = Depends(get_letta_server),
+    request: GenerateRequest = Body(...),
+    headers: HeaderParams = Depends(get_headers),
+) -> GenerateResponse:
+    """
+    Generate a completion directly from the LLM provider using the agent's configuration.
+
+    This endpoint makes a direct request to the LLM provider without any agent processing:
+    - No memory or context retrieval
+    - No tool calling
+    - No message persistence
+    - No agent state modification
+
+    Simply provide a prompt, and the endpoint formats it as a user message.
+    Optionally include a system_prompt for context/instructions.
+
+    The agent's LLM configuration (model, credentials, settings) is used by default.
+    Use override_model to switch to a different model/provider while still using
+    the organization's configured providers.
+
+    Example use cases:
+    - Quick LLM queries without agent overhead
+    - Testing different models with the same prompt
+    - Simple chat completions using agent's credentials
+    - Comparing model outputs on identical prompts
+    """
+    # Get actor for permissions
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Call the manager to generate the completion
+    try:
+        service_response = await server.agent_generate_completion_manager.generate_completion_with_agent_config_async(
+            agent_id=str(agent_id),
+            prompt=request.prompt,
+            system_prompt=request.system_prompt,
+            actor=actor,
+            override_model=request.override_model,
+            response_schema=request.response_schema,
+        )
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Agent with ID {agent_id} not found")
+    except HandleNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Model '{request.override_model}' not found or not accessible")
+    except LLMError as e:
+        raise HTTPException(status_code=502, detail=f"LLM provider error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Failed to process LLM response: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Failed to process LLM response: {str(e)}")
+
+    # Convert service response to API response model
+    return GenerateResponse(
+        content=service_response.content,
+        model=service_response.model,
+        usage=service_response.usage,
+    )
+
+
 @router.post("/messages/search", response_model=List[MessageSearchResult], operation_id="search_messages")
 async def search_messages(
     request: MessageSearchRequest = Body(...),
@@ -1772,6 +2071,10 @@ async def _process_message_background(
     assistant_message_tool_kwarg: str,
     max_steps: int = DEFAULT_MAX_STEPS,
     include_return_message_types: list[MessageType] | None = None,
+    override_model: str | None = None,
+    override_system: str | None = None,
+    include_compaction_messages: bool = False,
+    billing_context: "BillingContext | None" = None,
 ) -> None:
     """Background task to process the message and update run status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
@@ -1780,59 +2083,53 @@ async def _process_message_background(
 
     try:
         agent = await server.agent_manager.get_agent_by_id_async(
-            agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+            agent_id,
+            actor,
+            include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
         )
-        agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-        model_compatible = agent.llm_config.model_endpoint_type in [
-            "anthropic",
-            "openai",
-            "together",
-            "google_ai",
-            "google_vertex",
-            "bedrock",
-            "ollama",
-            "azure",
-            "xai",
-            "zai",
-            "groq",
-            "deepseek",
-        ]
-        if agent_eligible and model_compatible:
-            agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
-            result = await agent_loop.step(
-                messages,
-                max_steps=max_steps,
-                run_id=run_id,
-                use_assistant_message=use_assistant_message,
-                request_start_timestamp_ns=request_start_timestamp_ns,
-                include_return_message_types=include_return_message_types,
-            )
-        else:
-            result = await server.send_message_to_agent(
-                agent_id=agent_id,
-                actor=actor,
-                input_messages=messages,
-                stream_steps=False,
-                stream_tokens=False,
-                metadata={"run_id": run_id},
-                # Support for AssistantMessage
-                use_assistant_message=use_assistant_message,
-                assistant_message_tool_name=assistant_message_tool_name,
-                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
-                include_return_message_types=include_return_message_types,
-            )
 
+        # Handle model override if specified
+        if override_model:
+            override_llm_config = await server.get_llm_config_from_handle_async(
+                actor=actor,
+                handle=override_model,
+            )
+            # Create a copy of agent state with the overridden llm_config
+            agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+        agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+        result = await agent_loop.step(
+            messages,
+            max_steps=max_steps,
+            run_id=run_id,
+            use_assistant_message=use_assistant_message,
+            request_start_timestamp_ns=request_start_timestamp_ns,
+            include_return_message_types=include_return_message_types,
+            client_skills=[],
+            override_system=override_system,
+            include_compaction_messages=include_compaction_messages,
+            billing_context=billing_context,
+        )
         runs_manager = RunManager()
         from letta.schemas.enums import RunStatus
+        from letta.schemas.letta_stop_reason import StopReasonType
 
-        if result.stop_reason.stop_reason == "cancelled":
+        # Handle cases where stop_reason might be None (defensive)
+        if result.stop_reason and result.stop_reason.stop_reason == "cancelled":
             run_status = RunStatus.cancelled
-        else:
+            stop_reason = result.stop_reason.stop_reason
+        elif result.stop_reason:
             run_status = RunStatus.completed
+            stop_reason = result.stop_reason.stop_reason
+        else:
+            # Fallback: no stop_reason set (shouldn't happen but defensive)
+            logger.error(f"Run {run_id} completed without stop_reason in result, defaulting to end_turn")
+            run_status = RunStatus.completed
+            stop_reason = StopReasonType.end_turn
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=run_status, stop_reason=result.stop_reason.stop_reason),
+            update=RunUpdate(status=run_status, stop_reason=stop_reason),
             actor=actor,
         )
 
@@ -1840,20 +2137,22 @@ async def _process_message_background(
         # Update run status to failed with specific error info
         runs_manager = RunManager()
         from letta.schemas.enums import RunStatus
+        from letta.schemas.letta_stop_reason import StopReasonType
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.failed, metadata={"error": str(e)}),
+            update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error, metadata={"error": str(e)}),
             actor=actor,
         )
     except Exception as e:
         # Update run status to failed
         runs_manager = RunManager()
         from letta.schemas.enums import RunStatus
+        from letta.schemas.letta_stop_reason import StopReasonType
 
         await runs_manager.update_run_by_id_async(
             run_id=run_id,
-            update=RunUpdate(status=RunStatus.failed, metadata={"error": str(e)}),
+            update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error, metadata={"error": str(e)}),
             actor=actor,
         )
     finally:
@@ -1909,13 +2208,17 @@ async def send_message_async(
     The actual processing happens in the background, and the status can be checked using the run ID.
 
     This is "asynchronous" in the sense that it's a background run and explicitly must be fetched by the run ID.
+
+    **Note:** Sending multiple concurrent requests to the same agent can lead to undefined behavior.
+    Each agent processes messages sequentially, and concurrent requests may interleave in unexpected ways.
+    Wait for each request to complete before sending the next one. Use separate agents or conversations for parallel processing.
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         is_message_input = request.messages[0].type == MessageCreateType.message
-    except:
+    except Exception:
         is_message_input = True
     use_lettuce = headers.experimental_params.message_async and is_message_input
 
@@ -1937,7 +2240,9 @@ async def send_message_async(
 
     if use_lettuce:
         agent_state = await server.agent_manager.get_agent_by_id_async(
-            agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+            agent_id,
+            actor,
+            include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
         )
         # Allow V1 agents only if the message async flag is enabled
         is_v1_message_async_enabled = (
@@ -1970,6 +2275,10 @@ async def send_message_async(
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
             max_steps=request.max_steps,
             include_return_message_types=request.include_return_message_types,
+            override_model=request.override_model,
+            override_system=request.override_system,
+            include_compaction_messages=request.include_compaction_messages,
+            billing_context=headers.billing_context,
         ),
         label=f"process_message_background_{run.id}",
     )
@@ -1990,10 +2299,11 @@ async def send_message_async(
             async def update_failed_run():
                 runs_manager = RunManager()
                 from letta.schemas.enums import RunStatus
+                from letta.schemas.letta_stop_reason import StopReasonType
 
                 await runs_manager.update_run_by_id_async(
                     run_id=run.id,
-                    update=RunUpdate(status=RunStatus.failed, metadata={"error": error_str}),
+                    update=RunUpdate(status=RunStatus.failed, stop_reason=StopReasonType.error, metadata={"error": error_str}),
                     actor=actor,
                 )
 
@@ -2030,6 +2340,7 @@ async def reset_messages(
         actor=actor,
         add_default_initial_messages=request.add_default_initial_messages,
         needs_agent_state=not is_1_0_sdk_version(headers),
+        rebuild_system_prompt=True,
     )
 
 
@@ -2085,34 +2396,22 @@ async def preview_model_request(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(
-        agent_id, actor, include_relationships=["multi_agent_group", "memory", "sources"]
+        agent_id,
+        actor,
+        include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools", "tags"],
     )
-    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in [
-        "anthropic",
-        "openai",
-        "together",
-        "google_ai",
-        "google_vertex",
-        "bedrock",
-        "ollama",
-        "azure",
-        "xai",
-        "zai",
-        "groq",
-        "deepseek",
-    ]
 
-    if agent_eligible and model_compatible:
-        agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
-        return await agent_loop.build_request(
-            input_messages=request.messages,
-        )
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Payload inspection is not currently supported for this agent configuration.",
-        )
+    if request.override_model:
+        override_llm_config = await server.get_llm_config_from_handle_async(actor=actor, handle=request.override_model)
+        agent = agent.model_copy(update={"llm_config": override_llm_config})
+
+    agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+    return await agent_loop.build_request(
+        input_messages=request.messages,
+        client_skills=request.client_skills,
+        client_tools=request.client_tools,
+        override_system=request.override_system,
+    )
 
 
 class CompactionRequest(BaseModel):
@@ -2140,52 +2439,73 @@ async def summarize_messages(
     """
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
-    agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
-    model_compatible = agent.llm_config.model_endpoint_type in [
-        "anthropic",
-        "openai",
-        "together",
-        "google_ai",
-        "google_vertex",
-        "bedrock",
-        "ollama",
-        "azure",
-        "xai",
-        "zai",
-        "groq",
-        "deepseek",
-    ]
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group", "tools"])
 
-    if agent_eligible and model_compatible:
-        agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
-        in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
-        compaction_settings = request.compaction_settings if request else None
-        num_messages_before = len(in_context_messages)
-        summary_message, messages, summary = await agent_loop.compact(
-            messages=in_context_messages,
-            compaction_settings=compaction_settings,
-        )
-        num_messages_after = len(messages)
+    agent_loop = LettaAgentV3(agent_state=agent, actor=actor)
+    in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
 
-        # update the agent state
-        logger.info(f"Summarized {num_messages_before} messages to {num_messages_after}")
-        if num_messages_before <= num_messages_after:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Summarization failed to reduce the number of messages. You may need to use a different CompactionSettings (e.g. using `all` mode).",
-            )
-        await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
+    # Early return if there's nothing to compact (only system message, or system + summary)
+    non_system_summary_messages = [m for m in in_context_messages if m.role not in (MessageRole.system, MessageRole.summary)]
+    if not non_system_summary_messages:
+        existing_summary = None
+        for m in in_context_messages:
+            if m.role == MessageRole.summary and m.content:
+                try:
+                    summary_json = json.loads(m.content[0].text)
+                    existing_summary = summary_json.get("message")
+                except (json.JSONDecodeError, IndexError, AttributeError):
+                    existing_summary = m.content[0].text if m.content else None
+                break
         return CompactionResponse(
-            summary=summary,
-            num_messages_before=num_messages_before,
-            num_messages_after=num_messages_after,
+            summary=existing_summary,
+            num_messages_before=len(in_context_messages),
+            num_messages_after=len(in_context_messages),
         )
+
+    # Merge request compaction_settings with agent's settings (request overrides agent)
+    if agent.compaction_settings and request and request.compaction_settings:
+        # Start with agent's settings, override with new values from request
+        # Use model_fields_set to get the fields that were changed in the request (want to ignore the defaults that get set automatically)
+        compaction_settings = agent.compaction_settings.copy()  # do not mutate original agent compaction settings
+        changed_fields = request.compaction_settings.model_fields_set
+        for field in changed_fields:
+            setattr(compaction_settings, field, getattr(request.compaction_settings, field))
+
+        # If mode changed from agent's original settings and prompt not explicitly set in request, then use the default prompt for the new mode
+        # Ex: previously was sliding_window, now is all, so we need to use the default prompt for all mode
+        if (
+            "mode" in changed_fields
+            and "prompt" not in changed_fields
+            and agent.compaction_settings.mode != request.compaction_settings.mode
+        ):
+            from letta.services.summarizer.summarizer_config import get_default_prompt_for_mode
+
+            compaction_settings.prompt = get_default_prompt_for_mode(compaction_settings.mode)
     else:
+        compaction_settings = (request and request.compaction_settings) or agent.compaction_settings
+    num_messages_before = len(in_context_messages)
+    summary_message, messages, summary = await agent_loop.compact(
+        messages=in_context_messages,
+        compaction_settings=compaction_settings,
+        use_summary_role=True,
+        billing_context=headers.billing_context,
+    )
+    num_messages_after = len(messages)
+
+    # update the agent state
+    logger.info(f"Summarized {num_messages_before} messages to {num_messages_after}")
+    if num_messages_before <= num_messages_after:
+        logger.warning(f"Summarization failed to reduce the number of messages. {num_messages_before} messages -> {num_messages_after}.")
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Summarization is not currently supported for this agent configuration. Please contact Letta support.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Summarization failed to reduce the number of messages. You may not have enough messages to compact or need to use a different CompactionSettings (e.g. using `all` mode).",
         )
+    await agent_loop._checkpoint_messages(run_id=None, step_id=None, new_messages=[summary_message], in_context_messages=messages)
+    return CompactionResponse(
+        summary=summary,
+        num_messages_before=num_messages_before,
+        num_messages_after=num_messages_after,
+    )
 
 
 class CaptureMessagesRequest(BaseModel):
@@ -2216,7 +2536,7 @@ async def capture_messages(
             messages_to_persist.append(
                 Message(
                     role=MessageRole.user,
-                    content=[(TextContent(text=message["content"]))],
+                    content=[TextContent(text=message["content"])],
                     agent_id=agent_id,
                     tool_calls=None,
                     tool_call_id=None,
@@ -2228,7 +2548,7 @@ async def capture_messages(
     messages_to_persist.append(
         Message(
             role=MessageRole.assistant,
-            content=[(TextContent(text=request.response_dict["content"]))],
+            content=[TextContent(text=request.response_dict["content"])],
             agent_id=agent_id,
             model=request.model,
             tool_calls=None,
@@ -2244,6 +2564,6 @@ async def capture_messages(
     if sleeptime_group:
         sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
         sleeptime_agent_loop.response_messages = response_messages
-        run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
+        run_ids = await sleeptime_agent_loop.run_sleeptime_agents(billing_context=headers.billing_context)
 
     return JSONResponse({"success": True, "messages_created": len(response_messages), "run_ids": run_ids})

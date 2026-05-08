@@ -9,6 +9,7 @@ from sqlalchemy.pool import ConnectionPoolEntry, Pool
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
+from letta.settings import settings
 
 logger = get_logger(__name__)
 
@@ -27,12 +28,13 @@ class DatabasePoolMonitor:
             return
 
         try:
-            self._setup_pool_listeners(engine.pool, engine_name)
+            pool_mode = "client_pooling_disabled" if settings.disable_sqlalchemy_pooling else "client_pooling_enabled"
+            self._setup_pool_listeners(engine.pool, engine_name, pool_mode)
             logger.info(f"Database pool monitoring initialized for engine: {engine_name}")
         except Exception as e:
             logger.error(f"Failed to setup pool monitoring for {engine_name}: {e}")
 
-    def _setup_pool_listeners(self, pool: Pool, engine_name: str) -> None:
+    def _setup_pool_listeners(self, pool: Pool, engine_name: str, pool_mode: str) -> None:
         """Set up event listeners for the connection pool."""
 
         @event.listens_for(pool, "connect")
@@ -53,6 +55,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "connect",
                     **get_ctx_attributes(),
                 }
@@ -68,6 +71,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "first_connect",
                     **get_ctx_attributes(),
                 }
@@ -91,6 +95,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     **get_ctx_attributes(),
                 }
                 # Record current pool statistics
@@ -99,8 +104,17 @@ class DatabasePoolMonitor:
                     MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
                     MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
                     MetricRegistry().db_pool_connections_total_gauge.set(pool_stats["total"], attributes=attrs)
+                    MetricRegistry().db_pool_in_use_gauge.set(pool_stats["checked_out"], attributes=attrs)
+                    utilization_ratio = (pool_stats["checked_out"] / pool_stats["total"]) if pool_stats["total"] > 0 else 0.0
+                    MetricRegistry().db_pool_utilization_ratio_gauge.set(utilization_ratio, attributes=attrs)
+                    waiters = self._get_pool_waiters(pool)
+                    MetricRegistry().db_pool_waiters_gauge.set(waiters, attributes=attrs)
                     if pool_stats["overflow"] is not None:
                         MetricRegistry().db_pool_connections_overflow_gauge.set(pool_stats["overflow"], attributes=attrs)
+                else:
+                    MetricRegistry().db_pool_in_use_gauge.set(0, attributes=attrs)
+                    MetricRegistry().db_pool_utilization_ratio_gauge.set(0.0, attributes=attrs)
+                    MetricRegistry().db_pool_waiters_gauge.set(0, attributes=attrs)
 
                 # Record checkout event
                 attrs["event"] = "checkout"
@@ -128,6 +142,7 @@ class DatabasePoolMonitor:
 
                         attrs = {
                             "engine_name": engine_name,
+                            "pool_mode": pool_mode,
                             **get_ctx_attributes(),
                         }
                         MetricRegistry().db_pool_connection_duration_ms_histogram.record(duration_ms, attributes=attrs)
@@ -139,6 +154,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     **get_ctx_attributes(),
                 }
 
@@ -147,6 +163,9 @@ class DatabasePoolMonitor:
                     pool_stats = self._get_pool_stats(pool)
                     MetricRegistry().db_pool_connections_checked_out_gauge.set(pool_stats["checked_out"], attributes=attrs)
                     MetricRegistry().db_pool_connections_available_gauge.set(pool_stats["available"], attributes=attrs)
+                    MetricRegistry().db_pool_in_use_gauge.set(pool_stats["checked_out"], attributes=attrs)
+                    utilization_ratio = (pool_stats["checked_out"] / pool_stats["total"]) if pool_stats["total"] > 0 else 0.0
+                    MetricRegistry().db_pool_utilization_ratio_gauge.set(utilization_ratio, attributes=attrs)
 
                 # Record checkin event
                 attrs["event"] = "checkin"
@@ -168,6 +187,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "invalidate",
                     "exception_type": type(exception).__name__ if exception else "unknown",
                     **get_ctx_attributes(),
@@ -185,6 +205,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "soft_invalidate",
                     "exception_type": type(exception).__name__ if exception else "unknown",
                     **get_ctx_attributes(),
@@ -207,6 +228,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "close",
                     **get_ctx_attributes(),
                 }
@@ -222,6 +244,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "close_detached",
                     **get_ctx_attributes(),
                 }
@@ -243,6 +266,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "detach",
                     **get_ctx_attributes(),
                 }
@@ -259,6 +283,7 @@ class DatabasePoolMonitor:
 
                 attrs = {
                     "engine_name": engine_name,
+                    "pool_mode": pool_mode,
                     "event": "reset",
                     **get_ctx_attributes(),
                 }
@@ -293,6 +318,24 @@ class DatabasePoolMonitor:
         except Exception as e:
             logger.info(f"Failed to get pool stats: {e}")
         return stats
+
+    @staticmethod
+    def _get_pool_waiters(pool: Pool) -> int:
+        """Best-effort waiter count for QueuePool internals.
+
+        SQLAlchemy does not expose waiter count in public APIs. We use private
+        queue condition state when available and fall back to 0.
+        """
+        try:
+            if not isinstance(pool, QueuePool):
+                return 0
+
+            waiters = getattr(getattr(pool._pool, "not_empty", None), "_waiters", None)
+            if waiters is None:
+                return 0
+            return len(waiters)
+        except Exception:
+            return 0
 
 
 # Global instance

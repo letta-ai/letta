@@ -120,6 +120,7 @@ class LettaAgentBatch(BaseAgent):
         self.job_manager = job_manager
         self.actor = actor
         self.max_steps = max_steps
+        self.client_skills: list = []
 
     @trace_method
     async def step_until_request(
@@ -217,7 +218,7 @@ class LettaAgentBatch(BaseAgent):
 
         if batch_items:
             log_event(name="bulk_create_batch_items")
-            batch_items_persisted = await self.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=self.actor)
+            await self.batch_manager.create_llm_batch_items_bulk_async(batch_items, actor=self.actor)
 
         log_event(name="return_batch_response")
         return LettaBatchResponse(
@@ -604,7 +605,7 @@ class LettaAgentBatch(BaseAgent):
     def _prepare_tools_per_agent(agent_state: AgentState, tool_rules_solver: ToolRulesSolver) -> List[dict]:
         tools = [t for t in agent_state.tools if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}]
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
-        return [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        return [enable_strict_mode(t.json_schema, strict=agent_state.llm_config.strict) for t in tools if t.name in set(valid_tool_names)]
 
     async def _prepare_in_context_messages_per_agent_async(
         self, agent_state: AgentState, input_messages: List[MessageCreate]
@@ -613,6 +614,7 @@ class LettaAgentBatch(BaseAgent):
             input_messages, agent_state, self.message_manager, self.actor, run_id=None
         )
 
+        self.conversation_id = None
         in_context_messages = await self._rebuild_memory_async(current_in_context_messages + new_in_context_messages, agent_state)
         return in_context_messages
 

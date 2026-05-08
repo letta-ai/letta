@@ -5,7 +5,7 @@ from copy import copy
 from enum import Enum
 from inspect import getdoc, isclass
 from types import NoneType
-from typing import Any, Callable, List, Optional, Tuple, Type, Union, _GenericAlias, get_args, get_origin
+from typing import Any, Callable, List, Optional, Tuple, Type, Union, _GenericAlias, get_args, get_origin  # type: ignore[attr-defined]
 
 from docstring_parser import parse
 from pydantic import BaseModel, create_model
@@ -58,13 +58,13 @@ def map_pydantic_type_to_gbnf(pydantic_type: Type[Any]) -> str:
 
     elif isclass(pydantic_type) and issubclass(pydantic_type, BaseModel):
         return format_model_and_field_name(pydantic_type.__name__)
-    elif get_origin(pydantic_type) == list:
+    elif get_origin(pydantic_type) is list:
         element_type = get_args(pydantic_type)[0]
         return f"{map_pydantic_type_to_gbnf(element_type)}-list"
-    elif get_origin(pydantic_type) == set:
+    elif get_origin(pydantic_type) is set:
         element_type = get_args(pydantic_type)[0]
         return f"{map_pydantic_type_to_gbnf(element_type)}-set"
-    elif get_origin(pydantic_type) == Union:
+    elif get_origin(pydantic_type) is Union:
         union_types = get_args(pydantic_type)
         union_rules = [map_pydantic_type_to_gbnf(ut) for ut in union_types]
         return f"union-{'-or-'.join(union_rules)}"
@@ -73,7 +73,7 @@ def map_pydantic_type_to_gbnf(pydantic_type: Type[Any]) -> str:
         return f"optional-{map_pydantic_type_to_gbnf(element_type)}"
     elif isclass(pydantic_type):
         return f"{PydanticDataType.CUSTOM_CLASS.value}-{format_model_and_field_name(pydantic_type.__name__)}"
-    elif get_origin(pydantic_type) == dict:
+    elif get_origin(pydantic_type) is dict:
         key_type, value_type = get_args(pydantic_type)
         return f"custom-dict-key-type-{format_model_and_field_name(map_pydantic_type_to_gbnf(key_type))}-value-type-{format_model_and_field_name(map_pydantic_type_to_gbnf(value_type))}"
     else:
@@ -299,7 +299,7 @@ def generate_gbnf_rule_for_type(
         enum_rule = f"{model_name}-{field_name} ::= {' | '.join(enum_values)}"
         rules.append(enum_rule)
         gbnf_type, rules = model_name + "-" + field_name, rules
-    elif get_origin(field_type) == list:  # Array
+    elif get_origin(field_type) is list:  # Array
         element_type = get_args(field_type)[0]
         element_rule_name, additional_rules = generate_gbnf_rule_for_type(
             model_name, f"{field_name}-element", element_type, is_optional, processed_models, created_rules
@@ -309,7 +309,7 @@ def generate_gbnf_rule_for_type(
         rules.append(array_rule)
         gbnf_type, rules = model_name + "-" + field_name, rules
 
-    elif get_origin(field_type) == set or field_type == set:  # Array
+    elif get_origin(field_type) is set or field_type is set:  # Array
         element_type = get_args(field_type)[0]
         element_rule_name, additional_rules = generate_gbnf_rule_for_type(
             model_name, f"{field_name}-element", element_type, is_optional, processed_models, created_rules
@@ -320,7 +320,7 @@ def generate_gbnf_rule_for_type(
         gbnf_type, rules = model_name + "-" + field_name, rules
 
     elif gbnf_type.startswith("custom-class-"):
-        nested_model_rules, field_types = get_members_structure(field_type, gbnf_type)
+        nested_model_rules, _field_types = get_members_structure(field_type, gbnf_type)
         rules.append(nested_model_rules)
     elif gbnf_type.startswith("custom-dict-"):
         key_type, value_type = get_args(field_type)
@@ -502,15 +502,15 @@ def generate_gbnf_grammar(model: Type[BaseModel], processed_models: set, created
         model_rule += '"\\n" ws "}"'
         model_rule += '"\\n" markdown-code-block'
         has_special_string = True
-    all_rules = [model_rule] + nested_rules
+    all_rules = [model_rule, *nested_rules]
 
     return all_rules, has_special_string
 
 
 def generate_gbnf_grammar_from_pydantic_models(
     models: List[Type[BaseModel]],
-    outer_object_name: str = None,
-    outer_object_content: str = None,
+    outer_object_name: str | None = None,
+    outer_object_content: str | None = None,
     list_of_outputs: bool = False,
     add_inner_thoughts: bool = False,
     allow_only_inner_thoughts: bool = False,
@@ -704,11 +704,11 @@ def generate_markdown_documentation(
                 #    continue
                 if isclass(field_type) and issubclass(field_type, BaseModel):
                     pyd_models.append((field_type, False))
-                if get_origin(field_type) == list:
+                if get_origin(field_type) is list:
                     element_type = get_args(field_type)[0]
                     if isclass(element_type) and issubclass(element_type, BaseModel):
                         pyd_models.append((element_type, False))
-                if get_origin(field_type) == Union:
+                if get_origin(field_type) is Union:
                     element_types = get_args(field_type)
                     for element_type in element_types:
                         if isclass(element_type) and issubclass(element_type, BaseModel):
@@ -747,14 +747,14 @@ def generate_field_markdown(
     field_info = model.model_fields.get(field_name)
     field_description = field_info.description if field_info and field_info.description else ""
 
-    if get_origin(field_type) == list:
+    if get_origin(field_type) is list:
         element_type = get_args(field_type)[0]
         field_text = f"{indent}{field_name} ({field_type.__name__} of {element_type.__name__})"
         if field_description != "":
             field_text += ": "
         else:
             field_text += "\n"
-    elif get_origin(field_type) == Union:
+    elif get_origin(field_type) is Union:
         element_types = get_args(field_type)
         types = []
         for element_type in element_types:
@@ -857,11 +857,11 @@ def generate_text_documentation(
             for name, field_type in model.__annotations__.items():
                 # if name == "markdown_code_block":
                 #    continue
-                if get_origin(field_type) == list:
+                if get_origin(field_type) is list:
                     element_type = get_args(field_type)[0]
                     if isclass(element_type) and issubclass(element_type, BaseModel):
                         pyd_models.append((element_type, False))
-                if get_origin(field_type) == Union:
+                if get_origin(field_type) is Union:
                     element_types = get_args(field_type)
                     for element_type in element_types:
                         if isclass(element_type) and issubclass(element_type, BaseModel):
@@ -905,14 +905,14 @@ def generate_field_text(
     field_info = model.model_fields.get(field_name)
     field_description = field_info.description if field_info and field_info.description else ""
 
-    if get_origin(field_type) == list:
+    if get_origin(field_type) is list:
         element_type = get_args(field_type)[0]
         field_text = f"{indent}{field_name} ({format_model_and_field_name(field_type.__name__)} of {format_model_and_field_name(element_type.__name__)})"
         if field_description != "":
             field_text += ":\n"
         else:
             field_text += "\n"
-    elif get_origin(field_type) == Union:
+    elif get_origin(field_type) is Union:
         element_types = get_args(field_type)
         types = []
         for element_type in element_types:
@@ -1015,8 +1015,8 @@ def generate_and_save_gbnf_grammar_and_documentation(
     pydantic_model_list,
     grammar_file_path="./generated_grammar.gbnf",
     documentation_file_path="./generated_grammar_documentation.md",
-    outer_object_name: str = None,
-    outer_object_content: str = None,
+    outer_object_name: str | None = None,
+    outer_object_content: str | None = None,
     model_prefix: str = "Output Model",
     fields_prefix: str = "Output Fields",
     list_of_outputs: bool = False,
@@ -1049,8 +1049,8 @@ def generate_and_save_gbnf_grammar_and_documentation(
 
 def generate_gbnf_grammar_and_documentation(
     pydantic_model_list,
-    outer_object_name: str = None,
-    outer_object_content: str = None,
+    outer_object_name: str | None = None,
+    outer_object_content: str | None = None,
     model_prefix: str = "Output Model",
     fields_prefix: str = "Output Fields",
     list_of_outputs: bool = False,
@@ -1087,8 +1087,8 @@ def generate_gbnf_grammar_and_documentation(
 
 def generate_gbnf_grammar_and_documentation_from_dictionaries(
     dictionaries: List[dict],
-    outer_object_name: str = None,
-    outer_object_content: str = None,
+    outer_object_name: str | None = None,
+    outer_object_content: str | None = None,
     model_prefix: str = "Output Model",
     fields_prefix: str = "Output Fields",
     list_of_outputs: bool = False,

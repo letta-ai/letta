@@ -95,18 +95,6 @@ class GoogleAIProvider(Provider):
             )
         return configs
 
-    def get_model_context_window(self, model_name: str) -> int | None:
-        import warnings
-
-        logger.warning("This is deprecated, use get_model_context_window_async when possible.")
-        from letta.llm_api.google_ai_client import google_ai_get_model_context_window
-
-        if model_name in LLM_MAX_CONTEXT_WINDOW:
-            return LLM_MAX_CONTEXT_WINDOW[model_name]
-        else:
-            api_key = self.api_key_enc.get_plaintext() if self.api_key_enc else None
-            return google_ai_get_model_context_window(self.base_url, api_key, model_name)
-
     async def get_model_context_window_async(self, model_name: str) -> int | None:
         from letta.llm_api.google_ai_client import google_ai_get_model_context_window_async
 

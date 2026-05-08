@@ -2,7 +2,7 @@
 # (settings.py imports from this module indirectly through log.py)
 # Import this here to avoid circular dependency at module level
 from letta.local_llm.llm_chat_completion_wrappers.chatml import ChatMLInnerMonologueWrapper
-from letta.settings import DEFAULT_WRAPPER_NAME, INNER_THOUGHTS_KWARG
+from letta.settings import INNER_THOUGHTS_KWARG
 
 DEFAULT_WRAPPER = ChatMLInnerMonologueWrapper
 INNER_THOUGHTS_KWARG_VERTEX = "thinking"

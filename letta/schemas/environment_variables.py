@@ -1,14 +1,10 @@
-import traceback
 from typing import Optional
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
-from letta.log import get_logger
 from letta.schemas.enums import PrimitiveType
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.schemas.secret import Secret
-
-logger = get_logger(__name__)
 
 
 # Base Environment Variable
@@ -22,36 +18,6 @@ class EnvironmentVariableBase(OrmMetadataBase):
     # Encrypted field (stored as Secret object, serialized to string for DB)
     # Secret class handles validation and serialization automatically via __get_pydantic_core_schema__
     value_enc: Secret | None = Field(None, description="Encrypted value as Secret object")
-
-    # TODO: remove this in favor of value_enc, this is a bad pattern but need to support for now given our agent state dependency
-    # Note: DB writes are protected by managers which explicitly write value="" to DB.
-    # This validator syncs `value` and `value_enc` for backward compatibility:
-    # - If `value_enc` is set but `value` is empty -> populate `value` from decrypted `value_enc`
-    # - If `value` is set but `value_enc` is empty -> populate `value_enc` from encrypted `value`
-    # @model_validator(mode="after")
-    # def sync_value_and_value_enc(self):
-    #     """Sync deprecated `value` field with `value_enc` for backward compatibility."""
-    #     if self.value_enc and not self.value:
-    #         # ERROR: This should not happen - all code paths should populate value via async decryption
-    #         # Log error with stack trace to identify the caller that bypassed async decryption
-    #         logger.warning(
-    #             f"Sync decryption fallback triggered for env var key={self.key}. "
-    #             f"This indicates a code path that bypassed async decryption. Stack trace:\n{''.join(traceback.format_stack())}"
-    #         )
-    #         # Decrypt value_enc -> value (for API responses)
-    #         plaintext = self.value_enc.get_plaintext()
-    #         if plaintext:
-    #             self.value = plaintext
-    #     elif self.value and not self.value_enc:
-    #         # WARNING: This triggers sync encryption - should use async encryption where possible
-    #         # Log warning with stack trace to identify the caller
-    #         logger.warning(
-    #             f"Sync encryption fallback triggered for env var key={self.key}. "
-    #             f"This indicates a code path that bypassed async encryption. Stack trace:\n{''.join(traceback.format_stack())}"
-    #         )
-    #         # Encrypt value -> value_enc (for backward compat when value is provided directly)
-    #         self.value_enc = Secret.from_plaintext(self.value)
-    #     return self
 
 
 class EnvironmentVariableCreateBase(LettaBase):

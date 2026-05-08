@@ -4,18 +4,62 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Body, Depends
 from pydantic import BaseModel, Field
 
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import TagMatchMode
 from letta.schemas.passage import Passage
+from letta.schemas.user import User as PydanticUser
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 
 router = APIRouter(prefix="/passages", tags=["passages"])
 
 
+async def _get_embedding_config_for_search(
+    server: SyncServer,
+    actor: PydanticUser,
+    agent_id: Optional[str],
+    archive_id: Optional[str],
+) -> Optional[EmbeddingConfig]:
+    """Determine which embedding config to use for a passage search.
+
+    Args:
+        server: The SyncServer instance
+        actor: The user making the request
+        agent_id: Optional agent ID to get embedding config from
+        archive_id: Optional archive ID to get embedding config from
+
+    Returns:
+        The embedding config to use, or None if not found
+
+    Priority:
+        1. If agent_id is provided, use that agent's embedding config
+        2. If archive_id is provided, use that archive's embedding config
+        3. Otherwise, try to get embedding config from any existing agent
+        4. Fall back to server default if no agents exist
+    """
+    if agent_id:
+        agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        return agent_state.embedding_config
+
+    if archive_id:
+        archive = await server.archive_manager.get_archive_by_id_async(archive_id=archive_id, actor=actor)
+        return archive.embedding_config
+
+    # Search across all passages - try to get embedding config from any agent
+    agent_count = await server.agent_manager.size_async(actor=actor)
+    if agent_count > 0:
+        agents = await server.agent_manager.list_agents_async(actor=actor, limit=1)
+        if agents:
+            return agents[0].embedding_config
+
+    # Fall back to server default
+    return server.default_embedding_config
+
+
 class PassageSearchRequest(BaseModel):
     """Request model for searching passages across archives."""
 
-    query: str = Field(..., description="Text query for semantic search")
+    query: Optional[str] = Field(None, description="Text query for semantic search")
     agent_id: Optional[str] = Field(None, description="Filter passages by agent ID")
     archive_id: Optional[str] = Field(None, description="Filter passages by archive ID")
     tags: Optional[List[str]] = Field(None, description="Optional list of tags to filter search results")
@@ -56,29 +100,16 @@ async def search_passages(
     # Convert tag_match_mode to enum
     tag_mode = TagMatchMode.ANY if request.tag_match_mode == "any" else TagMatchMode.ALL
 
-    # Determine which embedding config to use
+    # Determine embedding config (only needed when query text is provided)
+    embed_query = bool(request.query)
     embedding_config = None
-    if request.agent_id:
-        # Search by agent
-        agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=request.agent_id, actor=actor)
-        embedding_config = agent_state.embedding_config
-    elif request.archive_id:
-        # Search by archive_id
-        archive = await server.archive_manager.get_archive_by_id_async(archive_id=request.archive_id, actor=actor)
-        embedding_config = archive.embedding_config
-    else:
-        # Search across all passages in the organization
-        # Get default embedding config from any agent or use server default
-        agent_count = await server.agent_manager.size_async(actor=actor)
-        if agent_count > 0:
-            # Get first agent to derive embedding config
-            agents = await server.agent_manager.list_agents_async(actor=actor, limit=1)
-            if agents:
-                embedding_config = agents[0].embedding_config
-
-        if not embedding_config:
-            # Fall back to server default
-            embedding_config = server.default_embedding_config
+    if embed_query:
+        embedding_config = await _get_embedding_config_for_search(
+            server=server,
+            actor=actor,
+            agent_id=request.agent_id,
+            archive_id=request.archive_id,
+        )
 
     # Search passages
     passages_with_metadata = await server.agent_manager.query_agent_passages_async(
@@ -88,7 +119,7 @@ async def search_passages(
         query_text=request.query,
         limit=request.limit,
         embedding_config=embedding_config,
-        embed_query=True,
+        embed_query=embed_query,
         tags=request.tags,
         tag_match_mode=tag_mode,
         start_date=request.start_date,

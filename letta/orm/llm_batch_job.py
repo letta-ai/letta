@@ -1,6 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
+
+if TYPE_CHECKING:
+    from letta.orm.llm_batch_items import LLMBatchItem
+    from letta.orm.organization import Organization
 
 from anthropic.types.beta.messages import BetaMessageBatch
 from sqlalchemy import DateTime, ForeignKey, Index, String

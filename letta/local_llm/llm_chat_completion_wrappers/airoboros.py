@@ -130,12 +130,12 @@ class Airoboros21Wrapper(LLMChatCompletionWrapper):
                         content_json = json_loads(message["content"])
                         content_simple = content_json["message"]
                         prompt += f"\nUSER: {content_simple}"
-                    except:
+                    except Exception:
                         prompt += f"\nUSER: {message['content']}"
             elif message["role"] == "assistant":
                 prompt += f"\nASSISTANT: {message['content']}"
                 # need to add the function call if there was one
-                if "function_call" in message and message["function_call"]:
+                if message.get("function_call"):
                     prompt += f"\n{create_function_call(message['function_call'])}"
             elif message["role"] in ["function", "tool"]:
                 # TODO find a good way to add this
@@ -348,7 +348,7 @@ class Airoboros21InnerMonologueWrapper(Airoboros21Wrapper):
                         content_json = json_loads(message["content"])
                         content_simple = content_json["message"]
                         prompt += f"\n{user_prefix}: {content_simple}"
-                    except:
+                    except Exception:
                         prompt += f"\n{user_prefix}: {message['content']}"
             elif message["role"] == "assistant":
                 # Support for AutoGen naming of agents
@@ -360,7 +360,7 @@ class Airoboros21InnerMonologueWrapper(Airoboros21Wrapper):
                 prompt += f"\n{assistant_prefix}:"
                 # need to add the function call if there was one
                 inner_thoughts = message["content"]
-                if "function_call" in message and message["function_call"]:
+                if message.get("function_call"):
                     prompt += f"\n{create_function_call(message['function_call'], inner_thoughts=inner_thoughts)}"
             elif message["role"] in ["function", "tool"]:
                 # TODO find a good way to add this

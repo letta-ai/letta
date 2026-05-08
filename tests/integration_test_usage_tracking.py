@@ -17,7 +17,7 @@ import json
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import pytest
 from dotenv import load_dotenv
@@ -46,7 +46,7 @@ CACHE_TEST_CONFIGS = [
     # OpenAI gpt-4o with prompt caching (Chat Completions API)
     ("openai/gpt-4o", {"provider_type": "openai"}),
     # Gemini 3 Pro Preview with context caching
-    ("google_ai/gemini-3-pro-preview", {"provider_type": "google_ai"}),
+    ("google_ai/gemini-3.1-pro-preview", {"provider_type": "google_ai"}),
 ]
 
 REASONING_TEST_CONFIGS = [
@@ -59,7 +59,7 @@ REASONING_TEST_CONFIGS = [
     ("openai/gpt-5.1", {"provider_type": "openai", "reasoning": {"reasoning_effort": "low"}}),
     # Gemini 3 Pro Preview with thinking enabled
     (
-        "google_ai/gemini-3-pro-preview",
+        "google_ai/gemini-3.1-pro-preview",
         {"provider_type": "google_ai", "thinking_config": {"include_thoughts": True, "thinking_budget": 1024}},
     ),
 ]
@@ -400,7 +400,7 @@ async def test_run_level_usage_aggregation(
 
     try:
         # Send multiple messages to create multiple steps
-        response1: Run = await async_client.agents.messages.send_message(
+        await async_client.agents.messages.send_message(
             agent_id=agent.id,
             messages=[MessageCreateParam(role="user", content="Message 1")],
         )

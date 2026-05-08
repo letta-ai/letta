@@ -1,26 +1,21 @@
 from datetime import datetime
-from multiprocessing import Value
-from pickletools import pyunicode
 from typing import List, Literal, Optional
 
 from httpx import AsyncClient
 
 from letta.data_sources.redis_client import get_redis_client
-from letta.errors import LettaInvalidArgumentError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.log_context import update_log_context
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
-from letta.orm.message import Message as MessageModel
 from letta.orm.run import Run as RunModel
 from letta.orm.run_metrics import RunMetrics as RunMetricsModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import AgentType, ComparisonOperator, MessageRole, PrimitiveType, RunStatus
 from letta.schemas.job import LettaRequestConfig
-from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message as PydanticMessage
@@ -138,6 +133,7 @@ class RunManager:
     async def list_runs(
         self,
         actor: PydanticUser,
+        run_id: Optional[str] = None,
         agent_id: Optional[str] = None,
         agent_ids: Optional[List[str]] = None,
         statuses: Optional[List[RunStatus]] = None,
@@ -161,7 +157,7 @@ class RunManager:
     ) -> List[PydanticRun]:
         """List runs with filtering options."""
         async with db_registry.async_session() as session:
-            from sqlalchemy import func, or_, select
+            from sqlalchemy import func, select
 
             # Always join with run_metrics to get duration data
             query = (
@@ -173,6 +169,9 @@ class RunManager:
             # Filter by project_id if provided
             if project_id:
                 query = query.filter(RunModel.project_id == project_id)
+
+            if run_id:
+                query = query.filter(RunModel.id == run_id)
 
             # Handle agent filtering
             if agent_id:
@@ -451,9 +450,11 @@ class RunManager:
         # Dispatch callback outside of database session if needed
         if needs_callback:
             if refresh_result_messages:
+                # Defensive: ensure stop_reason is never None
+                stop_reason_value = pydantic_run.stop_reason if pydantic_run.stop_reason else StopReasonType.completed
                 result = LettaResponse(
                     messages=await self.get_run_messages(run_id=run_id, actor=actor),
-                    stop_reason=LettaStopReason(stop_reason=pydantic_run.stop_reason),
+                    stop_reason=LettaStopReason(stop_reason=stop_reason_value),
                     usage=await self.get_run_usage(run_id=run_id, actor=actor),
                 )
                 final_metadata["result"] = result.model_dump()
@@ -637,7 +638,13 @@ class RunManager:
                 raise NoResultFound(f"Run with id {run_id} not found")
             agent_id = run.agent_id
 
-        logger.debug(f"Cancelling run {run_id} for agent {agent_id}")
+        logger.info(
+            "[Interrupt] Processing cancellation for run=%s, agent=%s, current_status=%s, current_stop_reason=%s",
+            run_id,
+            agent_id,
+            run.status if run else "unknown",
+            run.stop_reason if run else "unknown",
+        )
 
         # Cancellation should be idempotent: if a run is already terminated, treat this as a no-op.
         # This commonly happens when a run finishes between client request and server handling.
@@ -665,8 +672,26 @@ class RunManager:
             logger.debug(f"Agent was waiting for approval, adding denial messages for run {run_id}")
             approval_request_message = current_in_context_messages[-1]
 
-            # Ensure the approval request has tool calls to deny
+            # Find ALL pending tool calls (both requiring approval and not requiring approval)
+            # The assistant message may have tool calls that didn't require approval
+            all_pending_tool_calls = []
             if approval_request_message.tool_calls:
+                all_pending_tool_calls.extend(approval_request_message.tool_calls)
+
+            # Check if there's an assistant message before the approval request with additional tool calls
+            if len(current_in_context_messages) >= 2:
+                potential_assistant_msg = current_in_context_messages[-2]
+                if potential_assistant_msg.role == MessageRole.assistant and potential_assistant_msg.tool_calls:
+                    # Add any tool calls from the assistant message that aren't already in the approval request
+                    approval_tool_call_ids = (
+                        {tc.id for tc in approval_request_message.tool_calls} if approval_request_message.tool_calls else set()
+                    )
+                    for tool_call in potential_assistant_msg.tool_calls:
+                        if tool_call.id not in approval_tool_call_ids:
+                            all_pending_tool_calls.append(tool_call)
+
+            # Ensure we have tool calls to deny
+            if all_pending_tool_calls:
                 from letta.constants import TOOL_CALL_DENIAL_ON_CANCEL
                 from letta.schemas.letta_message import ApprovalReturn
                 from letta.schemas.message import ApprovalCreate
@@ -676,15 +701,19 @@ class RunManager:
                     create_tool_returns_for_denials,
                 )
 
-                # Create denials for ALL pending tool calls
-                denials = [
-                    ApprovalReturn(
-                        tool_call_id=tool_call.id,
-                        approve=False,
-                        reason=TOOL_CALL_DENIAL_ON_CANCEL,
-                    )
-                    for tool_call in approval_request_message.tool_calls
-                ]
+                # Create denials for ALL pending tool calls (including those that didn't require approval)
+                denials = (
+                    [
+                        ApprovalReturn(
+                            tool_call_id=tool_call.id,
+                            approve=False,
+                            reason=TOOL_CALL_DENIAL_ON_CANCEL,
+                        )
+                        for tool_call in approval_request_message.tool_calls
+                    ]
+                    if approval_request_message.tool_calls
+                    else []
+                )
 
                 # Create an ApprovalCreate input with the denials
                 approval_input = ApprovalCreate(
@@ -693,16 +722,16 @@ class RunManager:
                 )
 
                 # Use the standard function to create properly formatted approval response messages
-                approval_response_messages = create_approval_response_message_from_input(
+                approval_response_messages = await create_approval_response_message_from_input(
                     agent_state=agent_state,
                     input_message=approval_input,
                     run_id=run_id,
                 )
 
                 # Create tool returns for ALL denied tool calls using shared helper
-                # This handles all pending tool calls at once since they all have the same denial reason
+                # This includes both tool calls requiring approval AND those that didn't
                 tool_returns = create_tool_returns_for_denials(
-                    tool_calls=approval_request_message.tool_calls,  # ALL pending tool calls
+                    tool_calls=all_pending_tool_calls,
                     denial_reason=TOOL_CALL_DENIAL_ON_CANCEL,
                     timezone=agent_state.timezone,
                 )
@@ -716,7 +745,7 @@ class RunManager:
                 )
 
                 # Combine approval response and tool messages
-                new_messages = approval_response_messages + [tool_message]
+                new_messages = [*approval_response_messages, tool_message]
 
                 # Checkpoint the new messages
                 from letta.agents.agent_loop import AgentLoop

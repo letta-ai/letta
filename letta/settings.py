@@ -6,8 +6,13 @@ from typing import Optional
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Load config file and apply to environment before settings are created
+# This allows YAML config values to be picked up by pydantic-settings
+from letta.config_file import apply_config_to_env
 from letta.schemas.enums import SandboxType
 from letta.services.summarizer.enums import SummarizationMode
+
+apply_config_to_env()
 
 # Define constants here to avoid circular import with letta.log
 DEFAULT_WRAPPER_NAME = "chatml"
@@ -37,7 +42,16 @@ class ToolSettings(BaseSettings):
     mcp_list_tools_timeout: float = 30.0
     mcp_execute_tool_timeout: float = 60.0
     mcp_read_from_config: bool = False  # if False, will throw if attempting to read/write from file
-    mcp_disable_stdio: bool = False
+    mcp_disable_stdio: bool = Field(
+        default=True,
+        description=(
+            "Disable MCP stdio server type. When True (default), creating or connecting to "
+            "MCP servers using stdio transport will fail. Stdio MCP servers spawn local "
+            "processes, which is not suitable for multi-tenant or shared server deployments. "
+            "Set to False for local or single-user deployments where stdio-based MCP servers "
+            "are needed (e.g., running local tools via npx or uvx)."
+        ),
+    )
 
     @property
     def modal_sandbox_enabled(self) -> bool:
@@ -100,7 +114,12 @@ class SummarizerSettings(BaseSettings):
 class ModelSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    global_max_context_window_limit: int = 32000
+    global_max_context_window_limit: int = 128000
+
+    auto_mode_enabled: bool = Field(
+        default=False,
+        description="Enable auto mode model handles (i.e. letta/auto, letta/auto-fast) in model listing",
+    )
 
     inner_thoughts_kwarg: str | None = Field(default=INNER_THOUGHTS_KWARG, description="Key used for passing in inner thoughts.")
 
@@ -131,6 +150,13 @@ class ModelSettings(BaseSettings):
     # deepseek
     deepseek_api_key: Optional[str] = None
 
+    # baseten
+    baseten_api_key: Optional[str] = None
+
+    # fireworks
+    fireworks_api_key: Optional[str] = None
+    fireworks_api_base: str = "https://api.fireworks.ai/inference/v1"
+
     # xAI / Grok
     xai_api_key: Optional[str] = None
 
@@ -141,13 +167,16 @@ class ModelSettings(BaseSettings):
     # groq
     groq_api_key: Optional[str] = None
 
+    # minimax
+    minimax_api_key: Optional[str] = None
+
     # voyageai
     voyageai_api_key: Optional[str] = None
 
     # Bedrock
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
-    aws_default_region: Optional[str] = None
+    aws_default_region: str = "us-east-1"
     bedrock_anthropic_version: Optional[str] = "bedrock-2023-05-31"
 
     # anthropic
@@ -156,12 +185,22 @@ class ModelSettings(BaseSettings):
     anthropic_sonnet_1m: bool = Field(
         default=False,
         description=(
-            "Enable 1M-token context window for Claude Sonnet 4/4.5. When true, adds the"
+            "Enable 1M-token context window for Claude Sonnet 4/4.5/4.6. When true, adds the"
             " 'context-1m-2025-08-07' beta to Anthropic requests and sets model context_window"
             " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
             " to all orgs; once GA, this flag can be removed and behavior can default to on."
         ),
         alias="ANTHROPIC_SONNET_1M",
+    )
+    anthropic_opus_1m: bool = Field(
+        default=False,
+        description=(
+            "Enable 1M-token context window for Claude Opus 4.6. When true, adds the"
+            " 'context-1m-2025-08-07' beta to Anthropic requests and sets model context_window"
+            " to 1,000,000 instead of 200,000. Note: This feature is in beta and not available"
+            " to all orgs; once GA, this flag can be removed and behavior can default to on."
+        ),
+        alias="ANTHROPIC_OPUS_1M",
     )
 
     # ollama
@@ -180,6 +219,7 @@ class ModelSettings(BaseSettings):
     gemini_base_url: str = "https://generativelanguage.googleapis.com/"
     gemini_force_minimum_thinking_budget: bool = False
     gemini_max_retries: int = 5
+    gemini_timeout_seconds: float = 600.0
 
     # google vertex
     google_cloud_project: Optional[str] = None
@@ -191,6 +231,10 @@ class ModelSettings(BaseSettings):
     # vLLM
     vllm_api_base: Optional[str] = None
     vllm_handle_base: Optional[str] = None
+
+    # SGLang
+    sglang_api_base: Optional[str] = None
+    sglang_handle_base: Optional[str] = None
 
     # lmstudio
     lmstudio_base_url: Optional[str] = None
@@ -247,7 +291,7 @@ class Settings(BaseSettings):
 
     # SSE Streaming keepalive settings
     enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")
-    keepalive_interval: float = Field(50.0, description="Seconds between keepalive messages (default: 50)")
+    keepalive_interval: float = Field(20.0, description="Seconds between keepalive messages (default: 20)")
 
     # SSE Streaming cancellation settings
     enable_cancellation_aware_streaming: bool = Field(True, description="Enable cancellation aware streaming")
@@ -278,6 +322,33 @@ class Settings(BaseSettings):
 
     plugin_register: Optional[str] = None
 
+    # Object storage (used for git-backed memory repos)
+    #
+    # Prefer configuring a single URI rather than multiple provider-specific env vars.
+    # Example:
+    #   LETTA_OBJECT_STORE_URI="gs://my-bucket/repository?project=my-gcp-project"
+    object_store_uri: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LETTA_OBJECT_STORE_URI"),
+        description="Object store URI for memory repositories (e.g., gs://bucket/prefix?project=...).",
+    )
+
+    # Optional overrides for URI query params. These are primarily useful for deployments
+    # where you want to keep the URI stable but inject environment-specific settings.
+    object_store_project: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LETTA_OBJECT_STORE_PROJECT"),
+        description="Optional project override for object store clients (e.g., GCS project).",
+    )
+
+    # memfs service URL - when set, git memory operations are proxied to the memfs service
+    # instead of running locally. This enables separating git/GCS operations into a dedicated service.
+    memfs_service_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LETTA_MEMFS_SERVICE_URL"),
+        description="URL of the memfs service (e.g., http://memfs-py:8285). When set, git memory operations use this service.",
+    )
+
     # multi agent settings
     multi_agent_send_message_max_retries: int = 3
     multi_agent_send_message_timeout: int = 20 * 60
@@ -285,6 +356,28 @@ class Settings(BaseSettings):
 
     # telemetry logging
     otel_exporter_otlp_endpoint: str | None = None  # otel default: "http://localhost:4317"
+
+    # clickhouse (for OTEL traces reader)
+    clickhouse_endpoint: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CLICKHOUSE_ENDPOINT", "letta_clickhouse_endpoint"),
+        description="ClickHouse endpoint URL",
+    )
+    clickhouse_database: str | None = Field(
+        default="otel",
+        validation_alias=AliasChoices("CLICKHOUSE_DATABASE", "letta_clickhouse_database"),
+        description="ClickHouse database name",
+    )
+    clickhouse_username: str | None = Field(
+        default="default",
+        validation_alias=AliasChoices("CLICKHOUSE_USERNAME", "letta_clickhouse_username"),
+        description="ClickHouse username",
+    )
+    clickhouse_password: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CLICKHOUSE_PASSWORD", "letta_clickhouse_password"),
+        description="ClickHouse password",
+    )
     otel_preferred_temporality: int | None = Field(
         default=1, ge=0, le=2, description="Exported metric temporality. {0: UNSPECIFIED, 1: DELTA, 2: CUMULATIVE}"
     )
@@ -295,6 +388,13 @@ class Settings(BaseSettings):
     track_stop_reason: bool = Field(default=True, description="Enable tracking stop reason on steps.")
     track_agent_run: bool = Field(default=True, description="Enable tracking agent run with cancellation support")
     track_provider_trace: bool = Field(default=True, description="Enable tracking raw llm request and response at each step")
+
+    # LLM trace storage for analytics (direct ClickHouse, bypasses OTEL for large payloads)
+    # TTL is configured in the ClickHouse DDL (default 90 days)
+    store_llm_traces: bool = Field(
+        default=False,
+        description="Enable storing LLM traces in ClickHouse for cost analytics",
+    )
 
     # FastAPI Application Settings
     uvicorn_workers: int = 1
@@ -404,6 +504,15 @@ class Settings(BaseSettings):
                 plugins[name] = {"target": target}
         return plugins
 
+    @property
+    def use_clickhouse_for_provider_traces(self) -> bool:
+        """Check if ClickHouse backend is configured for provider traces."""
+        # Access global telemetry_settings (defined at module level after this class)
+        import sys
+
+        module = sys.modules[__name__]
+        return "clickhouse" in getattr(module, "telemetry_settings").provider_trace_backends
+
 
 class TestSettings(Settings):
     model_config = SettingsConfigDict(env_prefix="letta_test_", extra="ignore")
@@ -461,6 +570,75 @@ class TelemetrySettings(BaseSettings):
         description="Primary Python package name for source code linking. Datadog uses this setting to determine which code is 'yours' vs. third-party dependencies.",
     )
 
+    # Provider trace backend selection (comma-separated for multi-backend support)
+    provider_trace_backend: str = Field(
+        default="postgres",
+        description="Provider trace storage backends (comma-separated): 'postgres', 'clickhouse', 'socket'. Example: 'postgres,socket' for dual-write.",
+    )
+    socket_path: str = Field(
+        default="/var/run/telemetry/telemetry.sock",
+        validation_alias=AliasChoices("TELEMETRY_SOCKET", "socket_path"),
+        description="Unix socket path for socket backend.",
+    )
+    source: str | None = Field(
+        default=None,
+        description="Source identifier for telemetry (memgpt-server, lettuce-py, etc.).",
+    )
+    provider_trace_pg_metadata_only: bool = Field(
+        default=False,
+        description="Write only metadata to Postgres (no request/response JSON). Requires provider_trace_metadata table to exist.",
+    )
+
+    @property
+    def provider_trace_backends(self) -> list[str]:
+        """Parse comma-separated backend list."""
+        return [b.strip() for b in self.provider_trace_backend.split(",") if b.strip()]
+
+    @property
+    def socket_backend_enabled(self) -> bool:
+        """Check if socket backend is enabled."""
+        return "socket" in self.provider_trace_backends
+
+
+class ReadinessSettings(BaseSettings):
+    """Readiness enforcement configuration. All gates default to OFF (non-breaking)."""
+
+    model_config = SettingsConfigDict(env_prefix="letta_readiness_", extra="ignore")
+
+    # Master kill switch — enables health probe integration with readiness_state module.
+    # When False (default), /v1/health/ always returns 200 regardless of internal state.
+    enforcement_enabled: bool = Field(default=False, description="Gate /v1/health/ on internal readiness state.")
+
+    # When True, /v1/health/ returns 503 during draining state (graceful shutdown signal to k8s).
+    drain_returns_503: bool = Field(default=True, description="Return HTTP 503 when readiness state is 'draining'.")
+
+    # When True, event loop lag above threshold triggers degraded state.
+    event_loop_lag_gating_enabled: bool = Field(default=False, description="Gate readiness on event loop lag threshold.")
+    event_loop_lag_threshold_ms: float = Field(
+        default=5000.0, ge=100.0, description="Event loop lag threshold (ms) for degraded transition."
+    )
+
+    # When True, fg in-flight count above threshold triggers degraded state.
+    fg_in_flight_gating_enabled: bool = Field(default=False, description="Gate readiness on foreground in-flight count.")
+    fg_in_flight_threshold: int = Field(default=10, ge=1, description="Foreground in-flight count threshold per pod.")
+
+    # When True, bg in-flight count above threshold triggers degraded state.
+    bg_in_flight_gating_enabled: bool = Field(default=False, description="Gate readiness on background in-flight count.")
+    bg_in_flight_threshold: int = Field(default=15, ge=1, description="Background in-flight count threshold per pod.")
+
+    # When True, request admission wait above threshold triggers degraded state.
+    admission_wait_gating_enabled: bool = Field(default=False, description="Gate readiness on request admission wait.")
+    admission_wait_threshold_ms: float = Field(default=300.0, ge=10.0, description="Admission wait threshold (ms) for degraded transition.")
+
+    # Stabilization window prevents flapping: state must be consistently bad for this many seconds before degrading.
+    degraded_stabilization_seconds: float = Field(
+        default=30.0, ge=0.0, description="Seconds of sustained overload before transitioning to degraded."
+    )
+    # Recovery: state must be healthy for this long before returning to ready.
+    recovery_stabilization_seconds: float = Field(
+        default=15.0, ge=0.0, description="Seconds of sustained health before recovering from degraded."
+    )
+
 
 # singleton
 settings = Settings(_env_parse_none_str="None")
@@ -470,3 +648,4 @@ tool_settings = ToolSettings()
 summarizer_settings = SummarizerSettings()
 log_settings = LogSettings()
 telemetry_settings = TelemetrySettings()
+readiness_settings = ReadinessSettings()

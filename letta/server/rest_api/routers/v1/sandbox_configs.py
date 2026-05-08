@@ -15,7 +15,6 @@ from letta.schemas.environment_variables import (
 from letta.schemas.sandbox_config import (
     LocalSandboxConfig,
     SandboxConfig as PydanticSandboxConfig,
-    SandboxConfigBase,
     SandboxConfigCreate,
     SandboxConfigUpdate,
 )

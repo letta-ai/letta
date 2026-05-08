@@ -16,7 +16,6 @@ from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
-from letta.settings import tool_settings
 
 
 def pytest_configure(config):

@@ -8,7 +8,8 @@ from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.llm_api.google_constants import GOOGLE_MODEL_FOR_API_KEY_CHECK
 from letta.llm_api.google_vertex_client import GoogleVertexClient
 from letta.log import get_logger
-from letta.settings import model_settings, settings
+from letta.schemas.llm_config import LLMConfig
+from letta.settings import model_settings
 
 logger = get_logger(__name__)
 
@@ -16,10 +17,27 @@ logger = get_logger(__name__)
 class GoogleAIClient(GoogleVertexClient):
     provider_label = "Google AI"
 
-    def _get_client(self):
-        timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
+    def _get_client(self, llm_config: Optional[LLMConfig] = None):
+        timeout_ms = int(model_settings.gemini_timeout_seconds * 1000)
+        api_key = None
+        if llm_config:
+            api_key, _, _ = self.get_byok_overrides(llm_config)
+        if not api_key:
+            api_key = model_settings.gemini_api_key
         return genai.Client(
-            api_key=model_settings.gemini_api_key,
+            api_key=api_key,
+            http_options=HttpOptions(timeout=timeout_ms),
+        )
+
+    async def _get_client_async(self, llm_config: Optional[LLMConfig] = None):
+        timeout_ms = int(model_settings.gemini_timeout_seconds * 1000)
+        api_key = None
+        if llm_config:
+            api_key, _, _ = await self.get_byok_overrides_async(llm_config)
+        if not api_key:
+            api_key = model_settings.gemini_api_key
+        return genai.Client(
+            api_key=api_key,
             http_options=HttpOptions(timeout=timeout_ms),
         )
 
@@ -82,7 +100,8 @@ async def google_ai_get_model_list_async(
     # Determine if we need to close the client at the end
     close_client = False
     if client is None:
-        client = httpx.AsyncClient()
+        # Use explicit timeout to prevent httpx.ReadTimeout errors
+        client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0))
         close_client = True
 
     try:
@@ -116,42 +135,6 @@ async def google_ai_get_model_list_async(
             await client.aclose()
 
 
-def google_ai_get_model_details(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> dict:
-    """Synchronous version to get model details from Google AI API using httpx."""
-    import httpx
-
-    from letta.utils import printd
-
-    url, headers = get_gemini_endpoint_and_headers(base_url, model, api_key, key_in_header)
-
-    try:
-        with httpx.Client() as client:
-            response = client.get(url, headers=headers)
-            printd(f"response = {response}")
-            response.raise_for_status()  # Raises HTTPStatusError for 4XX/5XX status
-            response_data = response.json()  # convert to dict from string
-            printd(f"response.json = {response_data}")
-
-            # Return the model details
-            return response_data
-
-    except httpx.HTTPStatusError as http_err:
-        # Handle HTTP errors (e.g., response 4XX, 5XX)
-        printd(f"Got HTTPError, exception={http_err}")
-        logger.error(f"HTTP Error: {http_err.response.status_code}, Message: {http_err.response.text}")
-        raise http_err
-
-    except httpx.RequestError as req_err:
-        # Handle other httpx-related errors (e.g., connection error)
-        printd(f"Got RequestException, exception={req_err}")
-        raise req_err
-
-    except Exception as e:
-        # Handle other potential errors
-        printd(f"Got unknown Exception, exception={e}")
-        raise e
-
-
 async def google_ai_get_model_details_async(
     base_url: str, api_key: str, model: str, key_in_header: bool = True, client: Optional[httpx.AsyncClient] = None
 ) -> dict:
@@ -165,7 +148,8 @@ async def google_ai_get_model_details_async(
     # Determine if we need to close the client at the end
     close_client = False
     if client is None:
-        client = httpx.AsyncClient()
+        # Use explicit timeout to prevent httpx.ReadTimeout errors
+        client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, connect=10.0))
         close_client = True
 
     try:
@@ -198,13 +182,6 @@ async def google_ai_get_model_details_async(
         # Close the client if we created it
         if close_client:
             await client.aclose()
-
-
-def google_ai_get_model_context_window(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> int:
-    model_details = google_ai_get_model_details(base_url=base_url, api_key=api_key, model=model, key_in_header=key_in_header)
-    # TODO should this be:
-    # return model_details["inputTokenLimit"] + model_details["outputTokenLimit"]
-    return int(model_details["inputTokenLimit"])
 
 
 async def google_ai_get_model_context_window_async(base_url: str, api_key: str, model: str, key_in_header: bool = True) -> int:

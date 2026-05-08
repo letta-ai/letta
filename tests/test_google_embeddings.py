@@ -2,14 +2,13 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-from letta.embeddings import GoogleEmbeddings  # Adjust the import based on your module structure
+from letta.embeddings import GoogleEmbeddings  # type: ignore[import-untyped]  # Adjust the import based on your module structure
 
 load_dotenv()
 import os
 import threading
 import time
 
-import pytest
 from letta_client import CreateBlock, Letta as LettaSDKClient, MessageCreate
 
 SERVER_PORT = 8283

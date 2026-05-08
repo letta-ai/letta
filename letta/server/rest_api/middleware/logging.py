@@ -125,6 +125,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 return response
 
         except Exception as exc:
+            import anyio
+
+            if isinstance(exc, (anyio.BrokenResourceError, anyio.ClosedResourceError)):
+                logger.info(f"Client disconnected during request: {request.method} {request.url.path}")
+                raise
+
             # Extract request context
             request_context = {
                 "method": request.method,

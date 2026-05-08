@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import List, Optional
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
 from letta.schemas.enums import PrimitiveType
@@ -48,28 +48,13 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
-    @model_validator(mode="before")
+    @field_validator("value", mode="before")
     @classmethod
-    def verify_char_limit(cls, data: Any) -> Any:
-        """Validate the character limit before model instantiation.
-
-        Notes:
-        - Runs on raw input; do not mutate input.
-        - For update schemas (e.g., BlockUpdate), `value` and `limit` may be absent.
-          In that case, only validate when both are provided.
-        """
-        if isinstance(data, dict):
-            limit = data.get("limit")
-            value = data.get("value")
-
-            # Only enforce the char limit when both are present.
-            # Pydantic will separately enforce required fields where applicable.
-            if limit is not None and value is not None and isinstance(value, str):
-                if len(value) > limit:
-                    error_msg = f"Edit failed: Exceeds {limit} character limit (requested {len(value)})"
-                    raise ValueError(error_msg)
-
-        return data
+    def sanitize_value_null_bytes(cls, v):
+        """Remove null bytes from value to prevent PostgreSQL encoding errors."""
+        if isinstance(v, str):
+            return v.replace("\x00", "")
+        return v
 
     def __setattr__(self, name, value):
         """Run validation if self.value is updated"""
@@ -87,6 +72,17 @@ class Block(BaseBlock):
     # default orm fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Block.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that last updated this Block.")
+
+    # tags - using Optional with default [] to allow None input to become empty list
+    tags: Optional[List[str]] = Field(default=[], description="The tags associated with the block.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_tags(cls, data: dict) -> dict:
+        """Convert None tags to empty list."""
+        if isinstance(data, dict) and data.get("tags") is None:
+            data["tags"] = []
+        return data
 
 
 class BlockResponse(Block):
@@ -142,6 +138,9 @@ class BlockUpdate(BaseBlock):
     value: Optional[str] = Field(None, description="Value of the block.")
     project_id: Optional[str] = Field(None, description="The associated project id.")
 
+    # tags
+    tags: Optional[List[str]] = Field(None, description="The tags to associate with the block.")
+
     model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
 
@@ -156,6 +155,9 @@ class CreateBlock(BaseBlock):
     # block templates
     is_template: bool = False
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.")
+
+    # tags
+    tags: Optional[List[str]] = Field(None, description="The tags to associate with the block.")
 
     @model_validator(mode="before")
     @classmethod

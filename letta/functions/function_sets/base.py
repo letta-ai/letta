@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Any, List, Literal, Optional
-
-from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 if TYPE_CHECKING:
+    from letta.agents.letta_agent import LettaAgent as Agent
     from letta.schemas.agent import AgentState
+
+from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
 
 
 def memory(
@@ -12,8 +13,8 @@ def memory(
     path: Optional[str] = None,
     file_text: Optional[str] = None,
     description: Optional[str] = None,
-    old_str: Optional[str] = None,
-    new_str: Optional[str] = None,
+    old_string: Optional[str] = None,
+    new_string: Optional[str] = None,
     insert_line: Optional[int] = None,
     insert_text: Optional[str] = None,
     old_path: Optional[str] = None,
@@ -32,8 +33,8 @@ def memory(
         path (Optional[str]): Path to the memory block (for str_replace, insert, delete)
         file_text (Optional[str]): The value to set in the memory block (for create)
         description (Optional[str]): The description to set in the memory block (for create, rename)
-        old_str (Optional[str]): Old text to replace (for str_replace)
-        new_str (Optional[str]): New text to replace with (for str_replace)
+        old_string (Optional[str]): Old text to replace (for str_replace)
+        new_string (Optional[str]): New text to replace with (for str_replace)
         insert_line (Optional[int]): Line number to insert at (for insert)
         insert_text (Optional[str]): Text to insert (for insert)
         old_path (Optional[str]): Old path for rename operation
@@ -44,7 +45,7 @@ def memory(
 
     Examples:
         # Replace text in a memory block
-        memory(agent_state, "str_replace", path="/memories/user_preferences", old_str="theme: dark", new_str="theme: light")
+        memory(agent_state, "str_replace", path="/memories/user_preferences", old_string="theme: dark", new_string="theme: light")
 
         # Insert text at line 5
         memory(agent_state, "insert", path="/memories/notes", insert_line=5, insert_text="New note here")
@@ -85,7 +86,7 @@ def send_message(self: "Agent", message: str) -> Optional[str]:
 
 def conversation_search(
     self: "Agent",
-    query: str,
+    query: Optional[str] = None,
     roles: Optional[List[Literal["assistant", "user", "tool"]]] = None,
     limit: Optional[int] = None,
     start_date: Optional[str] = None,
@@ -95,7 +96,7 @@ def conversation_search(
     Search prior conversation history using hybrid search (text + semantic similarity).
 
     Args:
-        query (str): String to search for using both text matching and semantic similarity.
+        query (Optional[str]): String to search for using both text matching and semantic similarity. If not provided, returns messages based on other filters (time range, roles).
         roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
         limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
         start_date (Optional[str]): Filter results to messages created on or after this date (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes messages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
@@ -122,6 +123,10 @@ def conversation_search(
 
         # Search with limit
         conversation_search(query="debugging", limit=10)
+
+        # Time-range only search (no query)
+        conversation_search(start_date="2024-01-15", end_date="2024-01-20")
+        # Returns all messages from Jan 15 through Jan 20
 
     Returns:
         str: Query result string containing matching messages with timestamps and content.
@@ -238,7 +243,7 @@ async def archival_memory_search(
     raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 
 
-def core_memory_append(agent_state: "AgentState", label: str, content: str) -> Optional[str]:  # type: ignore
+def core_memory_append(agent_state: "AgentState", label: str, content: str) -> str:  # type: ignore
     """
     Append to the contents of core memory.
 
@@ -247,15 +252,15 @@ def core_memory_append(agent_state: "AgentState", label: str, content: str) -> O
         content (str): Content to write to the memory. All unicode (including emojis) are supported.
 
     Returns:
-        Optional[str]: None is always returned as this function does not produce a response.
+        str: The updated value of the memory block.
     """
     current_value = str(agent_state.memory.get_block(label).value)
     new_value = current_value + "\n" + str(content)
     agent_state.memory.update_block_value(label=label, value=new_value)
-    return None
+    return new_value
 
 
-def core_memory_replace(agent_state: "AgentState", label: str, old_content: str, new_content: str) -> Optional[str]:  # type: ignore
+def core_memory_replace(agent_state: "AgentState", label: str, old_content: str, new_content: str) -> str:  # type: ignore
     """
     Replace the contents of core memory. To delete memories, use an empty string for new_content.
 
@@ -265,14 +270,14 @@ def core_memory_replace(agent_state: "AgentState", label: str, old_content: str,
         new_content (str): Content to write to the memory. All unicode (including emojis) are supported.
 
     Returns:
-        Optional[str]: None is always returned as this function does not produce a response.
+        str: The updated value of the memory block.
     """
     current_value = str(agent_state.memory.get_block(label).value)
     if old_content not in current_value:
         raise ValueError(f"Old content '{old_content}' not found in memory block '{label}'")
     new_value = current_value.replace(str(old_content), str(new_content))
     agent_state.memory.update_block_value(label=label, value=new_value)
-    return None
+    return new_value
 
 
 def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
@@ -303,125 +308,118 @@ SNIPPET_LINES: int = 4
 
 
 # Based off of: https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/tools/edit.py?ref=musings.yasyf.com#L154
-def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str: str) -> str:  # type: ignore
+def memory_replace(agent_state: "AgentState", label: str, old_string: str, new_string: str) -> str:  # type: ignore
     """
     The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.
     Do NOT attempt to replace long strings, e.g. do not attempt to replace the entire contents of a memory block with a new string.
 
     Args:
         label (str): Section of the memory to be edited, identified by its label.
-        old_str (str): The text to replace (must match exactly, including whitespace and indentation).
-        new_str (str): The new text to insert in place of the old text. Do not include line number prefixes.
+        old_string (str): The text to replace (must match exactly, including whitespace and indentation).
+        new_string (str): The new text to insert in place of the old text. Do not include line number prefixes.
 
     Examples:
         # Update a block containing information about the user
-        memory_replace(label="human", old_str="Their name is Alice", new_str="Their name is Bob")
+        memory_replace(label="human", old_string="Their name is Alice", new_string="Their name is Bob")
 
         # Update a block containing a todo list
-        memory_replace(label="todos", old_str="- [ ] Step 5: Search the web", new_str="- [x] Step 5: Search the web")
+        memory_replace(label="todos", old_string="- [ ] Step 5: Search the web", new_string="- [x] Step 5: Search the web")
 
         # Pass an empty string to
-        memory_replace(label="human", old_str="Their name is Alice", new_str="")
+        memory_replace(label="human", old_string="Their name is Alice", new_string="")
 
         # Bad example - do NOT add (view-only) line numbers to the args
-        memory_replace(label="human", old_str="1: Their name is Alice", new_str="1: Their name is Bob")
+        memory_replace(label="human", old_string="1: Their name is Alice", new_string="1: Their name is Bob")
 
         # Bad example - do NOT include the line number warning either
-        memory_replace(label="human", old_str="# NOTE: Line numbers shown below (with arrows like '1→') are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\n1→ Their name is Alice", new_str="1→ Their name is Bob")
+        memory_replace(label="human", old_string="# NOTE: Line numbers shown below (with arrows like '1→') are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\n1→ Their name is Alice", new_string="1→ Their name is Bob")
 
         # Good example - no line numbers or line number warning (they are view-only), just the text
-        memory_replace(label="human", old_str="Their name is Alice", new_str="Their name is Bob")
+        memory_replace(label="human", old_string="Their name is Alice", new_string="Their name is Bob")
 
     Returns:
-        str: The success message
+        str: The updated value of the memory block.
     """
     import re
 
-    if bool(re.search(r"\nLine \d+: ", old_str)):
+    if bool(re.search(r"\nLine \d+: ", old_string)):
         raise ValueError(
-            "old_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+            "old_string contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
         )
-    if CORE_MEMORY_LINE_NUMBER_WARNING in old_str:
+    if CORE_MEMORY_LINE_NUMBER_WARNING in old_string:
         raise ValueError(
-            "old_str contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+            "old_string contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
         )
-    if bool(re.search(r"\nLine \d+: ", new_str)):
+    if bool(re.search(r"\nLine \d+: ", new_string)):
         raise ValueError(
-            "new_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+            "new_string contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
         )
 
-    old_str = str(old_str).expandtabs()
-    new_str = str(new_str).expandtabs()
+    old_string = str(old_string).expandtabs()
+    new_string = str(new_string).expandtabs()
     current_value = str(agent_state.memory.get_block(label).value).expandtabs()
 
-    # Check if old_str is unique in the block
-    occurences = current_value.count(old_str)
+    # Check if old_string is unique in the block
+    occurences = current_value.count(old_string)
     if occurences == 0:
-        raise ValueError(f"No replacement was performed, old_str `{old_str}` did not appear verbatim in memory block with label `{label}`.")
+        raise ValueError(
+            f"No replacement was performed, old_string `{old_string}` did not appear verbatim in memory block with label `{label}`."
+        )
     elif occurences > 1:
         content_value_lines = current_value.split("\n")
-        lines = [idx + 1 for idx, line in enumerate(content_value_lines) if old_str in line]
+        lines = [idx + 1 for idx, line in enumerate(content_value_lines) if old_string in line]
         raise ValueError(
-            f"No replacement was performed. Multiple occurrences of old_str `{old_str}` in lines {lines}. Please ensure it is unique."
+            f"No replacement was performed. Multiple occurrences of old_string `{old_string}` in lines {lines}. Please ensure it is unique."
         )
 
-    # Replace old_str with new_str
-    new_value = current_value.replace(str(old_str), str(new_str))
+    # Replace old_string with new_string
+    new_value = current_value.replace(str(old_string), str(new_string))
 
     # Write the new content to the block
     agent_state.memory.update_block_value(label=label, value=new_value)
 
     # Create a snippet of the edited section
     # SNIPPET_LINES = 3
-    # replacement_line = current_value.split(old_str)[0].count("\n")
+    # replacement_line = current_value.split(old_string)[0].count("\n")
     # start_line = max(0, replacement_line - SNIPPET_LINES)
-    # end_line = replacement_line + SNIPPET_LINES + new_str.count("\n")
+    # end_line = replacement_line + SNIPPET_LINES + new_string.count("\n")
     # snippet = "\n".join(new_value.split("\n")[start_line : end_line + 1])
 
-    # Prepare the success message
-    success_msg = f"The core memory block with label `{label}` has been edited. "
-    # success_msg += self._make_output(
-    #     snippet, f"a snippet of {path}", start_line + 1
-    # )
-    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
-    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
-
-    # return None
-    return success_msg
+    return new_value
 
 
-def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_line: int = -1) -> Optional[str]:  # type: ignore
+def memory_insert(agent_state: "AgentState", label: str, new_string: str, insert_line: int = -1) -> str:  # type: ignore
     """
     The memory_insert command allows you to insert text at a specific location in a memory block.
 
     Args:
         label (str): Section of the memory to be edited, identified by its label.
-        new_str (str): The text to insert. Do not include line number prefixes.
+        new_string (str): The text to insert. Do not include line number prefixes.
         insert_line (int): The line number after which to insert the text (0 for beginning of file). Defaults to -1 (end of the file).
 
     Examples:
         # Update a block containing information about the user (append to the end of the block)
-        memory_insert(label="customer", new_str="The customer's ticket number is 12345")
+        memory_insert(label="customer", new_string="The customer's ticket number is 12345")
 
         # Update a block containing information about the user (insert at the beginning of the block)
-        memory_insert(label="customer", new_str="The customer's ticket number is 12345", insert_line=0)
+        memory_insert(label="customer", new_string="The customer's ticket number is 12345", insert_line=0)
 
     Returns:
         Optional[str]: None is always returned as this function does not produce a response.
     """
     import re
 
-    if bool(re.search(r"\nLine \d+: ", new_str)):
+    if bool(re.search(r"\nLine \d+: ", new_string)):
         raise ValueError(
-            "new_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+            "new_string contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
         )
-    if CORE_MEMORY_LINE_NUMBER_WARNING in new_str:
+    if CORE_MEMORY_LINE_NUMBER_WARNING in new_string:
         raise ValueError(
-            "new_str contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+            "new_string contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
         )
 
     current_value = str(agent_state.memory.get_block(label).value).expandtabs()
-    new_str = str(new_str).expandtabs()
+    new_string = str(new_string).expandtabs()
     current_value_lines = current_value.split("\n")
     n_lines = len(current_value_lines)
 
@@ -434,11 +432,11 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
         )
 
     # Insert the new string as a line
-    new_str_lines = new_str.split("\n")
-    new_value_lines = current_value_lines[:insert_line] + new_str_lines + current_value_lines[insert_line:]
-    snippet_lines = (
+    new_string_lines = new_string.split("\n")
+    new_value_lines = current_value_lines[:insert_line] + new_string_lines + current_value_lines[insert_line:]
+    (
         current_value_lines[max(0, insert_line - SNIPPET_LINES) : insert_line]
-        + new_str_lines
+        + new_string_lines
         + current_value_lines[insert_line : insert_line + SNIPPET_LINES]
     )
 
@@ -449,71 +447,45 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
     # Write into the block
     agent_state.memory.update_block_value(label=label, value=new_value)
 
-    # Prepare the success message
-    success_msg = f"The core memory block with label `{label}` has been edited. "
-    # success_msg += self._make_output(
-    #     snippet,
-    #     "a snippet of the edited file",
-    #     max(1, insert_line - SNIPPET_LINES + 1),
-    # )
-    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
-    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
-
-    return success_msg
+    return new_value
 
 
 def memory_apply_patch(agent_state: "AgentState", label: str, patch: str) -> str:  # type: ignore
     """
-    Apply a unified-diff style patch to a memory block by anchoring on content and context (not line numbers).
+    Apply a simplified unified-diff style patch to one or more memory blocks.
 
-    The patch format is a simplified unified diff that supports one or more hunks. Each hunk may optionally
-    start with a line beginning with `@@` and then contains lines that begin with one of:
-    - " " (space): context lines that must match the current memory content
-    - "-": lines to remove (must match exactly in the current content)
-    - "+": lines to add
+    Backwards compatible behavior:
+    - If `patch` contains no "***" headers, it applies the patch to the single memory block
+      identified by `label`.
 
-    Notes:
-    - Do not include line number prefixes like "Line 12:" anywhere in the patch. Line numbers are for display only.
+    Extended, codex-style behavior (multi-block):
+    - `*** Add Block: <label>`
+        - Optional next line: `Description: <text>`
+        - File contents are given by subsequent lines starting with `+`
+    - `*** Delete Block: <label>`
+    - `*** Update Block: <label>`
+        - Patch body is the same simplified unified diff format (lines start with " ", "-", "+")
+        - Optional "@@" lines can be used to delimit hunks
+    - `*** Move to: <new_label>`
+        - Renames the most recent block referenced by an Add/Update/Delete header
+
+    - Do not include line number prefixes like "12→" anywhere in the patch. Line numbers are for display only.
     - Do not include the line-number warning banner. Provide only the text to edit.
     - Tabs are normalized to spaces for matching consistency.
 
     Args:
-        label (str): The memory block to edit, identified by its label.
-        patch (str): The simplified unified-diff patch text composed of context (" "), deletion ("-"), and addition ("+") lines. Optional
-            lines beginning with "@@" can be used to delimit hunks. Do not include visual line numbers or warning banners.
-
-    Examples:
-        Simple replacement:
-            label="human",
-            patch:
-                @@
-                -Their name is Alice
-                +Their name is Bob
-
-        Replacement with surrounding context for disambiguation:
-            label="persona",
-            patch:
-                @@
-                 Persona:
-                -Friendly and curious
-                +Friendly, curious, and precise
-                 Likes: Hiking
-
-        Insertion (no deletions) between two context lines:
-            label="todos",
-            patch:
-                @@
-                 - [ ] Step 1: Gather requirements
-                 + [ ] Step 1.5: Clarify stakeholders
-                 - [ ] Step 2: Draft design
+        label (str): The label of the memory block to patch. Required for single-block mode (when patch contains no "***" headers). Set to empty string "" when using multi-block mode with "*** Add Block:", "*** Delete Block:", or "*** Update Block:" headers.
+        patch (str): The unified diff-style patch to apply. Can be either: (1) a simple unified diff for single-block mode, or (2) a multi-block patch with "***" headers for creating, deleting, updating, or renaming multiple blocks.
 
     Returns:
         str: A success message if the patch applied cleanly; raises ValueError otherwise.
+
+
     """
     raise NotImplementedError("This should never be invoked directly. Contact Letta if you see this error message.")
 
 
-def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> None:
+def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> str:
     """
     The memory_rethink command allows you to completely rewrite the contents of a memory block. Use this tool to make large sweeping changes (e.g. when you want to condense or reorganize the memory blocks), do NOT use this tool to make small precise edits (e.g. add or remove a line, replace a specific string, etc).
 
@@ -542,17 +514,7 @@ def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> No
         agent_state.memory.set_block(new_block)
 
     agent_state.memory.update_block_value(label=label, value=new_memory)
-
-    # Prepare the success message
-    success_msg = f"The core memory block with label `{label}` has been edited. "
-    # success_msg += self._make_output(
-    #     snippet, f"a snippet of {path}", start_line + 1
-    # )
-    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
-    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
-
-    # return None
-    return success_msg
+    return new_memory
 
 
 def memory_finish_edits(agent_state: "AgentState") -> None:  # type: ignore

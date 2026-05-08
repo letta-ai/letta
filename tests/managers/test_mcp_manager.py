@@ -1,105 +1,18 @@
-import json
-import logging
-import os
-import random
-import re
-import string
-import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import List
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from _pytest.python_api import approx
-from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 
 # Import shared fixtures and constants from conftest
-from conftest import (
-    CREATE_DELAY_SQLITE,
-    DEFAULT_EMBEDDING_CONFIG,
-    USING_SQLITE,
-)
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.orm.exc import StaleDataError
-
-from letta.config import LettaConfig
 from letta.constants import (
-    BASE_MEMORY_TOOLS,
-    BASE_SLEEPTIME_TOOLS,
-    BASE_TOOLS,
-    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
-    BASE_VOICE_SLEEPTIME_TOOLS,
-    BUILTIN_TOOLS,
-    DEFAULT_ORG_ID,
-    DEFAULT_ORG_NAME,
-    FILES_TOOLS,
-    LETTA_TOOL_EXECUTION_DIR,
-    LETTA_TOOL_SET,
-    LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
-    MULTI_AGENT_TOOLS,
 )
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
-from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
-from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer
-from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
-from letta.orm import Base, Block
-from letta.orm.block_history import BlockHistory
-from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
-from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
-    ActorType,
-    AgentStepStatus,
-    FileProcessingStatus,
-    JobStatus,
-    JobType,
-    MessageRole,
-    ProviderType,
-    SandboxType,
-    StepStatus,
-    TagMatchMode,
     ToolType,
-    VectorDBProvider,
 )
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
-from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import BatchJob, Job, Job as PydanticJob, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
-from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
-from letta.schemas.passage import Passage as PydanticPassage
-from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.run import Run as PydanticRun
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.source import Source as PydanticSource, SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser, UserUpdate
 from letta.server.db import db_registry
-from letta.server.server import SyncServer
-from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
-from letta.services.step_manager import FeedbackType
-from letta.settings import settings, tool_settings
-from letta.utils import calculate_file_defaults_based_on_context_window
-from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
-from tests.utils import random_string
+from letta.settings import settings
 
 # ======================================================================================================================
 # MCPManager Tests
@@ -158,7 +71,7 @@ async def test_create_mcp_server(mock_get_client, server, default_user):
     # Test with a valid SSEServerConfig
     mcp_server_name = "coingecko"
     server_url = "https://mcp.api.coingecko.com/sse"
-    sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
+    SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
     mcp_sse_server = MCPServer(server_name=mcp_server_name, server_type=MCPServerType.SSE, server_url=server_url)
     created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_sse_server, actor=default_user)
     print(created_server)
@@ -200,7 +113,7 @@ async def test_create_mcp_server(mock_get_client, server, default_user):
 async def test_create_mcp_server_with_tools(mock_get_client, server, default_user):
     """Test that creating an MCP server automatically syncs and persists its tools."""
     from letta.functions.mcp_client.types import MCPToolHealth
-    from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig
+    from letta.schemas.mcp import MCPServer, MCPServerType
     from letta.settings import tool_settings
 
     if tool_settings.mcp_read_from_config:
@@ -795,7 +708,7 @@ async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, d
 @pytest.mark.asyncio
 async def test_mcp_server_resync_tools(server, default_user, default_organization):
     """Test that resyncing MCP server tools correctly handles added, deleted, and updated tools."""
-    from unittest.mock import AsyncMock, MagicMock, patch
+    from unittest.mock import AsyncMock, patch
 
     from letta.functions.mcp_client.types import MCPTool, MCPToolHealth
     from letta.schemas.mcp import MCPServer as PydanticMCPServer, MCPServerType
@@ -884,7 +797,7 @@ async def test_mcp_server_resync_tools(server, default_user, default_organizatio
 
         # Verify tool2 was actually deleted
         try:
-            deleted_tool = await server.tool_manager.get_tool_by_id_async(tool_id=tool2.id, actor=default_user)
+            await server.tool_manager.get_tool_by_id_async(tool_id=tool2.id, actor=default_user)
             assert False, "Tool2 should have been deleted"
         except Exception:
             pass  # Expected - tool should be deleted

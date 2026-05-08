@@ -10,8 +10,6 @@ import json
 import os
 
 # Add the app directory to path to import our crypto utils
-import sys
-from pathlib import Path
 from typing import Sequence, Union
 
 import sqlalchemy as sa

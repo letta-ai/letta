@@ -23,11 +23,11 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.orm.user import User
 from letta.otel.tracing import log_event, trace_method
-from letta.schemas.enums import ProviderCategory
+from letta.schemas.enums import LLMCallType, ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace
 from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
@@ -167,8 +167,8 @@ def create(
         printd("unsetting function_call because functions is None")
         function_call = None
 
-    # openai
-    if llm_config.model_endpoint_type == "openai":
+    # openai and openrouter (OpenAI-compatible)
+    if llm_config.model_endpoint_type in ["openai", "openrouter"]:
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
@@ -241,10 +241,11 @@ def create(
 
         telemetry_manager.create_provider_trace(
             actor=actor,
-            provider_trace_create=ProviderTraceCreate(
+            provider_trace=ProviderTrace(
                 request_json=prepare_openai_payload(data),
                 response_json=response.model_json_schema(),
                 step_id=step_id,
+                call_type=LLMCallType.agent_step,
             ),
         )
 

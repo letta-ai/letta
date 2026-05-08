@@ -6,7 +6,6 @@ This conftest.py makes fixtures available to all test files in the tests/manager
 
 import os
 import time
-import uuid
 from typing import Tuple
 
 import pytest
@@ -23,7 +22,7 @@ from letta.schemas.agent import CreateAgent
 from letta.schemas.block import Block as PydanticBlock, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import JobStatus, MessageRole, RunStatus
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.job import BatchJob, Job as PydanticJob
 from letta.schemas.letta_message_content import TextContent
@@ -498,7 +497,7 @@ async def sandbox_env_var_fixture(server: SyncServer, sandbox_config_fixture, de
 @pytest.fixture
 async def file_attachment(server: SyncServer, default_user, sarah_agent, default_file):
     """Create a file attachment to an agent."""
-    assoc, closed_files = await server.file_agent_manager.attach_file(
+    assoc, _closed_files = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
         file_id=default_file.id,
         file_name=default_file.file_name,

@@ -4,7 +4,6 @@ import asyncio
 import json
 import secrets
 import time
-import uuid
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
@@ -94,16 +93,20 @@ class DatabaseTokenStorage(TokenStorage):
 class MCPOAuthSession:
     """Legacy OAuth session class - deprecated, use mcp_manager directly."""
 
-    def __init__(self, server_url: str, server_name: str, user_id: Optional[str], organization_id: str):
+    def __init__(
+        self,
+        session_id: str,
+        server_url: Optional[str] = None,
+        server_name: Optional[str] = None,
+        user_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+    ):
+        self.session_id = session_id
         self.server_url = server_url
         self.server_name = server_name
         self.user_id = user_id
         self.organization_id = organization_id
-        self.session_id = str(uuid.uuid4())
-        self.state = secrets.token_urlsafe(32)
-
-    def __init__(self, session_id: str):
-        self.session_id = session_id
+        self.state = secrets.token_urlsafe(32) if server_url else None
 
     # TODO: consolidate / deprecate this in favor of mcp_manager access
     async def create_session(self) -> str:

@@ -23,4 +23,4 @@ async def test_redis_client():
         assert await redis_client.smismember(k, "invalid") == 0
         assert await redis_client.smismember(k, v[0]) == 1
         assert await redis_client.smismember(k, v[:2]) == [1, 1]
-        assert await redis_client.smismember(k, v[2:] + ["invalid"]) == [1, 0]
+        assert await redis_client.smismember(k, [*v[2:], "invalid"]) == [1, 0]

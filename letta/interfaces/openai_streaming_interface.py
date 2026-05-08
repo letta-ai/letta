@@ -1,7 +1,12 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
+    from letta.schemas.usage import LettaUsageStatistics
 
 from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
@@ -11,14 +16,18 @@ from openai.types.responses import (
     ResponseContentPartAddedEvent,
     ResponseContentPartDoneEvent,
     ResponseCreatedEvent,
+    ResponseErrorEvent,
+    ResponseFailedEvent,
     ResponseFunctionCallArgumentsDeltaEvent,
     ResponseFunctionCallArgumentsDoneEvent,
     ResponseFunctionToolCall,
+    ResponseIncompleteEvent,
     ResponseInProgressEvent,
     ResponseOutputItemAddedEvent,
     ResponseOutputItemDoneEvent,
     ResponseOutputMessage,
     ResponseOutputText,
+    ResponseQueuedEvent,
     ResponseReasoningItem,
     ResponseReasoningSummaryPartAddedEvent,
     ResponseReasoningSummaryPartDoneEvent,
@@ -54,6 +63,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
+from letta.server.rest_api.streaming_response import RunCancelledException
 from letta.server.rest_api.utils import decrement_message_uuid
 from letta.services.context_window_calculator.token_counter import create_token_counter
 from letta.streaming_utils import (
@@ -82,6 +92,7 @@ class OpenAIStreamingInterface:
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_event: Optional["asyncio.Event"] = None,
     ):
         self.use_assistant_message = use_assistant_message
 
@@ -93,6 +104,7 @@ class OpenAIStreamingInterface:
         self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
         self.run_id = run_id
         self.step_id = step_id
+        self.cancellation_event = cancellation_event
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
@@ -170,7 +182,8 @@ class OpenAIStreamingInterface:
         self._function_name_parts.append(s)
 
     def _append_function_id(self, s: str) -> None:
-        self._function_id_parts.append(s)
+        if not self._function_id_parts:
+            self._function_id_parts.append(s)
 
     def _append_current_function_arguments(self, s: str) -> None:
         self._current_function_arguments_parts.append(s)
@@ -189,6 +202,28 @@ class OpenAIStreamingInterface:
         return ToolCall(
             id=tool_call_id,
             function=FunctionCall(arguments=self._get_current_function_arguments(), name=function_name),
+        )
+
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Use actual tokens if available, otherwise fall back to estimated
+        input_tokens = self.input_tokens if self.input_tokens else self.fallback_input_tokens
+        output_tokens = self.output_tokens if self.output_tokens else self.fallback_output_tokens
+
+        return LettaUsageStatistics(
+            prompt_tokens=input_tokens or 0,
+            completion_tokens=output_tokens or 0,
+            total_tokens=(input_tokens or 0) + (output_tokens or 0),
+            # OpenAI: input_tokens is already total, cached_tokens is a subset (not additive)
+            cached_input_tokens=None,  # This interface doesn't track cache tokens
+            cache_write_tokens=None,
+            reasoning_tokens=None,  # This interface doesn't track reasoning tokens
         )
 
     async def process(
@@ -226,14 +261,15 @@ class OpenAIStreamingInterface:
                                     message_index += 1
                                 prev_message_type = new_message_type
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
                         self.stream_was_cancelled = True
                         logger.warning(
-                            "Stream was cancelled (CancelledError). Attempting to process current event. "
+                            "Stream was cancelled (%s). Attempting to process current event. "
                             f"Events received so far: {self.total_events_received}, last event: {self.last_event_type}. "
                             f"Error: %s, trace: %s",
+                            type(e).__name__,
                             e,
                             traceback.format_exc(),
                         )
@@ -267,6 +303,10 @@ class OpenAIStreamingInterface:
             yield LettaStopReason(stop_reason=StopReasonType.error)
             raise e
         finally:
+            # Check if cancellation was signaled via shared event
+            if self.cancellation_event and self.cancellation_event.is_set():
+                self.stream_was_cancelled = True
+
             logger.info(
                 f"OpenAIStreamingInterface: Stream processing complete. "
                 f"Received {self.total_events_received} events, "
@@ -284,9 +324,6 @@ class OpenAIStreamingInterface:
         # Track events for diagnostics
         self.total_events_received += 1
         self.last_event_type = "ChatCompletionChunk"
-        # Track events for diagnostics
-        self.total_events_received += 1
-        self.last_event_type = "ChatCompletionChunk"
 
         if not self.model or not self.message_id:
             self.model = chunk.model
@@ -294,8 +331,9 @@ class OpenAIStreamingInterface:
 
         # track usage
         if chunk.usage:
-            self.input_tokens += chunk.usage.prompt_tokens
-            self.output_tokens += chunk.usage.completion_tokens
+            # chunk usage displays the cumulative tokens so far (not tokens for individual chunk)
+            self.input_tokens = chunk.usage.prompt_tokens
+            self.output_tokens = chunk.usage.completion_tokens
 
         if chunk.choices:
             choice = chunk.choices[0]
@@ -384,25 +422,22 @@ class OpenAIStreamingInterface:
                                 if prev_message_type and prev_message_type != "tool_call_message":
                                     message_index += 1
                                 self.tool_call_name = str(self._get_function_name_buffer())
+                                tool_call_delta = ToolCallDelta(
+                                    name=self._get_function_name_buffer(),
+                                    arguments=None,
+                                    tool_call_id=self._get_current_function_id(),
+                                )
                                 if self.tool_call_name in self.requires_approval_tools:
                                     tool_call_msg = ApprovalRequestMessage(
                                         id=decrement_message_uuid(self.letta_message_id),
                                         date=datetime.now(timezone.utc),
-                                        tool_call=ToolCallDelta(
-                                            name=self._get_function_name_buffer(),
-                                            arguments=None,
-                                            tool_call_id=self._get_current_function_id(),
-                                        ),
+                                        tool_call=tool_call_delta,
+                                        tool_calls=tool_call_delta,
                                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                                         run_id=self.run_id,
                                         step_id=self.step_id,
                                     )
                                 else:
-                                    tool_call_delta = ToolCallDelta(
-                                        name=self._get_function_name_buffer(),
-                                        arguments=None,
-                                        tool_call_id=self._get_current_function_id(),
-                                    )
                                     tool_call_msg = ToolCallMessage(
                                         id=self.letta_message_id,
                                         date=datetime.now(timezone.utc),
@@ -441,7 +476,7 @@ class OpenAIStreamingInterface:
                                 # Minimal, robust extraction: only emit the value of "message".
                                 # If we buffered a prefix while name was streaming, feed it first.
                                 if self._function_args_buffer_parts:
-                                    payload = "".join(self._function_args_buffer_parts + [tool_call.function.arguments])
+                                    payload = "".join([*self._function_args_buffer_parts, tool_call.function.arguments])
                                     self._function_args_buffer_parts = None
                                 else:
                                     payload = tool_call.function.arguments
@@ -468,29 +503,26 @@ class OpenAIStreamingInterface:
                                 # if the previous chunk had arguments but we needed to flush name
                                 if self._function_args_buffer_parts:
                                     # In this case, we should release the buffer + new data at once
-                                    combined_chunk = "".join(self._function_args_buffer_parts + [updates_main_json])
+                                    combined_chunk = "".join([*self._function_args_buffer_parts, updates_main_json])
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
+                                    tool_call_delta = ToolCallDelta(
+                                        name=self._get_function_name_buffer(),
+                                        arguments=combined_chunk,
+                                        tool_call_id=self._get_current_function_id(),
+                                    )
                                     if self._get_function_name_buffer() in self.requires_approval_tools:
                                         tool_call_msg = ApprovalRequestMessage(
                                             id=decrement_message_uuid(self.letta_message_id),
                                             date=datetime.now(timezone.utc),
-                                            tool_call=ToolCallDelta(
-                                                name=self._get_function_name_buffer(),
-                                                arguments=combined_chunk,
-                                                tool_call_id=self._get_current_function_id(),
-                                            ),
+                                            tool_call=tool_call_delta,
+                                            tool_calls=tool_call_delta,
                                             # name=name,
                                             otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                                             run_id=self.run_id,
                                             step_id=self.step_id,
                                         )
                                     else:
-                                        tool_call_delta = ToolCallDelta(
-                                            name=self._get_function_name_buffer(),
-                                            arguments=combined_chunk,
-                                            tool_call_id=self._get_current_function_id(),
-                                        )
                                         tool_call_msg = ToolCallMessage(
                                             id=self.letta_message_id,
                                             date=datetime.now(timezone.utc),
@@ -510,26 +542,23 @@ class OpenAIStreamingInterface:
                                     # If there's no buffer to clear, just output a new chunk with new data
                                     if prev_message_type and prev_message_type != "tool_call_message":
                                         message_index += 1
+                                    tool_call_delta = ToolCallDelta(
+                                        name=None,
+                                        arguments=updates_main_json,
+                                        tool_call_id=self._get_current_function_id(),
+                                    )
                                     if self._get_function_name_buffer() in self.requires_approval_tools:
                                         tool_call_msg = ApprovalRequestMessage(
                                             id=decrement_message_uuid(self.letta_message_id),
                                             date=datetime.now(timezone.utc),
-                                            tool_call=ToolCallDelta(
-                                                name=None,
-                                                arguments=updates_main_json,
-                                                tool_call_id=self._get_current_function_id(),
-                                            ),
+                                            tool_call=tool_call_delta,
+                                            tool_calls=tool_call_delta,
                                             # name=name,
                                             otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                                             run_id=self.run_id,
                                             step_id=self.step_id,
                                         )
                                     else:
-                                        tool_call_delta = ToolCallDelta(
-                                            name=None,
-                                            arguments=updates_main_json,
-                                            tool_call_id=self._get_current_function_id(),
-                                        )
                                         tool_call_msg = ToolCallMessage(
                                             id=self.letta_message_id,
                                             date=datetime.now(timezone.utc),
@@ -558,12 +587,14 @@ class SimpleOpenAIStreamingInterface:
         messages: Optional[list] = None,
         tools: Optional[list] = None,
         requires_approval_tools: list = [],
-        model: str = None,
+        model: str | None = None,
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_event: Optional["asyncio.Event"] = None,
     ):
         self.run_id = run_id
         self.step_id = step_id
+        self.cancellation_event = cancellation_event
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
 
@@ -607,7 +638,6 @@ class SimpleOpenAIStreamingInterface:
 
     def get_content(self) -> list[TextContent | OmittedReasoningContent | ReasoningContent]:
         shown_omitted = False
-        concat_content = ""
         merged_messages = []
         reasoning_content = []
         concat_content_parts: list[str] = []
@@ -650,7 +680,7 @@ class SimpleOpenAIStreamingInterface:
             ctx = self._tool_calls_acc[idx]
             name = "".join(ctx.get("name_parts", [])) if "name_parts" in ctx else ctx.get("name", "")
             args = "".join(ctx.get("arguments_parts", [])) if "arguments_parts" in ctx else ctx.get("arguments", "")
-            call_id = "".join(ctx.get("id_parts", [])) if "id_parts" in ctx else ctx.get("id", "")
+            call_id = ctx["id_parts"][0] if ctx.get("id_parts") else ctx.get("id", "")
             if call_id and name:
                 result.append(ToolCall(id=call_id, function=FunctionCall(arguments=args or "", name=name)))
         return result
@@ -661,6 +691,28 @@ class SimpleOpenAIStreamingInterface:
         if not calls:
             raise ValueError("No tool calls available")
         return calls[0]
+
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Use actual tokens if available, otherwise fall back to estimated
+        input_tokens = self.input_tokens if self.input_tokens else self.fallback_input_tokens
+        output_tokens = self.output_tokens if self.output_tokens else self.fallback_output_tokens
+
+        return LettaUsageStatistics(
+            prompt_tokens=input_tokens or 0,
+            completion_tokens=output_tokens or 0,
+            total_tokens=(input_tokens or 0) + (output_tokens or 0),
+            # OpenAI: input_tokens is already total, cached_tokens is a subset (not additive)
+            cached_input_tokens=self.cached_tokens,
+            cache_write_tokens=None,  # OpenAI doesn't have cache write tokens
+            reasoning_tokens=self.reasoning_tokens,
+        )
 
     async def process(
         self,
@@ -715,14 +767,15 @@ class SimpleOpenAIStreamingInterface:
                                     message_index += 1
                                 prev_message_type = new_message_type
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
                         self.stream_was_cancelled = True
                         logger.warning(
-                            "Stream was cancelled (CancelledError). Attempting to process current event. "
+                            "Stream was cancelled (%s). Attempting to process current event. "
                             f"Events received so far: {self.total_events_received}, last event: {self.last_event_type}. "
                             f"Error: %s, trace: %s",
+                            type(e).__name__,
                             e,
                             traceback.format_exc(),
                         )
@@ -764,6 +817,10 @@ class SimpleOpenAIStreamingInterface:
             yield LettaStopReason(stop_reason=StopReasonType.error)
             raise e
         finally:
+            # Check if cancellation was signaled via shared event
+            if self.cancellation_event and self.cancellation_event.is_set():
+                self.stream_was_cancelled = True
+
             logger.info(
                 f"SimpleOpenAIStreamingInterface: Stream processing complete. "
                 f"Received {self.total_events_received} events, "
@@ -778,14 +835,19 @@ class SimpleOpenAIStreamingInterface:
         prev_message_type: Optional[str] = None,
         message_index: int = 0,
     ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
+        # Track events for diagnostics
+        self.total_events_received += 1
+        self.last_event_type = "ChatCompletionChunk"
+
         if not self.model or not self.message_id:
             self.model = chunk.model
             self.message_id = chunk.id
 
         # track usage
         if chunk.usage:
-            self.input_tokens += chunk.usage.prompt_tokens
-            self.output_tokens += chunk.usage.completion_tokens
+            # chunk usage displays the cumulative tokens so far (not tokens for individual chunk)
+            self.input_tokens = chunk.usage.prompt_tokens
+            self.output_tokens = chunk.usage.completion_tokens
             # Store raw usage for transparent provider trace logging
             try:
                 self.raw_usage = chunk.usage.model_dump(exclude_none=True)
@@ -813,29 +875,10 @@ class SimpleOpenAIStreamingInterface:
             choice = chunk.choices[0]
             message_delta = choice.delta
 
-            if message_delta.content is not None and message_delta.content != "":
-                if prev_message_type and prev_message_type != "assistant_message":
-                    message_index += 1
-                assistant_msg = AssistantMessage(
-                    id=self.letta_message_id,
-                    content=message_delta.content,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    run_id=self.run_id,
-                    step_id=self.step_id,
-                )
-                self.content_messages.append(assistant_msg)
-                prev_message_type = assistant_msg.message_type
-                yield assistant_msg
-
-            if (
-                hasattr(chunk, "choices")
-                and len(chunk.choices) > 0
-                and hasattr(chunk.choices[0], "delta")
-                and hasattr(chunk.choices[0].delta, "reasoning_content")
-            ):
+            if hasattr(chunk, "choices") and len(chunk.choices) > 0 and hasattr(chunk.choices[0], "delta"):
                 delta = chunk.choices[0].delta
-                reasoning_content = getattr(delta, "reasoning_content", None)
+                # Check for reasoning_content (standard) or reasoning (OpenRouter)
+                reasoning_content = getattr(delta, "reasoning_content", None) or getattr(delta, "reasoning", None)
                 if reasoning_content is not None and reasoning_content != "":
                     if prev_message_type and prev_message_type != "reasoning_message":
                         message_index += 1
@@ -852,6 +895,21 @@ class SimpleOpenAIStreamingInterface:
                     self.content_messages.append(reasoning_msg)
                     prev_message_type = reasoning_msg.message_type
                     yield reasoning_msg
+
+            if message_delta.content is not None and message_delta.content != "":
+                if prev_message_type and prev_message_type != "assistant_message":
+                    message_index += 1
+                assistant_msg = AssistantMessage(
+                    id=self.letta_message_id,
+                    content=message_delta.content,
+                    date=datetime.now(timezone.utc).isoformat(),
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    run_id=self.run_id,
+                    step_id=self.step_id,
+                )
+                self.content_messages.append(assistant_msg)
+                prev_message_type = assistant_msg.message_type
+                yield assistant_msg
 
             if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
                 # Accumulate per-index tool call fragments and emit deltas
@@ -878,15 +936,16 @@ class SimpleOpenAIStreamingInterface:
                     if tool_call.function and tool_call.function.arguments:
                         acc["arguments_parts"].append(tool_call.function.arguments)
                     if tool_call.id:
-                        acc["id_parts"].append(tool_call.id)
+                        if not acc["id_parts"]:
+                            acc["id_parts"].append(tool_call.id)
 
                     # Resolve stable id from accumulator; OpenAI may omit id on argument-only deltas
-                    resolved_id = "".join(acc.get("id_parts", [])) if acc.get("id_parts") else None
+                    resolved_id = acc["id_parts"][0] if acc.get("id_parts") else None
                     # If we don't yet have an id for this tool_call index, skip emitting unusable delta
                     if resolved_id is None:
                         continue
 
-                    delta = ToolCallDelta(
+                    tool_call_delta = ToolCallDelta(
                         name=tool_call.function.name if (tool_call.function and tool_call.function.name) else None,
                         arguments=tool_call.function.arguments if (tool_call.function and tool_call.function.arguments) else None,
                         tool_call_id=resolved_id,
@@ -897,7 +956,8 @@ class SimpleOpenAIStreamingInterface:
                         tool_call_msg = ApprovalRequestMessage(
                             id=decrement_message_uuid(self.letta_message_id),
                             date=datetime.now(timezone.utc),
-                            tool_call=delta,
+                            tool_call=tool_call_delta,
+                            tool_calls=tool_call_delta,
                             otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                             run_id=self.run_id,
                             step_id=self.step_id,
@@ -908,8 +968,8 @@ class SimpleOpenAIStreamingInterface:
                         tool_call_msg = ToolCallMessage(
                             id=self.letta_message_id,
                             date=datetime.now(timezone.utc),
-                            tool_call=delta,
-                            tool_calls=delta,
+                            tool_call=tool_call_delta,
+                            tool_calls=tool_call_delta,
                             otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                             run_id=self.run_id,
                             step_id=self.step_id,
@@ -929,9 +989,10 @@ class SimpleOpenAIResponsesStreamingInterface:
         messages: Optional[list] = None,
         tools: Optional[list] = None,
         requires_approval_tools: list = [],
-        model: str = None,
+        model: str | None = None,
         run_id: str | None = None,
         step_id: str | None = None,
+        cancellation_event: Optional["asyncio.Event"] = None,
     ):
         self.is_openai_proxy = is_openai_proxy
         self.messages = messages
@@ -946,6 +1007,7 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.message_id = None
         self.run_id = run_id
         self.step_id = step_id
+        self.cancellation_event = cancellation_event
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -968,6 +1030,9 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.last_event_type: str | None = None
         self.total_events_received: int = 0
         self.stream_was_cancelled: bool = False
+        # For downstream finish_reason mapping (e.g. max_output_tokens -> "length")
+        # None means no incomplete reason was observed.
+        self.incomplete_reason: str | None = None
 
     # -------- Mapping helpers (no broad try/except) --------
     def _record_tool_mapping(self, event: object, item: object) -> tuple[str | None, str | None, int | None, str | None]:
@@ -1028,6 +1093,10 @@ class SimpleOpenAIResponsesStreamingInterface:
                             text=response.content[0].text,
                         )
                     )
+                elif len(response.content) == 0:
+                    # Incomplete responses may have an output message with no content parts
+                    # (model started the message item but hit max_output_tokens before producing text)
+                    logger.warning("ResponseOutputMessage has 0 content parts (likely from an incomplete response), skipping.")
                 else:
                     raise ValueError(f"Got {len(response.content)} content parts, expected 1")
 
@@ -1063,14 +1132,35 @@ class SimpleOpenAIResponsesStreamingInterface:
             raise ValueError("No tool calls available")
         return calls[0]
 
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        return LettaUsageStatistics(
+            prompt_tokens=self.input_tokens or 0,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=(self.input_tokens or 0) + (self.output_tokens or 0),
+            # OpenAI Responses API: input_tokens is already total
+            cached_input_tokens=self.cached_tokens,
+            cache_write_tokens=None,  # OpenAI doesn't have cache write tokens
+            reasoning_tokens=self.reasoning_tokens,
+        )
+
     async def process(
         self,
-        stream: AsyncStream[ResponseStreamEvent],
+        stream: "AsyncStream[ResponseStreamEvent] | Any",
         ttft_span: Optional["Span"] = None,
     ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
         """
         Iterates over the OpenAI stream, yielding SSE events.
         It also collects tokens and detects if a tool call is triggered.
+
+        ``stream`` may be an ``AsyncStream`` (HTTP SSE) or an ``AsyncStreamCompat``
+        wrapper (WebSocket mode).  Both support ``async with`` + ``async for``.
         """
         # Fallback input token counting - this should only be required for non-OpenAI providers using the OpenAI client (e.g. LMStudio)
         if self.is_openai_proxy:
@@ -1102,14 +1192,15 @@ class SimpleOpenAIResponsesStreamingInterface:
                         )
                         # Continue to next event rather than killing the stream
                         continue
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
                         self.stream_was_cancelled = True
                         logger.warning(
-                            "Stream was cancelled (CancelledError). Attempting to process current event. "
+                            "Stream was cancelled (%s). Attempting to process current event. "
                             f"Events received so far: {self.total_events_received}, last event: {self.last_event_type}. "
                             f"Error: %s, trace: %s",
+                            type(e).__name__,
                             e,
                             traceback.format_exc(),
                         )
@@ -1136,6 +1227,10 @@ class SimpleOpenAIResponsesStreamingInterface:
             yield LettaStopReason(stop_reason=StopReasonType.error)
             raise e
         finally:
+            # Check if cancellation was signaled via shared event
+            if self.cancellation_event and self.cancellation_event.is_set():
+                self.stream_was_cancelled = True
+
             logger.info(
                 f"ResponsesAPI Stream processing complete. "
                 f"Received {self.total_events_received} events, "
@@ -1163,6 +1258,10 @@ class SimpleOpenAIResponsesStreamingInterface:
             # No-op, just an indicator that we've started
             return
 
+        elif isinstance(event, ResponseQueuedEvent):
+            # No-op, emitted in WebSocket mode when the response is queued
+            return
+
         elif isinstance(event, ResponseOutputItemAddedEvent):
             new_event_item = event.item
 
@@ -1170,8 +1269,6 @@ class SimpleOpenAIResponsesStreamingInterface:
             if isinstance(new_event_item, ResponseReasoningItem):
                 # Look for summary delta, or encrypted_content
                 summary = new_event_item.summary
-                content = new_event_item.content  # NOTE: always none
-                encrypted_content = new_event_item.encrypted_content
                 # TODO change to summarize reasoning message, but we need to figure out the streaming indices of summary problem
                 concat_summary = "".join([s.text for s in summary])
                 if concat_summary != "":
@@ -1199,27 +1296,24 @@ class SimpleOpenAIResponsesStreamingInterface:
                 self.tool_call_name = name
                 # Record mapping so subsequent argument deltas can be associated
                 self._record_tool_mapping(event, new_event_item)
+                tool_call_delta = ToolCallDelta(
+                    name=name,
+                    arguments=arguments if arguments != "" else None,
+                    tool_call_id=call_id,
+                )
                 if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
                     yield ApprovalRequestMessage(
                         id=decrement_message_uuid(self.letta_message_id),
                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         date=datetime.now(timezone.utc),
-                        tool_call=ToolCallDelta(
-                            name=name,
-                            arguments=arguments if arguments != "" else None,
-                            tool_call_id=call_id,
-                        ),
+                        tool_call=tool_call_delta,
+                        tool_calls=tool_call_delta,
                         run_id=self.run_id,
                         step_id=self.step_id,
                     )
                 else:
                     if prev_message_type and prev_message_type != "tool_call_message":
                         message_index += 1
-                    tool_call_delta = ToolCallDelta(
-                        name=name,
-                        arguments=arguments if arguments != "" else None,
-                        tool_call_id=call_id,
-                    )
                     yield ToolCallMessage(
                         id=self.letta_message_id,
                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -1310,7 +1404,6 @@ class SimpleOpenAIResponsesStreamingInterface:
             # NOTE: is this inclusive of the deltas?
             # If not, we should add it to the rolling
             summary_index = event.summary_index
-            text = event.text
             return
 
         # Reasoning summary streaming
@@ -1352,7 +1445,6 @@ class SimpleOpenAIResponsesStreamingInterface:
         # Assistant message streaming
         elif isinstance(event, ResponseTextDoneEvent):
             # NOTE: inclusive, can skip
-            text = event.text
             return
 
         # Assistant message done
@@ -1367,7 +1459,7 @@ class SimpleOpenAIResponsesStreamingInterface:
             delta = event.delta
 
             # Resolve tool_call_id/name using output_index or item_id
-            resolved_call_id, resolved_name, out_idx, item_id = self._resolve_mapping_for_delta(event)
+            resolved_call_id, resolved_name, _out_idx, _item_id = self._resolve_mapping_for_delta(event)
 
             # Fallback to last seen tool name for approval routing if mapping name missing
             if not resolved_name:
@@ -1378,27 +1470,24 @@ class SimpleOpenAIResponsesStreamingInterface:
                 return
 
             # We have a call id; emit approval or tool-call message accordingly
+            tool_call_delta = ToolCallDelta(
+                name=None,
+                arguments=delta,
+                tool_call_id=resolved_call_id,
+            )
             if resolved_name and resolved_name in self.requires_approval_tools:
                 yield ApprovalRequestMessage(
                     id=decrement_message_uuid(self.letta_message_id),
                     otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                     date=datetime.now(timezone.utc),
-                    tool_call=ToolCallDelta(
-                        name=None,
-                        arguments=delta,
-                        tool_call_id=resolved_call_id,
-                    ),
+                    tool_call=tool_call_delta,
+                    tool_calls=tool_call_delta,
                     run_id=self.run_id,
                     step_id=self.step_id,
                 )
             else:
                 if prev_message_type and prev_message_type != "tool_call_message":
                     message_index += 1
-                tool_call_delta = ToolCallDelta(
-                    name=None,
-                    arguments=delta,
-                    tool_call_id=resolved_call_id,
-                )
                 yield ToolCallMessage(
                     id=self.letta_message_id,
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
@@ -1413,7 +1502,6 @@ class SimpleOpenAIResponsesStreamingInterface:
         # Function calls
         elif isinstance(event, ResponseFunctionCallArgumentsDoneEvent):
             # NOTE: inclusive
-            full_args = event.arguments
             return
 
         # Generic
@@ -1421,32 +1509,82 @@ class SimpleOpenAIResponsesStreamingInterface:
             # Inclusive, so skip
             return
 
-        # Generic finish
-        elif isinstance(event, ResponseCompletedEvent):
-            # NOTE we can "rebuild" the final state of the stream using the values in here, instead of relying on the accumulators
+        # Error / failure events (WebSocket mode may emit these explicitly)
+        elif isinstance(event, ResponseFailedEvent):
+            error_info = getattr(event.response, "error", None)
+            error_msg = str(error_info) if error_info else "unknown"
+            logger.error(f"OpenAI Responses API returned a failed response: {error_msg}")
+
+            # Still extract partial response + usage if available
             self.final_response = event.response
             self.model = event.response.model
-            self.input_tokens = event.response.usage.input_tokens
-            self.output_tokens = event.response.usage.output_tokens
             self.message_id = event.response.id
-            # Store raw usage for transparent provider trace logging
-            try:
-                self.raw_usage = event.response.usage.model_dump(exclude_none=True)
-            except Exception as e:
-                logger.error(f"Failed to capture raw_usage from OpenAI Responses API: {e}")
-                self.raw_usage = None
-            # Capture cache token details (Responses API uses input_tokens_details)
-            # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
-            if hasattr(event.response.usage, "input_tokens_details") and event.response.usage.input_tokens_details:
-                details = event.response.usage.input_tokens_details
-                if hasattr(details, "cached_tokens") and details.cached_tokens is not None:
-                    self.cached_tokens = details.cached_tokens
-            # Capture reasoning token details (Responses API uses output_tokens_details)
-            # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
-            if hasattr(event.response.usage, "output_tokens_details") and event.response.usage.output_tokens_details:
-                details = event.response.usage.output_tokens_details
-                if hasattr(details, "reasoning_tokens") and details.reasoning_tokens is not None:
-                    self.reasoning_tokens = details.reasoning_tokens
+            usage = event.response.usage
+            if usage is not None:
+                self.input_tokens = usage.input_tokens
+                self.output_tokens = usage.output_tokens
+
+            from letta.errors import LLMError
+
+            raise LLMError(f"OpenAI Responses API failed: {error_msg}")
+
+        elif isinstance(event, ResponseErrorEvent):
+            error_detail = getattr(event, "message", None) or str(event)
+            logger.error(f"OpenAI Responses API error event: {error_detail}")
+            from letta.errors import LLMError
+
+            raise LLMError(f"OpenAI Responses API error: {error_detail}")
+
+        # Generic finish
+        elif isinstance(event, (ResponseCompletedEvent, ResponseIncompleteEvent)):
+            # ResponseIncompleteEvent has the same response structure as ResponseCompletedEvent,
+            # but indicates the response was cut short (e.g. due to max_output_tokens).
+            # We still extract the partial response and usage data so they aren't silently lost.
+            if isinstance(event, ResponseIncompleteEvent):
+                self.incomplete_reason = (
+                    getattr(event.response.incomplete_details, "reason", None) if event.response.incomplete_details else None
+                )
+                reason = self.incomplete_reason or "unknown"
+                logger.warning(
+                    f"OpenAI Responses API returned an incomplete response (reason: {reason}). "
+                    f"Model: {event.response.model}, output_tokens: {event.response.usage.output_tokens if event.response.usage else 'N/A'}. "
+                    f"The partial response content will still be used."
+                )
+
+            self.final_response = event.response
+            self.model = event.response.model
+            self.message_id = event.response.id
+
+            usage = event.response.usage
+            if usage is not None:
+                self.input_tokens = usage.input_tokens
+                self.output_tokens = usage.output_tokens
+
+                # Store raw usage for transparent provider trace logging
+                try:
+                    self.raw_usage = usage.model_dump(exclude_none=True)
+                except Exception as e:
+                    logger.error(f"Failed to capture raw_usage from OpenAI Responses API: {e}")
+                    self.raw_usage = None
+
+                # Capture cache token details (Responses API uses input_tokens_details)
+                # Use `is not None` to capture 0 values (meaning "provider reported 0 cached tokens")
+                if hasattr(usage, "input_tokens_details") and usage.input_tokens_details:
+                    details = usage.input_tokens_details
+                    if hasattr(details, "cached_tokens") and details.cached_tokens is not None:
+                        self.cached_tokens = details.cached_tokens
+
+                # Capture reasoning token details (Responses API uses output_tokens_details)
+                # Use `is not None` to capture 0 values (meaning "provider reported 0 reasoning tokens")
+                if hasattr(usage, "output_tokens_details") and usage.output_tokens_details:
+                    details = usage.output_tokens_details
+                    if hasattr(details, "reasoning_tokens") and details.reasoning_tokens is not None:
+                        self.reasoning_tokens = details.reasoning_tokens
+            else:
+                logger.warning(
+                    "OpenAI Responses API finish event had no usage payload. "
+                    "Proceeding with partial response but token metrics may be incomplete."
+                )
             return
 
         else:

@@ -4,9 +4,8 @@ Tests the end-to-end encryption functionality in the MCP manager.
 """
 
 import json
-import os
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -20,13 +19,9 @@ from letta.schemas.mcp import (
     MCPOAuthSessionUpdate,
     MCPServer as PydanticMCPServer,
     MCPServerType,
-    SSEServerConfig,
-    StdioServerConfig,
 )
-from letta.schemas.secret import Secret
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
-from letta.services.mcp_manager import MCPManager
 from letta.settings import settings
 
 

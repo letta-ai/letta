@@ -5,6 +5,7 @@ from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.openai_client import OpenAIClient
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
@@ -53,6 +54,7 @@ class DeepseekClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         # DeepSeek thinking mode surfaces reasoning_content; keep it for active turns, drop for new user turns.
         llm_config.put_inner_thoughts_in_kwargs = False
@@ -65,6 +67,7 @@ class DeepseekClient(OpenAIClient):
             force_tool_call,
             requires_subsequent_tool_call,
             tool_return_truncation_chars,
+            system,
         )
 
         if "messages" in data:
@@ -97,6 +100,8 @@ class DeepseekClient(OpenAIClient):
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key = model_settings.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
 
@@ -108,6 +113,8 @@ class DeepseekClient(OpenAIClient):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key = model_settings.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(

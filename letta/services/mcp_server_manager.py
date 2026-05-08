@@ -20,6 +20,7 @@ from letta.functions.mcp_client.types import (
 )
 from letta.functions.schema_generator import normalize_mcp_schema
 from letta.functions.schema_validator import validate_complete_json_schema
+from letta.helpers.url_validation import validate_mcp_server_url
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.mcp_oauth import MCPOAuth, OAuthSessionStatus
@@ -46,7 +47,7 @@ from letta.services.mcp.server_side_oauth import ServerSideOAuth
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings, tool_settings
+from letta.settings import tool_settings
 from letta.utils import enforce_types, printd, safe_create_task
 
 logger = get_logger(__name__)
@@ -186,11 +187,7 @@ class MCPServerManager:
             raise e
         finally:
             if mcp_client:
-                try:
-                    await mcp_client.cleanup()
-                except Exception as e:
-                    logger.warning(f"Error listing tools for MCP server {mcp_server_id}: {e}")
-                    raise e
+                await mcp_client.cleanup()
 
     @enforce_types
     async def execute_mcp_server_tool(
@@ -405,6 +402,9 @@ class MCPServerManager:
             mcp_servers = await MCPServerModel.list_async(
                 db_session=session,
                 organization_id=actor.organization_id,
+                # SqlalchemyBase.list_async defaults to limit=50; MCP servers should not be capped.
+                # Use a higher limit until we implement proper pagination in the API/SDK.
+                limit=200,
             )
 
             return [mcp_server.to_pydantic() for mcp_server in mcp_servers]
@@ -470,7 +470,9 @@ class MCPServerManager:
 
                 # Link existing OAuth sessions for the same user and server URL
                 # This ensures OAuth sessions created during testing get linked to the server
+                # Also updates the server_name to match the new MCP server's name
                 server_url = getattr(mcp_server, "server_url", None)
+                server_name = getattr(mcp_server, "server_name", None)
                 if server_url:
                     result = await session.execute(
                         select(MCPOAuth).where(
@@ -482,20 +484,24 @@ class MCPServerManager:
                     )
                     oauth_sessions = result.scalars().all()
 
-                    # TODO: @jnjpng we should upate sessions in bulk
+                    # TODO: @jnjpng we should update sessions in bulk
                     for oauth_session in oauth_sessions:
                         oauth_session.server_id = mcp_server.id
+                        # Update server_name to match the persisted MCP server's name
+                        if server_name:
+                            oauth_session.server_name = server_name
                         await oauth_session.update_async(db_session=session, actor=actor, no_commit=True)
 
                     if oauth_sessions:
                         logger.info(
-                            f"Linked {len(oauth_sessions)} OAuth sessions to MCP server {mcp_server.id} (URL: {server_url}) for user {actor.id}"
+                            f"Linked {len(oauth_sessions)} OAuth sessions to MCP server {mcp_server.id} "
+                            f"(URL: {server_url}, name: {server_name}) for user {actor.id}"
                         )
 
                 # context manager now handles commits
                 # await session.commit()
                 return mcp_server.to_pydantic()
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 raise
 
@@ -511,6 +517,9 @@ class MCPServerManager:
         """
         # Create base MCPServer object
         if isinstance(server_config, StdioServerConfig):
+            # Check if stdio MCP servers are disabled (not suitable for multi-tenant deployments)
+            if tool_settings.mcp_disable_stdio:
+                raise ValueError("MCP stdio servers are disabled. Set MCP_DISABLE_STDIO=false to enable them.")
             mcp_server = MCPServer(server_name=server_config.server_name, server_type=server_config.type, stdio_config=server_config)
         elif isinstance(server_config, SSEServerConfig):
             mcp_server = MCPServer(
@@ -599,7 +608,6 @@ class MCPServerManager:
         2. Attempts to connect and fetch tools
         3. Persists valid tools in parallel (best-effort)
         """
-        import asyncio
 
         # First, create the MCP server
         created_server = await self.create_mcp_server(pydantic_mcp_server, actor)
@@ -852,22 +860,37 @@ class MCPServerManager:
                 )
                 logger.info(f"Deleted MCPTools mappings for MCP server {mcp_server_id}")
 
-                # Delete OAuth sessions for the same user and server URL in the same transaction
-                # This handles orphaned sessions that were created during testing/connection
+                # Delete OAuth sessions associated with this MCP server
+                # 1. Delete sessions directly linked to this server (server_id matches)
+                # 2. Delete orphaned pending sessions (server_id IS NULL) for same server_url + user
+                # 3. Keep authorized sessions linked to OTHER MCP servers (different server_id)
                 oauth_count = 0
+
+                # Delete sessions directly linked to this server
+                result = await session.execute(
+                    delete(MCPOAuth).where(
+                        MCPOAuth.server_id == mcp_server_id,
+                        MCPOAuth.organization_id == actor.organization_id,
+                    )
+                )
+                oauth_count += result.rowcount
+
+                # Delete orphaned sessions (no server_id) for same server_url + user
                 if server_url:
                     result = await session.execute(
                         delete(MCPOAuth).where(
                             MCPOAuth.server_url == server_url,
+                            MCPOAuth.server_id.is_(None),  # Only orphaned sessions (not linked to any server)
                             MCPOAuth.organization_id == actor.organization_id,
-                            MCPOAuth.user_id == actor.id,  # Only delete sessions for the same user
+                            MCPOAuth.user_id == actor.id,
                         )
                     )
-                    oauth_count = result.rowcount
-                    if oauth_count > 0:
-                        logger.info(
-                            f"Deleting {oauth_count} OAuth sessions for MCP server {mcp_server_id} (URL: {server_url}) for user {actor.id}"
-                        )
+                    oauth_count += result.rowcount
+
+                if oauth_count > 0:
+                    logger.info(
+                        f"Deleted {oauth_count} OAuth sessions for MCP server {mcp_server_id} (URL: {server_url}) for user {actor.id}"
+                    )
 
                 # Delete the MCP server, will cascade delete to linked OAuth sessions
                 await session.execute(
@@ -965,11 +988,14 @@ class MCPServerManager:
         Raises:
             ValueError: If server config type is not supported
         """
+        if hasattr(server_config, "server_url") and server_config.server_url:
+            validate_mcp_server_url(server_config.server_url)
+
         # If no OAuth provider is provided, check if we have stored OAuth credentials
         if oauth is None and hasattr(server_config, "server_url"):
-            oauth_session = await self.get_oauth_session_by_server(server_config.server_url, actor)
+            oauth_session = await self.get_oauth_session_by_server(server_config.server_url, actor, status=OAuthSessionStatus.AUTHORIZED)
             # Check if access token exists by attempting to decrypt it
-            if oauth_session and await oauth_session.get_access_token_secret().get_plaintext_async():
+            if oauth_session and oauth_session.access_token_enc and await oauth_session.access_token_enc.get_plaintext_async():
                 # Create ServerSideOAuth from stored credentials
                 oauth = ServerSideOAuth(
                     mcp_url=oauth_session.server_url,
@@ -983,6 +1009,9 @@ class MCPServerManager:
             server_config = SSEServerConfig(**server_config.model_dump())
             return AsyncFastMCPSSEClient(server_config=server_config, oauth=oauth, agent_id=agent_id)
         elif server_config.type == MCPServerType.STDIO:
+            # Check if stdio MCP servers are disabled (not suitable for multi-tenant deployments)
+            if tool_settings.mcp_disable_stdio:
+                raise ValueError("MCP stdio servers are disabled. Set MCP_DISABLE_STDIO=false to enable them.")
             server_config = StdioServerConfig(**server_config.model_dump())
             return AsyncStdioMCPClient(server_config=server_config, oauth_provider=None, agent_id=agent_id)
         elif server_config.type == MCPServerType.STREAMABLE_HTTP:
@@ -1075,22 +1104,43 @@ class MCPServerManager:
                 return None
 
     @enforce_types
-    async def get_oauth_session_by_server(self, server_url: str, actor: PydanticUser) -> Optional[MCPOAuthSession]:
-        """Get the latest OAuth session by server URL, organization, and user."""
+    async def get_oauth_session_by_server(
+        self, server_url: str, actor: PydanticUser, status: Optional[OAuthSessionStatus] = None
+    ) -> Optional[MCPOAuthSession]:
+        """Get the latest OAuth session by server URL, organization, and user.
+
+        Args:
+            server_url: The MCP server URL
+            actor: The user making the request
+            status: Optional status filter. If None, returns the most recent session regardless of status.
+                    If specified, only returns sessions with that status.
+        """
         async with db_registry.async_session() as session:
-            # Query for OAuth session matching organization, user, server URL, and status
+            # Query for OAuth session matching organization, user, server URL
             # Order by updated_at desc to get the most recent record
-            result = await session.execute(
-                select(MCPOAuth)
-                .where(
-                    MCPOAuth.organization_id == actor.organization_id,
-                    MCPOAuth.user_id == actor.id,
-                    MCPOAuth.server_url == server_url,
-                    MCPOAuth.status == OAuthSessionStatus.AUTHORIZED,
-                )
-                .order_by(desc(MCPOAuth.updated_at))
-                .limit(1)
+            query = select(MCPOAuth).where(
+                MCPOAuth.organization_id == actor.organization_id,
+                MCPOAuth.user_id == actor.id,
+                MCPOAuth.server_url == server_url,
             )
+
+            # Optionally filter by status
+            if status is not None:
+                query = query.where(MCPOAuth.status == status)
+
+            result = await session.execute(query.order_by(desc(MCPOAuth.updated_at)).limit(1))
+            oauth_session = result.scalar_one_or_none()
+
+            if not oauth_session:
+                return None
+
+            return await self._oauth_orm_to_pydantic_async(oauth_session)
+
+    @enforce_types
+    async def get_oauth_session_by_state(self, state: str) -> Optional[MCPOAuthSession]:
+        """Get an OAuth session by its state parameter (used in static callback URI flow)."""
+        async with db_registry.async_session() as session:
+            result = await session.execute(select(MCPOAuth).where(MCPOAuth.state == state).limit(1))
             oauth_session = result.scalar_one_or_none()
 
             if not oauth_session:
@@ -1105,6 +1155,8 @@ class MCPServerManager:
             oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
 
             # Update fields that are provided
+            if session_update.state is not None:
+                oauth_session.state = session_update.state
             if session_update.authorization_url is not None:
                 oauth_session.authorization_url = session_update.authorization_url
 
@@ -1257,9 +1309,11 @@ class MCPServerManager:
         from letta.services.mcp.types import OauthStreamEvent
 
         # OAuth required, yield state to client to prepare to handle authorization URL
+        # Note: Existing AUTHORIZED sessions are already checked upstream in get_mcp_client
         yield oauth_stream_event(OauthStreamEvent.OAUTH_REQUIRED, message="OAuth authentication required")
 
-        # Create OAuth session to persist the state of the OAuth flow
+        # Create new OAuth session for each test connection attempt
+        # Note: Old pending sessions will be cleaned up when an MCP server is created/deleted
         session_create = MCPOAuthSessionCreate(
             server_url=request.server_url,
             server_name=request.server_name,
@@ -1278,16 +1332,21 @@ class MCPServerManager:
             and http_request.headers.__contains__("x-organization-id")
         )
 
+        # Check if request is from letta-code CLI (uses web callback for OAuth)
+        is_letta_code_request = http_request and http_request.headers and http_request.headers.get("x-letta-source", "") == "letta-code"
+
         logo_uri = None
         NEXT_PUBLIC_CURRENT_HOST = os.getenv("NEXT_PUBLIC_CURRENT_HOST")
         LETTA_AGENTS_ENDPOINT = os.getenv("LETTA_AGENTS_ENDPOINT")
 
-        if is_web_request and NEXT_PUBLIC_CURRENT_HOST:
-            redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/{session_id}"
+        if (is_web_request or is_letta_code_request) and NEXT_PUBLIC_CURRENT_HOST:
+            # Use static callback URI - session is identified via state parameter
+            redirect_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/oauth/callback/mcp"
             logo_uri = f"{NEXT_PUBLIC_CURRENT_HOST}/seo/favicon.svg"
         elif LETTA_AGENTS_ENDPOINT:
             # API and SDK usage should call core server directly
-            redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback/{session_id}"
+            # Use static callback URI - session is identified via state parameter
+            redirect_uri = f"{LETTA_AGENTS_ENDPOINT}/v1/tools/mcp/oauth/callback"
         else:
             logger.error(
                 f"No redirect URI found for request and base urls: {http_request.headers if http_request else 'No headers'} {NEXT_PUBLIC_CURRENT_HOST} {LETTA_AGENTS_ENDPOINT}"

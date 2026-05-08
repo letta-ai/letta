@@ -4,10 +4,6 @@ Model sandbox implementation, which configures on Modal App per tool.
 
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-import modal
-from e2b.sandbox.commands.command_handle import CommandExitException
-from e2b_code_interpreter import AsyncSandbox
-
 from letta.constants import MODAL_DEFAULT_TOOL_NAME
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method
@@ -16,16 +12,13 @@ from letta.schemas.enums import SandboxType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
-from letta.services.helpers.tool_parser_helper import parse_function_arguments, parse_stdout_best_effort
-from letta.services.tool_manager import ToolManager
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
 from letta.types import JsonDict
-from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from e2b_code_interpreter import Execution
+    pass
 
 
 class AsyncToolSandboxModal(AsyncToolSandboxBase):

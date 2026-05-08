@@ -3,7 +3,6 @@ from urllib.parse import urljoin
 
 from letta.local_llm.settings.settings import get_completions_settings
 from letta.local_llm.utils import post_json_auth_request
-from letta.utils import count_tokens
 
 LMSTUDIO_API_CHAT_SUFFIX = "/v1/chat/completions"
 LMSTUDIO_API_COMPLETIONS_SUFFIX = "/v1/completions"
@@ -80,7 +79,8 @@ def get_lmstudio_completion(endpoint, auth_type, auth_key, prompt, context_windo
     """Based on the example for using LM Studio as a backend from https://github.com/lmstudio-ai/examples/tree/main/Hello%2C%20world%20-%20OpenAI%20python%20client"""
     from letta.utils import printd
 
-    prompt_tokens = count_tokens(prompt)
+    # Approximate token count: bytes / 4
+    prompt_tokens = len(prompt.encode("utf-8")) // 4
     if prompt_tokens > context_window:
         raise Exception(f"Request exceeds maximum context length ({prompt_tokens} > {context_window} tokens)")
 

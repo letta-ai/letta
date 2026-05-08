@@ -1,9 +1,12 @@
-import asyncio
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from sqlalchemy import and_, delete, func, or_, select
+import sqlalchemy as sa
+from sqlalchemy import and_, delete, exists, func, literal, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import noload
+from sqlalchemy.sql.expression import tuple_
 
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
@@ -11,7 +14,9 @@ from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
+from letta.orm.blocks_tags import BlocksTags
 from letta.orm.errors import NoResultFound
+from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block as PydanticBlock, BlockUpdate
@@ -24,65 +29,105 @@ from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
 
+PROMPT_AFFECTING_BLOCK_FIELDS = {"description", "label", "limit", "read_only", "value"}
 
-def validate_block_limit_constraint(update_data: dict, existing_block: BlockModel) -> None:
+
+def _cursor_filter(sort_col, id_col, ref_sort_val, ref_id, forward: bool):
     """
-    Validates that block limit constraints are satisfied when updating a block.
-
-    Rules:
-    - If limit is being updated, it must be >= the length of the value (existing or new)
-    - If value is being updated, its length must not exceed the limit (existing or new)
-
-    Args:
-        update_data: Dictionary of fields to update
-        existing_block: The current block being updated
-
-    Raises:
-        LettaInvalidArgumentError: If validation fails
+    Returns a SQLAlchemy filter expression for cursor-based pagination.
+    If `forward` is True, returns records after the reference.
+    If `forward` is False, returns records before the reference.
     """
-    # If limit is being updated, ensure it's >= current value length
-    if "limit" in update_data:
-        # Get the value that will be used (either from update_data or existing)
-        value_to_check = update_data.get("value", existing_block.value)
-        limit_to_check = update_data["limit"]
-        if value_to_check and limit_to_check < len(value_to_check):
-            raise LettaInvalidArgumentError(
-                f"Limit ({limit_to_check}) cannot be less than current value length ({len(value_to_check)} characters)",
-                argument_name="limit",
-            )
-    # If value is being updated and there's an existing limit, ensure value doesn't exceed limit
-    elif "value" in update_data and existing_block.limit:
-        if len(update_data["value"]) > existing_block.limit:
-            raise LettaInvalidArgumentError(
-                f"Value length ({len(update_data['value'])} characters) exceeds block limit ({existing_block.limit} characters)",
-                argument_name="value",
-            )
-
-
-def validate_block_creation(block_data: dict) -> None:
-    """
-    Validates that block limit constraints are satisfied when creating a block.
-
-    Rules:
-    - If both value and limit are provided, limit must be >= value length
-
-    Args:
-        block_data: Dictionary of block fields for creation
-
-    Raises:
-        LettaInvalidArgumentError: If validation fails
-    """
-    value = block_data.get("value")
-    limit = block_data.get("limit")
-
-    if value and limit and len(value) > limit:
-        raise LettaInvalidArgumentError(
-            f"Block limit ({limit}) must be greater than or equal to value length ({len(value)} characters)", argument_name="limit"
+    if forward:
+        return or_(
+            sort_col > ref_sort_val,
+            and_(sort_col == ref_sort_val, id_col > ref_id),
+        )
+    else:
+        return or_(
+            sort_col < ref_sort_val,
+            and_(sort_col == ref_sort_val, id_col < ref_id),
         )
 
 
 class BlockManager:
     """Manager class to handle business logic related to Blocks."""
+
+    def __init__(self):
+        from letta.services.agent_manager import AgentManager
+
+        self.agent_manager = AgentManager(block_manager=self)
+
+    async def _rebuild_system_prompts_for_connected_agents(self, block_id: str, actor: PydanticUser) -> None:
+        """Rebuild system prompts for all agents connected to the given block."""
+        agent_ids = await self.get_agent_ids_for_block_async(block_id=block_id, actor=actor)
+        for agent_id in agent_ids:
+            try:
+                await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+            except Exception:
+                logger.exception(f"Failed to rebuild system prompt for agent {agent_id} after block {block_id} was updated")
+
+    # ======================================================================================================================
+    # Helper methods for pivot tables
+    # ======================================================================================================================
+
+    @staticmethod
+    async def _bulk_insert_block_pivot_async(session, table, rows: list[dict]):
+        """Bulk insert rows into a pivot table, ignoring conflicts."""
+        if not rows:
+            return
+
+        dialect = session.bind.dialect.name
+        if dialect == "postgresql":
+            stmt = pg_insert(table).values(rows).on_conflict_do_nothing()
+        elif dialect == "sqlite":
+            stmt = sa.insert(table).values(rows).prefix_with("OR IGNORE")
+        else:
+            # fallback: filter out exact-duplicate dicts in Python
+            seen = set()
+            filtered = []
+            for row in rows:
+                key = tuple(sorted(row.items()))
+                if key not in seen:
+                    seen.add(key)
+                    filtered.append(row)
+            stmt = sa.insert(table).values(filtered)
+
+        await session.execute(stmt)
+
+    @staticmethod
+    async def _replace_block_pivot_rows_async(session, table, block_id: str, rows: list[dict]):
+        """
+        Replace all pivot rows for a block atomically using MERGE pattern.
+        Only supports PostgreSQL (blocks_tags table not supported on SQLite).
+        """
+        dialect = session.bind.dialect.name
+
+        if dialect == "postgresql":
+            if rows:
+                # separate upsert and delete operations
+                stmt = pg_insert(table).values(rows)
+                stmt = stmt.on_conflict_do_nothing()
+                await session.execute(stmt)
+
+                # delete rows not in new set
+                pk_names = [c.name for c in table.primary_key.columns]
+                new_keys = [tuple(r[c] for c in pk_names) for r in rows]
+                await session.execute(
+                    delete(table).where(table.c.block_id == block_id, ~tuple_(*[table.c[c] for c in pk_names]).in_(new_keys))
+                )
+            else:
+                # if no rows to insert, just delete all
+                await session.execute(delete(table).where(table.c.block_id == block_id))
+        else:
+            # fallback: use original DELETE + INSERT pattern
+            await session.execute(delete(table).where(table.c.block_id == block_id))
+            if rows:
+                await BlockManager._bulk_insert_block_pivot_async(session, table, rows)
+
+    # ======================================================================================================================
+    # Basic CRUD operations
+    # ======================================================================================================================
 
     @enforce_types
     @trace_method
@@ -95,11 +140,21 @@ class BlockManager:
         else:
             async with db_registry.async_session() as session:
                 data = block.model_dump(to_orm=True, exclude_none=True)
-                # Validate block creation constraints
-                validate_block_creation(data)
-                block = BlockModel(**data, organization_id=actor.organization_id)
-                await block.create_async(session, actor=actor, no_commit=True, no_refresh=True)
-                pydantic_block = block.to_pydantic()
+                # Extract tags before creating the ORM model (tags is not a column)
+                tags = data.pop("tags", None) or []
+
+                block_model = BlockModel(**data, organization_id=actor.organization_id)
+                await block_model.create_async(session, actor=actor, no_commit=True, no_refresh=True)
+
+                if tags:
+                    await self._bulk_insert_block_pivot_async(
+                        session,
+                        BlocksTags.__table__,
+                        [{"block_id": block_model.id, "tag": tag, "organization_id": actor.organization_id} for tag in tags],
+                    )
+
+                pydantic_block = block_model.to_pydantic()
+                pydantic_block.tags = tags
                 # context manager now handles commits
                 # await session.commit()
                 return pydantic_block
@@ -119,20 +174,35 @@ class BlockManager:
             return []
 
         async with db_registry.async_session() as session:
-            # Validate all blocks before creating any
             validated_data = []
-            for block in blocks:
+            tags_by_index: Dict[int, List[str]] = {}
+            for i, block in enumerate(blocks):
                 block_data = block.model_dump(to_orm=True, exclude_none=True)
-                validate_block_creation(block_data)
+                tags = block_data.pop("tags", None) or []
+                if tags:
+                    tags_by_index[i] = tags
                 validated_data.append(block_data)
 
             block_models = [BlockModel(**data, organization_id=actor.organization_id) for data in validated_data]
             created_models = await BlockModel.batch_create_async(
                 items=block_models, db_session=session, actor=actor, no_commit=True, no_refresh=True
             )
-            result = [m.to_pydantic() for m in created_models]
-            # context manager now handles commits
-            # await session.commit()
+
+            all_tag_rows = []
+            for i, model in enumerate(created_models):
+                if i in tags_by_index:
+                    for tag in tags_by_index[i]:
+                        all_tag_rows.append({"block_id": model.id, "tag": tag, "organization_id": actor.organization_id})
+
+            if all_tag_rows:
+                await self._bulk_insert_block_pivot_async(session, BlocksTags.__table__, all_tag_rows)
+
+            result = []
+            for i, model in enumerate(created_models):
+                pydantic_block = model.to_pydantic()
+                pydantic_block.tags = tags_by_index.get(i, [])
+                result.append(pydantic_block)
+
             return result
 
     @enforce_types
@@ -144,17 +214,60 @@ class BlockManager:
             block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
             update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
-            # Validate limit constraints before updating
-            validate_block_limit_constraint(update_data, block)
+            # Extract tags from update data (it's not a column on the block table)
+            new_tags = update_data.pop("tags", None)
 
-            for key, value in update_data.items():
-                setattr(block, key, value)
+            current_tags: Optional[List[str]] = None
+            if new_tags is not None:
+                result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                current_tags = sorted(row[0] for row in result.fetchall())
 
-            await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+            has_scalar_changes = any(getattr(block, key) != value for key, value in update_data.items())
+            has_prompt_changes = any(
+                key in PROMPT_AFFECTING_BLOCK_FIELDS and getattr(block, key) != value for key, value in update_data.items()
+            )
+            has_tag_changes = new_tags is not None and sorted(new_tags) != (current_tags or [])
+
+            if not has_scalar_changes and not has_tag_changes:
+                logger.debug(f"Skipping no-op block update for block {block_id}")
+                pydantic_block = block.to_pydantic()
+
+                if current_tags is None:
+                    result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                    current_tags = [row[0] for row in result.fetchall()]
+
+                pydantic_block.tags = current_tags
+                return pydantic_block
+
+            if has_scalar_changes:
+                for key, value in update_data.items():
+                    setattr(block, key, value)
+
+                await block.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+
+            if has_tag_changes:
+                await self._replace_block_pivot_rows_async(
+                    session,
+                    BlocksTags.__table__,
+                    block_id,
+                    [{"block_id": block_id, "tag": tag, "organization_id": block.organization_id} for tag in new_tags],
+                )
+
             pydantic_block = block.to_pydantic()
+            if new_tags is not None:
+                pydantic_block.tags = new_tags
+            else:
+                result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                pydantic_block.tags = [row[0] for row in result.fetchall()]
+
             # context manager now handles commits
             # await session.commit()
-            return pydantic_block
+
+        # Recompile system prompts for all agents connected to this block
+        if has_prompt_changes:
+            await self._rebuild_system_prompts_for_connected_agents(block_id, actor)
+
+        return pydantic_block
 
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
@@ -164,6 +277,8 @@ class BlockManager:
         async with db_registry.async_session() as session:
             # First, delete all references in blocks_agents table
             await session.execute(delete(BlocksAgents).where(BlocksAgents.block_id == block_id))
+            # Also delete all tags associated with this block
+            await session.execute(delete(BlocksTags).where(BlocksTags.block_id == block_id))
             await session.flush()
 
             # Then delete the block itself
@@ -192,19 +307,18 @@ class BlockManager:
         connected_to_agents_count_eq: Optional[List[int]] = None,
         ascending: bool = True,
         show_hidden_blocks: Optional[bool] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
     ) -> List[PydanticBlock]:
         """Async version of get_blocks method. Retrieve blocks based on various optional filters."""
-        from sqlalchemy import select
-        from sqlalchemy.orm import noload
-
-        from letta.orm.sqlalchemy_base import AccessType
-
         async with db_registry.async_session() as session:
             # Start with a basic query
             query = select(BlockModel)
 
             # Explicitly avoid loading relationships
-            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+            query = query.options(
+                noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups), noload(BlockModel.tags)
+            )
 
             # Apply access control
             query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
@@ -295,6 +409,20 @@ class BlockManager:
                 query = query.join(BlockModel.identities).filter(BlockModel.identities.property.mapper.class_.id == identity_id)
                 needs_distinct = True
 
+            if tags:
+                if match_all_tags:
+                    # Must match ALL tags - use subquery with having count
+                    tag_subquery = (
+                        select(BlocksTags.block_id)
+                        .where(BlocksTags.tag.in_(tags))
+                        .group_by(BlocksTags.block_id)
+                        .having(func.count(BlocksTags.tag) == literal(len(tags)))
+                    )
+                    query = query.where(BlockModel.id.in_(tag_subquery))
+                else:
+                    # Must match ANY tag
+                    query = query.where(exists().where((BlocksTags.block_id == BlockModel.id) & (BlocksTags.tag.in_(tags))))
+
             if after:
                 result = (await session.execute(select(BlockModel.created_at, BlockModel.id).where(BlockModel.id == after))).first()
                 if result:
@@ -303,16 +431,7 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
                         after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            BlockModel.created_at > after_sort_value,
-                            or_(BlockModel.created_at == after_sort_value, BlockModel.id > after_id),
-                        )
-                    else:
-                        query = query.where(
-                            BlockModel.created_at < after_sort_value,
-                            or_(BlockModel.created_at == after_sort_value, BlockModel.id < after_id),
-                        )
+                    query = query.where(_cursor_filter(BlockModel.created_at, BlockModel.id, after_sort_value, after_id, forward=ascending))
 
             if before:
                 result = (await session.execute(select(BlockModel.created_at, BlockModel.id).where(BlockModel.id == before))).first()
@@ -322,18 +441,12 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
                         before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            BlockModel.created_at < before_sort_value,
-                            or_(BlockModel.created_at == before_sort_value, BlockModel.id < before_id),
-                        )
-                    else:
-                        query = query.where(
-                            BlockModel.created_at > before_sort_value,
-                            or_(BlockModel.created_at == before_sort_value, BlockModel.id > before_id),
-                        )
+                    query = query.where(
+                        _cursor_filter(BlockModel.created_at, BlockModel.id, before_sort_value, before_id, forward=not ascending)
+                    )
 
             # Apply ordering and handle distinct if needed
+            # Note: PostgreSQL's DISTINCT ON requires ORDER BY to start with the DISTINCT ON column
             if needs_distinct:
                 if ascending:
                     query = query.distinct(BlockModel.id).order_by(BlockModel.id.asc(), BlockModel.created_at.asc())
@@ -353,29 +466,46 @@ class BlockManager:
             result = await session.execute(query)
             blocks = result.scalars().all()
 
-            return [block.to_pydantic() for block in blocks]
+            if not blocks:
+                return []
+
+            block_ids = [block.id for block in blocks]
+            tags_result = await session.execute(select(BlocksTags.block_id, BlocksTags.tag).where(BlocksTags.block_id.in_(block_ids)))
+            tags_by_block: Dict[str, List[str]] = {}
+            for row in tags_result.fetchall():
+                block_id, tag = row
+                if block_id not in tags_by_block:
+                    tags_by_block[block_id] = []
+                tags_by_block[block_id].append(tag)
+
+            pydantic_blocks = []
+            for block in blocks:
+                pydantic_block = block.to_pydantic()
+                pydantic_block.tags = tags_by_block.get(block.id, [])
+                pydantic_blocks.append(pydantic_block)
+
+            return pydantic_blocks
 
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
     @trace_method
-    async def get_block_by_id_async(self, block_id: str, actor: Optional[PydanticUser] = None) -> Optional[PydanticBlock]:
-        """Retrieve a block by its name."""
+    async def get_block_by_id_async(self, block_id: str, actor: PydanticUser) -> Optional[PydanticBlock]:
+        """Retrieve a block by its ID, including tags."""
         async with db_registry.async_session() as session:
             try:
                 block = await BlockModel.read_async(db_session=session, identifier=block_id, actor=actor)
-                return block.to_pydantic()
+                pydantic_block = block.to_pydantic()
+                tags_result = await session.execute(select(BlocksTags.tag).where(BlocksTags.block_id == block_id))
+                pydantic_block.tags = [row[0] for row in tags_result.fetchall()]
+
+                return pydantic_block
             except NoResultFound:
                 return None
 
     @enforce_types
     @trace_method
-    async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
+    async def get_all_blocks_by_ids_async(self, block_ids: List[str], actor: PydanticUser) -> List[PydanticBlock]:
         """Retrieve blocks by their ids without loading unnecessary relationships. Async implementation."""
-        from sqlalchemy import select
-        from sqlalchemy.orm import noload
-
-        from letta.orm.sqlalchemy_base import AccessType
-
         if not block_ids:
             return []
 
@@ -387,11 +517,12 @@ class BlockManager:
             query = query.where(BlockModel.id.in_(block_ids))
 
             # Explicitly avoid loading relationships
-            query = query.options(noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups))
+            query = query.options(
+                noload(BlockModel.agents), noload(BlockModel.identities), noload(BlockModel.groups), noload(BlockModel.tags)
+            )
 
-            # Apply access control if actor is provided
-            if actor:
-                query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+            # Apply access control - actor is required for org-scoping
+            query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
             # TODO: Add soft delete filter if applicable
             # if hasattr(BlockModel, "is_deleted"):
@@ -401,19 +532,39 @@ class BlockManager:
             result = await session.execute(query)
             blocks = result.scalars().all()
 
-            # Convert to Pydantic models
+            # Convert to Pydantic models and preserve caller-provided ID order
             pydantic_blocks = [block.to_pydantic() for block in blocks]
+            blocks_by_id = {b.id: b for b in pydantic_blocks}
+            ordered_blocks = [blocks_by_id.get(block_id) for block_id in block_ids]
 
-            # For backward compatibility, add None for missing blocks
+            # For backward compatibility, include None for missing blocks
             if len(pydantic_blocks) < len(block_ids):
-                {block.id for block in pydantic_blocks}
-                result_blocks = []
-                for block_id in block_ids:
-                    block = next((b for b in pydantic_blocks if b.id == block_id), None)
-                    result_blocks.append(block)
-                return result_blocks
+                return ordered_blocks
 
-            return pydantic_blocks
+            return ordered_blocks
+
+    @enforce_types
+    @trace_method
+    async def get_blocks_by_agent_async(self, agent_id: str, actor: PydanticUser) -> List[PydanticBlock]:
+        """Retrieve all blocks attached to a specific agent."""
+        async with db_registry.async_session() as session:
+            query = (
+                select(BlockModel)
+                .join(BlocksAgents, BlockModel.id == BlocksAgents.block_id)
+                .where(
+                    BlocksAgents.agent_id == agent_id,
+                    BlockModel.organization_id == actor.organization_id,
+                )
+                .options(
+                    noload(BlockModel.agents),
+                    noload(BlockModel.identities),
+                    noload(BlockModel.groups),
+                    noload(BlockModel.tags),
+                )
+            )
+            result = await session.execute(query)
+            blocks = result.scalars().all()
+            return [block.to_pydantic() for block in blocks]
 
     @enforce_types
     @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
@@ -461,16 +612,7 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
                         after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            AgentModel.created_at > after_sort_value,
-                            or_(AgentModel.created_at == after_sort_value, AgentModel.id > after_id),
-                        )
-                    else:
-                        query = query.where(
-                            AgentModel.created_at < after_sort_value,
-                            or_(AgentModel.created_at == after_sort_value, AgentModel.id < after_id),
-                        )
+                    query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_sort_value, after_id, forward=ascending))
 
             if before:
                 result = (await session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before))).first()
@@ -480,16 +622,9 @@ class BlockManager:
                     if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
                         before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
 
-                    if ascending:
-                        query = query.where(
-                            AgentModel.created_at < before_sort_value,
-                            or_(AgentModel.created_at == before_sort_value, AgentModel.id < before_id),
-                        )
-                    else:
-                        query = query.where(
-                            AgentModel.created_at > before_sort_value,
-                            or_(AgentModel.created_at == before_sort_value, AgentModel.id > before_id),
-                        )
+                    query = query.where(
+                        _cursor_filter(AgentModel.created_at, AgentModel.id, before_sort_value, before_id, forward=not ascending)
+                    )
 
             # Apply sorting
             if ascending:
@@ -514,6 +649,21 @@ class BlockManager:
         return await decrypt_agent_secrets(agents_encrypted)
 
     @enforce_types
+    @raise_on_invalid_id(param_name="block_id", expected_prefix=PrimitiveType.BLOCK)
+    @trace_method
+    async def get_agent_ids_for_block_async(self, block_id: str, actor: PydanticUser) -> List[str]:
+        """
+        Retrieve all agent IDs associated with a given block.
+        This is a lightweight query that only returns IDs, not full agent states.
+        """
+        async with db_registry.async_session() as session:
+            query = select(BlocksAgents.agent_id).where(
+                BlocksAgents.block_id == block_id,
+            )
+            result = await session.execute(query)
+            return [row[0] for row in result.fetchall()]
+
+    @enforce_types
     @trace_method
     async def size_async(self, actor: PydanticUser) -> int:
         """
@@ -521,6 +671,88 @@ class BlockManager:
         """
         async with db_registry.async_session() as session:
             return await BlockModel.size_async(db_session=session, actor=actor)
+
+    @enforce_types
+    @trace_method
+    async def count_blocks_async(
+        self,
+        actor: PydanticUser,
+        label: Optional[str] = None,
+        is_template: Optional[bool] = None,
+        template_name: Optional[str] = None,
+        project_id: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+    ) -> int:
+        """
+        Count blocks with optional filtering. Supports same filters as get_blocks_async.
+        """
+        async with db_registry.async_session() as session:
+            query = select(func.count(BlockModel.id))
+
+            # Apply access control
+            query = BlockModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+            query = query.where(BlockModel.organization_id == actor.organization_id)
+
+            # Apply filters
+            if label:
+                query = query.where(BlockModel.label == label)
+            if is_template is not None:
+                query = query.where(BlockModel.is_template == is_template)
+            if template_name:
+                query = query.where(BlockModel.template_name == template_name)
+            if project_id:
+                query = query.where(BlockModel.project_id == project_id)
+
+            # Apply tag filtering
+            if tags:
+                if match_all_tags:
+                    tag_subquery = (
+                        select(BlocksTags.block_id)
+                        .where(BlocksTags.tag.in_(tags))
+                        .group_by(BlocksTags.block_id)
+                        .having(func.count(BlocksTags.tag) == literal(len(tags)))
+                    )
+                    query = query.where(BlockModel.id.in_(tag_subquery))
+                else:
+                    query = query.where(exists().where((BlocksTags.block_id == BlockModel.id) & (BlocksTags.tag.in_(tags))))
+
+            result = await session.execute(query)
+            return result.scalar() or 0
+
+    @enforce_types
+    @trace_method
+    async def list_tags_async(
+        self,
+        actor: PydanticUser,
+        query_text: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Get all unique block tags for the actor's organization.
+
+        Args:
+            actor: User performing the action.
+            query_text: Filter tags by text search.
+
+        Returns:
+            List[str]: List of unique block tags.
+        """
+        async with db_registry.async_session() as session:
+            query = (
+                select(BlocksTags.tag)
+                .join(BlockModel, BlocksTags.block_id == BlockModel.id)
+                .where(BlockModel.organization_id == actor.organization_id)
+                .distinct()
+            )
+
+            if query_text:
+                if settings.database_engine is DatabaseChoice.POSTGRES:
+                    query = query.where(BlocksTags.tag.ilike(f"%{query_text}%"))
+                else:
+                    query = query.where(func.lower(BlocksTags.tag).like(func.lower(f"%{query_text}%")))
+
+            result = await session.execute(query)
+            return [row[0] for row in result.fetchall()]
 
     # Block History Functions
 
@@ -592,9 +824,6 @@ class BlockManager:
 
             for block in blocks:
                 new_val = updates[block.id]
-                if len(new_val) > block.limit:
-                    logger.warning(f"Value length ({len(new_val)}) exceeds limit ({block.limit}) for block {block.id!r}, truncating...")
-                    new_val = new_val[: block.limit]
                 block.value = new_val
 
             # context manager now handles commits

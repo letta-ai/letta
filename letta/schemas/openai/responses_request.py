@@ -29,7 +29,7 @@ class ResponsesRequest(BaseModel):
     parallel_tool_calls: Optional[bool] = Field(default=NOT_GIVEN)
     previous_response_id: Optional[str] = Field(default=NOT_GIVEN)
     prompt: Optional[ResponsePromptParam] = Field(default=NOT_GIVEN)
-    prompt_cache_key: Optional[str] = Field(default=NOT_GIVEN)
+    prompt_cache_retention: Optional[Literal["in_memory", "24h"]] = Field(default=NOT_GIVEN)
     reasoning: Optional[Reasoning] = Field(default=NOT_GIVEN)
     safety_identifier: Optional[str] = Field(default=NOT_GIVEN)
     service_tier: Optional[Literal["auto", "default", "flex", "scale", "priority"]] = Field(default=NOT_GIVEN)

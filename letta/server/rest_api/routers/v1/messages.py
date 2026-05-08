@@ -8,13 +8,14 @@ from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.errors import LettaInvalidArgumentError
 from letta.log import get_logger
 from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
-from letta.schemas.letta_message import LettaMessageSearchResult, LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageSearchResult, LettaMessageUnion, MessageType
 from letta.schemas.letta_request import CreateBatch
 from letta.schemas.letta_response import LettaBatchMessages
-from letta.schemas.message import Message, MessageSearchRequest, MessageSearchResult, SearchAllMessagesRequest
+from letta.schemas.message import Message, SearchAllMessagesRequest
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
+from letta.validators import MessageId
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -41,6 +42,9 @@ async def list_all_messages(
         "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     conversation_id: Optional[str] = Query(None, description="Conversation ID to filter messages by"),
+    include_return_message_types: Optional[List[MessageType]] = Query(
+        None, description="Message types to include in response. When null, all message types are returned."
+    ),
 ):
     """
     List messages across all agents for the current user.
@@ -53,6 +57,7 @@ async def list_all_messages(
         reverse=(order == "desc"),
         return_message_object=False,
         conversation_id=conversation_id,
+        include_return_message_types=include_return_message_types,
         actor=actor,
     )
 
@@ -66,6 +71,7 @@ async def search_all_messages(
     """
     Search messages across the organization with optional agent filtering.
     Returns messages with FTS/vector ranks and total RRF score.
+
 
     This is a cloud-only feature.
     """
@@ -230,7 +236,7 @@ async def list_messages_for_batch(
 
     # Get messages directly using our efficient method
     messages = await server.batch_manager.get_messages_for_letta_batch_async(
-        letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, ascending=(order == "asc"), before=before, after=after
+        letta_batch_job_id=batch_id, actor=actor, limit=limit, agent_id=agent_id, sort_descending=(order == "desc"), cursor=after
     )
 
     return LettaBatchMessages(messages=messages)
@@ -264,3 +270,19 @@ async def cancel_batch(
 
             # Update all the batch_job statuses
             await server.batch_manager.update_llm_batch_status_async(llm_batch_id=llm_batch_job.id, status=JobStatus.cancelled, actor=actor)
+
+
+@router.get("/{message_id}", response_model=MessagesResponse, operation_id="retrieve_message")
+async def retrieve_message(
+    message_id: MessageId,
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Retrieve a message by ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    message = await server.message_manager.get_message_by_id_async(message_id=message_id, actor=actor)
+    if message is None:
+        raise HTTPException(status_code=404, detail=f"Message with id {message_id} not found.")
+    return message.to_letta_messages()

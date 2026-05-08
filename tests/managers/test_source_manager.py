@@ -1,19 +1,8 @@
-import json
-import logging
-import os
-import random
-import re
-import string
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import List
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
-from _pytest.python_api import approx
-from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 
 # Import shared fixtures and constants from conftest
 from conftest import (
@@ -21,85 +10,22 @@ from conftest import (
     DEFAULT_EMBEDDING_CONFIG,
     USING_SQLITE,
 )
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.orm.exc import StaleDataError
+from sqlalchemy.exc import InvalidRequestError
 
-from letta.config import LettaConfig
-from letta.constants import (
-    BASE_MEMORY_TOOLS,
-    BASE_SLEEPTIME_TOOLS,
-    BASE_TOOLS,
-    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
-    BASE_VOICE_SLEEPTIME_TOOLS,
-    BUILTIN_TOOLS,
-    DEFAULT_ORG_ID,
-    DEFAULT_ORG_NAME,
-    FILES_TOOLS,
-    LETTA_TOOL_EXECUTION_DIR,
-    LETTA_TOOL_SET,
-    LOCAL_ONLY_MULTI_AGENT_TOOLS,
-    MCP_TOOL_TAG_NAME_PREFIX,
-    MULTI_AGENT_TOOLS,
-)
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import LettaAgentNotFoundError, LettaInvalidArgumentError
-from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.functions.mcp_client.types import MCPTool
-from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer
-from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
-from letta.orm import Base, Block
-from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
+from letta.schemas.agent import CreateAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
-    ActorType,
-    AgentStepStatus,
     FileProcessingStatus,
-    JobStatus,
-    JobType,
-    MessageRole,
-    ProviderType,
-    SandboxType,
-    StepStatus,
-    TagMatchMode,
-    ToolType,
     VectorDBProvider,
 )
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import BatchJob, Job, Job as PydanticJob, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
-from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
-from letta.schemas.passage import Passage as PydanticPassage
-from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.run import Run as PydanticRun
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source as PydanticSource, SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser, UserUpdate
-from letta.server.db import db_registry
 from letta.server.server import SyncServer
-from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
-from letta.services.step_manager import FeedbackType
-from letta.settings import settings, tool_settings
-from letta.utils import calculate_file_defaults_based_on_context_window
-from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
-from tests.utils import random_string
 
 
 # Helper function for file content tests
@@ -461,7 +387,7 @@ async def test_create_sources_with_same_name_raises_error(server: SyncServer, de
         metadata={"type": "medical"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
-    source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
+    await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Attempting to create another source with the same name should raise an IntegrityError
     source_pydantic = PydanticSource(
@@ -1194,7 +1120,7 @@ async def test_file_status_invalid_transitions(server, default_user, default_sou
     )
     created = await server.file_manager.create_file(file_metadata=meta, actor=default_user)
 
-    with pytest.raises(ValueError, match="Invalid state transition.*pending.*COMPLETED"):
+    with pytest.raises(ValueError, match=r"Invalid state transition.*pending.*COMPLETED"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1216,7 +1142,7 @@ async def test_file_status_invalid_transitions(server, default_user, default_sou
         processing_status=FileProcessingStatus.PARSING,
     )
 
-    with pytest.raises(ValueError, match="Invalid state transition.*parsing.*COMPLETED"):
+    with pytest.raises(ValueError, match=r"Invalid state transition.*parsing.*COMPLETED"):
         await server.file_manager.update_file_status(
             file_id=created2.id,
             actor=default_user,
@@ -1233,7 +1159,7 @@ async def test_file_status_invalid_transitions(server, default_user, default_sou
     )
     created3 = await server.file_manager.create_file(file_metadata=meta3, actor=default_user)
 
-    with pytest.raises(ValueError, match="Invalid state transition.*pending.*EMBEDDING"):
+    with pytest.raises(ValueError, match=r"Invalid state transition.*pending.*EMBEDDING"):
         await server.file_manager.update_file_status(
             file_id=created3.id,
             actor=default_user,
@@ -1260,14 +1186,14 @@ async def test_file_status_terminal_states(server, default_user, default_source)
     await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
 
     # Cannot transition from COMPLETED to any state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state completed"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
             processing_status=FileProcessingStatus.EMBEDDING,
         )
 
-    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state completed"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1293,7 +1219,7 @@ async def test_file_status_terminal_states(server, default_user, default_source)
     )
 
     # Cannot transition from ERROR to any state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state error"):
         await server.file_manager.update_file_status(
             file_id=created2.id,
             actor=default_user,
@@ -1387,7 +1313,7 @@ async def test_file_status_terminal_state_non_status_updates(server, default_use
     await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.COMPLETED)
 
     # Cannot update chunks_embedded in COMPLETED state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state completed"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1395,7 +1321,7 @@ async def test_file_status_terminal_state_non_status_updates(server, default_use
         )
 
     # Cannot update total_chunks in COMPLETED state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state completed"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1403,7 +1329,7 @@ async def test_file_status_terminal_state_non_status_updates(server, default_use
         )
 
     # Cannot update error_message in COMPLETED state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state completed"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state completed"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1427,7 +1353,7 @@ async def test_file_status_terminal_state_non_status_updates(server, default_use
     )
 
     # Cannot update chunks_embedded in ERROR state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state error"):
         await server.file_manager.update_file_status(
             file_id=created2.id,
             actor=default_user,
@@ -1473,7 +1399,7 @@ async def test_file_status_race_condition_prevention(server, default_user, defau
 
     # Try to continue with EMBEDDING as if error didn't happen (race condition)
     # This should fail because file is in ERROR state
-    with pytest.raises(ValueError, match="Cannot update.*terminal state error"):
+    with pytest.raises(ValueError, match=r"Cannot update.*terminal state error"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1498,7 +1424,7 @@ async def test_file_status_backwards_transitions(server, default_user, default_s
     await server.file_manager.update_file_status(file_id=created.id, actor=default_user, processing_status=FileProcessingStatus.EMBEDDING)
 
     # Cannot go back to PARSING
-    with pytest.raises(ValueError, match="Invalid state transition.*embedding.*PARSING"):
+    with pytest.raises(ValueError, match=r"Invalid state transition.*embedding.*PARSING"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,
@@ -1506,7 +1432,7 @@ async def test_file_status_backwards_transitions(server, default_user, default_s
         )
 
     # Cannot go back to PENDING
-    with pytest.raises(ValueError, match="Cannot transition to PENDING state.*PENDING is only valid as initial state"):
+    with pytest.raises(ValueError, match=r"Cannot transition to PENDING state.*PENDING is only valid as initial state"):
         await server.file_manager.update_file_status(
             file_id=created.id,
             actor=default_user,

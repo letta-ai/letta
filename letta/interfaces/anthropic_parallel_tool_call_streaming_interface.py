@@ -3,7 +3,13 @@ import json
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from opentelemetry.trace import Span
+
+    from letta.schemas.llm_config import LLMConfig
+    from letta.schemas.usage import LettaUsageStatistics
 
 from anthropic import AsyncStream
 from anthropic.types.beta import (
@@ -39,6 +45,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import JSONParser, PydanticJSONParser
+from letta.server.rest_api.streaming_response import RunCancelledException
 from letta.server.rest_api.utils import decrement_message_uuid
 
 logger = get_logger(__name__)
@@ -73,10 +80,12 @@ class SimpleAnthropicStreamingInterface:
         requires_approval_tools: list = [],
         run_id: str | None = None,
         step_id: str | None = None,
+        llm_config: "LLMConfig | None" = None,
     ):
         self.json_parser: JSONParser = PydanticJSONParser()
         self.run_id = run_id
         self.step_id = step_id
+        self.llm_config = llm_config
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -144,6 +153,26 @@ class SimpleAnthropicStreamingInterface:
         if tool_calls:
             return tool_calls[0]
         return None
+
+    def get_usage_statistics(self) -> "LettaUsageStatistics":
+        """Extract usage statistics from accumulated streaming data.
+
+        Returns:
+            LettaUsageStatistics with token counts from the stream.
+        """
+        from letta.schemas.usage import LettaUsageStatistics
+
+        # Anthropic: input_tokens is NON-cached only, must add cache tokens for total
+        actual_input_tokens = (self.input_tokens or 0) + (self.cache_read_tokens or 0) + (self.cache_creation_tokens or 0)
+
+        return LettaUsageStatistics(
+            prompt_tokens=actual_input_tokens,
+            completion_tokens=self.output_tokens or 0,
+            total_tokens=actual_input_tokens + (self.output_tokens or 0),
+            cached_input_tokens=self.cache_read_tokens if self.cache_read_tokens else None,
+            cache_write_tokens=self.cache_creation_tokens if self.cache_creation_tokens else None,
+            reasoning_tokens=None,  # Anthropic doesn't report reasoning tokens separately
+        )
 
     def get_reasoning_content(self) -> list[TextContent | ReasoningContent | RedactedReasoningContent]:
         def _process_group(
@@ -228,10 +257,10 @@ class SimpleAnthropicStreamingInterface:
                                 prev_message_type = new_message_type
                             # print(f"Yielding message: {message}")
                             yield message
-                    except asyncio.CancelledError as e:
+                    except (asyncio.CancelledError, RunCancelledException) as e:
                         import traceback
 
-                        logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                        logger.info("Cancelled stream attempt but overriding (%s) %s: %s", type(e).__name__, e, traceback.format_exc())
                         async for message in self._process_event(event, ttft_span, prev_message_type, message_index):
                             new_message_type = message.message_type
                             if new_message_type != prev_message_type:
@@ -253,7 +282,13 @@ class SimpleAnthropicStreamingInterface:
                     attributes={"stop_reason": StopReasonType.error.value, "error": str(e), "stacktrace": traceback.format_exc()},
                 )
             yield LettaStopReason(stop_reason=StopReasonType.error)
-            raise e
+
+            # Transform Anthropic errors into our custom error types for consistent handling
+            from letta.llm_api.anthropic_client import AnthropicClient
+
+            client = AnthropicClient()
+            transformed_error = client.handle_llm_error(e, llm_config=self.llm_config)
+            raise transformed_error
         finally:
             logger.info("AnthropicStreamingInterface: Stream processing complete.")
 
@@ -295,6 +330,7 @@ class SimpleAnthropicStreamingInterface:
                         id=decrement_message_uuid(self.letta_message_id),
                         # Do not emit placeholder arguments here to avoid UI duplicates
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id),
+                        tool_calls=ToolCallDelta(name=name, tool_call_id=call_id),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         run_id=self.run_id,
@@ -400,6 +436,7 @@ class SimpleAnthropicStreamingInterface:
                     tool_call_msg = ApprovalRequestMessage(
                         id=decrement_message_uuid(self.letta_message_id),
                         tool_call=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
+                        tool_calls=ToolCallDelta(name=name, tool_call_id=call_id, arguments=delta.partial_json),
                         date=datetime.now(timezone.utc).isoformat(),
                         otid=Message.generate_otid_from_id(decrement_message_uuid(self.letta_message_id), -1),
                         run_id=self.run_id,

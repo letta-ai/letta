@@ -22,10 +22,10 @@ from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import DuplicateFileHandling, FileProcessingStatus
-from letta.schemas.file import FileMetadata, FileMetadataBase
-from letta.schemas.folder import BaseFolder, Folder
+from letta.schemas.file import FileMetadata
+from letta.schemas.folder import Folder
 from letta.schemas.passage import Passage
-from letta.schemas.source import BaseSource, Source, SourceCreate, SourceUpdate
+from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
@@ -331,7 +331,7 @@ async def upload_file_to_folder(
             return response
         elif duplicate_handling == DuplicateFileHandling.REPLACE:
             # delete the file
-            deleted_file = await server.file_manager.delete_file(file_id=existing_file.id, actor=actor)
+            await server.file_manager.delete_file(file_id=existing_file.id, actor=actor)
             unique_filename = original_filename
 
     if not unique_filename:
@@ -594,7 +594,7 @@ async def load_file_to_source_async(server: SyncServer, source_id: str, job_id: 
 
 
 async def sleeptime_document_ingest_async(server: SyncServer, source_id: str, actor: User, clear_history: bool = False):
-    source = await server.source_manager.get_source_by_id(source_id=source_id)
+    source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agents = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     for agent in agents:
         if agent.enable_sleeptime:

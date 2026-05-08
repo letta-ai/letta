@@ -4,6 +4,7 @@ from typing import List
 from openai import AsyncOpenAI, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -34,6 +35,8 @@ class TogetherClient(OpenAIClient):
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
         if not api_key:

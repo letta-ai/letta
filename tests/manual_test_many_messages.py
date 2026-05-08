@@ -17,7 +17,7 @@ from letta.server.server import SyncServer
 
 @pytest.fixture(autouse=True)
 def truncate_database():
-    from letta.server.db import db_context
+    from letta.server.db import db_context  # type: ignore[attr-defined]
 
     with db_context() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
@@ -94,7 +94,7 @@ def create_send_message(agent_id, organization_id, assistant_text, tool_call_id,
         "content": [{"type": "text", "text": f"Assistant reply generated at {timestamp.strftime('%Y-%m-%d %I:%M:%S %p PST-0800')}."}],
         "organization_id": organization_id,
         "agent_id": agent_id,
-        "model": "claude-3-5-haiku-20241022",
+        "model": "claude-haiku-4-5-20251001",
         "name": None,
         "tool_calls": [
             {
@@ -126,7 +126,7 @@ def create_tool_message(agent_id, organization_id, tool_call_id, timestamp):
         ],
         "organization_id": organization_id,
         "agent_id": agent_id,
-        "model": "claude-3-5-haiku-20241022",
+        "model": "claude-haiku-4-5-20251001",
         "name": "send_message",
         "tool_calls": None,
         "tool_call_id": tool_call_id,

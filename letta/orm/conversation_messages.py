@@ -69,5 +69,5 @@ class ConversationMessage(SqlalchemyBase, OrganizationMixin):
     )
     message: Mapped["Message"] = relationship(
         "Message",
-        lazy="selectin",
+        lazy="raise",
     )

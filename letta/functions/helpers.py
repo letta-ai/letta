@@ -1,25 +1,18 @@
-import asyncio
 import json
 import logging
-import threading
-from random import uniform
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+
+if TYPE_CHECKING:
+    try:
+        from langchain.tools.base import BaseTool as LangChainBaseTool
+    except ImportError:
+        LangChainBaseTool = None
 
 import humps
 from pydantic import BaseModel, Field, create_model
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.functions.interface import MultiAgentMessagingInterface
-from letta.orm.errors import NoResultFound
-from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import AssistantMessage
-from letta.schemas.letta_response import LettaResponse
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.message import Message, MessageCreate
-from letta.schemas.user import User
-from letta.server.rest_api.dependencies import get_letta_server
-from letta.settings import settings
-from letta.utils import safe_create_task
+from letta.schemas.message import Message
 
 
 # TODO needed?
@@ -36,7 +29,8 @@ def {mcp_tool_name}(**kwargs):
 
 
 def generate_langchain_tool_wrapper(
-    tool: "LangChainBaseTool", additional_imports_module_attr_map: dict[str, str] = None
+    tool: "LangChainBaseTool",
+    additional_imports_module_attr_map: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     tool_name = tool.__class__.__name__
     import_statement = f"from langchain_community.tools import {tool_name}"
@@ -207,300 +201,6 @@ def _generate_import_code(module_attr_map: Optional[dict]):
     return "\n".join(code_lines)
 
 
-def _parse_letta_response_for_assistant_message(
-    target_agent_id: str,
-    letta_response: LettaResponse,
-) -> Optional[str]:
-    messages = []
-    for m in letta_response.messages:
-        if isinstance(m, AssistantMessage):
-            messages.append(m.content)
-
-    if messages:
-        messages_str = "\n".join(messages)
-        return f"{target_agent_id} said: '{messages_str}'"
-    else:
-        return f"No response from {target_agent_id}"
-
-
-async def async_execute_send_message_to_agent(
-    sender_agent: "Agent",
-    messages: List[MessageCreate],
-    other_agent_id: str,
-    log_prefix: str,
-) -> Optional[str]:
-    """
-    Async helper to:
-      1) validate the target agent exists & is in the same org,
-      2) send a message via _async_send_message_with_retries.
-    """
-    server = get_letta_server()
-
-    # 1. Validate target agent
-    try:
-        server.agent_manager.get_agent_by_id(agent_id=other_agent_id, actor=sender_agent.user)
-    except NoResultFound:
-        raise ValueError(f"Target agent {other_agent_id} either does not exist or is not in org ({sender_agent.user.organization_id}).")
-
-    # 2. Use your async retry logic
-    return await _async_send_message_with_retries(
-        server=server,
-        sender_agent=sender_agent,
-        target_agent_id=other_agent_id,
-        messages=messages,
-        max_retries=settings.multi_agent_send_message_max_retries,
-        timeout=settings.multi_agent_send_message_timeout,
-        logging_prefix=log_prefix,
-    )
-
-
-def execute_send_message_to_agent(
-    sender_agent: "Agent",
-    messages: List[MessageCreate],
-    other_agent_id: str,
-    log_prefix: str,
-) -> Optional[str]:
-    """
-    Synchronous wrapper that calls `async_execute_send_message_to_agent` using asyncio.run.
-    This function must be called from a synchronous context (i.e., no running event loop).
-    """
-    return asyncio.run(async_execute_send_message_to_agent(sender_agent, messages, other_agent_id, log_prefix))
-
-
-async def _send_message_to_agent_no_stream(
-    server: "SyncServer",
-    agent_id: str,
-    actor: User,
-    messages: List[MessageCreate],
-    metadata: Optional[dict] = None,
-) -> LettaResponse:
-    """
-    A simpler helper to send messages to a single agent WITHOUT streaming.
-    Returns a LettaResponse containing the final messages.
-    """
-    interface = MultiAgentMessagingInterface()
-    if metadata:
-        interface.metadata = metadata
-
-    # Offload the synchronous `send_messages` call
-    usage_stats = await asyncio.to_thread(
-        server.send_messages,
-        actor=actor,
-        agent_id=agent_id,
-        input_messages=messages,
-        interface=interface,
-        metadata=metadata,
-    )
-
-    final_messages = interface.get_captured_send_messages()
-    return LettaResponse(
-        messages=final_messages,
-        stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
-        usage=usage_stats,
-    )
-
-
-async def _async_send_message_with_retries(
-    server: "SyncServer",
-    sender_agent: "Agent",
-    target_agent_id: str,
-    messages: List[MessageCreate],
-    max_retries: int,
-    timeout: int,
-    logging_prefix: Optional[str] = None,
-) -> str:
-    logging_prefix = logging_prefix or "[_async_send_message_with_retries]"
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            response = await asyncio.wait_for(
-                _send_message_to_agent_no_stream(
-                    server=server,
-                    agent_id=target_agent_id,
-                    actor=sender_agent.user,
-                    messages=messages,
-                ),
-                timeout=timeout,
-            )
-
-            # Then parse out the assistant message
-            assistant_message = _parse_letta_response_for_assistant_message(target_agent_id, response)
-            if assistant_message:
-                sender_agent.logger.info(f"{logging_prefix} - {assistant_message}")
-                return assistant_message
-            else:
-                msg = f"(No response from agent {target_agent_id})"
-                sender_agent.logger.info(f"{logging_prefix} - {msg}")
-                return msg
-
-        except asyncio.TimeoutError:
-            error_msg = f"(Timeout on attempt {attempt}/{max_retries} for agent {target_agent_id})"
-            sender_agent.logger.warning(f"{logging_prefix} - {error_msg}")
-
-        except Exception as e:
-            error_msg = f"(Error on attempt {attempt}/{max_retries} for agent {target_agent_id}: {e})"
-            sender_agent.logger.warning(f"{logging_prefix} - {error_msg}")
-
-        # Exponential backoff before retrying
-        if attempt < max_retries:
-            backoff = uniform(0.5, 2) * (2**attempt)
-            sender_agent.logger.warning(f"{logging_prefix} - Retrying the agent-to-agent send_message...sleeping for {backoff}")
-            await asyncio.sleep(backoff)
-        else:
-            sender_agent.logger.error(f"{logging_prefix} - Fatal error: {error_msg}")
-            raise Exception(error_msg)
-
-
-def fire_and_forget_send_to_agent(
-    sender_agent: "Agent",
-    messages: List[MessageCreate],
-    other_agent_id: str,
-    log_prefix: str,
-    use_retries: bool = False,
-) -> None:
-    """
-    Fire-and-forget send of messages to a specific agent.
-    Returns immediately in the calling thread, never blocks.
-
-    Args:
-        sender_agent (Agent): The sender agent object.
-        server: The Letta server instance
-        messages (List[MessageCreate]): The messages to send.
-        other_agent_id (str): The ID of the target agent.
-        log_prefix (str): Prefix for logging.
-        use_retries (bool): If True, uses _async_send_message_with_retries;
-                            if False, calls server.send_message_to_agent directly.
-    """
-    server = get_letta_server()
-
-    # 1) Validate the target agent (raises ValueError if not in same org)
-    try:
-        server.agent_manager.get_agent_by_id(agent_id=other_agent_id, actor=sender_agent.user)
-    except NoResultFound:
-        raise ValueError(
-            f"The passed-in agent_id {other_agent_id} either does not exist, "
-            f"or does not belong to the same org ({sender_agent.user.organization_id})."
-        )
-
-    # 2) Define the async coroutine to run
-    async def background_task():
-        try:
-            if use_retries:
-                result = await _async_send_message_with_retries(
-                    server=server,
-                    sender_agent=sender_agent,
-                    target_agent_id=other_agent_id,
-                    messages=messages,
-                    max_retries=settings.multi_agent_send_message_max_retries,
-                    timeout=settings.multi_agent_send_message_timeout,
-                    logging_prefix=log_prefix,
-                )
-                sender_agent.logger.info(f"{log_prefix} fire-and-forget success with retries: {result}")
-            else:
-                # Direct call to server.send_message_to_agent, no retry logic
-                await server.send_message_to_agent(
-                    agent_id=other_agent_id,
-                    actor=sender_agent.user,
-                    input_messages=messages,
-                    stream_steps=False,
-                    stream_tokens=False,
-                    use_assistant_message=True,
-                    assistant_message_tool_name=DEFAULT_MESSAGE_TOOL,
-                    assistant_message_tool_kwarg=DEFAULT_MESSAGE_TOOL_KWARG,
-                )
-                sender_agent.logger.info(f"{log_prefix} fire-and-forget success (no retries).")
-        except Exception as e:
-            sender_agent.logger.error(f"{log_prefix} fire-and-forget send failed: {e}")
-
-    # 3) Helper to run the coroutine in a brand-new event loop in a separate thread
-    def run_in_background_thread(coro):
-        def runner():
-            loop = asyncio.new_event_loop()
-            try:
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(coro)
-            finally:
-                loop.close()
-
-        thread = threading.Thread(target=runner, daemon=True)
-        thread.start()
-
-    # 4) Try to schedule the coroutine in an existing loop, else spawn a thread
-    try:
-        loop = asyncio.get_running_loop()
-        # If we get here, a loop is running; schedule the coroutine in background
-        loop.create_task(background_task())
-    except RuntimeError:
-        # Means no event loop is running in this thread
-        run_in_background_thread(background_task())
-
-
-async def _send_message_to_agents_matching_tags_async(
-    sender_agent: "Agent", server: "SyncServer", messages: List[MessageCreate], matching_agents: List["AgentState"]
-) -> List[str]:
-    async def _send_single(agent_state):
-        return await _async_send_message_with_retries(
-            server=server,
-            sender_agent=sender_agent,
-            target_agent_id=agent_state.id,
-            messages=messages,
-            max_retries=3,
-            timeout=settings.multi_agent_send_message_timeout,
-        )
-
-    tasks = [safe_create_task(_send_single(agent_state), label=f"send_to_agent_{agent_state.id}") for agent_state in matching_agents]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    final = []
-    for r in results:
-        if isinstance(r, Exception):
-            final.append(str(r))
-        else:
-            final.append(r)
-
-    return final
-
-
-async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", message: str) -> List[str]:
-    server = get_letta_server()
-
-    augmented_message = (
-        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - to reply to this message, "
-        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
-        f"{message}"
-    )
-
-    worker_agents_ids = sender_agent.agent_state.multi_agent_group.agent_ids
-    worker_agents = [server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=sender_agent.user) for agent_id in worker_agents_ids]
-
-    # Create a system message
-    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
-
-    # Possibly limit concurrency to avoid meltdown:
-    sem = asyncio.Semaphore(settings.multi_agent_concurrent_sends)
-
-    async def _send_single(agent_state):
-        async with sem:
-            return await _async_send_message_with_retries(
-                server=server,
-                sender_agent=sender_agent,
-                target_agent_id=agent_state.id,
-                messages=messages,
-                max_retries=3,
-                timeout=settings.multi_agent_send_message_timeout,
-            )
-
-    tasks = [safe_create_task(_send_single(agent_state), label=f"send_to_worker_{agent_state.id}") for agent_state in worker_agents]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    final = []
-    for r in results:
-        if isinstance(r, Exception):
-            final.append(str(r))
-        else:
-            final.append(r)
-
-    return final
-
-
 def generate_model_from_args_json_schema(schema: Dict[str, Any]) -> Type[BaseModel]:
     """Creates a Pydantic model from a JSON schema.
 
@@ -520,7 +220,9 @@ def generate_model_from_args_json_schema(schema: Dict[str, Any]) -> Type[BaseMod
     return _create_model_from_schema(schema.get("title", "DynamicModel"), schema, nested_models)
 
 
-def _create_model_from_schema(name: str, model_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Type[BaseModel]:
+def _create_model_from_schema(
+    name: str, model_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] | None = None
+) -> Type[BaseModel]:
     fields = {}
     for field_name, field_schema in model_schema["properties"].items():
         field_type = _get_field_type(field_schema, nested_models)
@@ -531,7 +233,7 @@ def _create_model_from_schema(name: str, model_schema: Dict[str, Any], nested_mo
     return create_model(name, **fields)
 
 
-def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Any:
+def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] | None = None) -> Any:
     """Helper to convert JSON schema types to Python types."""
     if field_schema.get("type") == "string":
         return str

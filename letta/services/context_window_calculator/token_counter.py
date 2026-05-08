@@ -13,7 +13,6 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 
 if TYPE_CHECKING:
-    from letta.schemas.llm_config import LLMConfig
     from letta.schemas.user import User
 
 logger = get_logger(__name__)
@@ -279,7 +278,7 @@ def create_token_counter(
         The appropriate TokenCounter instance
     """
     from letta.llm_api.llm_client import LLMClient
-    from letta.settings import model_settings, settings
+    from letta.settings import settings
 
     # Use Gemini token counter for Google Vertex and Google AI
     use_gemini = model_endpoint_type in ("google_vertex", "google_ai")

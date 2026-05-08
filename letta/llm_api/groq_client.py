@@ -5,6 +5,7 @@ from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -31,8 +32,23 @@ class GroqClient(OpenAIClient):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
-        data = super().build_request_data(agent_type, messages, llm_config, tools, force_tool_call, requires_subsequent_tool_call)
+        data = super().build_request_data(
+            agent_type,
+            messages,
+            llm_config,
+            tools,
+            force_tool_call,
+            requires_subsequent_tool_call,
+            tool_return_truncation_chars,
+            system,
+        )
+
+        # Groq only supports string values for tool_choice: "none", "auto", "required"
+        # Convert object-format tool_choice (used for force_tool_call) to "required"
+        if "tool_choice" in data and isinstance(data["tool_choice"], dict):
+            data["tool_choice"] = "required"
 
         # Groq validation - these fields are not supported and will cause 400 errors
         # https://console.groq.com/docs/openai
@@ -42,6 +58,14 @@ class GroqClient(OpenAIClient):
             del data["logit_bias"]
         data["logprobs"] = False
         data["n"] = 1
+
+        # for openai.BadRequestError: Error code: 400 - {'error': {'message': "'messages.2' : for 'role:assistant' the following must be satisfied[('messages.2' : property 'reasoning_content' is unsupported)]", 'type': 'invalid_request_error'}}
+        if "messages" in data:
+            for message in data["messages"]:
+                if "reasoning_content" in message:
+                    del message["reasoning_content"]
+                if "reasoning_content_signature" in message:
+                    del message["reasoning_content_signature"]
 
         return data
 
@@ -61,6 +85,8 @@ class GroqClient(OpenAIClient):
         """
         Performs underlying asynchronous request to Groq API and returns raw response dict.
         """
+        request_data = sanitize_unicode_surrogates(request_data)
+
         api_key = model_settings.groq_api_key or os.environ.get("GROQ_API_KEY")
         client = AsyncOpenAI(api_key=api_key, base_url=llm_config.model_endpoint)
 

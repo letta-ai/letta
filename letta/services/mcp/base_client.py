@@ -5,10 +5,36 @@ from mcp import ClientSession, Tool as MCPTool
 from mcp.client.auth import OAuthClientProvider
 from mcp.types import TextContent
 
+from letta.errors import LettaMCPConnectionError
 from letta.functions.mcp_client.types import BaseServerConfig
 from letta.log import get_logger
 
 logger = get_logger(__name__)
+
+EXPECTED_MCP_TOOL_ERRORS = (
+    "McpError",
+    "ToolError",
+    "HTTPStatusError",
+    "ConnectError",
+    "ConnectTimeout",
+    "ReadTimeout",
+    "ReadError",
+    "RemoteProtocolError",
+    "LocalProtocolError",
+    "ConnectionError",
+    "SSLError",
+    "MaxRetryError",
+    "ProtocolError",
+    "BrokenResourceError",
+)
+
+
+def _log_mcp_tool_error(log: "get_logger", tool_name: str, exc: Exception) -> None:
+    exc_name = type(exc).__name__
+    if exc_name in EXPECTED_MCP_TOOL_ERRORS:
+        log.info(f"MCP tool '{tool_name}' execution failed ({exc_name}): {exc}")
+    else:
+        log.warning(f"MCP tool '{tool_name}' execution failed with unexpected error ({exc_name}): {exc}", exc_info=True)
 
 
 # TODO: Get rid of Async prefix on this class name once we deprecate old sync code
@@ -31,14 +57,12 @@ class AsyncBaseMCPClient:
             await self._initialize_connection(self.server_config)
             await self.session.initialize()
             self.initialized = True
+        except LettaMCPConnectionError:
+            raise
         except ConnectionError as e:
-            # MCP connection failures are often due to user misconfiguration, not system errors
-            # Log at debug level to avoid triggering Sentry alerts for expected configuration issues
             logger.debug(f"MCP connection failed: {str(e)}")
-            raise e
+            raise LettaMCPConnectionError(message=str(e), server_name=getattr(self.server_config, "server_name", None)) from e
         except Exception as e:
-            # MCP connection failures are often due to user misconfiguration, not system errors
-            # Log as warning for visibility in monitoring
             logger.warning(
                 f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}. Error: {str(e)}"
             )
@@ -48,8 +72,9 @@ class AsyncBaseMCPClient:
                 server_info = f"command '{self.server_config.command}'"
             else:
                 server_info = f"server '{self.server_config.server_name}'"
-            raise ConnectionError(
-                f"Failed to connect to MCP {server_info}. Please check your configuration and ensure the server is accessible."
+            raise LettaMCPConnectionError(
+                message=f"Failed to connect to MCP {server_info}. Please check your configuration and ensure the server is accessible.",
+                server_name=getattr(self.server_config, "server_name", None),
             ) from e
 
     async def _initialize_connection(self, server_config: BaseServerConfig) -> None:
@@ -81,12 +106,11 @@ class AsyncBaseMCPClient:
         try:
             result = await self.session.call_tool(tool_name, tool_args)
         except Exception as e:
-            if e.__class__.__name__ == "McpError":
-                # MCP errors are typically user-facing issues from external MCP servers
-                # (e.g., resource not found, invalid arguments, permission errors)
-                # Log at debug level to avoid triggering production alerts for expected failures
-                logger.debug(f"MCP tool '{tool_name}' execution failed: {str(e)}")
-            raise
+            exception_to_check = e
+            if hasattr(e, "exceptions") and e.exceptions and len(e.exceptions) == 1:
+                exception_to_check = e.exceptions[0]
+            _log_mcp_tool_error(logger, tool_name, exception_to_check)
+            return str(exception_to_check), False
 
         parsed_content = []
         for content_piece in result.content:
@@ -109,9 +133,21 @@ class AsyncBaseMCPClient:
             logger.error("MCPClient has not been initialized")
             raise RuntimeError("MCPClient has not been initialized")
 
-    # TODO: still hitting some async errors for voice agents, need to fix
     async def cleanup(self):
-        await self.exit_stack.aclose()
+        """Clean up resources used by the MCP client.
+
+        This method handles ExceptionGroup errors that can occur when closing async context managers
+        (e.g., from the MCP library's internal TaskGroup usage). Cleanup is a best-effort operation
+        and errors are logged but not re-raised to prevent masking the original exception.
+        """
+        try:
+            await self.exit_stack.aclose()
+        except* Exception as eg:
+            # ExceptionGroup can be raised when closing async context managers that use TaskGroup
+            # Log each sub-exception at debug level since cleanup errors are expected in some cases
+            # (e.g., connection already closed, server unavailable)
+            for exc in eg.exceptions:
+                logger.debug(f"MCP client cleanup error (suppressed): {type(exc).__name__}: {exc}")
 
     def to_sync_client(self):
         raise NotImplementedError("Subclasses must implement to_sync_client")

@@ -5,7 +5,7 @@ import uuid
 from enum import Enum
 from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
 
-from fastapi import Header, HTTPException
+from fastapi import HTTPException
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from openai.types.chat.completion_create_params import CompletionCreateParams
@@ -20,7 +20,7 @@ from letta.constants import (
 )
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
-from letta.helpers.message_helper import convert_message_creates_to_messages
+from letta.helpers.message_helper import convert_message_creates_to_messages, resolve_tool_return_images
 from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
@@ -37,6 +37,7 @@ from letta.schemas.letta_message_content import (
 )
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ApprovalCreate, Message, MessageCreate, ToolReturn
+from letta.schemas.provider_trace import BillingContext
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -171,18 +172,26 @@ async def create_input_messages(
     return messages
 
 
-def create_approval_response_message_from_input(
+async def create_approval_response_message_from_input(
     agent_state: AgentState, input_message: ApprovalCreate, run_id: Optional[str] = None
 ) -> List[Message]:
-    def maybe_convert_tool_return_message(maybe_tool_return: LettaToolReturn):
+    async def maybe_convert_tool_return_message(maybe_tool_return: LettaToolReturn):
         if isinstance(maybe_tool_return, LettaToolReturn):
-            packaged_function_response = package_function_response(
-                maybe_tool_return.status == "success", maybe_tool_return.tool_return, agent_state.timezone
-            )
+            tool_return_content = maybe_tool_return.tool_return
+
+            # Handle tool_return content - can be string or list of content parts (text/image)
+            if isinstance(tool_return_content, str):
+                # String content - wrap with package_function_response as before
+                func_response = package_function_response(maybe_tool_return.status == "success", tool_return_content, agent_state.timezone)
+            else:
+                # List of content parts (text/image) - resolve URL images to base64 first
+                resolved_content = await resolve_tool_return_images(tool_return_content)
+                func_response = resolved_content
+
             return ToolReturn(
                 tool_call_id=maybe_tool_return.tool_call_id,
                 status=maybe_tool_return.status,
-                func_response=packaged_function_response,
+                func_response=func_response,
                 stdout=maybe_tool_return.stdout,
                 stderr=maybe_tool_return.stderr,
             )
@@ -196,6 +205,11 @@ def create_approval_response_message_from_input(
             getattr(input_message, "approval_request_id", None),
         )
 
+    # Process all tool returns concurrently (for async image resolution)
+    import asyncio
+
+    converted_approvals = await asyncio.gather(*[maybe_convert_tool_return_message(approval) for approval in approvals_list])
+
     return [
         Message(
             role=MessageRole.approval,
@@ -204,7 +218,7 @@ def create_approval_response_message_from_input(
             approval_request_id=input_message.approval_request_id,
             approve=input_message.approve,
             denial_reason=input_message.reason,
-            approvals=[maybe_convert_tool_return_message(approval) for approval in approvals_list],
+            approvals=list(converted_approvals),
             run_id=run_id,
             group_id=input_message.group_id
             if input_message.group_id
@@ -295,7 +309,7 @@ def create_approval_request_message_from_llm_response(
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     step_id: str | None = None,
-    run_id: str = None,
+    run_id: str | None = None,
 ) -> Message:
     messages = []
     if allowed_tool_calls:
@@ -351,6 +365,8 @@ def create_approval_request_message_from_llm_response(
     )
     if pre_computed_assistant_message_id:
         approval_message.id = decrement_message_uuid(pre_computed_assistant_message_id)
+    # Set otid to match streaming interface pattern (index -1 returns id unchanged)
+    approval_message.otid = Message.generate_otid_from_id(approval_message.id, -1)
     messages.append(approval_message)
     return messages
 
@@ -373,7 +389,7 @@ def create_letta_messages_from_llm_response(
     function_response: Optional[str],
     timezone: str,
     run_id: str | None = None,
-    step_id: str = None,
+    step_id: str | None = None,
     continue_stepping: bool = False,
     heartbeat_reason: Optional[str] = None,
     reasoning_content: Optional[
@@ -408,7 +424,7 @@ def create_letta_messages_from_llm_response(
             content = []
             if reasoning_content:
                 for content_part in reasoning_content:
-                    if isinstance(content_part, TextContent) and content_part.text == "":
+                    if isinstance(content_part, TextContent) and content_part.text == "" and content_part.signature is None:
                         continue
                     content.append(content_part)
 
@@ -428,7 +444,7 @@ def create_letta_messages_from_llm_response(
             content = []
             if reasoning_content:
                 for content_part in reasoning_content:
-                    if isinstance(content_part, TextContent) and content_part.text == "":
+                    if isinstance(content_part, TextContent) and content_part.text == "" and content_part.signature is None:
                         continue
                     content.append(content_part)
 
@@ -556,7 +572,7 @@ def create_parallel_tool_messages_from_llm_response(
         ] = []
         if reasoning_content:
             for content_part in reasoning_content:
-                if isinstance(content_part, TextContent) and content_part.text == "":
+                if isinstance(content_part, TextContent) and content_part.text == "" and content_part.signature is None:
                     continue
                 content.append(content_part)
 
@@ -786,6 +802,7 @@ async def capture_and_persist_messages(
     user_messages: list[str],
     assistant_message: str,
     model: Optional[str] = None,
+    billing_context: BillingContext | None = None,
 ) -> Dict[str, Any]:
     """
     Capture user and assistant messages and persist them to the database.
@@ -847,7 +864,7 @@ async def capture_and_persist_messages(
 
             sleeptime_agent_loop = SleeptimeMultiAgentV4(agent_state=agent, actor=actor, group=sleeptime_group)
             sleeptime_agent_loop.response_messages = response_messages
-            run_ids = await sleeptime_agent_loop.run_sleeptime_agents()
+            run_ids = await sleeptime_agent_loop.run_sleeptime_agents(billing_context=billing_context)
             logger.info(f"Triggered sleeptime agents, run_ids: {run_ids}")
 
     except Exception as e:

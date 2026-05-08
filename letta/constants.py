@@ -25,7 +25,8 @@ PROVIDER_ORDER = {
     "xai": 12,
     "lmstudio": 13,
     "zai": 14,
-    "openrouter": 15,  # Note: OpenRouter uses OpenRouterProvider, not a ProviderType enum
+    "zai_coding": 15,
+    "openrouter": 16,
 }
 
 ADMIN_PREFIX = "/v1/admin"
@@ -35,6 +36,7 @@ OPENAI_API_PREFIX = "/openai"
 
 MCP_CONFIG_NAME = "mcp_config.json"
 MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
+SUBAGENT_ROLE_TAG = "role:subagent"
 
 LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
@@ -74,11 +76,11 @@ DEFAULT_MAX_STEPS = 50
 
 # context window size
 MIN_CONTEXT_WINDOW = 4096
-DEFAULT_CONTEXT_WINDOW = 32000
+DEFAULT_CONTEXT_WINDOW = 128000
 
 # Summarization trigger threshold (multiplier of context_window limit)
 # Summarization triggers when step usage > context_window * SUMMARIZATION_TRIGGER_MULTIPLIER
-SUMMARIZATION_TRIGGER_MULTIPLIER = 1.0
+SUMMARIZATION_TRIGGER_MULTIPLIER = 0.9  # using instead of 1.0 to avoid "too many tokens in prompt" fallbacks
 
 # number of concurrent embedding requests to sent
 EMBEDDING_BATCH_SIZE = 200
@@ -252,8 +254,15 @@ LLM_MAX_CONTEXT_WINDOW = {
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
     # glm (Z.AI)
-    "glm-4.6": 200000,
     "glm-4.5": 128000,
+    "glm-4.6": 180000,
+    "glm-4.7": 180000,
+    "glm-5": 180000,
+    "glm-5-code": 180000,
+    # kimi (moonshot)
+    "kimi-k2.5": 262144,
+    "kimi-k2-thinking": 256000,
+    "kimi-k2-0905": 262144,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # gpt-5
     "gpt-5": 272000,
@@ -274,6 +283,15 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gpt-5.2-2025-12-11": 272000,
     "gpt-5.2-pro": 272000,
     "gpt-5.2-pro-2025-12-11": 272000,
+    "gpt-5.2-codex": 272000,
+    # gpt-5.3
+    "gpt-5.3-codex": 272000,
+    # gpt-5.4
+    "gpt-5.4": 1050000,
+    "gpt-5.4-fast": 1050000,
+    "gpt-5.4-2026-03-05": 1050000,
+    "gpt-5.4-mini": 400000,
+    "gpt-5.4-nano": 400000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
@@ -381,7 +399,7 @@ LLM_MAX_CONTEXT_WINDOW = {
     "gemini-2.5-flash-lite-preview-09-2025": 1048576,
     "gemini-2.5-computer-use-preview-10-2025": 1048576,
     # gemini 3
-    "gemini-3-pro-preview": 1048576,
+    "gemini-3.1-pro-preview": 1048576,
     "gemini-3-flash-preview": 1048576,
     # gemini latest aliases
     "gemini-flash-latest": 1048576,
@@ -414,7 +432,7 @@ MAX_ERROR_MESSAGE_CHAR_LIMIT = 1000
 # Default memory limits
 CORE_MEMORY_PERSONA_CHAR_LIMIT: int = 20000
 CORE_MEMORY_HUMAN_CHAR_LIMIT: int = 20000
-CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 20000
+CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 100000
 
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 50000  # ~300 words
@@ -456,10 +474,22 @@ REDIS_RUN_ID_PREFIX = "agent:send_message:run_id"
 CONVERSATION_LOCK_PREFIX = "conversation:lock:"
 CONVERSATION_LOCK_TTL_SECONDS = 300  # 5 minutes
 
+# OTID -> run_id mapping (for recovering from duplicate requests)
+OTID_RUN_PREFIX = "otid:run:"
+OTID_RUN_TTL_SECONDS = 10800  # 3 hours (same as stream TTL)
+
+# Memory repo locks - prevents concurrent modifications to git-based memory
+MEMORY_REPO_LOCK_PREFIX = "memory_repo:lock:"
+MEMORY_REPO_LOCK_TTL_SECONDS = 60  # 1 minute (git operations should be fast)
+
 # TODO: This is temporary, eventually use token-based eviction
 # File based controls
 DEFAULT_MAX_FILES_OPEN = 5
 DEFAULT_CORE_MEMORY_SOURCE_CHAR_LIMIT: int = 50000
+# Max values for file controls (int32 limit to match database INTEGER type)
+MAX_INT32: int = 2147483647
+MAX_PER_FILE_VIEW_WINDOW_CHAR_LIMIT: int = MAX_INT32
+MAX_FILES_OPEN_LIMIT: int = 1000  # Practical limit - no agent needs 1000+ files open
 
 GET_PROVIDERS_TIMEOUT_SECONDS = 10
 

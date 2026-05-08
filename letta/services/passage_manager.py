@@ -1,15 +1,16 @@
 import uuid
 from datetime import datetime, timezone
-from functools import lru_cache
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from openai import AsyncOpenAI, OpenAI
+if TYPE_CHECKING:
+    from letta.orm.sqlalchemy_base import SqlalchemyBase
+
+from openai import AsyncOpenAI
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import noload
 
 from letta.constants import MAX_EMBEDDING_DIM
-from letta.errors import EmbeddingConfigRequiredError
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
@@ -25,20 +26,9 @@ from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.archive_manager import ArchiveManager
-from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
-
-
-# TODO: Add redis-backed caching for backend
-@lru_cache(maxsize=8192)
-def get_openai_embedding(text: str, model: str, endpoint: str) -> List[float]:
-    from letta.settings import model_settings
-
-    client = OpenAI(api_key=model_settings.openai_api_key, base_url=endpoint, max_retries=0)
-    response = client.embeddings.create(input=text, model=model)
-    return response.data[0].embedding
 
 
 @async_redis_cache(key_func=lambda text, model, endpoint: f"{model}:{endpoint}:{text}")
@@ -206,6 +196,93 @@ class PassageManager:
 
     @enforce_types
     @trace_method
+    async def create_agent_passages_async(self, pydantic_passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
+        """Create multiple agent passages in a single database transaction.
+
+        Args:
+            pydantic_passages: List of passages to create
+            actor: User performing the operation
+
+        Returns:
+            List of created passages
+        """
+        if not pydantic_passages:
+            return []
+
+        import numpy as np
+
+        from letta.helpers.tpuf_client import should_use_tpuf
+
+        use_tpuf = should_use_tpuf()
+        passage_objects: List[ArchivalPassage] = []
+        all_tags_data: List[tuple] = []  # (passage_index, tags) for creating tags after passages are created
+
+        for idx, pydantic_passage in enumerate(pydantic_passages):
+            if not pydantic_passage.archive_id:
+                raise ValueError("Agent passage must have archive_id")
+            if pydantic_passage.source_id:
+                raise ValueError("Agent passage cannot have source_id")
+
+            data = pydantic_passage.model_dump(to_orm=True)
+
+            # Deduplicate tags if provided (for dual storage consistency)
+            tags = data.get("tags")
+            if tags:
+                tags = list(set(tags))
+                all_tags_data.append((idx, tags))
+
+            # Pad embeddings to MAX_EMBEDDING_DIM for pgvector (only when using Postgres as vector DB)
+            embedding = data["embedding"]
+            if embedding and not use_tpuf:
+                np_embedding = np.array(embedding)
+                if np_embedding.shape[0] != MAX_EMBEDDING_DIM:
+                    embedding = np.pad(np_embedding, (0, MAX_EMBEDDING_DIM - np_embedding.shape[0]), mode="constant").tolist()
+
+            # Sanitize text to remove null bytes which PostgreSQL rejects
+            text = data["text"]
+            if text and "\x00" in text:
+                text = text.replace("\x00", "")
+                logger.warning(f"Removed null bytes from passage text (length: {len(data['text'])} -> {len(text)})")
+
+            common_fields = {
+                "id": data.get("id"),
+                "text": text,
+                "embedding": embedding,
+                "embedding_config": data["embedding_config"],
+                "organization_id": data["organization_id"],
+                "metadata_": data.get("metadata_", {}),
+                "tags": tags,
+                "is_deleted": data.get("is_deleted", False),
+                "created_at": data.get("created_at", datetime.now(timezone.utc)),
+            }
+            agent_fields = {"archive_id": data["archive_id"]}
+            passage = ArchivalPassage(**common_fields, **agent_fields)
+            passage_objects.append(passage)
+
+        async with db_registry.async_session() as session:
+            # Batch create all passages in a single transaction
+            created_passages = await ArchivalPassage.batch_create_async(
+                items=passage_objects,
+                db_session=session,
+                actor=actor,
+            )
+
+            # Create tags for passages that have them
+            for idx, tags in all_tags_data:
+                created_passage = created_passages[idx]
+                await self._create_tags_for_passage(
+                    session=session,
+                    passage_id=created_passage.id,
+                    archive_id=created_passage.archive_id,
+                    organization_id=created_passage.organization_id,
+                    tags=tags,
+                    actor=actor,
+                )
+
+            return [p.to_pydantic() for p in created_passages]
+
+    @enforce_types
+    @trace_method
     async def create_source_passage_async(
         self, pydantic_passage: PydanticPassage, file_metadata: PydanticFileMetadata, actor: PydanticUser
     ) -> PydanticPassage:
@@ -276,7 +353,7 @@ class PassageManager:
             return passage.to_pydantic()
 
     @trace_method
-    def _preprocess_passage_for_creation(self, pydantic_passage: PydanticPassage) -> "SqlAlchemyBase":
+    def _preprocess_passage_for_creation(self, pydantic_passage: PydanticPassage) -> "SqlalchemyBase":
         data = pydantic_passage.model_dump(to_orm=True)
         common_fields = {
             "id": data.get("id"),
@@ -290,13 +367,13 @@ class PassageManager:
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
 
-        if "archive_id" in data and data["archive_id"]:
+        if data.get("archive_id"):
             assert not data.get("source_id"), "Passage cannot have both archive_id and source_id"
             agent_fields = {
                 "archive_id": data["archive_id"],
             }
             passage = ArchivalPassage(**common_fields, **agent_fields)
-        elif "source_id" in data and data["source_id"]:
+        elif data.get("source_id"):
             assert not data.get("archive_id"), "Passage cannot have both archive_id and source_id"
             source_fields = {
                 "source_id": data["source_id"],
@@ -421,7 +498,6 @@ class PassageManager:
     @trace_method
     def create_many_passages(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """DEPRECATED: Use create_many_agent_passages() or create_many_source_passages() instead."""
-        import warnings
 
         logger.warning(
             "create_many_passages is deprecated. Use create_many_agent_passages() or create_many_source_passages() instead.",
@@ -433,7 +509,6 @@ class PassageManager:
     @trace_method
     async def create_many_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
         """DEPRECATED: Use create_many_agent_passages_async() or create_many_source_passages_async() instead."""
-        import warnings
 
         logger.warning(
             "create_many_passages_async is deprecated. Use create_many_agent_passages_async() or create_many_source_passages_async() instead.",
@@ -485,15 +560,6 @@ class PassageManager:
         Returns:
             List of created passage objects
         """
-        if agent_state.embedding_config is None:
-            raise EmbeddingConfigRequiredError(agent_id=agent_state.id, operation="insert_passage")
-
-        embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
-        embedding_client = LLMClient.create(
-            provider_type=agent_state.embedding_config.embedding_endpoint_type,
-            actor=actor,
-        )
-
         # Get or create the default archive for the agent
         archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(agent_state=agent_state, actor=actor)
 
@@ -504,8 +570,16 @@ class PassageManager:
             return []
 
         try:
-            # Generate embeddings for all chunks using the new async API
-            embeddings = await embedding_client.request_embeddings(text_chunks, agent_state.embedding_config)
+            # Generate embeddings if embedding config is available
+            if agent_state.embedding_config is not None:
+                embedding_client = LLMClient.create(
+                    provider_type=agent_state.embedding_config.embedding_endpoint_type,
+                    actor=actor,
+                )
+                embeddings = await embedding_client.request_embeddings(text_chunks, agent_state.embedding_config)
+            else:
+                # No embedding config - store passages without embeddings (text search only)
+                embeddings = [None] * len(text_chunks)
 
             passages = []
 
@@ -536,20 +610,21 @@ class PassageManager:
 
                     tpuf_client = TurbopufferClient()
 
-                    # Extract IDs and texts from the created passages
+                    # Extract IDs, texts, and embeddings from the created passages
                     passage_ids = [p.id for p in passages]
                     passage_texts = [p.text for p in passages]
+                    passage_embeddings = [p.embedding for p in passages]
 
-                    # Insert to Turbopuffer with the same IDs as SQL
-                    # TurbopufferClient will generate embeddings internally using default config
+                    # Insert to Turbopuffer with the same IDs as SQL, reusing existing embeddings
                     await tpuf_client.insert_archival_memories(
                         archive_id=archive.id,
                         text_chunks=passage_texts,
-                        passage_ids=passage_ids,  # Use same IDs as SQL
+                        passage_ids=passage_ids,
                         organization_id=actor.organization_id,
                         actor=actor,
                         tags=tags,
                         created_at=passages[0].created_at if passages else None,
+                        embeddings=passage_embeddings,
                     )
                 except Exception as e:
                     logger.error(f"Failed to insert passages to Turbopuffer: {e}")
@@ -621,7 +696,7 @@ class PassageManager:
                 setattr(curr_passage, "tags", new_tags)
 
             # Pad embeddings if needed (only when using Postgres as vector DB)
-            if "embedding" in update_data and update_data["embedding"]:
+            if update_data.get("embedding"):
                 import numpy as np
 
                 from letta.helpers.tpuf_client import should_use_tpuf
@@ -666,7 +741,7 @@ class PassageManager:
             update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # Pad embeddings if needed (only when using Postgres as vector DB)
-            if "embedding" in update_data and update_data["embedding"]:
+            if update_data.get("embedding"):
                 import numpy as np
 
                 from letta.helpers.tpuf_client import should_use_tpuf
@@ -739,7 +814,6 @@ class PassageManager:
     @trace_method
     async def delete_passage_by_id_async(self, passage_id: str, actor: PydanticUser) -> bool:
         """DEPRECATED: Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead."""
-        import warnings
 
         logger.warning(
             "delete_passage_by_id_async is deprecated. Use delete_agent_passage_by_id_async() or delete_source_passage_by_id_async() instead.",
@@ -852,7 +926,6 @@ class PassageManager:
         passages: List[PydanticPassage],
     ) -> bool:
         """DEPRECATED: Use delete_agent_passages() or delete_source_passages() instead."""
-        import warnings
 
         logger.warning(
             "delete_passages is deprecated. Use delete_agent_passages() or delete_source_passages() instead.",
@@ -873,7 +946,6 @@ class PassageManager:
         agent_id: Optional[str] = None,
     ) -> int:
         """DEPRECATED: Use agent_passage_size() instead (this only counted agent passages anyway)."""
-        import warnings
 
         logger.warning("size is deprecated. Use agent_passage_size() instead.", stacklevel=2)
         return self.agent_passage_size(actor=actor, agent_id=agent_id)

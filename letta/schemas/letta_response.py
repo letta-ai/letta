@@ -2,19 +2,18 @@ import html
 import json
 import re
 from datetime import datetime
-from typing import List, Union
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, RootModel
 
 from letta.helpers.json_helpers import json_dumps
-from letta.schemas.enums import JobStatus, MessageStreamStatus
+from letta.schemas.enums import JobStatus
 from letta.schemas.letta_message import (
     ApprovalRequestMessage,
     ApprovalResponseMessage,
     AssistantMessage,
     HiddenReasoningMessage,
     LettaErrorMessage,
-    LettaMessage,
     LettaMessageUnion,
     LettaPing,
     ReasoningMessage,
@@ -25,9 +24,29 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.letta_stop_reason import LettaStopReason
 from letta.schemas.message import Message
+from letta.schemas.openai.chat_completion_response import ChoiceLogprobs
 from letta.schemas.usage import LettaUsageStatistics
 
 # TODO: consider moving into own file
+
+
+class TurnTokenData(BaseModel):
+    """Token data for a single LLM generation turn in a multi-turn agent interaction.
+
+    Used for RL training to track token IDs and logprobs across all LLM calls,
+    not just the final one. Tool results are included so the client can tokenize
+    them with loss_mask=0 (non-trainable).
+    """
+
+    role: Literal["assistant", "tool"] = Field(
+        ..., description="Role of this turn: 'assistant' for LLM generations (trainable), 'tool' for tool results (non-trainable)."
+    )
+    output_ids: Optional[List[int]] = Field(None, description="Token IDs from SGLang native endpoint. Only present for assistant turns.")
+    output_token_logprobs: Optional[List[List[Any]]] = Field(
+        None, description="Logprobs from SGLang: [[logprob, token_id, top_logprob_or_null], ...]. Only present for assistant turns."
+    )
+    content: Optional[str] = Field(None, description="Text content. For tool turns, client tokenizes this with loss_mask=0.")
+    tool_name: Optional[str] = Field(None, description="Name of the tool called. Only present for tool turns.")
 
 
 class LettaResponse(BaseModel):
@@ -56,6 +75,16 @@ class LettaResponse(BaseModel):
     usage: LettaUsageStatistics = Field(
         ...,
         description="The usage statistics of the agent.",
+    )
+    logprobs: Optional[ChoiceLogprobs] = Field(
+        None,
+        description="Log probabilities of the output tokens from the last LLM call. Only present if return_logprobs was enabled.",
+    )
+    turns: Optional[List[TurnTokenData]] = Field(
+        None,
+        description="Token data for all LLM generations in multi-turn agent interaction. "
+        "Includes token IDs and logprobs for each assistant turn, plus tool result content. "
+        "Only present if return_token_ids was enabled. Used for RL training with loss masking.",
     )
 
     def __str__(self):

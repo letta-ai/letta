@@ -112,7 +112,7 @@ class MarshmallowAgentSchema(BaseSchema):
                             .all()
                         )
                         # combine system message with step messages
-                        msgs = [system_msg] + step_msgs if system_msg else step_msgs
+                        msgs = [system_msg, *step_msgs] if system_msg else step_msgs
                     else:
                         # no user messages, just return system message
                         msgs = [system_msg] if system_msg else []
@@ -147,7 +147,7 @@ class MarshmallowAgentSchema(BaseSchema):
                             .all()
                         )
                         # combine system message with step messages
-                        msgs = [system_msg] + step_msgs if system_msg else step_msgs
+                        msgs = [system_msg, *step_msgs] if system_msg else step_msgs
                     else:
                         # no user messages, just return system message
                         msgs = [system_msg] if system_msg else []
@@ -231,7 +231,8 @@ class MarshmallowAgentSchema(BaseSchema):
 
     class Meta(BaseSchema.Meta):
         model = Agent
-        exclude = BaseSchema.Meta.exclude + (
+        exclude = (
+            *BaseSchema.Meta.exclude,
             "project_id",
             "template_id",
             "base_template_id",

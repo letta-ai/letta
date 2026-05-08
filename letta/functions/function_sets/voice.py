@@ -1,5 +1,8 @@
 ## Voice chat + sleeptime tools
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+if TYPE_CHECKING:
+    from letta.schemas.agent import AgentState
 
 from pydantic import BaseModel, Field
 

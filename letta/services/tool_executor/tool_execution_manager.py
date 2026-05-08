@@ -1,7 +1,7 @@
 import asyncio
 import json
 import traceback
-from typing import Any, Dict, Optional, Type
+from typing import Any, ClassVar, Dict, Optional, Type
 
 from letta.constants import FUNCTION_RETURN_VALUE_TRUNCATED
 from letta.helpers.datetime_helpers import AsyncTimer
@@ -24,7 +24,6 @@ from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolE
 from letta.services.tool_executor.core_tool_executor import LettaCoreToolExecutor
 from letta.services.tool_executor.files_tool_executor import LettaFileToolExecutor
 from letta.services.tool_executor.mcp_tool_executor import ExternalMCPToolExecutor
-from letta.services.tool_executor.multi_agent_tool_executor import LettaMultiAgentToolExecutor
 from letta.services.tool_executor.sandbox_tool_executor import SandboxToolExecutor
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.utils import get_friendly_error_msg
@@ -33,11 +32,11 @@ from letta.utils import get_friendly_error_msg
 class ToolExecutorFactory:
     """Factory for creating appropriate tool executors based on tool type."""
 
-    _executor_map: Dict[ToolType, Type[ToolExecutor]] = {
+    _executor_map: ClassVar[Dict[ToolType, Type[ToolExecutor]]] = {
         ToolType.LETTA_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_MEMORY_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_SLEEPTIME_CORE: LettaCoreToolExecutor,
-        ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
+        ToolType.LETTA_MULTI_AGENT_CORE: SandboxToolExecutor,
         ToolType.LETTA_BUILTIN: LettaBuiltinToolExecutor,
         ToolType.LETTA_FILES_CORE: LettaFileToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,

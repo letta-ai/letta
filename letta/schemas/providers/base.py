@@ -32,6 +32,7 @@ class Provider(ProviderBase):
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
     organization_id: str | None = Field(None, description="The organization id of the user")
     updated_at: datetime | None = Field(None, description="The last update timestamp of the provider.")
+    last_synced: datetime | None = Field(None, description="The last time models were synced for this provider.")
 
     # Encrypted fields (stored as Secret objects, serialized to strings for DB)
     # Secret class handles validation and serialization automatically via __get_pydantic_core_schema__
@@ -89,7 +90,6 @@ class Provider(ProviderBase):
     def list_llm_models(self) -> list[LLMConfig]:
         """List available LLM models (deprecated: use list_llm_models_async)"""
         import asyncio
-        import warnings
 
         logger.warning("list_llm_models is deprecated, use list_llm_models_async instead", stacklevel=2)
 
@@ -114,7 +114,6 @@ class Provider(ProviderBase):
     def list_embedding_models(self) -> list[EmbeddingConfig]:
         """List available embedding models (deprecated: use list_embedding_models_async)"""
         import asyncio
-        import warnings
 
         logger.warning("list_embedding_models is deprecated, use list_embedding_models_async instead", stacklevel=2)
 
@@ -182,21 +181,27 @@ class Provider(ProviderBase):
         from letta.schemas.providers import (
             AnthropicProvider,
             AzureProvider,
+            BasetenProvider,
             BedrockProvider,
             CerebrasProvider,
+            ChatGPTOAuthProvider,
             DeepSeekProvider,
             GoogleAIProvider,
             GoogleVertexProvider,
             GroqProvider,
             LettaProvider,
             LMStudioOpenAIProvider,
+            MiniMaxProvider,
             MistralProvider,
             OllamaProvider,
             OpenAIProvider,
+            OpenRouterProvider,
+            SGLangProvider,
             TogetherProvider,
             VLLMProvider,
             VoyageAIProvider,
             XAIProvider,
+            ZAICodingProvider,
             ZAIProvider,
         )
 
@@ -224,20 +229,32 @@ class Provider(ProviderBase):
                 return OllamaProvider(**self.model_dump(exclude_none=True))
             case ProviderType.vllm:
                 return VLLMProvider(**self.model_dump(exclude_none=True))  # Removed support for CompletionsProvider
+            case ProviderType.sglang:
+                return SGLangProvider(**self.model_dump(exclude_none=True))
             case ProviderType.mistral:
                 return MistralProvider(**self.model_dump(exclude_none=True))
             case ProviderType.deepseek:
                 return DeepSeekProvider(**self.model_dump(exclude_none=True))
             case ProviderType.cerebras:
                 return CerebrasProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.chatgpt_oauth:
+                return ChatGPTOAuthProvider(**self.model_dump(exclude_none=True))
             case ProviderType.xai:
                 return XAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.zai:
                 return ZAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.zai_coding:
+                return ZAICodingProvider(**self.model_dump(exclude_none=True))
             case ProviderType.lmstudio_openai:
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.baseten:
+                return BasetenProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:
                 return BedrockProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.minimax:
+                return MiniMaxProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.openrouter:
+                return OpenRouterProvider(**self.model_dump(exclude_none=True))
             case ProviderType.voyageai:
                 return VoyageAIProvider(**self.model_dump(exclude_none=True))
             case _:
@@ -253,6 +270,11 @@ class ProviderCreate(ProviderBase):
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
 
+    @field_validator("api_key", "access_key", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
+
 
 class ProviderUpdate(ProviderBase):
     api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
@@ -260,6 +282,11 @@ class ProviderUpdate(ProviderBase):
     region: str | None = Field(None, description="Region used for requests to the provider.")
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
+
+    @field_validator("api_key", "access_key", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
 
 
 class ProviderCheck(BaseModel):
@@ -269,3 +296,8 @@ class ProviderCheck(BaseModel):
     region: str | None = Field(None, description="Region used for requests to the provider.")
     base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
     api_version: str | None = Field(None, description="API version used for requests to the provider.")
+
+    @field_validator("api_key", "access_key", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v

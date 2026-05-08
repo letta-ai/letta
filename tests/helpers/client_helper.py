@@ -1,6 +1,6 @@
 import time
 
-from letta import RESTClient
+from letta import RESTClient  # type: ignore[attr-defined]
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job
 from letta.schemas.source import Source

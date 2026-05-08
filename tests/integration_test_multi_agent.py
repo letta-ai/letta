@@ -86,14 +86,14 @@ def remove_stale_agents(client):
 @pytest.fixture(scope="function")
 def agent_obj(client: Letta) -> AgentState:
     """Create a test agent that we can call functions on"""
-    send_message_to_agent_tool = list(client.tools.list(name="send_message_to_agent_and_wait_for_reply"))[0]
+    send_message_to_agent_tool = next(iter(client.tools.list(name="send_message_to_agent_and_wait_for_reply")))
     agent_state_instance = client.agents.create(
         agent_type="letta_v1_agent",
         include_base_tools=True,
         tool_ids=[send_message_to_agent_tool.id],
         model="openai/gpt-4o",
         embedding="openai/text-embedding-3-small",
-        context_window_limit=32000,
+        context_window_limit=128000,
     )
     yield agent_state_instance
 
@@ -107,7 +107,7 @@ def other_agent_obj(client: Letta) -> AgentState:
         include_multi_agent_tools=False,
         model="openai/gpt-4o",
         embedding="openai/text-embedding-3-small",
-        context_window_limit=32000,
+        context_window_limit=128000,
     )
 
     yield agent_state_instance
@@ -135,18 +135,50 @@ def roll_dice_tool(client: Letta):
 def test_send_message_to_agent(client: Letta, agent_obj: AgentState, other_agent_obj: AgentState):
     secret_word = "banana"
 
-    # Encourage the agent to send a message to the other agent_obj with the secret string
+    # Send a message to the agent asking it to use the tool
     response = client.agents.messages.create(
         agent_id=agent_obj.id,
         messages=[
             MessageCreateParam(
                 role="user",
-                content=f"Use your tool to send a message to another agent with id {other_agent_obj.id} to share the secret word: {secret_word}!",
+                content=f"IMPORTANT: You MUST use the send_message_to_agent_and_wait_for_reply tool RIGHT NOW to send a message to agent {other_agent_obj.id}. Include the exact secret word '{secret_word}' in your message. Call the tool immediately.",
             )
         ],
     )
 
-    # Get messages from the other agent
+    # FIRST: Verify the sender agent actually called the tool
+    # This catches LLM non-determinism early with a clear error message
+    found_tool_call = False
+    tool_return_message = None
+    target_snippet = f"'agent_id': '{other_agent_obj.id}', 'response': ["
+
+    for m in response.messages:
+        if isinstance(m, ToolReturnMessage):
+            if target_snippet in m.tool_return:
+                found_tool_call = True
+                tool_return_message = m
+                break
+
+    if not found_tool_call:
+        # Print debug info to help diagnose the issue
+        print("\n=== DEBUG: Sender agent did not call the tool ===")
+        print(f"Response messages from agent {agent_obj.id}:")
+        for i, m in enumerate(response.messages):
+            print(f"\nMessage {i} ({type(m).__name__}):")
+            if isinstance(m, ToolReturnMessage):
+                print(f"  Tool return: {m.tool_return}")
+            elif hasattr(m, "content"):
+                print(f"  Content: {m.content}")
+            else:
+                print(f"  {m}")
+        raise AssertionError(
+            f"Sender agent {agent_obj.id} did not call send_message_to_agent_and_wait_for_reply tool. "
+            f"This is likely LLM non-determinism. Check debug output above for what the agent did instead."
+        )
+
+    print(f"\n✓ Tool call verified: {tool_return_message.tool_return[:200]}...")
+
+    # SECOND: Now verify the message arrived at the receiver
     messages_page = client.agents.messages.list(agent_id=other_agent_obj.id)
     messages = messages_page.items
 
@@ -160,46 +192,6 @@ def test_send_message_to_agent(client: Letta, agent_obj: AgentState, other_agent
                 break
 
     assert found_secret, f"Secret word '{secret_word}' not found in system messages of agent {other_agent_obj.id}"
-
-    # Search the sender agent for the response from another agent
-    in_context_messages_page = client.agents.messages.list(agent_id=agent_obj.id)
-    in_context_messages = in_context_messages_page.items
-    found = False
-    target_snippet = f"'agent_id': '{other_agent_obj.id}', 'response': ["
-
-    for m in in_context_messages:
-        # Check ToolReturnMessage for the response
-        if isinstance(m, ToolReturnMessage):
-            if target_snippet in m.tool_return:
-                found = True
-                break
-        # Handle different message content structures
-        elif hasattr(m, "content"):
-            if isinstance(m.content, list) and len(m.content) > 0:
-                content_text = m.content[0].text if hasattr(m.content[0], "text") else str(m.content[0])
-            else:
-                content_text = str(m.content)
-
-            if target_snippet in content_text:
-                found = True
-                break
-
-    if not found:
-        # Print debug info
-        joined = "\n".join(
-            [
-                str(
-                    m.content[0].text
-                    if hasattr(m, "content") and isinstance(m.content, list) and len(m.content) > 0 and hasattr(m.content[0], "text")
-                    else m.content
-                    if hasattr(m, "content")
-                    else f"<{type(m).__name__}>"
-                )
-                for m in in_context_messages[1:]
-            ]
-        )
-        print(f"In context messages of the sender agent (without system):\n\n{joined}")
-        raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 
     # Test that the agent can still receive messages fine
     response = client.agents.messages.create(
@@ -226,7 +218,7 @@ def test_send_message_to_agents_with_tags_simple(client: Letta):
     secret_word = "banana"
 
     # Create "manager" agent
-    send_message_to_agents_matching_tags_tool_id = list(client.tools.list(name="send_message_to_agents_matching_tags"))[0].id
+    send_message_to_agents_matching_tags_tool_id = next(iter(client.tools.list(name="send_message_to_agents_matching_tags"))).id
     manager_agent_state = client.agents.create(
         agent_type="letta_v1_agent",
         name="manager_agent",
@@ -337,7 +329,7 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client: Letta, roll_d
     test_id = str(uuid.uuid4())[:8]
 
     # Create "manager" agent
-    send_message_to_agents_matching_tags_tool_id = list(client.tools.list(name="send_message_to_agents_matching_tags"))[0].id
+    send_message_to_agents_matching_tags_tool_id = next(iter(client.tools.list(name="send_message_to_agents_matching_tags"))).id
     manager_agent_state = client.agents.create(
         agent_type="letta_v1_agent",
         tool_ids=[send_message_to_agents_matching_tags_tool_id],

@@ -20,7 +20,7 @@ from letta.functions.functions import get_json_schema_from_module
 from letta.functions.mcp_client.types import MCPTool
 from letta.functions.schema_generator import generate_tool_schema_for_mcp
 from letta.log import get_logger
-from letta.schemas.enums import ToolSourceType, ToolType
+from letta.schemas.enums import ToolType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.npm_requirement import NpmRequirement
 from letta.schemas.pip_requirement import PipRequirement
@@ -129,6 +129,19 @@ class ToolCreate(LettaBase):
         False, description="If set to True, then this tool will potentially be executed concurrently with other tools. Default False."
     )
 
+    @model_validator(mode="after")
+    def validate_typescript_requires_schema(self):
+        """
+        TypeScript tools require an explicit json_schema since we don't support
+        docstring parsing for TypeScript.
+        """
+        if self.source_type == "typescript" and not self.json_schema:
+            raise ValueError(
+                "TypeScript tools require an explicit json_schema parameter. "
+                "Unlike Python tools, schema cannot be auto-generated from TypeScript source code."
+            )
+        return self
+
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
         from letta.functions.helpers import generate_mcp_tool_wrapper
@@ -145,7 +158,7 @@ class ToolCreate(LettaBase):
         description = mcp_tool.description
         source_type = "python"
         tags = [f"{MCP_TOOL_TAG_NAME_PREFIX}:{mcp_server_name}"]
-        wrapper_func_name, wrapper_function_str = generate_mcp_tool_wrapper(mcp_tool.name)
+        _wrapper_func_name, wrapper_function_str = generate_mcp_tool_wrapper(mcp_tool.name)
 
         return cls(
             description=description,

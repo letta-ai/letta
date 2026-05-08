@@ -1,39 +1,20 @@
-import json
 import os
-import shutil
-import uuid
-import warnings
-from typing import List, Tuple
-from unittest.mock import patch
 
 import pytest
-from sqlalchemy import delete
 
 import letta.utils as utils
 from letta.agents.agent_loop import AgentLoop
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
-from letta.orm import Provider, Step
-from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole, ProviderType
-from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
-from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import Provider as PydanticProvider, ProviderCreate
-from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.user import User
 
 utils.DEBUG = True
 from letta.config import LettaConfig
 from letta.orm.errors import NoResultFound
-from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.job import Job as PydanticJob
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.agent import CreateAgent
+from letta.schemas.message import MessageCreate
 from letta.schemas.run import Run as PydanticRun
-from letta.schemas.source import Source as PydanticSource
 from letta.server.server import SyncServer
-from letta.system import unpack_message
-
-from .utils import DummyDataConnector
 
 
 @pytest.fixture
@@ -102,7 +83,7 @@ async def custom_anthropic_provider(server: SyncServer, user_id: str):
 
 @pytest.fixture
 async def agent(server: SyncServer, user: User):
-    actor = await server.user_manager.get_actor_or_default_async()
+    await server.user_manager.get_actor_or_default_async()
     agent = await server.create_agent_async(
         CreateAgent(
             agent_type="memgpt_v2_agent",
@@ -148,7 +129,6 @@ async def test_messages_with_provider_override(server: SyncServer, custom_anthro
         run_id=run.id,
     )
     usage = response.usage
-    messages = response.messages
 
     get_messages_response = await server.message_manager.list_messages(agent_id=agent.id, actor=actor, after=existing_messages[-1].id)
 
@@ -247,7 +227,6 @@ async def test_messages_with_provider_override_legacy_agent(server: SyncServer, 
         run_id=run.id,
     )
     usage = response.usage
-    messages = response.messages
 
     get_messages_response = await server.message_manager.list_messages(agent_id=agent.id, actor=actor, after=existing_messages[-1].id)
 

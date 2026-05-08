@@ -1,9 +1,12 @@
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional
 
 import openai
+
+if TYPE_CHECKING:
+    from letta.schemas.tool_execution_result import ToolExecutionResult
 
 from letta.agents.base_agent import BaseAgent
 from letta.agents.exceptions import IncompatibleAgentType
@@ -147,6 +150,8 @@ class VoiceAgent(BaseAgent):
         in_context_messages[0].content[0].text = await PromptGenerator.compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
+            agent_id=agent_state.id,
+            conversation_id="default",
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
             previous_message_count=self.num_messages,
@@ -250,7 +255,6 @@ class VoiceAgent(BaseAgent):
                 agent_state=agent_state,
             )
             tool_result = tool_execution_result.func_return
-            success_flag = tool_execution_result.success_flag
 
             # 3. Provide function_call response back into the conversation
             # TODO: fix this tool format
@@ -292,7 +296,7 @@ class VoiceAgent(BaseAgent):
         new_letta_messages = await self.message_manager.create_many_messages_async(letta_message_db_queue, actor=self.actor)
 
         # TODO: Make this more general and configurable, less brittle
-        new_in_context_messages, updated = await summarizer.summarize(
+        new_in_context_messages, _updated = await summarizer.summarize(
             in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
         )
 
@@ -353,9 +357,10 @@ class VoiceAgent(BaseAgent):
             "For example: 'Let me double-check my notes—one moment, please.'"
         )
 
+        strict = agent_state.llm_config.strict
         search_memory_json = Tool(
             type="function",
-            function=enable_strict_mode(  # strict=True   ✓
+            function=enable_strict_mode(  # strict mode based on config
                 add_pre_execution_message(  # injects pre_exec_msg   ✓
                     {
                         "name": "search_memory",
@@ -399,13 +404,17 @@ class VoiceAgent(BaseAgent):
                         },
                     },
                     description=search_memory_utterance_description,
-                )
+                ),
+                strict=strict,
             ),
         )
 
         # TODO: Customize whether or not to have heartbeats, pre_exec_message, etc.
         return [search_memory_json] + [
-            Tool(type="function", function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema))))
+            Tool(
+                type="function",
+                function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema)), strict=strict),
+            )
             for t in tools
         ]
 

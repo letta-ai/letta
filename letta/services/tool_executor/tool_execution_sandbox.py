@@ -7,7 +7,10 @@ import sys
 import tempfile
 import traceback
 import uuid
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+if TYPE_CHECKING:
+    from e2b_code_interpreter import Execution, Sandbox
 
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.log import get_logger
@@ -256,7 +259,7 @@ class ToolExecutionSandbox:
         temp_file_path: str,
     ) -> ToolExecutionResult:
         status = "success"
-        func_return, agent_state, stderr = None, None, None
+        func_return, agent_state, _stderr = None, None, None
 
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -532,6 +535,24 @@ class ToolExecutionSandbox:
                 code += self.initialize_param(param, self.args[param])
 
         code += "\n" + self.tool.source_code + "\n"
+
+        if self.args:
+            raw_args = ", ".join([f"{name!r}: {name}" for name in self.args])
+            code += f"__letta_raw_args = {{{raw_args}}}\n"
+            code += "try:\n"
+            code += "    from letta.functions.ast_parsers import coerce_dict_args_by_annotations\n"
+            code += f"    __letta_func = {self.tool.name}\n"
+            code += "    __letta_annotations = getattr(__letta_func, '__annotations__', {})\n"
+            code += "    __letta_coerced_args = coerce_dict_args_by_annotations(\n"
+            code += "        __letta_raw_args,\n"
+            code += "        __letta_annotations,\n"
+            code += "        allow_unsafe_eval=True,\n"
+            code += "        extra_globals=__letta_func.__globals__,\n"
+            code += "    )\n"
+            for name in self.args:
+                code += f"    {name} = __letta_coerced_args.get({name!r}, {name})\n"
+            code += "except Exception:\n"
+            code += "    pass\n"
 
         # TODO: handle wrapped print
 

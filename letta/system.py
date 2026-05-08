@@ -175,7 +175,7 @@ def package_system_message(system_message, timezone, message_type="system_alert"
         if "type" in message_json and message_json["type"] == message_type:
             logger.warning(f"Attempted to pack a system message that is already packed. Not packing: '{system_message}'")
             return system_message
-    except:
+    except Exception:
         pass  # do nothing, expected behavior that the message is not JSON
 
     formatted_time = get_local_time(timezone=timezone)
@@ -204,11 +204,24 @@ def package_summarize_message(summary, summary_message_count, hidden_message_cou
     return json_dumps(packaged_message)
 
 
-def package_summarize_message_no_counts(summary, timezone):
-    context_message = (
-        "Note: prior messages have been hidden from view due to conversation memory constraints.\n"
-        + f"The following is a summary of the previous messages:\n {summary}"
-    )
+def package_summarize_message_no_counts(summary, timezone, compaction_stats: dict | None = None, mode: str | None = None):
+    if mode and "sliding_window" in mode:  # sliding_window, self_compact_sliding_window
+        if compaction_stats and "messages_count_before" in compaction_stats and "messages_count_after" in compaction_stats:
+            num_evicted = compaction_stats["messages_count_before"] - compaction_stats["messages_count_after"]
+            context_message = (
+                f"Note: {num_evicted} messages from the beginning of the conversation have been hidden from view due to memory constraints.\n"
+                + f"The following is a summary of the previous messages:\n {summary}"
+            )
+        else:
+            context_message = (
+                "Note: prior messages from the beginning of the conversation have been hidden from view due to conversation memory constraints.\n"
+                + f"The following is a summary of the previous messages:\n {summary}"
+            )
+    else:  # all, self
+        context_message = (
+            "Note: prior messages have been hidden from view due to conversation memory constraints.\n"
+            + f"The following is a summary of the previous messages:\n {summary}"
+        )
 
     formatted_time = get_local_time(timezone=timezone)
     packaged_message = {
@@ -216,6 +229,9 @@ def package_summarize_message_no_counts(summary, timezone):
         "message": context_message,
         "time": formatted_time,
     }
+
+    if compaction_stats:
+        packaged_message["compaction_stats"] = compaction_stats
 
     return json_dumps(packaged_message)
 
@@ -257,7 +273,7 @@ def unpack_message(packed_message: str) -> str:
         message_json = json.loads(packed_message)
         if type(message_json) is not dict:
             return packed_message
-    except:
+    except Exception:
         return packed_message
 
     if "message" not in message_json:
@@ -269,7 +285,7 @@ def unpack_message(packed_message: str) -> str:
     else:
         try:
             message_type = message_json["type"]
-        except:
+        except Exception:
             return packed_message
 
         if message_type != "user_message":

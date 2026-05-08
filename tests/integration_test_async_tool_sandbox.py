@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from letta_client import Letta
 from sqlalchemy import delete
 
-from letta.config import LettaConfig
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
 from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState, CreateAgent
@@ -23,7 +22,6 @@ from letta.schemas.organization import Organization
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate
 from letta.schemas.user import User
-from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
@@ -382,7 +380,7 @@ async def tool_with_broken_pip_requirements(test_user):
             str: Should not reach here due to pip install failure.
         """
         try:
-            import some_nonexistent_package  # This will fail during pip install
+            import some_nonexistent_package  # noqa: F401
 
             return "This should not execute"
         except ImportError as e:

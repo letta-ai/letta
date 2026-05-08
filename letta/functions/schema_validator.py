@@ -56,7 +56,7 @@ def validate_complete_json_schema(schema: Dict[str, Any]) -> Tuple[SchemaHealth,
         """
         if obj_schema.get("type") != "object":
             return False
-        props = obj_schema.get("properties", {})
+        obj_schema.get("properties", {})
         required = obj_schema.get("required", [])
         additional = obj_schema.get("additionalProperties", True)
 

@@ -17,11 +17,10 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import wraps
 from logging import Logger
-from typing import Any, Callable, Coroutine, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints
+from typing import Any, Callable, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints  # type: ignore[attr-defined]
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
-import tiktoken
 from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename
 from sqlalchemy import text
 
@@ -491,6 +490,25 @@ def get_tool_call_id() -> str:
     return str(uuid.uuid4())[:TOOL_CALL_ID_MAX_LEN]
 
 
+# Pattern for valid tool_call_id (required by Anthropic: ^[a-zA-Z0-9_-]+$)
+TOOL_CALL_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def sanitize_tool_call_id(tool_id: str) -> str:
+    """Ensure tool_call_id matches cross-provider requirements:
+    - Anthropic: pattern ^[a-zA-Z0-9_-]+$
+    - OpenAI: max length 29 characters
+
+    Some models (e.g. Kimi via OpenRouter) generate IDs like 'Read:93' which
+    contain invalid characters. This sanitizes them for cross-provider compatibility.
+    """
+    # Replace invalid characters with underscores
+    if not TOOL_CALL_ID_PATTERN.match(tool_id):
+        tool_id = re.sub(r"[^a-zA-Z0-9_-]", "_", tool_id)
+    # Truncate to max length
+    return tool_id[:TOOL_CALL_ID_MAX_LEN]
+
+
 def assistant_function_to_tool(assistant_message: dict) -> dict:
     assert "function_call" in assistant_message
     new_msg = copy.deepcopy(assistant_message)
@@ -852,6 +870,29 @@ def parse_json(string) -> dict:
     except demjson.JSONDecodeError as e:
         print(f"Error parsing json with demjson package (fatal): {e}")
         raise e
+
+
+def parse_json_or_wrap_raw(
+    string: str,
+    wrapper_key: str = "_malformed_tool_arguments",
+    context: Optional[dict[str, Any]] = None,
+) -> dict:
+    """Parse JSON into a dict, returning a wrapped raw payload on parse failure.
+
+    This is intended for serialization paths where we prefer degraded, non-fatal behavior
+    over failing an entire run because historical tool-call args are malformed.
+    """
+    try:
+        return parse_json(string)
+    except Exception as e:
+        context = context or {}
+        logger.warning(
+            "Failed to parse JSON payload, falling back to wrapped raw payload. wrapper_key=%s error=%s context=%s",
+            wrapper_key,
+            e,
+            context,
+        )
+        return {wrapper_key: string}
 
 
 def validate_function_response(
@@ -1365,7 +1406,6 @@ def fire_and_forget(coro, task_name: Optional[str] = None, error_callback: Optio
     Returns:
         The created asyncio Task object
     """
-    import traceback
 
     task = asyncio.create_task(coro)
 

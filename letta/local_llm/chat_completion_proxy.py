@@ -16,7 +16,7 @@ from letta.local_llm.llamacpp.api import get_llamacpp_completion
 from letta.local_llm.llm_chat_completion_wrappers import simple_summary_wrapper
 from letta.local_llm.lmstudio.api import get_lmstudio_completion, get_lmstudio_completion_chatcompletions
 from letta.local_llm.ollama.api import get_ollama_completion
-from letta.local_llm.utils import count_tokens, get_available_wrappers
+from letta.local_llm.utils import get_available_wrappers
 from letta.local_llm.vllm.api import get_vllm_completion
 from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
@@ -177,7 +177,7 @@ def get_chat_completion(
             raise LocalLLMError(
                 f"Invalid endpoint type {endpoint_type}, please set variable depending on your backend (webui, lmstudio, llamacpp, koboldcpp)"
             )
-    except requests.exceptions.ConnectionError as e:
+    except requests.exceptions.ConnectionError:
         raise LocalLLMConnectionError(f"Unable to connect to endpoint {endpoint}")
 
     attributes = usage if isinstance(usage, dict) else {"usage": usage}
@@ -207,10 +207,12 @@ def get_chat_completion(
 
     if usage["prompt_tokens"] is None:
         printd("usage dict was missing prompt_tokens, computing on-the-fly...")
-        usage["prompt_tokens"] = count_tokens(prompt)
+        # Approximate token count: bytes / 4
+        usage["prompt_tokens"] = len(prompt.encode("utf-8")) // 4
 
     # NOTE: we should compute on-the-fly anyways since we might have to correct for errors during JSON parsing
-    usage["completion_tokens"] = count_tokens(json_dumps(chat_completion_result))
+    # Approximate token count: bytes / 4
+    usage["completion_tokens"] = len(json_dumps(chat_completion_result).encode("utf-8")) // 4
     """
     if usage["completion_tokens"] is None:
         printd(f"usage dict was missing completion_tokens, computing on-the-fly...")

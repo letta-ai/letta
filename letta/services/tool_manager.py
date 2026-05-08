@@ -24,7 +24,7 @@ from letta.constants import (
     MODAL_SAFE_IMPORT_MODULES,
 )
 from letta.errors import LettaInvalidArgumentError, LettaToolNameConflictError, LettaToolNameSchemaMismatchError
-from letta.functions.functions import derive_openai_json_schema, load_function_set
+from letta.functions.functions import load_function_set
 from letta.helpers.tool_helpers import compute_tool_hash, generate_modal_function_name
 from letta.log import get_logger
 
@@ -32,7 +32,6 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method, tracer
-from letta.schemas.agent import AgentState
 from letta.schemas.enums import PrimitiveType, SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
@@ -48,7 +47,7 @@ logger = get_logger(__name__)
 
 
 # NOTE: function name and nested modal function decorator name must stay in sync with MODAL_DEFAULT_TOOL_NAME
-def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars: dict = None, project_id: str = "default"):
+def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars: dict | None = None, project_id: str = "default"):
     """Create a Modal function wrapper for a tool"""
     import contextlib
     import io
@@ -57,7 +56,6 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
     from typing import Optional
 
     import modal
-    from letta_client import Letta
 
     packages = [str(req) for req in tool.pip_requirements] if tool.pip_requirements else []
     for package in MODAL_SAFE_IMPORT_MODULES:
@@ -167,12 +165,25 @@ def modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser, sandbox_env_vars
                 if "agent_state" in tool_func.__code__.co_varnames:
                     kwargs["agent_state"] = reconstructed_agent_state
 
+                try:
+                    from letta.functions.ast_parsers import coerce_dict_args_by_annotations
+
+                    annotations = getattr(tool_func, "__annotations__", {})
+                    kwargs = coerce_dict_args_by_annotations(
+                        kwargs,
+                        annotations,
+                        allow_unsafe_eval=True,
+                        extra_globals=tool_func.__globals__,
+                    )
+                except Exception:
+                    pass
+
                 # Execute the tool function (async or sync)
                 if is_async:
                     result = asyncio.run(tool_func(**kwargs))
                 else:
                     result = tool_func(**kwargs)
-            except Exception as e:
+            except Exception:
                 # Capture the exception and write to stderr
                 error_occurred = True
                 traceback.print_exc(file=stderr_capture)
@@ -931,13 +942,28 @@ class ToolManager:
         # Track if we need to check name uniqueness (check is done inside session with lock)
         needs_name_conflict_check = new_name != current_tool.name
 
-        # NOTE: EXTREMELEY HACKY, we need to stop making assumptions about the source_code
-        if "source_code" in update_data and f"def {new_name}" not in update_data.get("source_code", ""):
-            raise LettaToolNameSchemaMismatchError(
-                tool_name=new_name,
-                json_schema_name=new_schema.get("name") if new_schema else None,
-                source_code=update_data.get("source_code"),
-            )
+        # Definitive checker for source code type
+        if "source_code" in update_data:
+            source_code = update_data.get("source_code", "")
+            source_type = update_data.get("source_type", current_tool.source_type)
+
+            # Check for function name based on source type
+            if source_type == "typescript":
+                # TypeScript: check for "function name" or "export function name"
+                if f"function {new_name}" not in source_code:
+                    raise LettaToolNameSchemaMismatchError(
+                        tool_name=new_name,
+                        json_schema_name=new_schema.get("name") if new_schema else None,
+                        source_code=source_code,
+                    )
+            else:
+                # Python: check for "def name"
+                if f"def {new_name}" not in source_code:
+                    raise LettaToolNameSchemaMismatchError(
+                        tool_name=new_name,
+                        json_schema_name=new_schema.get("name") if new_schema else None,
+                        source_code=source_code,
+                    )
 
         # Create a preview of the updated tool by merging current tool with updates
         # This allows us to compute the hash before the database session
@@ -1189,12 +1215,19 @@ class ToolManager:
         from sqlalchemy import func, select
         from sqlalchemy.dialects.postgresql import insert
 
+        # Sort tools by name to prevent deadlocks.
+        # When multiple concurrent transactions try to upsert the same tools,
+        # they must acquire row locks in a consistent order to avoid deadlocks.
+        # Without sorting, Transaction A might lock (a, b, c) while Transaction B
+        # locks (b, c, a), causing each to wait for the other (deadlock).
+        sorted_tool_data_list = sorted(tool_data_list, key=lambda t: t.name)
+
         # prepare data for bulk insert
         table = ToolModel.__table__
         valid_columns = {col.name for col in table.columns}
 
         insert_data = []
-        for tool in tool_data_list:
+        for tool in sorted_tool_data_list:
             tool_dict = tool.model_dump(to_orm=True)
             # set created/updated by fields
             if actor:
@@ -1262,7 +1295,6 @@ class ToolManager:
     @trace_method
     async def create_or_update_modal_app(self, tool: PydanticTool, actor: PydanticUser):
         """Create a Modal app with the tool function registered"""
-        import time
 
         import modal
 
@@ -1310,7 +1342,7 @@ class ToolManager:
         """Delete a Modal app deployment for the tool"""
         try:
             # Generate the app name for this tool
-            modal_app_name = generate_modal_function_name(tool.id, actor.organization_id)
+            generate_modal_function_name(tool.id, actor.organization_id)
 
             # Try to delete the app
             # TODO: we need to soft delete, and then potentially stop via the CLI, no programmatic way to delete currently

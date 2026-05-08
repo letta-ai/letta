@@ -3,6 +3,7 @@ from typing import Dict
 LLM_HANDLE_OVERRIDES: Dict[str, Dict[str, str]] = {
     "anthropic": {
         "claude-3-5-haiku-20241022": "claude-3-5-haiku",
+        "claude-haiku-4-5-20251001": "claude-haiku-4-5",
         "claude-3-5-sonnet-20241022": "claude-3-5-sonnet",
         "claude-3-opus-20240229": "claude-3-opus",
     },

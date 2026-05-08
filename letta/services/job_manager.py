@@ -1,5 +1,4 @@
-from functools import partial, reduce
-from operator import add
+from functools import partial
 from typing import List, Literal, Optional, Union
 
 from httpx import AsyncClient, post
@@ -10,9 +9,8 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.job import Job as JobModel
-from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.step import Step, Step as StepModel
+from letta.orm.step import Step as StepModel
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import JobStatus, JobType, MessageRole, PrimitiveType
 from letta.schemas.job import BatchJob as PydanticBatchJob, Job as PydanticJob, JobUpdate, LettaRequestConfig
@@ -21,7 +19,6 @@ from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.step import Step as PydanticStep
-from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async

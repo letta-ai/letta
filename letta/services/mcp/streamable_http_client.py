@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Optional
 
 from mcp import ClientSession
@@ -7,6 +8,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from letta.functions.mcp_client.types import BaseServerConfig, StreamableHTTPServerConfig
 from letta.log import get_logger
 from letta.services.mcp.base_client import AsyncBaseMCPClient
+from letta.settings import tool_settings
 
 logger = get_logger(__name__)
 
@@ -38,16 +40,18 @@ class AsyncStreamableHTTPMCPClient(AsyncBaseMCPClient):
                 headers[self.AGENT_ID_HEADER] = self.agent_id
 
             # Use OAuth provider if available, otherwise use regular headers
+            # Pass timeout to prevent httpx.ReadTimeout errors on slow connections
+            timeout = timedelta(seconds=tool_settings.mcp_connect_to_server_timeout)
             if self.oauth_provider:
                 streamable_http_cm = streamablehttp_client(
-                    server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider
+                    server_config.server_url, headers=headers if headers else None, auth=self.oauth_provider, timeout=timeout
                 )
             else:
                 # Use streamablehttp_client context manager with headers if provided
                 if headers:
-                    streamable_http_cm = streamablehttp_client(server_config.server_url, headers=headers)
+                    streamable_http_cm = streamablehttp_client(server_config.server_url, headers=headers, timeout=timeout)
                 else:
-                    streamable_http_cm = streamablehttp_client(server_config.server_url)
+                    streamable_http_cm = streamablehttp_client(server_config.server_url, timeout=timeout)
 
             read_stream, write_stream, _ = await self.exit_stack.enter_async_context(streamable_http_cm)
 

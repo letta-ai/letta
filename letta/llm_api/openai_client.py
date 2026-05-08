@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import os
 import time
-from typing import Any, List, Optional
+from typing import Any, AsyncIterator, List, Optional
 
 import httpx
 import openai
@@ -20,6 +22,8 @@ from letta.errors import (
     LLMAuthenticationError,
     LLMBadRequestError,
     LLMConnectionError,
+    LLMEmptyResponseError,
+    LLMInsufficientCreditsError,
     LLMNotFoundError,
     LLMPermissionDeniedError,
     LLMRateLimitError,
@@ -27,26 +31,27 @@ from letta.errors import (
     LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
-from letta.llm_api.error_utils import is_context_window_overflow_message
+from letta.helpers.json_helpers import sanitize_unicode_surrogates
+from letta.llm_api.error_utils import is_context_window_overflow_message, is_insufficient_credits_message
 from letta.llm_api.helpers import (
     add_inner_thoughts_to_functions,
     convert_response_format_to_responses_api,
-    convert_to_structured_output,
     unpack_all_inner_thoughts_from_kwargs,
 )
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.llm_api.openai_ws_session import AsyncStreamCompat, OpenAIWSSessionManager
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.letta_message_content import MessageContentType
+from letta.schemas.enums import ProviderCategory
+from letta.schemas.letta_message_content import MessageContentType, TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import (
     ChatCompletionRequest,
     FunctionCall as ToolFunctionChoiceFunctionCall,
-    FunctionSchema,
     Tool as OpenAITool,
     ToolFunctionChoice,
     cast_message_to_subtype,
@@ -57,10 +62,10 @@ from letta.schemas.openai.chat_completion_response import (
     FunctionCall,
     Message as ChoiceMessage,
     ToolCall,
-    UsageStatistics,
 )
 from letta.schemas.openai.responses_request import ResponsesRequest
 from letta.schemas.response_format import JsonSchemaResponseFormat
+from letta.schemas.usage import LettaUsageStatistics
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
@@ -85,9 +90,9 @@ def does_not_support_minimal_reasoning(model: str) -> bool:
 def supports_none_reasoning_effort(model: str) -> bool:
     """Check if the model supports 'none' reasoning effort.
 
-    Currently, GPT-5.1 and GPT-5.2 models support the 'none' reasoning effort level.
+    Currently, GPT-5.1, GPT-5.2, GPT-5.3, and GPT-5.4 models support the 'none' reasoning effort level.
     """
-    return model.startswith("gpt-5.1") or model.startswith("gpt-5.2")
+    return model.startswith("gpt-5.1") or model.startswith("gpt-5.2") or model.startswith("gpt-5.3") or model.startswith("gpt-5.4")
 
 
 def is_openai_5_model(model: str) -> bool:
@@ -105,7 +110,7 @@ def accepts_developer_role(model: str) -> bool:
 
     See: https://community.openai.com/t/developer-role-not-accepted-for-o1-o1-mini-o3-mini/1110750/7
     """
-    if is_openai_reasoning_model(model) and "o1-mini" not in model or "o1-preview" in model:
+    if (is_openai_reasoning_model(model) and "o1-mini" not in model) or "o1-preview" in model:
         return True
     else:
         return False
@@ -170,6 +175,7 @@ def supports_content_none(llm_config: LLMConfig) -> bool:
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = self.get_byok_overrides(llm_config)
+        has_byok_key = api_key is not None  # Track if we got a BYOK key
 
         # Default to global OpenAI key when no BYOK override
         if not api_key:
@@ -182,9 +188,11 @@ class OpenAIClient(LLMClientBase):
             llm_config.provider_name == "openrouter"
         )
         if is_openrouter:
-            or_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
-            if or_key:
-                kwargs["api_key"] = or_key
+            # Only use prod OpenRouter key if no BYOK key was provided
+            if not has_byok_key:
+                or_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
+                if or_key:
+                    kwargs["api_key"] = or_key
             # Attach optional headers if provided
             headers = {}
             if model_settings.openrouter_referer:
@@ -208,6 +216,7 @@ class OpenAIClient(LLMClientBase):
 
     async def _prepare_client_kwargs_async(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = await self.get_byok_overrides_async(llm_config)
+        has_byok_key = api_key is not None  # Track if we got a BYOK key
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
@@ -217,9 +226,11 @@ class OpenAIClient(LLMClientBase):
             llm_config.provider_name == "openrouter"
         )
         if is_openrouter:
-            or_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
-            if or_key:
-                kwargs["api_key"] = or_key
+            # Only use prod OpenRouter key if no BYOK key was provided
+            if not has_byok_key:
+                or_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
+                if or_key:
+                    kwargs["api_key"] = or_key
             headers = {}
             if model_settings.openrouter_referer:
                 headers["HTTP-Referer"] = model_settings.openrouter_referer
@@ -238,6 +249,93 @@ class OpenAIClient(LLMClientBase):
     def supports_structured_output(self, llm_config: LLMConfig) -> bool:
         return supports_structured_output(llm_config)
 
+    def _is_openrouter_request(self, llm_config: LLMConfig) -> bool:
+        return (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (llm_config.provider_name == "openrouter")
+
+    @staticmethod
+    def _extract_openrouter_provider(e: Exception) -> str | None:
+        """Extract upstream provider name from an OpenRouter error response."""
+        body = getattr(e, "body", None)
+        if not isinstance(body, dict):
+            return None
+        error_data = body.get("error", {})
+        if not isinstance(error_data, dict):
+            return None
+        metadata = error_data.get("metadata", {})
+        if not isinstance(metadata, dict):
+            return None
+        return metadata.get("provider_name")
+
+    def _is_true_openai_request(self, llm_config: LLMConfig) -> bool:
+        if llm_config.model_endpoint_type != "openai":
+            return False
+
+        if self._is_openrouter_request(llm_config):
+            return False
+
+        # Keep Letta inference endpoint behavior unchanged.
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+            return False
+
+        # If provider_name is explicitly set and not openai, don't apply OpenAI-specific prompt caching fields.
+        if llm_config.provider_name and llm_config.provider_name != "openai":
+            return False
+
+        return True
+
+    def _normalize_model_name(self, model: Optional[str]) -> Optional[str]:
+        if not model:
+            return None
+        return model.split("/", 1)[-1]
+
+    def _supports_extended_prompt_cache_retention(self, model: Optional[str]) -> bool:
+        normalized_model = self._normalize_model_name(model)
+        if not normalized_model:
+            return False
+
+        # Per OpenAI docs: extended retention is available on gpt-4.1 and gpt-5 family models.
+        # gpt-5-mini is excluded (not listed in docs).
+        return normalized_model == "gpt-4.1" or (normalized_model.startswith("gpt-5") and normalized_model != "gpt-5-mini")
+
+    def _apply_prompt_cache_settings(
+        self,
+        llm_config: LLMConfig,
+        model: Optional[str],
+        messages: List[PydanticMessage],
+        request_obj: Any,
+    ) -> None:
+        """Apply OpenAI prompt cache settings to the request.
+
+        We intentionally do NOT set prompt_cache_key. OpenAI's default routing
+        (based on a hash of the first ~256 tokens of the prompt) already provides
+        good cache affinity for Letta agents, since each agent has a unique system
+        prompt. Setting an explicit key can disrupt existing warm caches and reduce
+        hit rates.
+
+        We only set prompt_cache_retention to "24h" for models that support extended
+        retention, which keeps cached prefixes active longer (up to 24h vs 5-10min).
+        """
+        if not self._is_true_openai_request(llm_config):
+            return
+
+        if self._supports_extended_prompt_cache_retention(model):
+            request_obj.prompt_cache_retention = "24h"
+
+    @staticmethod
+    def _apply_system_override(messages: List[PydanticMessage], system: Optional[str]) -> List[PydanticMessage]:
+        if system is None:
+            return messages
+
+        if not messages:
+            raise RuntimeError("Cannot override system prompt because messages is empty")
+
+        if messages[0].role != "system":
+            raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
+
+        system_message = messages[0].model_copy(deep=True)
+        system_message.content = [TextContent(text=system)]
+        return [system_message, *messages[1:]]
+
     @trace_method
     def build_request_data_responses(
         self,
@@ -248,6 +346,7 @@ class OpenAIClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI Responses API.
@@ -255,12 +354,15 @@ class OpenAIClient(LLMClientBase):
         if llm_config.put_inner_thoughts_in_kwargs:
             raise ValueError("Inner thoughts in kwargs are not supported for the OpenAI Responses API")
 
+        request_messages = self._apply_system_override(messages, system)
+
         openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(
-            messages, tool_return_truncation_chars=tool_return_truncation_chars
+            request_messages,
+            tool_return_truncation_chars=tool_return_truncation_chars,
         )
         # Add multi-modal support for Responses API by rewriting user messages
         # into input_text/input_image parts.
-        openai_messages_list = fill_image_content_in_responses_input(openai_messages_list, messages)
+        openai_messages_list = fill_image_content_in_responses_input(openai_messages_list, request_messages)
 
         if llm_config.model:
             model = llm_config.model
@@ -297,39 +399,20 @@ class OpenAIClient(LLMClientBase):
                     new_tools.append(tool.model_copy(deep=True))
                 typed_tools = new_tools
 
-            # Convert to strict mode
-            if supports_structured_output(llm_config):
-                for tool in typed_tools:
-                    try:
-                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
-                        tool.function = FunctionSchema(**structured_output_version)
-                    except ValueError as e:
-                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-
-                # Finally convert to a Responses-friendly dict
-                responses_tools = [
-                    {
-                        "type": "function",
-                        "name": t.function.name,
-                        "description": t.function.description,
-                        "parameters": t.function.parameters,
-                        "strict": True,
-                    }
-                    for t in typed_tools
-                ]
-
-            else:
-                # Finally convert to a Responses-friendly dict
-                responses_tools = [
-                    {
-                        "type": "function",
-                        "name": t.function.name,
-                        "description": t.function.description,
-                        "parameters": t.function.parameters,
-                        # "strict": True,
-                    }
-                    for t in typed_tools
-                ]
+            # Note: Tools are already processed by enable_strict_mode() in the workflow/agent code
+            # (temporal_letta_v1_agent_workflow.py or letta_agent_v3.py) before reaching here.
+            # enable_strict_mode() handles: strict flag, additionalProperties, required array, nullable fields
+            # Convert to a Responses-friendly dict, preserving the strict setting from the tool schema
+            responses_tools = [
+                {
+                    "type": "function",
+                    "name": t.function.name,
+                    "description": t.function.description,
+                    "parameters": t.function.parameters,
+                    "strict": t.function.strict,
+                }
+                for t in typed_tools
+            ]
         else:
             responses_tools = None
 
@@ -343,13 +426,21 @@ class OpenAIClient(LLMClientBase):
             input=openai_messages_list,
             tools=responses_tools,
             tool_choice=tool_choice,
-            max_output_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
             parallel_tool_calls=llm_config.parallel_tool_calls if tools and supports_parallel_tool_calling(model) else False,
         )
 
+        # Handle "fast" model variants → real model + priority service tier
+        if data.model.endswith("-fast"):
+            data.model = data.model.removesuffix("-fast")
+            data.service_tier = "priority"
+
         # Handle text configuration (verbosity and response format)
         text_config_kwargs = {}
+
+        # Only set max_output_tokens if explicitly configured
+        if llm_config.max_tokens is not None:
+            data.max_output_tokens = llm_config.max_tokens
 
         # Add verbosity control for GPT-5 models
         if supports_verbosity_control(model) and llm_config.verbosity:
@@ -397,8 +488,14 @@ class OpenAIClient(LLMClientBase):
 
             data.model = "memgpt-openai"
 
+        self._apply_prompt_cache_settings(
+            llm_config=llm_config,
+            model=model,
+            messages=request_messages,
+            request_obj=data,
+        )
+
         request_data = data.model_dump(exclude_unset=True)
-        # print("responses request data", request_data)
         return request_data
 
     @trace_method
@@ -411,6 +508,7 @@ class OpenAIClient(LLMClientBase):
         force_tool_call: Optional[str] = None,
         requires_subsequent_tool_call: bool = False,
         tool_return_truncation_chars: Optional[int] = None,
+        system: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI API.
@@ -425,6 +523,7 @@ class OpenAIClient(LLMClientBase):
                 force_tool_call=force_tool_call,
                 requires_subsequent_tool_call=requires_subsequent_tool_call,
                 tool_return_truncation_chars=tool_return_truncation_chars,
+                system=system,
             )
 
         if agent_type == AgentType.letta_v1_agent:
@@ -448,10 +547,12 @@ class OpenAIClient(LLMClientBase):
 
         use_developer_message = accepts_developer_role(llm_config.model)
 
+        request_messages = self._apply_system_override(messages, system)
+
         openai_message_list = [
             cast_message_to_subtype(m)
             for m in PydanticMessage.to_openai_dicts_from_list(
-                messages,
+                request_messages,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 use_developer_message=use_developer_message,
                 tool_return_truncation_chars=tool_return_truncation_chars,
@@ -465,13 +566,11 @@ class OpenAIClient(LLMClientBase):
             model = None
 
         # TODO: we may need to extend this to more models using proxy?
-        is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
-            llm_config.provider_name == "openrouter"
-        )
+        is_openrouter = self._is_openrouter_request(llm_config)
         if is_openrouter:
             try:
                 model = llm_config.handle.split("/", 1)[-1]
-            except:
+            except Exception:
                 # don't raise error since this isn't robust against edge cases
                 pass
 
@@ -481,7 +580,12 @@ class OpenAIClient(LLMClientBase):
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
             if force_tool_call is not None:
-                tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
+                # OpenRouter proxies to providers that may not support object-format tool_choice
+                # Use "required" instead which achieves similar effect
+                if is_openrouter:
+                    tool_choice = "required"
+                else:
+                    tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
             elif requires_subsequent_tool_call:
                 tool_choice = "required"
             elif self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.letta_v1_agent:
@@ -506,6 +610,11 @@ class OpenAIClient(LLMClientBase):
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
 
+        # Handle "fast" model variants → real model + priority service tier
+        if data.model.endswith("-fast"):
+            data.model = data.model.removesuffix("-fast")
+            data.service_tier = "priority"
+
         # Add verbosity control for GPT-5 models
         if supports_verbosity_control(model) and llm_config.verbosity:
             data.verbosity = llm_config.verbosity
@@ -518,8 +627,14 @@ class OpenAIClient(LLMClientBase):
         if llm_config.frequency_penalty is not None:
             data.frequency_penalty = llm_config.frequency_penalty
 
+        # Add logprobs configuration for RL training
+        if llm_config.return_logprobs:
+            data.logprobs = True
+            if llm_config.top_logprobs is not None:
+                data.top_logprobs = llm_config.top_logprobs
+
         if tools and supports_parallel_tool_calling(model):
-            data.parallel_tool_calls = False
+            data.parallel_tool_calls = llm_config.parallel_tool_calls
 
         # Add response_format support for structured outputs
         if hasattr(llm_config, "response_format") and llm_config.response_format is not None:
@@ -559,15 +674,22 @@ class OpenAIClient(LLMClientBase):
                     new_tools.append(tool.model_copy(deep=True))
                 data.tools = new_tools
 
+        self._apply_prompt_cache_settings(
+            llm_config=llm_config,
+            model=model,
+            messages=request_messages,
+            request_obj=data,
+        )
+
+        # Note: Tools are already processed by enable_strict_mode() in the workflow/agent code
+        # (temporal_letta_v1_agent_workflow.py or letta_agent_v3.py) before reaching here.
+        # enable_strict_mode() handles: strict flag, additionalProperties, required array, nullable fields
+        # We only need to ensure strict is False for providers that don't support structured output
         if data.tools is not None and len(data.tools) > 0:
-            # Convert to structured output style (which has 'strict' and no optionals)
             for tool in data.tools:
-                if supports_structured_output(llm_config):
-                    try:
-                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
-                        tool.function = FunctionSchema(**structured_output_version)
-                    except ValueError as e:
-                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+                if not supports_structured_output(llm_config):
+                    # Provider doesn't support structured output - ensure strict is False
+                    tool.function.strict = False
         request_data = data.model_dump(exclude_unset=True)
 
         # If Ollama
@@ -577,6 +699,43 @@ class OpenAIClient(LLMClientBase):
         # If set, then in the backend "medium" thinking is turned on
         # request_data["reasoning_effort"] = "medium"
 
+        # GLM-5 will sometimes send turn delimiters; stop generation before the model
+        # starts predicting the next turn (prevents "<|user|>" leaking into responses)
+        # also strip reasoning fields that providers like Fireworks reject as extra inputs
+        if (model or "").lower().endswith("glm-5"):
+            request_data["stop"] = ["<|user|>", "<|assistant|>", "<|observation|>"]
+            if "messages" in request_data:
+                for msg in request_data["messages"]:
+                    if isinstance(msg, dict):
+                        for field in ("reasoning_content_signature", "redacted_reasoning_content", "omitted_reasoning_content"):
+                            msg.pop(field, None)
+            # Enable reasoning via chat_template_args for GLM-5 on BYOK deployments (e.g. Baseten TRT-LLM)
+            # Thinking is off by default; must be explicitly enabled
+            if llm_config.enable_reasoner:
+                request_data["extra_body"] = {
+                    "chat_template_args": {"enable_thinking": True},
+                }
+
+        # Add OpenRouter reasoning configuration via extra_body
+        if is_openrouter and llm_config.enable_reasoner:
+            reasoning_config = {}
+            if llm_config.reasoning_effort:
+                reasoning_config["effort"] = llm_config.reasoning_effort
+            if llm_config.max_reasoning_tokens and llm_config.max_reasoning_tokens > 0:
+                reasoning_config["max_tokens"] = llm_config.max_reasoning_tokens
+            if not reasoning_config:
+                reasoning_config = {"enabled": True}
+            request_data["extra_body"] = {"reasoning": reasoning_config}
+
+        # Add OpenRouter provider preferences for GLM-5 auto mode
+        # Exclude low-quality (fp4), degraded, tool-unsupported, and high-error-rate providers
+        if is_openrouter and (model or "").lower().endswith("glm-5"):
+            existing_extra = request_data.get("extra_body", {})
+            existing_extra["provider"] = {
+                "ignore": ["deepinfra/fp4", "ambient/fp8", "io-net/fp8", "phala", "siliconflow/fp8"],
+            }
+            request_data["extra_body"] = existing_extra
+
         return request_data
 
     @trace_method
@@ -584,32 +743,114 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
-        if "input" in request_data and "messages" not in request_data:
-            resp = client.responses.create(**request_data)
-            return resp.model_dump()
-        else:
-            response: ChatCompletion = client.chat.completions.create(**request_data)
-            return response.model_dump()
+        try:
+            if "input" in request_data and "messages" not in request_data:
+                resp = client.responses.create(**request_data)
+                return resp.model_dump()
+            else:
+                response: ChatCompletion = client.chat.completions.create(**request_data)
+                return response.model_dump()
+        except json.JSONDecodeError as e:
+            logger.error(f"[OpenAI] Failed to parse API response as JSON: {e}")
+            raise LLMServerError(
+                message=f"OpenAI API returned invalid JSON response (likely an HTML error page): {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"json_error": str(e), "error_position": f"line {e.lineno} column {e.colno}"},
+            )
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
-        if "input" in request_data and "messages" not in request_data:
-            resp = await client.responses.create(**request_data)
-            return resp.model_dump()
-        else:
-            response: ChatCompletion = await client.chat.completions.create(**request_data)
-            return response.model_dump()
+        try:
+            if "input" in request_data and "messages" not in request_data:
+                resp = await client.responses.create(**request_data)
+                return resp.model_dump()
+            else:
+                response: ChatCompletion = await client.chat.completions.create(**request_data)
+                return response.model_dump()
+        except json.JSONDecodeError as e:
+            logger.error(f"[OpenAI] Failed to parse API response as JSON: {e}")
+            raise LLMServerError(
+                message=f"OpenAI API returned invalid JSON response (likely an HTML error page): {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"json_error": str(e), "error_position": f"line {e.lineno} column {e.colno}"},
+            )
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return is_openai_reasoning_model(llm_config.model)
+
+    def extract_usage_statistics(self, response_data: dict | None, llm_config: LLMConfig) -> LettaUsageStatistics:
+        """Extract usage statistics from OpenAI response and return as LettaUsageStatistics."""
+        if not response_data:
+            return LettaUsageStatistics()
+
+        # Handle Responses API format (used by reasoning models like o1/o3)
+        if response_data.get("object") == "response":
+            usage = response_data.get("usage", {}) or {}
+            prompt_tokens = usage.get("input_tokens") or 0
+            completion_tokens = usage.get("output_tokens") or 0
+            total_tokens = usage.get("total_tokens") or (prompt_tokens + completion_tokens)
+
+            input_details = usage.get("input_tokens_details", {}) or {}
+            cached_tokens = input_details.get("cached_tokens")
+
+            output_details = usage.get("output_tokens_details", {}) or {}
+            reasoning_tokens = output_details.get("reasoning_tokens")
+
+            return LettaUsageStatistics(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cached_input_tokens=cached_tokens,
+                reasoning_tokens=reasoning_tokens,
+            )
+
+        # Handle standard Chat Completions API format using pydantic models
+        from openai.types.chat import ChatCompletion
+
+        try:
+            completion = ChatCompletion.model_validate(response_data)
+        except Exception:
+            return LettaUsageStatistics()
+
+        if not completion.usage:
+            return LettaUsageStatistics()
+
+        usage = completion.usage
+        prompt_tokens = usage.prompt_tokens or 0
+        completion_tokens = usage.completion_tokens or 0
+        total_tokens = usage.total_tokens or (prompt_tokens + completion_tokens)
+
+        # Extract cached tokens from prompt_tokens_details
+        cached_tokens = None
+        if usage.prompt_tokens_details:
+            cached_tokens = usage.prompt_tokens_details.cached_tokens
+
+        # Extract reasoning tokens from completion_tokens_details
+        reasoning_tokens = None
+        if usage.completion_tokens_details:
+            reasoning_tokens = usage.completion_tokens_details.reasoning_tokens
+
+        return LettaUsageStatistics(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            cached_input_tokens=cached_tokens,
+            reasoning_tokens=reasoning_tokens,
+        )
 
     @trace_method
     async def convert_response_to_chat_completion(
@@ -622,35 +863,21 @@ class OpenAIClient(LLMClientBase):
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
+        if isinstance(response_data, str):
+            raise LLMServerError(
+                message="LLM endpoint returned a raw string instead of a JSON object. This usually indicates the endpoint URL is incorrect or returned an error page.",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"raw_response": response_data[:500]},
+            )
         if "object" in response_data and response_data["object"] == "response":
             # Map Responses API shape to Chat Completions shape
             # See example payload in tests/integration_test_send_message_v2.py
             model = response_data.get("model")
 
-            # Extract usage
-            usage = response_data.get("usage", {}) or {}
-            prompt_tokens = usage.get("input_tokens") or 0
-            completion_tokens = usage.get("output_tokens") or 0
-            total_tokens = usage.get("total_tokens") or (prompt_tokens + completion_tokens)
+            # Extract usage via centralized method
+            from letta.schemas.enums import ProviderType
 
-            # Extract detailed token breakdowns (Responses API uses input_tokens_details/output_tokens_details)
-            prompt_tokens_details = None
-            input_details = usage.get("input_tokens_details", {}) or {}
-            if input_details.get("cached_tokens"):
-                from letta.schemas.openai.chat_completion_response import UsageStatisticsPromptTokenDetails
-
-                prompt_tokens_details = UsageStatisticsPromptTokenDetails(
-                    cached_tokens=input_details.get("cached_tokens") or 0,
-                )
-
-            completion_tokens_details = None
-            output_details = usage.get("output_tokens_details", {}) or {}
-            if output_details.get("reasoning_tokens"):
-                from letta.schemas.openai.chat_completion_response import UsageStatisticsCompletionTokenDetails
-
-                completion_tokens_details = UsageStatisticsCompletionTokenDetails(
-                    reasoning_tokens=output_details.get("reasoning_tokens") or 0,
-                )
+            usage_stats = self.extract_usage_statistics(response_data, llm_config).to_usage(ProviderType.openai)
 
             # Extract assistant message text from the outputs list
             outputs = response_data.get("output") or []
@@ -669,7 +896,6 @@ class OpenAIClient(LLMClientBase):
                 finish_reason = None
 
             # Optionally capture reasoning presence
-            found_reasoning = False
             for out in outputs:
                 out_type = (out or {}).get("type")
                 if out_type == "message":
@@ -680,7 +906,6 @@ class OpenAIClient(LLMClientBase):
                             if text_val:
                                 assistant_text_parts.append(text_val)
                 elif out_type == "reasoning":
-                    found_reasoning = True
                     reasoning_summary_parts = [part.get("text") for part in out.get("summary")]
                     reasoning_content_signature = out.get("encrypted_content")
                 elif out_type == "function_call":
@@ -718,13 +943,7 @@ class OpenAIClient(LLMClientBase):
                 choices=[choice],
                 created=int(response_data.get("created_at") or 0),
                 model=model or (llm_config.model if hasattr(llm_config, "model") else None),
-                usage=UsageStatistics(
-                    prompt_tokens=prompt_tokens,
-                    completion_tokens=completion_tokens,
-                    total_tokens=total_tokens,
-                    prompt_tokens_details=prompt_tokens_details,
-                    completion_tokens_details=completion_tokens_details,
-                ),
+                usage=usage_stats,
             )
 
             return chat_completion_response
@@ -732,6 +951,27 @@ class OpenAIClient(LLMClientBase):
         # OpenAI's response structure directly maps to ChatCompletionResponse
         # We just need to instantiate the Pydantic model for validation and type safety.
         chat_completion_response = ChatCompletionResponse(**response_data)
+
+        # Detect empty responses (no content and no tool calls)
+        # Some providers (e.g., OpenRouter/GLM-5) return these instead of an error
+        if chat_completion_response.choices and len(chat_completion_response.choices) > 0:
+            choice = chat_completion_response.choices[0]
+            if choice.message.content is None and not choice.message.tool_calls:
+                raise LLMEmptyResponseError(
+                    message=(
+                        f"LLM provider returned empty content in response "
+                        f"(ID: {chat_completion_response.id}, model: {chat_completion_response.model}, "
+                        f"finish_reason: {choice.finish_reason})"
+                    ),
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "response_id": chat_completion_response.id,
+                        "model": chat_completion_response.model,
+                        "finish_reason": choice.finish_reason,
+                        "response_data": str(response_data)[:500],
+                    },
+                )
+
         chat_completion_response = self._fix_truncated_json_response(chat_completion_response)
 
         # Parse reasoning_content from vLLM/OpenRouter/OpenAI proxies that return this field
@@ -744,12 +984,12 @@ class OpenAIClient(LLMClientBase):
         ):
             if "choices" in response_data and len(response_data["choices"]) > 0:
                 choice_data = response_data["choices"][0]
-                if "message" in choice_data and "reasoning_content" in choice_data["message"]:
-                    reasoning_content = choice_data["message"]["reasoning_content"]
-                    if reasoning_content:
-                        chat_completion_response.choices[0].message.reasoning_content = reasoning_content
-
-                        chat_completion_response.choices[0].message.reasoning_content_signature = None
+                message_data = choice_data.get("message", {})
+                # Check for reasoning_content (standard) or reasoning (OpenRouter)
+                reasoning_content = message_data.get("reasoning_content") or message_data.get("reasoning")
+                if reasoning_content:
+                    chat_completion_response.choices[0].message.reasoning_content = reasoning_content
+                    chat_completion_response.choices[0].message.reasoning_content_signature = None
 
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
@@ -764,15 +1004,48 @@ class OpenAIClient(LLMClientBase):
         return chat_completion_response
 
     @trace_method
-    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk | ResponseStreamEvent]:
+    async def stream_async(
+        self,
+        request_data: dict,
+        llm_config: LLMConfig,
+        use_websocket: bool = False,
+        ws_session: OpenAIWSSessionManager | None = None,
+    ) -> AsyncStream[ChatCompletionChunk | ResponseStreamEvent] | AsyncIterator[ResponseStreamEvent]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
+
+        Args:
+            use_websocket: If True and the request is a Responses API request, use a
+                WebSocket session instead of HTTP SSE. Requires ``ws_session``.
+            ws_session: An active ``OpenAIWSSessionManager``. When provided *and*
+                ``use_websocket`` is True, the request is sent over WebSocket.
+                If ``use_websocket`` is True but no session is given, one is created
+                on-the-fly (but won't persist across steps — prefer passing one).
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
+        is_responses_request = "input" in request_data and "messages" not in request_data
+
+        # --- WebSocket path (Responses API only) ---
+        if use_websocket and is_responses_request:
+            if ws_session is None:
+                # Create a one-shot session (caller should prefer reuse)
+                kwargs = await self._prepare_client_kwargs_async(llm_config)
+                ws_session = OpenAIWSSessionManager(client_kwargs=kwargs)
+            try:
+                # Wrap in AsyncStreamCompat so callers can use ``async with stream:``
+                return AsyncStreamCompat(ws_session.stream_responses(request_data))
+            except Exception as e:
+                logger.error(f"Error streaming OpenAI Responses WebSocket request: {e}")
+                raise
+
+        # --- HTTP SSE path (default) ---
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
 
         # Route based on payload shape: Responses uses 'input', Chat Completions uses 'messages'
-        if "input" in request_data and "messages" not in request_data:
+        if is_responses_request:
             try:
                 response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
                     **request_data,
@@ -799,6 +1072,9 @@ class OpenAIClient(LLMClientBase):
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
+        # Sanitize Unicode surrogates to prevent encoding errors
+        request_data = sanitize_unicode_surrogates(request_data)
+
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
         response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(**request_data, stream=True)
@@ -937,10 +1213,22 @@ class OpenAIClient(LLMClientBase):
         return results
 
     @trace_method
-    def handle_llm_error(self, e: Exception) -> Exception:
+    def handle_llm_error(self, e: Exception, llm_config: Optional[LLMConfig] = None) -> Exception:
         """
         Maps OpenAI-specific errors to common LLMError types.
         """
+        is_byok = (llm_config.provider_category == ProviderCategory.byok) if llm_config else None
+
+        # Log OpenRouter upstream provider errors with searchable tag
+        if llm_config and self._is_openrouter_request(llm_config):
+            or_provider = self._extract_openrouter_provider(e)
+            logger.warning(
+                f"[OPENROUTER_PROVIDER_ERROR] handle={llm_config.handle} "
+                f"upstream_provider={or_provider} error_type={type(e).__name__} "
+                f"status={getattr(e, 'status_code', None)} "
+                f"message={str(e)[:500]}"
+            )
+
         if isinstance(e, openai.APITimeoutError):
             timeout_duration = getattr(e, "timeout", "unknown")
             logger.warning(f"[OpenAI] Request timeout after {timeout_duration} seconds: {e}")
@@ -950,6 +1238,7 @@ class OpenAIClient(LLMClientBase):
                 details={
                     "timeout_duration": timeout_duration,
                     "cause": str(e.__cause__) if e.__cause__ else None,
+                    "is_byok": is_byok,
                 },
             )
 
@@ -958,7 +1247,7 @@ class OpenAIClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Failed to connect to OpenAI: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx.RemoteProtocolError which can occur during streaming
@@ -969,7 +1258,7 @@ class OpenAIClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Connection error during OpenAI streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "is_byok": is_byok},
             )
 
         # Handle httpx network errors which can occur during streaming
@@ -979,37 +1268,47 @@ class OpenAIClient(LLMClientBase):
             return LLMConnectionError(
                 message=f"Network error during OpenAI streaming: {str(e)}",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
-                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__},
+                details={"cause": str(e.__cause__) if e.__cause__ else None, "error_type": type(e).__name__, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.RateLimitError):
             logger.warning(f"[OpenAI] Rate limited (429). Consider backoff. Error: {e}")
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMRateLimitError(
                 message=f"Rate limited by OpenAI: {str(e)}",
                 code=ErrorCode.RATE_LIMIT_EXCEEDED,
-                details=e.body,  # Include body which often has rate limit details
+                details={**body_details, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.BadRequestError):
             logger.warning(f"[OpenAI] Bad request (400): {str(e)}")
-            # BadRequestError can signify different issues (e.g., invalid args, context length)
-            # Check for context_length_exceeded error code in the error body
+            error_str = str(e)
+
+            if "<html" in error_str.lower() or (e.body and isinstance(e.body, str) and "<html" in e.body.lower()):
+                logger.warning("[OpenAI] Received HTML error response from upstream endpoint (likely ALB or reverse proxy)")
+                return LLMBadRequestError(
+                    message="Upstream endpoint returned HTML error (400 Bad Request). This usually indicates the configured API endpoint is not an OpenAI-compatible API or the request was rejected by a load balancer.",
+                    code=ErrorCode.INVALID_ARGUMENT,
+                    details={"raw_body_preview": error_str[:500], "is_byok": is_byok},
+                )
+
             error_code = None
             if e.body and isinstance(e.body, dict):
                 error_details = e.body.get("error", {})
                 if isinstance(error_details, dict):
                     error_code = error_details.get("code")
 
-            # Check both the error code and message content for context length issues
-            if error_code == "context_length_exceeded" or is_context_window_overflow_message(str(e)):
+            if error_code == "context_length_exceeded" or is_context_window_overflow_message(error_str):
                 return ContextWindowExceededError(
-                    message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
+                    message=f"Bad request to OpenAI (context window exceeded): {error_str}",
+                    details={"is_byok": is_byok},
                 )
             else:
+                body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
                 return LLMBadRequestError(
-                    message=f"Bad request to OpenAI: {str(e)}",
-                    code=ErrorCode.INVALID_ARGUMENT,  # Or more specific if detectable
-                    details=e.body,
+                    message=f"Bad request to OpenAI-compatible endpoint: {str(e)}",
+                    code=ErrorCode.INVALID_ARGUMENT,
+                    details={**body_details, "is_byok": is_byok},
                 )
 
         # NOTE: The OpenAI Python SDK may raise a generic `openai.APIError` while *iterating*
@@ -1019,46 +1318,91 @@ class OpenAIClient(LLMClientBase):
         #
         # Example message:
         #   "Your input exceeds the context window of this model. Please adjust your input and try again."
-        if isinstance(e, openai.APIError):
+        if isinstance(e, openai.APIError) and not isinstance(e, openai.APIStatusError):
             msg = str(e)
             if is_context_window_overflow_message(msg):
                 return ContextWindowExceededError(
                     message=f"OpenAI request exceeded the context window: {msg}",
                     details={
                         "provider_exception_type": type(e).__name__,
-                        # Best-effort extraction (may not exist on APIError)
                         "body": getattr(e, "body", None),
+                        "is_byok": is_byok,
                     },
                 )
+            if is_insufficient_credits_message(msg):
+                return LLMInsufficientCreditsError(
+                    message=f"Insufficient credits (BYOK): {msg}" if is_byok else f"Insufficient credits: {msg}",
+                    code=ErrorCode.PAYMENT_REQUIRED,
+                    details={
+                        "provider_exception_type": type(e).__name__,
+                        "body": getattr(e, "body", None),
+                        "is_byok": is_byok,
+                    },
+                )
+            return LLMBadRequestError(
+                message=f"OpenAI API error: {msg}",
+                code=ErrorCode.INVALID_ARGUMENT,
+                details={
+                    "provider_exception_type": type(e).__name__,
+                    "body": getattr(e, "body", None),
+                    "is_byok": is_byok,
+                },
+            )
 
         if isinstance(e, openai.AuthenticationError):
             logger.error(f"[OpenAI] Authentication error (401): {str(e)}")  # More severe log level
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMAuthenticationError(
-                message=f"Authentication failed with OpenAI: {str(e)}", code=ErrorCode.UNAUTHENTICATED, details=e.body
+                message=f"Authentication failed with OpenAI: {str(e)}",
+                code=ErrorCode.UNAUTHENTICATED,
+                details={**body_details, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.PermissionDeniedError):
             logger.error(f"[OpenAI] Permission denied (403): {str(e)}")  # More severe log level
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMPermissionDeniedError(
-                message=f"Permission denied by OpenAI: {str(e)}", code=ErrorCode.PERMISSION_DENIED, details=e.body
+                message=f"Permission denied by OpenAI: {str(e)}",
+                code=ErrorCode.PERMISSION_DENIED,
+                details={**body_details, "is_byok": is_byok},
             )
 
         if isinstance(e, openai.NotFoundError):
             logger.warning(f"[OpenAI] Resource not found (404): {str(e)}")
             # Could be invalid model name, etc.
-            return LLMNotFoundError(message=f"Resource not found in OpenAI: {str(e)}", code=ErrorCode.NOT_FOUND, details=e.body)
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
+            return LLMNotFoundError(
+                message=f"Resource not found in OpenAI: {str(e)}",
+                code=ErrorCode.NOT_FOUND,
+                details={**body_details, "is_byok": is_byok},
+            )
 
         if isinstance(e, openai.UnprocessableEntityError):
             logger.warning(f"[OpenAI] Unprocessable entity (422): {str(e)}")
+            body_details = e.body if isinstance(e.body, dict) else {"body": e.body}
             return LLMUnprocessableEntityError(
                 message=f"Invalid request content for OpenAI: {str(e)}",
-                code=ErrorCode.INVALID_ARGUMENT,  # Usually validation errors
-                details=e.body,
+                code=ErrorCode.INVALID_ARGUMENT,
+                details={**body_details, "is_byok": is_byok},
             )
 
         # General API error catch-all
         if isinstance(e, openai.APIStatusError):
             logger.warning(f"[OpenAI] API status error ({e.status_code}): {str(e)}")
+            # Handle 413 Request Entity Too Large - request payload exceeds size limits
+            if e.status_code == 413:
+                return ContextWindowExceededError(
+                    message=f"Request too large for OpenAI (413): {str(e)}",
+                    details={"is_byok": is_byok},
+                )
+            # Handle 402 Payment Required or credit-related messages
+            if e.status_code == 402 or is_insufficient_credits_message(str(e)):
+                msg = str(e)
+                return LLMInsufficientCreditsError(
+                    message=f"Insufficient credits (BYOK): {msg}" if is_byok else f"Insufficient credits: {msg}",
+                    code=ErrorCode.PAYMENT_REQUIRED,
+                    details={"status_code": e.status_code, "body": e.body, "is_byok": is_byok},
+                )
             # Map based on status code potentially
             if e.status_code >= 500:
                 error_cls = LLMServerError
@@ -1075,11 +1419,12 @@ class OpenAIClient(LLMClientBase):
                     "status_code": e.status_code,
                     "response": str(e.response),
                     "body": e.body,
+                    "is_byok": is_byok,
                 },
             )
 
         # Fallback for unexpected errors
-        return super().handle_llm_error(e)
+        return super().handle_llm_error(e, llm_config=llm_config)
 
 
 def fill_image_content_in_messages(openai_message_list: List[dict], pydantic_message_list: List[PydanticMessage]) -> List[dict]:

@@ -3,7 +3,6 @@ from typing import Optional
 
 from pydantic import Field
 
-from letta.helpers.tpuf_client import should_use_tpuf
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import PrimitiveType, VectorDBProvider
 from letta.schemas.letta_base import LettaBase

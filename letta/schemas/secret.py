@@ -188,20 +188,15 @@ class Secret(BaseModel):
         except ValueError as e:
             error_msg = str(e)
 
-            # Handle missing encryption key - check if value is actually plaintext
+            # Handle missing encryption key - return stored value as plaintext.
+            # When no key is configured, the value was most likely stored as plaintext
+            # (since encryption requires a key). The is_encrypted() heuristic is unreliable
+            # here — it false-positives on long alphanumeric API keys that happen to be
+            # valid base64 with decoded length >= 45 bytes.
             if "No encryption key configured" in error_msg:
-                if CryptoUtils.is_encrypted(self.encrypted_value):
-                    # Value was encrypted but we have no key - can't decrypt
-                    logger.warning(
-                        "Cannot decrypt Secret value - no encryption key configured. "
-                        "The value was encrypted and requires the original key to decrypt."
-                    )
-                    return None
-                else:
-                    # Value is plaintext (stored when no key was available)
-                    logger.debug("Secret value is plaintext (stored without encryption)")
-                    self._plaintext_cache = self.encrypted_value
-                    return self.encrypted_value
+                logger.debug("No encryption key configured - returning stored value as plaintext")
+                self._plaintext_cache = self.encrypted_value
+                return self.encrypted_value
 
             # Handle decryption failure - check if value might be plaintext
             elif "Failed to decrypt data" in error_msg:
@@ -247,18 +242,15 @@ class Secret(BaseModel):
         except ValueError as e:
             error_msg = str(e)
 
-            # Handle missing encryption key - check if value is actually plaintext
+            # Handle missing encryption key - return stored value as plaintext.
+            # When no key is configured, the value was most likely stored as plaintext
+            # (since encryption requires a key). The is_encrypted() heuristic is unreliable
+            # here — it false-positives on long alphanumeric API keys that happen to be
+            # valid base64 with decoded length >= 45 bytes.
             if "No encryption key configured" in error_msg:
-                if CryptoUtils.is_encrypted(self.encrypted_value):
-                    logger.warning(
-                        "Cannot decrypt Secret value - no encryption key configured. "
-                        "The value was encrypted and requires the original key to decrypt."
-                    )
-                    return None
-                else:
-                    logger.debug("Secret value is plaintext (stored without encryption)")
-                    self._plaintext_cache = self.encrypted_value
-                    return self.encrypted_value
+                logger.debug("No encryption key configured - returning stored value as plaintext")
+                self._plaintext_cache = self.encrypted_value
+                return self.encrypted_value
 
             # Handle decryption failure - check if value might be plaintext
             elif "Failed to decrypt data" in error_msg:

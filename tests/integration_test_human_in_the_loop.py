@@ -6,7 +6,6 @@ from unittest.mock import patch
 import pytest
 from letta_client import APIError, Letta
 from letta_client.types import AgentState, MessageCreateParam, Tool
-from letta_client.types.agents import ApprovalCreateParam
 
 from letta.adapters.simple_llm_stream_adapter import SimpleLLMStreamAdapter
 
@@ -81,6 +80,10 @@ def accumulate_chunks(stream):
             continue
 
         current_message_type = getattr(chunk, "message_type", None)
+
+        # Skip keepalive/initial pings — not content messages
+        if current_message_type == "ping":
+            continue
 
         if prev_message_type != current_message_type:
             # Save the previous message if it exists
@@ -277,11 +280,10 @@ def test_invoke_approval_request(
     # Test pending_approval relationship field
     agent_with_pending = client.agents.retrieve(agent_id=agent.id, include=["agent.pending_approval"])
     assert agent_with_pending.pending_approval is not None
-    # Client SDK returns it as a dict, so use dict access
-    assert agent_with_pending.pending_approval["tool_call"]["name"] == "get_secret_code_tool"
-    assert len(agent_with_pending.pending_approval["tool_calls"]) > 0
-    assert agent_with_pending.pending_approval["tool_calls"][0]["name"] == "get_secret_code_tool"
-    assert agent_with_pending.pending_approval["tool_calls"][0]["tool_call_id"] == response.messages[-1].tool_call.tool_call_id
+    assert agent_with_pending.pending_approval.tool_call.name == "get_secret_code_tool"
+    assert len(agent_with_pending.pending_approval.tool_calls) > 0
+    assert agent_with_pending.pending_approval.tool_calls[0].name == "get_secret_code_tool"
+    assert agent_with_pending.pending_approval.tool_calls[0].tool_call_id == response.messages[-1].tool_call.tool_call_id
 
     approve_tool_call(client, agent.id, response.messages[-1].tool_call.tool_call_id)
 
@@ -363,7 +365,7 @@ def test_invoke_tool_after_turning_off_requires_approval(
     try:
         assert messages[idx].message_type == "assistant_message"
         idx += 1
-    except:
+    except Exception:
         pass
 
     assert messages[idx].message_type == "tool_call_message"
@@ -376,7 +378,7 @@ def test_invoke_tool_after_turning_off_requires_approval(
     try:
         assert messages[idx].message_type == "assistant_message"
         idx += 1
-    except:
+    except Exception:
         assert messages[idx].message_type == "tool_call_message"
         idx += 1
         assert messages[idx].message_type == "tool_return_message"
@@ -1325,7 +1327,7 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     assert agent_after_approval.last_stop_reason != initial_stop_reason  # Should be different from initial
 
     # Send follow-up message to complete the flow
-    response2 = client.agents.messages.create(
+    client.agents.messages.create(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
     )
@@ -1333,3 +1335,234 @@ def test_agent_records_last_stop_reason_after_approval_flow(
     # Verify final agent state has the most recent stop reason
     final_agent = client.agents.retrieve(agent_id=agent.id)
     assert final_agent.last_stop_reason is not None
+
+
+def test_approve_with_cancellation(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    """
+    Test that when approval and cancellation happen simultaneously,
+    the stream returns stop_reason: cancelled and stream_was_cancelled is set.
+    """
+
+    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1).items[0].id
+
+    # Step 1: Send message that triggers approval request
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    tool_call_id = response.messages[-1].tool_call.tool_call_id
+
+    # Step 2: Start approval stream and wait for first chunk (sentinel approach)
+    # This avoids race conditions with fixed delays in CI environments
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+        ],
+        streaming=True,
+        stream_tokens=True,
+    )
+
+    # Step 3: Wait for first chunk before triggering cancellation
+    messages = []
+    cancel_triggered = False
+
+    for chunk in response:
+        # Handle chunks that might not have message_type (like pings)
+        if not hasattr(chunk, "message_type") or chunk.message_type == "ping":
+            continue
+
+        # Trigger cancellation after receiving first meaningful chunk
+        if not cancel_triggered:
+            cancel_triggered = True
+            client.agents.messages.cancel(agent_id=agent.id)
+
+        messages.append(chunk)
+
+    # Step 4: Accumulate remaining chunks (already collected above)
+
+    # Step 5: Verify we got chunks AND a cancelled stop reason
+    assert len(messages) > 1, "Should receive at least some chunks before cancellation"
+
+    # Find stop_reason in messages
+    stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "cancelled", f"Expected stop_reason 'cancelled', got '{stop_reasons[0].stop_reason}'"
+
+    # Step 6: Verify run status is cancelled
+    runs = client.runs.list(agent_ids=[agent.id])
+    latest_run = runs.items[0]
+    assert latest_run.status == "cancelled", f"Expected run status 'cancelled', got '{latest_run.status}'"
+
+    logger.info(f"✅ Test passed: approval with cancellation handled correctly, received {len(messages)} chunks")
+
+    # Step 7: Verify that approval response message is persisted
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor).items
+    assert len(messages) > 0, "Should have persisted at least some messages before cancellation"
+    assert messages[-1].message_type == "tool_return_message", "Last message should be a tool return message"
+    last_message_cursor = messages[-1].id
+
+    # Step 8: Attempt retry with same response
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+        ],
+        streaming=True,
+        stream_tokens=True,
+    )
+
+    # Step 9: Accumulate chunks
+    messages = accumulate_chunks(response)
+
+    # Step 10: Verify we got chunks AND an end_turn stop reason
+    assert len(messages) > 1, "Should receive at least some chunks before cancellation"
+
+    # Find stop_reason in messages
+    stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "end_turn", f"Expected stop_reason 'end_turn', got '{stop_reasons[0].stop_reason}'"
+
+    # Step 11: Verify keep-alive message was sent
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor).items
+    assert len(messages) > 0, "Should have persisted new messages"
+    assert messages[0].message_type == "user_message", "First message should be a user message"
+    assert "keep-alive" in messages[0].content, f"Expected keep-alive message, got '{messages[0].content}'"
+
+
+def test_retry_with_summarization(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    """
+    Test that approval retry works correctly after summarization evicts messages from context.
+
+    Scenario:
+    1. Send message that triggers approval request
+    2. Send approval response, but cancel during LLM processing
+    3. Call summarize with mode='all' to evict all messages from context
+    4. Verify only system and summary messages remain in context
+    5. Retry the original approval response - should succeed via idempotency check
+    """
+
+    # Step 1: Send message that triggers approval request
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    tool_call_id = response.messages[-1].tool_call.tool_call_id
+
+    # Step 2: Start approval stream and wait for first chunk (sentinel approach)
+    # This avoids race conditions with fixed delays in CI environments
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+        ],
+        streaming=True,
+        stream_tokens=True,
+    )
+
+    # Step 3: Wait for first chunk before triggering cancellation
+    messages = []
+    cancel_triggered = False
+
+    for chunk in response:
+        # Handle chunks that might not have message_type (like pings)
+        if not hasattr(chunk, "message_type") or chunk.message_type == "ping":
+            continue
+
+        # Trigger cancellation after receiving first meaningful chunk
+        if not cancel_triggered:
+            cancel_triggered = True
+            client.agents.messages.cancel(agent_id=agent.id)
+
+        messages.append(chunk)
+
+    # Step 4: Verify we got cancelled
+    stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "cancelled", f"Expected stop_reason 'cancelled', got '{stop_reasons[0].stop_reason}'"
+
+    # Step 6: Verify tool return message is persisted
+    all_messages = client.agents.messages.list(agent_id=agent.id, limit=100).items
+    tool_return_messages = [m for m in all_messages if m.message_type == "tool_return_message"]
+    assert len(tool_return_messages) > 0, "Tool return message should be persisted"
+
+    # Step 7: Call compact with mode='all' to evict all messages from context
+    compaction_response = client.agents.messages.compact(
+        agent_id=agent.id,
+        compaction_settings={"mode": "all"},
+    )
+
+    # Step 8: Verify only system and summary messages remain in context (should be 2)
+    assert compaction_response.num_messages_after == 2, (
+        f"Expected 2 messages (system + summary) after compaction, but got {compaction_response.num_messages_after}"
+    )
+
+    logger.info(f"✅ After compaction: {compaction_response.num_messages_before} -> {compaction_response.num_messages_after} messages")
+
+    # Step 9: Retry the original approval response - should succeed via idempotency check
+    response = client.agents.messages.stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "type": "approval",
+                "approvals": [
+                    {
+                        "type": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_return": SECRET_CODE,
+                        "status": "success",
+                    },
+                ],
+            },
+        ],
+        streaming=True,
+        stream_tokens=True,
+    )
+
+    # Step 10: Accumulate chunks
+    messages = accumulate_chunks(response)
+
+    # Step 11: Verify we got chunks AND an end_turn stop reason (not an error)
+    assert len(messages) > 1, "Should receive at least some chunks"
+
+    stop_reasons = [msg for msg in messages if hasattr(msg, "message_type") and msg.message_type == "stop_reason"]
+    assert len(stop_reasons) == 1, f"Expected exactly 1 stop_reason, got {len(stop_reasons)}"
+    assert stop_reasons[0].stop_reason == "end_turn", f"Expected stop_reason 'end_turn', got '{stop_reasons[0].stop_reason}'"
+
+    logger.info("✅ Test passed: approval retry after summarization handled correctly via idempotency check")

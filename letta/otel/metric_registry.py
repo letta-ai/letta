@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from functools import partial
 
 from opentelemetry import metrics
-from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram, UpDownCounter
 from opentelemetry.metrics._internal import Gauge
 
 from letta.helpers.singleton import singleton
@@ -28,7 +28,7 @@ class MetricRegistry:
         agent_id -1:N -> tool_name
     """
 
-    Instrument = Counter | Histogram | Gauge
+    Instrument = Counter | Histogram | Gauge | UpDownCounter
     _metrics: dict[str, Instrument] = field(default_factory=dict, init=False)
     _meter: metrics.Meter = field(init=False)
 
@@ -50,6 +50,54 @@ class MetricRegistry:
                 self._meter.create_counter,
                 name="count_user_message",
                 description="Counts the number of messages sent by the user",
+                unit="1",
+            ),
+        )
+
+    @property
+    def in_flight_foreground_counter(self) -> UpDownCounter:
+        return self._get_or_create_metric(
+            "in_flight_foreground",
+            partial(
+                self._meter.create_up_down_counter,
+                name="in_flight_foreground",
+                description="Number of active foreground request streams.",
+                unit="1",
+            ),
+        )
+
+    @property
+    def in_flight_background_counter(self) -> UpDownCounter:
+        return self._get_or_create_metric(
+            "in_flight_background",
+            partial(
+                self._meter.create_up_down_counter,
+                name="in_flight_background",
+                description="Number of active background stream processing tasks.",
+                unit="1",
+            ),
+        )
+
+    @property
+    def request_admission_wait_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "request_admission_wait_ms",
+            partial(
+                self._meter.create_histogram,
+                name="request_admission_wait_ms",
+                description="Time spent waiting for request admission control.",
+                unit="ms",
+            ),
+        )
+
+    @property
+    def request_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "request_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="request_timeout_total",
+                description="Total number of timed out requests.",
                 unit="1",
             ),
         )
@@ -182,7 +230,187 @@ class MetricRegistry:
             ),
         )
 
+    # (includes route_class)
+    @property
+    def sse_active_sessions_counter(self) -> UpDownCounter:
+        return self._get_or_create_metric(
+            "sse_active_sessions",
+            partial(
+                self._meter.create_up_down_counter,
+                name="sse_active_sessions",
+                description="Number of active SSE streaming sessions.",
+                unit="1",
+            ),
+        )
+
+    # (includes reason)
+    @property
+    def readiness_state_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "readiness_state",
+            partial(
+                self._meter.create_gauge,
+                name="readiness_state",
+                description="Current readiness telemetry state encoded as one-hot reason labels.",
+                unit="1",
+            ),
+        )
+
+    # (includes reason, route_class)
+    @property
+    def sse_disconnect_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "sse_disconnect_total",
+            partial(
+                self._meter.create_counter,
+                name="sse_disconnect_total",
+                description="Total number of non-clean SSE stream terminations.",
+                unit="1",
+            ),
+        )
+
+    # (includes route_class)
+    @property
+    def sse_duration_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "sse_duration_ms",
+            partial(
+                self._meter.create_histogram,
+                name="sse_duration_ms",
+                description="Lifetime duration of SSE stream sessions.",
+                unit="ms",
+            ),
+        )
+
+    # Runtime saturation and dependency timeout metrics
+    @property
+    def event_loop_lag_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "event_loop_lag_ms",
+            partial(
+                self._meter.create_histogram,
+                name="event_loop_lag_ms",
+                description="Event loop scheduling lag measured by the watchdog heartbeat.",
+                unit="ms",
+            ),
+        )
+
+    @property
+    def executor_backlog_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "executor_backlog",
+            partial(
+                self._meter.create_gauge,
+                name="executor_backlog",
+                description="Best-effort backlog depth of the default event-loop executor queue.",
+                unit="1",
+            ),
+        )
+
+    @property
+    def asyncio_task_count_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "asyncio_task_count",
+            partial(
+                self._meter.create_gauge,
+                name="asyncio_task_count",
+                description="Number of active asyncio tasks on the event loop.",
+                unit="1",
+            ),
+        )
+
+    # (includes operation)
+    @property
+    def redis_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "redis_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="redis_timeout_total",
+                description="Total number of Redis operation timeout errors.",
+                unit="1",
+            ),
+        )
+
+    # (includes provider)
+    @property
+    def provider_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "provider_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="provider_timeout_total",
+                description="Total number of model provider timeout errors.",
+                unit="1",
+            ),
+        )
+
     # Database connection pool metrics
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_in_use_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "db_pool_in_use",
+            partial(
+                self._meter.create_gauge,
+                name="db_pool_in_use",
+                description="Number of database connections currently in use by the client pool.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_waiters_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "db_pool_waiters",
+            partial(
+                self._meter.create_gauge,
+                name="db_pool_waiters",
+                description="Estimated number of waiters blocked on DB client pool checkout.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_utilization_ratio_gauge(self) -> Gauge:
+        return self._get_or_create_metric(
+            "db_pool_utilization_ratio",
+            partial(
+                self._meter.create_gauge,
+                name="db_pool_utilization_ratio",
+                description="Ratio of checked-out base pool connections to configured pool size (excludes overflow).",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_pool_checkout_timeout_counter(self) -> Counter:
+        return self._get_or_create_metric(
+            "db_pool_checkout_timeout_total",
+            partial(
+                self._meter.create_counter,
+                name="db_pool_checkout_timeout_total",
+                description="Total number of DB client pool checkout timeout errors.",
+                unit="1",
+            ),
+        )
+
+    # (includes engine_name, pool_mode)
+    @property
+    def db_checkout_latency_ms_histogram(self) -> Histogram:
+        return self._get_or_create_metric(
+            "db_checkout_latency_ms",
+            partial(
+                self._meter.create_histogram,
+                name="db_checkout_latency_ms",
+                description="Latency of checking out a DB connection from the client pool.",
+                unit="ms",
+            ),
+        )
+
     # (includes engine_name)
     @property
     def db_pool_connections_total_gauge(self) -> Gauge:

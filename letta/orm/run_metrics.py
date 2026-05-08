@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, BigInteger, ForeignKey, Integer, String
+from sqlalchemy import JSON, BigInteger, ForeignKey, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
@@ -14,7 +14,6 @@ from letta.settings import DatabaseChoice, settings
 if TYPE_CHECKING:
     from letta.orm.agent import Agent
     from letta.orm.run import Run
-    from letta.orm.step import Step
 
 
 class RunMetrics(SqlalchemyBase, ProjectMixin, AgentMixin, OrganizationMixin, TemplateMixin):

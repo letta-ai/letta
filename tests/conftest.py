@@ -14,7 +14,6 @@ from letta_client import Letta
 from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
-from letta.settings import tool_settings
 
 
 def pytest_configure(config):
@@ -65,15 +64,6 @@ def client(server_url: str) -> Letta:
     """
     client_instance = Letta(base_url=server_url)
     yield client_instance
-
-
-@pytest.fixture(scope="session", autouse=True)
-def disable_db_pooling_for_tests():
-    """Disable database connection pooling for the entire test session."""
-    os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"] = "true"
-    yield
-    if "LETTA_DISABLE_SQLALCHEMY_POOLING" in os.environ:
-        del os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"]
 
 
 @pytest.fixture(autouse=True)

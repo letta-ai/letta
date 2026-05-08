@@ -4,6 +4,7 @@ from fastapi import APIRouter, Body, Depends, Query
 
 from letta.schemas.user import User, UserCreate, UserUpdate
 from letta.server.rest_api.dependencies import get_letta_server
+from letta.validators import UserIdQueryRequired
 
 if TYPE_CHECKING:
     from letta.schemas.user import User
@@ -52,7 +53,7 @@ async def update_user(
 
 @router.delete("/", tags=["admin"], response_model=User, operation_id="delete_user")
 async def delete_user(
-    user_id: str = Query(..., description="The user_id key to be deleted."),
+    user_id: UserIdQueryRequired,
     server: "SyncServer" = Depends(get_letta_server),
 ):
     # TODO make a soft deletion, instead of a hard deletion

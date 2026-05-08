@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 # Avoid circular imports
 if TYPE_CHECKING:
+    from letta.schemas.letta_message import LettaMessage
     from letta.schemas.message import Message
 
 
@@ -20,6 +21,7 @@ class ErrorCode(Enum):
     TIMEOUT = "TIMEOUT"
     CONFLICT = "CONFLICT"
     EXPIRED = "EXPIRED"
+    PAYMENT_REQUIRED = "PAYMENT_REQUIRED"
 
 
 class LettaError(Exception):
@@ -34,9 +36,10 @@ class LettaError(Exception):
         super().__init__(message)
 
     def __str__(self) -> str:
-        if self.code:
-            return f"{self.code.value}: {self.message}"
-        return self.message
+        base = f"{self.code.value}: {self.message}" if self.code else self.message
+        if isinstance(self.details, dict) and self.details.get("is_byok"):
+            return f"{base} [BYOK]"
+        return base
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(message='{self.message}', code='{self.code}', details={self.details})"
@@ -56,11 +59,13 @@ class PendingApprovalError(LettaError):
 class NoActiveRunsToCancelError(LettaError):
     """Error raised when attempting to cancel but there are no active runs to cancel."""
 
-    def __init__(self, agent_id: Optional[str] = None):
+    def __init__(self, agent_id: Optional[str] = None, conversation_id: Optional[str] = None):
         message = "No active runs to cancel"
         if agent_id:
             message = f"No active runs to cancel for agent {agent_id}"
-        details = {"error_code": "NO_ACTIVE_RUNS_TO_CANCEL", "agent_id": agent_id}
+        if conversation_id:
+            message = f"No active runs to cancel for conversation {conversation_id}"
+        details = {"error_code": "NO_ACTIVE_RUNS_TO_CANCEL", "agent_id": agent_id, "conversation_id": conversation_id}
         super().__init__(message=message, code=ErrorCode.CONFLICT, details=details)
 
 
@@ -76,14 +81,43 @@ class ConcurrentUpdateError(LettaError):
 class ConversationBusyError(LettaError):
     """Error raised when attempting to send a message while another request is already processing for the same conversation."""
 
-    def __init__(self, conversation_id: str, lock_holder_token: Optional[str] = None):
+    def __init__(
+        self,
+        conversation_id: str,
+        lock_holder_token: Optional[str] = None,
+        run_id: Optional[str] = None,
+    ):
         self.conversation_id = conversation_id
         self.lock_holder_token = lock_holder_token
-        message = "Cannot send a new message: Another request is currently being processed for this conversation. Please wait for the current request to complete."
+        self.run_id = run_id
+
+        # Build message with available info
+        if run_id:
+            message = f"Cannot send a new message: Another request (run_id={run_id}) is currently being processed for this conversation. Please wait for it to complete."
+        else:
+            message = "Cannot send a new message: Another request is currently being processed for this conversation. Please wait for the current request to complete."
+
         code = ErrorCode.CONFLICT
         details = {
             "error_code": "CONVERSATION_BUSY",
             "conversation_id": conversation_id,
+        }
+        if run_id:
+            details["run_id"] = run_id
+        super().__init__(message=message, code=code, details=details)
+
+
+class MemoryRepoBusyError(LettaError):
+    """Error raised when attempting to modify memory while another operation is in progress."""
+
+    def __init__(self, agent_id: str, lock_holder_token: Optional[str] = None):
+        self.agent_id = agent_id
+        self.lock_holder_token = lock_holder_token
+        message = "Cannot modify memory: Another operation is currently in progress for this agent's memory. Please wait for the current operation to complete."
+        code = ErrorCode.CONFLICT
+        details = {
+            "error_code": "MEMORY_REPO_BUSY",
+            "agent_id": agent_id,
             "lock_holder_token": lock_holder_token,
         }
         super().__init__(message=message, code=code, details=details)
@@ -238,6 +272,10 @@ class LLMBadRequestError(LLMError):
     """Error when LLM service cannot process request"""
 
 
+class LLMInsufficientCreditsError(LLMError):
+    """Error when LLM provider reports insufficient credits or quota"""
+
+
 class LLMAuthenticationError(LLMError):
     """Error when authentication fails with LLM service"""
 
@@ -257,6 +295,15 @@ class LLMUnprocessableEntityError(LLMError):
 class LLMServerError(LLMError):
     """Error indicating an internal server error occurred within the LLM service itself
     while processing the request."""
+
+
+class LLMEmptyResponseError(LLMServerError):
+    """Error when LLM returns an empty response (no content and no tool calls).
+
+    This is a subclass of LLMServerError to maintain retry behavior, but allows
+    specific handling for empty response cases which may benefit from request
+    modification before retry.
+    """
 
 
 class LLMTimeoutError(LLMError):
@@ -426,6 +473,16 @@ class AgentExportProcessingError(AgentFileExportError):
 
 class AgentFileImportError(Exception):
     """Exception raised during agent file import operations"""
+
+
+class InsufficientCreditsError(LettaError):
+    """Raised when an organization has no remaining credits."""
+
+    def __init__(self):
+        super().__init__(
+            message="Insufficient credits to process this request.",
+            details={"error_code": "INSUFFICIENT_CREDITS"},
+        )
 
 
 class RunCancelError(LettaError):

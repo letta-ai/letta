@@ -44,6 +44,37 @@ def _create_path_validator_factory(primitive: str):
 PATH_VALIDATORS = {primitive_type.value: _create_path_validator_factory(primitive_type.value) for primitive_type in PrimitiveType}
 
 
+def _create_conversation_id_or_default_path_validator_factory():
+    """Conversation IDs with support for 'default' and agent IDs (backwards compatibility)."""
+
+    conversation_primitive = PrimitiveType.CONVERSATION.value
+    agent_primitive = PrimitiveType.AGENT.value
+    conversation_pattern = PRIMITIVE_ID_PATTERNS[conversation_primitive].pattern
+    agent_pattern = PRIMITIVE_ID_PATTERNS[agent_primitive].pattern
+    # Make the full regex accept: conversation ID, agent ID, or 'default'.
+    # Patterns already contain ^...$ anchors, so strip them for the alternation.
+    conversation_or_agent_or_default_pattern = f"^(default|{conversation_pattern[1:-1]}|{agent_pattern[1:-1]})$"
+
+    def factory():
+        return Path(
+            description=(
+                f"The conversation identifier. Can be a conversation ID ('{conversation_primitive}-<uuid4>'), "
+                f"'default' for agent-direct mode (with agent_id parameter), "
+                f"or an agent ID ('{agent_primitive}-<uuid4>') for backwards compatibility (deprecated)."
+            ),
+            pattern=conversation_or_agent_or_default_pattern,
+            examples=[
+                "default",
+                f"{conversation_primitive}-123e4567-e89b-42d3-8456-426614174000",
+                f"{agent_primitive}-123e4567-e89b-42d3-8456-426614174000",
+            ],
+            min_length=1,
+            max_length=max(len(conversation_primitive), len(agent_primitive)) + 1 + 36,
+        )
+
+    return factory
+
+
 # Type aliases for common ID types
 # These can be used directly in route handler signatures for cleaner code
 AgentId = Annotated[str, PATH_VALIDATORS[PrimitiveType.AGENT.value]()]
@@ -63,6 +94,10 @@ SandboxConfigId = Annotated[str, PATH_VALIDATORS[PrimitiveType.SANDBOX_CONFIG.va
 StepId = Annotated[str, PATH_VALIDATORS[PrimitiveType.STEP.value]()]
 IdentityId = Annotated[str, PATH_VALIDATORS[PrimitiveType.IDENTITY.value]()]
 ConversationId = Annotated[str, PATH_VALIDATORS[PrimitiveType.CONVERSATION.value]()]
+
+# Conversation ID with support for 'default' and agent IDs (for agent-direct mode endpoints)
+# Backwards compatible - agent-* will be deprecated in favor of conversation_id='default' + agent_id param
+ConversationIdOrDefault = Annotated[str, _create_conversation_id_or_default_path_validator_factory()()]
 
 # Infrastructure types
 McpServerId = Annotated[str, PATH_VALIDATORS[PrimitiveType.MCP_SERVER.value]()]
@@ -139,7 +174,6 @@ def _create_id_query_validator(primitive: str):
 
     Args:
         primitive: The primitive type prefix (e.g., "agent", "tool")
-
     Returns:
         A Query validator with pattern matching
     """
@@ -162,6 +196,8 @@ RunIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.R
 JobIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.JOB.value)]
 GroupIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.GROUP.value)]
 IdentityIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.IDENTITY.value)]
+UserIdQuery = Annotated[Optional[str], _create_id_query_validator(PrimitiveType.USER.value)]
+UserIdQueryRequired = Annotated[str, _create_id_query_validator(PrimitiveType.USER.value)]
 
 
 # =============================================================================

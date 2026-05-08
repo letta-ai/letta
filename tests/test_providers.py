@@ -11,15 +11,23 @@ from letta.schemas.providers import (
     GoogleAIProvider,
     GoogleVertexProvider,
     GroqProvider,
+    MiniMaxProvider,
     OllamaProvider,
     OpenAIProvider,
+    SGLangProvider,
     TogetherProvider,
     VLLMProvider,
     VoyageAIProvider,
     ZAIProvider,
 )
+from letta.schemas.providers.chatgpt_oauth import CHATGPT_MODELS
 from letta.schemas.secret import Secret
 from letta.settings import model_settings
+
+
+def test_chatgpt_oauth_model_allowlist_includes_gpt_5_3_codex():
+    model_names = {model["name"] for model in CHATGPT_MODELS}
+    assert "gpt-5.3-codex" in model_names
 
 
 def test_openai():
@@ -131,6 +139,33 @@ async def test_groq():
     assert models[0].handle == f"{provider.name}/{models[0].model}"
 
 
+@pytest.mark.asyncio
+async def test_minimax():
+    """Test MiniMax provider - uses hardcoded model list, no API key required."""
+    provider = MiniMaxProvider(name="minimax")
+    models = await provider.list_llm_models_async()
+
+    # Should have exactly 3 models: M2.1, M2.1-lightning, M2, M2.5, M2.7
+    assert len(models) == 5
+
+    # Verify model properties
+    model_names = {m.model for m in models}
+    assert "MiniMax-M2.1" in model_names
+    assert "MiniMax-M2.1-lightning" in model_names
+    assert "MiniMax-M2" in model_names
+    assert "MiniMax-M2.5" in model_names
+
+    # Verify handle format
+    for model in models:
+        assert model.handle == f"{provider.name}/{model.model}"
+        # All MiniMax models have 200K context window
+        assert model.context_window == 200000
+        # All MiniMax models have 128K max output
+        assert model.max_tokens == 128000
+        # MiniMax uses Anthropic-compatible API endpoint
+        assert model.model_endpoint_type == "minimax"
+
+
 @pytest.mark.skipif(model_settings.azure_api_key is None, reason="Only run if AZURE_API_KEY is set.")
 @pytest.mark.asyncio
 async def test_azure():
@@ -198,6 +233,33 @@ async def test_vllm():
 
     embedding_models = await provider.list_embedding_models_async()
     assert len(embedding_models) == 0  # embedding models currently not supported by vLLM
+
+
+@pytest.mark.skipif(model_settings.lmstudio_base_url is None, reason="Only run if LMSTUDIO_BASE_URL is set.")
+@pytest.mark.asyncio
+async def test_lmstudio():
+    from letta.schemas.providers.lmstudio import LMStudioOpenAIProvider
+
+    provider = LMStudioOpenAIProvider(name="lmstudio_openai", base_url=model_settings.lmstudio_base_url)
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) > 0
+    assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
+
+
+@pytest.mark.skipif(model_settings.sglang_api_base is None, reason="Only run if SGLANG_API_BASE is set.")
+@pytest.mark.asyncio
+async def test_sglang():
+    provider = SGLangProvider(name="sglang", base_url=model_settings.sglang_api_base)
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) == 0  # embedding models currently not supported by SGLang
 
 
 # TODO: Add back in, difficulty adding this to CI properly, need boto credentials
@@ -350,6 +412,11 @@ async def test_provider_llm_models_consistency():
         ("anthropic/claude-3-7-sonnet", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("anthropic/claude-sonnet-4", AgentType.memgpt_v2_agent, True, True, False, 1024, None),
         ("anthropic/claude-sonnet-4", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        # Opus 4.6 / Sonnet 4.6 use adaptive thinking - max_reasoning_tokens should stay 0
+        ("anthropic/claude-opus-4-6", AgentType.memgpt_v2_agent, True, True, False, 0, None),
+        ("anthropic/claude-opus-4-6", AgentType.memgpt_v2_agent, False, False, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.memgpt_v2_agent, True, True, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.memgpt_v2_agent, True, True, True, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.memgpt_v2_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.5-flash", AgentType.memgpt_v2_agent, True, True, True, 1024, None),
@@ -367,6 +434,11 @@ async def test_provider_llm_models_consistency():
         ("anthropic/claude-3-7-sonnet", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, True, True, False, 1024, None),
         ("anthropic/claude-sonnet-4", AgentType.letta_v1_agent, False, False, False, 0, None),
+        # Opus 4.6 / Sonnet 4.6 use adaptive thinking - max_reasoning_tokens should stay 0
+        ("anthropic/claude-opus-4-6", AgentType.letta_v1_agent, True, True, False, 0, None),
+        ("anthropic/claude-opus-4-6", AgentType.letta_v1_agent, False, False, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.letta_v1_agent, True, True, False, 0, None),
+        ("anthropic/claude-sonnet-4-6", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, True, False, False, 0, None),
         ("google_vertex/gemini-2.0-flash", AgentType.letta_v1_agent, False, False, False, 0, None),
         ("google_vertex/gemini-2.5-flash", AgentType.letta_v1_agent, True, True, False, 1024, None),

@@ -1,9 +1,10 @@
+import hashlib
 from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import and_, select
 
 from letta.log import get_logger
-from letta.orm.errors import UniqueConstraintViolationError
+from letta.model_aliases import get_deprecated_google_handle_replacement
 from letta.orm.provider import Provider as ProviderModel
 from letta.orm.provider_model import ProviderModel as ProviderModelORM
 from letta.otel.tracing import trace_method
@@ -19,6 +20,9 @@ from letta.utils import enforce_types
 from letta.validators import raise_on_invalid_id
 
 logger = get_logger(__name__)
+
+# Auto mode model handles
+AUTO_MODE_HANDLES = ["letta/auto", "letta/auto-fast", "letta/auto-chat"]
 
 
 class ProviderManager:
@@ -98,9 +102,35 @@ class ProviderManager:
                     deleted_provider.access_key_enc = access_key_secret.get_encrypted()
 
                 await deleted_provider.update_async(session, actor=actor)
+
+                # Also restore any soft-deleted models associated with this provider
+                # This is needed because the unique constraint on provider_models doesn't include is_deleted,
+                # so soft-deleted models would block creation of new models with the same handle
+                from sqlalchemy import update
+
+                restore_models_stmt = (
+                    update(ProviderModelORM)
+                    .where(
+                        and_(
+                            ProviderModelORM.provider_id == deleted_provider.id,
+                            ProviderModelORM.is_deleted == True,
+                        )
+                    )
+                    .values(is_deleted=False)
+                )
+                result = await session.execute(restore_models_stmt)
+                if result.rowcount > 0:
+                    logger.info(f"Restored {result.rowcount} soft-deleted model(s) for provider '{request.name}'")
+
+                # Commit the provider and model restoration before syncing
+                # This is needed because _sync_default_models_for_provider opens a new session
+                # that can't see uncommitted changes from this session
+                await session.commit()
+
                 provider_pydantic = deleted_provider.to_pydantic()
 
                 # For BYOK providers, automatically sync available models
+                # This will add any new models and remove any that are no longer available
                 if is_byok:
                     await self._sync_default_models_for_provider(provider_pydantic, actor)
 
@@ -118,6 +148,14 @@ class ProviderManager:
 
             # if provider.name == provider.provider_type.value:
             #     raise ValueError("Provider name must be unique and different from provider type")
+
+            # Fill in schema-default base_url if not provided
+            # This ensures providers like ZAI get their default endpoint persisted to DB
+            # rather than relying on cast_to_subtype() at read time
+            if provider.base_url is None:
+                typed_provider = provider.cast_to_subtype()
+                if typed_provider.base_url is not None:
+                    provider.base_url = typed_provider.base_url
 
             # Only assign organization id for non-base providers
             # Base providers should be globally accessible (org_id = None)
@@ -200,6 +238,21 @@ class ProviderManager:
             # Commit the updated provider
             await existing_provider.update_async(session, actor=actor)
             return existing_provider.to_pydantic()
+
+    @enforce_types
+    @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
+    async def update_provider_last_synced_async(self, provider_id: str, actor: Optional[PydanticUser] = None) -> None:
+        """Update the last_synced timestamp for a provider.
+
+        Note: actor is optional to support system-level operations (e.g., during server initialization
+        for global providers). When actor is provided, org-scoping is enforced.
+        """
+        from datetime import datetime, timezone
+
+        async with db_registry.async_session() as session:
+            provider = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
+            provider.last_synced = datetime.now(timezone.utc)
+            await session.commit()
 
     @enforce_types
     @raise_on_invalid_id(param_name="provider_id", expected_prefix=PrimitiveType.PROVIDER)
@@ -361,7 +414,7 @@ class ProviderManager:
             try:
                 provider_model = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
                 return provider_model.to_pydantic()
-            except:
+            except Exception:
                 # If not found, try to get as global provider (organization_id=NULL)
                 from sqlalchemy import select
 
@@ -476,75 +529,19 @@ class ProviderManager:
 
     async def _sync_default_models_for_provider(self, provider: PydanticProvider, actor: PydanticUser) -> None:
         """Sync models for a newly created BYOK provider by querying the provider's API."""
-        from letta.log import get_logger
-
-        logger = get_logger(__name__)
-
         try:
-            # Get the provider class and create an instance
-            from letta.schemas.providers.anthropic import AnthropicProvider
-            from letta.schemas.providers.azure import AzureProvider
-            from letta.schemas.providers.bedrock import BedrockProvider
-            from letta.schemas.providers.google_gemini import GoogleAIProvider
-            from letta.schemas.providers.groq import GroqProvider
-            from letta.schemas.providers.ollama import OllamaProvider
-            from letta.schemas.providers.openai import OpenAIProvider
-            from letta.schemas.providers.zai import ZAIProvider
+            # Use cast_to_subtype() which properly handles all provider types and preserves api_key_enc
+            typed_provider = provider.cast_to_subtype()
+            llm_models = await typed_provider.list_llm_models_async()
+            embedding_models = await typed_provider.list_embedding_models_async()
 
-            provider_type_to_class = {
-                "openai": OpenAIProvider,
-                "anthropic": AnthropicProvider,
-                "groq": GroqProvider,
-                "google": GoogleAIProvider,
-                "ollama": OllamaProvider,
-                "bedrock": BedrockProvider,
-                "azure": AzureProvider,
-                "zai": ZAIProvider,
-            }
-
-            provider_type = provider.provider_type.value if hasattr(provider.provider_type, "value") else str(provider.provider_type)
-            provider_class = provider_type_to_class.get(provider_type)
-
-            if not provider_class:
-                logger.warning(f"No provider class found for type '{provider_type}'")
-                return
-
-            # Create provider instance with necessary parameters
-            api_key = await provider.api_key_enc.get_plaintext_async() if provider.api_key_enc else None
-            access_key = await provider.access_key_enc.get_plaintext_async() if provider.access_key_enc else None
-            kwargs = {
-                "name": provider.name,
-                "api_key": api_key,
-                "provider_category": provider.provider_category,
-            }
-            if provider.base_url:
-                kwargs["base_url"] = provider.base_url
-            if access_key:
-                kwargs["access_key"] = access_key
-            if provider.region:
-                kwargs["region"] = provider.region
-            if provider.api_version:
-                kwargs["api_version"] = provider.api_version
-
-            provider_instance = provider_class(**kwargs)
-
-            # Query the provider's API for available models
-            llm_models = await provider_instance.list_llm_models_async()
-            embedding_models = await provider_instance.list_embedding_models_async()
-
-            # Update handles and provider_name for BYOK providers
-            for model in llm_models:
-                model.provider_name = provider.name
-                model.handle = f"{provider.name}/{model.model}"
-                model.provider_category = provider.provider_category
-
-            for model in embedding_models:
-                model.handle = f"{provider.name}/{model.embedding_model}"
-
-            # Use existing sync_provider_models_async to save to database
             await self.sync_provider_models_async(
-                provider=provider, llm_models=llm_models, embedding_models=embedding_models, organization_id=actor.organization_id
+                provider=provider,
+                llm_models=llm_models,
+                embedding_models=embedding_models,
+                organization_id=actor.organization_id,
             )
+            await self.update_provider_last_synced_async(provider.id, actor=actor)
 
         except Exception as e:
             logger.error(f"Failed to sync models for provider '{provider.name}': {e}")
@@ -682,7 +679,7 @@ class ProviderManager:
             for llm_config in llm_models:
                 logger.info(f"  Checking LLM model: {llm_config.handle} (name: {llm_config.model})")
 
-                # Check if model already exists (excluding soft-deleted ones)
+                # Check if model already exists by handle (excluding soft-deleted ones)
                 existing = await ProviderModelORM.list_async(
                     db_session=session,
                     limit=1,
@@ -693,6 +690,19 @@ class ProviderManager:
                         "model_type": "llm",  # Must check model_type since handle can be same for LLM and embedding
                     },
                 )
+
+                # Also check by name+provider_id (covers unique_model_per_provider_and_type constraint)
+                if not existing:
+                    existing = await ProviderModelORM.list_async(
+                        db_session=session,
+                        limit=1,
+                        check_is_deleted=True,
+                        **{
+                            "name": llm_config.model,
+                            "provider_id": provider.id,
+                            "model_type": "llm",
+                        },
+                    )
 
                 if not existing:
                     logger.info(f"    Creating new LLM model {llm_config.handle}")
@@ -707,7 +717,7 @@ class ProviderManager:
                         enabled=True,
                         model_endpoint_type=llm_config.model_endpoint_type,
                         max_context_window=llm_config.context_window,
-                        supports_token_streaming=llm_config.model_endpoint_type in ["openai", "anthropic", "deepseek"],
+                        supports_token_streaming=llm_config.model_endpoint_type in ["openai", "anthropic", "deepseek", "openrouter"],
                         supports_tool_calling=True,  # Assume true for LLMs for now
                     )
 
@@ -717,28 +727,44 @@ class ProviderManager:
                         f"org_id={pydantic_model.organization_id}"
                     )
 
-                    # Convert to ORM
                     model = ProviderModelORM(**pydantic_model.model_dump(to_orm=True))
-                    try:
-                        await model.create_async(session)
-                        logger.info(f"    ✓ Successfully created LLM model {llm_config.handle} with ID {model.id}")
-                    except Exception as e:
-                        logger.info(f"    ✗ Failed to create LLM model {llm_config.handle}: {e}")
-                        # Log the full error details
-                        import traceback
-
-                        logger.info(f"    Full traceback: {traceback.format_exc()}")
-                        # Roll back the session to clear the failed transaction
-                        await session.rollback()
+                    result = await model.create_async(session, ignore_conflicts=True)
+                    if result:
+                        logger.info(f"    ✓ Successfully created LLM model {llm_config.handle}")
+                    else:
+                        logger.info(f"    LLM model {llm_config.handle} already exists (concurrent insert), skipping")
                 else:
-                    logger.info(f"    LLM model {llm_config.handle} already exists (ID: {existing[0].id}), skipping")
+                    # Check if max_context_window or model_endpoint_type needs to be updated
+                    existing_model = existing[0]
+                    needs_update = False
+
+                    if existing_model.max_context_window != llm_config.context_window:
+                        logger.info(
+                            f"    Updating LLM model {llm_config.handle} max_context_window: "
+                            f"{existing_model.max_context_window} -> {llm_config.context_window}"
+                        )
+                        existing_model.max_context_window = llm_config.context_window
+                        needs_update = True
+
+                    if existing_model.model_endpoint_type != llm_config.model_endpoint_type:
+                        logger.info(
+                            f"    Updating LLM model {llm_config.handle} model_endpoint_type: "
+                            f"{existing_model.model_endpoint_type} -> {llm_config.model_endpoint_type}"
+                        )
+                        existing_model.model_endpoint_type = llm_config.model_endpoint_type
+                        needs_update = True
+
+                    if needs_update:
+                        await existing_model.update_async(session)
+                    else:
+                        logger.info(f"    LLM model {llm_config.handle} already exists (ID: {existing[0].id}), skipping")
 
             # Process embedding models - add new ones
             logger.info(f"Processing {len(embedding_models)} embedding models for provider {provider.name}")
             for embedding_config in embedding_models:
                 logger.info(f"  Checking embedding model: {embedding_config.handle} (name: {embedding_config.embedding_model})")
 
-                # Check if model already exists (excluding soft-deleted ones)
+                # Check if model already exists by handle (excluding soft-deleted ones)
                 existing = await ProviderModelORM.list_async(
                     db_session=session,
                     limit=1,
@@ -749,6 +775,19 @@ class ProviderManager:
                         "model_type": "embedding",  # Must check model_type since handle can be same for LLM and embedding
                     },
                 )
+
+                # Also check by name+provider_id (covers unique_model_per_provider_and_type constraint)
+                if not existing:
+                    existing = await ProviderModelORM.list_async(
+                        db_session=session,
+                        limit=1,
+                        check_is_deleted=True,
+                        **{
+                            "name": embedding_config.embedding_model,
+                            "provider_id": provider.id,
+                            "model_type": "embedding",
+                        },
+                    )
 
                 if not existing:
                     logger.info(f"    Creating new embedding model {embedding_config.handle}")
@@ -771,21 +810,24 @@ class ProviderManager:
                         f"org_id={pydantic_model.organization_id}"
                     )
 
-                    # Convert to ORM
                     model = ProviderModelORM(**pydantic_model.model_dump(to_orm=True))
-                    try:
-                        await model.create_async(session)
-                        logger.info(f"    ✓ Successfully created embedding model {embedding_config.handle} with ID {model.id}")
-                    except Exception as e:
-                        logger.error(f"    ✗ Failed to create embedding model {embedding_config.handle}: {e}")
-                        # Log the full error details
-                        import traceback
-
-                        logger.error(f"    Full traceback: {traceback.format_exc()}")
-                        # Roll back the session to clear the failed transaction
-                        await session.rollback()
+                    result = await model.create_async(session, ignore_conflicts=True)
+                    if result:
+                        logger.info(f"    ✓ Successfully created embedding model {embedding_config.handle}")
+                    else:
+                        logger.info(f"    Embedding model {embedding_config.handle} already exists (concurrent insert), skipping")
                 else:
-                    logger.info(f"    Embedding model {embedding_config.handle} already exists (ID: {existing[0].id}), skipping")
+                    # Check if model_endpoint_type needs to be updated
+                    existing_model = existing[0]
+                    if existing_model.model_endpoint_type != embedding_config.embedding_endpoint_type:
+                        logger.info(
+                            f"    Updating embedding model {embedding_config.handle} model_endpoint_type: "
+                            f"{existing_model.model_endpoint_type} -> {embedding_config.embedding_endpoint_type}"
+                        )
+                        existing_model.model_endpoint_type = embedding_config.embedding_endpoint_type
+                        await existing_model.update_async(session)
+                    else:
+                        logger.info(f"    Embedding model {embedding_config.handle} already exists (ID: {existing[0].id}), skipping")
 
     @enforce_types
     @trace_method
@@ -892,7 +934,31 @@ class ProviderManager:
             all_models = {(m.handle, m.model_type): m for m in global_models}
             all_models.update({(m.handle, m.model_type): m for m in org_models})
 
-            return [m.to_pydantic() for m in all_models.values()]
+            models = [m.to_pydantic() for m in all_models.values()]
+
+            from letta.settings import model_settings
+
+            if model_settings.auto_mode_enabled and not provider_id and (model_type is None or model_type == "llm"):
+                for handle in AUTO_MODE_HANDLES:
+                    # Generate deterministic 8-char hex ID from handle
+                    handle_hash = hashlib.sha256(handle.encode()).hexdigest()[:8]
+                    models.append(
+                        PydanticProviderModel(
+                            id=f"model-{handle_hash}",
+                            handle=handle,
+                            name=handle.split("/")[1],
+                            display_name=handle.split("/")[1],
+                            provider_id="letta",
+                            model_type="llm",
+                            model_endpoint_type="openai",
+                            enabled=True,
+                            max_context_window=180000,
+                            supports_token_streaming=True,
+                            supports_tool_calling=True,
+                        )
+                    )
+
+            return models
 
     @enforce_types
     @trace_method
@@ -914,9 +980,42 @@ class ProviderManager:
             NoResultFound: If the handle doesn't exist in the database or BYOK provider
         """
         from letta.orm.errors import NoResultFound
+        from letta.settings import model_settings
+
+        # Auto mode handles return a placeholder config for storage/persistence
+        if handle in AUTO_MODE_HANDLES:
+            if not model_settings.auto_mode_enabled:
+                raise NoResultFound(f"Auto mode not enabled for handle='{handle}'")
+            if handle == "letta/auto":
+                model_name = "auto"
+            elif handle == "letta/auto-fast":
+                model_name = "auto-fast"
+            else:
+                model_name = "auto-chat"
+            return LLMConfig(
+                model=model_name,
+                model_endpoint_type="openai",
+                model_endpoint="",
+                context_window=180000,
+                handle=handle,
+                max_tokens=8192,
+                provider_name="letta",
+                provider_category=ProviderCategory.base,
+            )
 
         # Look up the model by handle in the database (for base providers)
         model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
+
+        if not model:
+            redirected_handle = get_deprecated_google_handle_replacement(handle)
+            if redirected_handle != handle:
+                logger.warning(
+                    "Model handle '%s' has been discontinued by Google; automatically using '%s' instead.",
+                    handle,
+                    redirected_handle,
+                )
+                handle = redirected_handle
+                model = await self.get_model_by_handle_async(handle=handle, actor=actor, model_type="llm")
 
         if not model:
             # Model not in DB - check if it's from a BYOK provider
@@ -953,16 +1052,37 @@ class ProviderManager:
         # Get the default max_output_tokens from the provider (provider-specific logic)
         max_tokens = typed_provider.get_default_max_output_tokens(model.name)
 
-        # Construct the LLMConfig from the model and provider data
+        # Determine the model endpoint - use provider's OpenAI-compatible base_url if available,
+        # otherwise fall back to raw base_url or provider-specific defaults
+
+        if hasattr(typed_provider, "openai_compat_base_url"):
+            # For providers like ollama/vllm/lmstudio that need /v1 appended for OpenAI compatibility
+            model_endpoint = typed_provider.openai_compat_base_url
+        elif typed_provider.base_url:
+            model_endpoint = typed_provider.base_url
+        elif provider.provider_type == ProviderType.chatgpt_oauth:
+            # ChatGPT OAuth uses the ChatGPT backend API, not a generic endpoint pattern
+            from letta.schemas.providers.chatgpt_oauth import CHATGPT_CODEX_ENDPOINT
+
+            model_endpoint = CHATGPT_CODEX_ENDPOINT
+        else:
+            model_endpoint = f"https://api.{provider.provider_type.value}.com/v1"
+
+        # Construct the LLMConfig from the model and provider data.
+        # SGLang providers get return_token_ids/return_logprobs=True so the native
+        # adapter is used and token IDs are returned for RL training.
+        is_sglang = provider.provider_type == ProviderType.sglang
         llm_config = LLMConfig(
             model=model.name,
             model_endpoint_type=model.model_endpoint_type,
-            model_endpoint=provider.base_url or f"https://api.{provider.provider_type.value}.com/v1",
+            model_endpoint=model_endpoint,
             context_window=model.max_context_window or 16384,  # Default if not set
             handle=model.handle,
             provider_name=provider.name,
             provider_category=provider.provider_category,
             max_tokens=max_tokens,
+            return_token_ids=is_sglang,
+            return_logprobs=is_sglang,
         )
 
         return llm_config
@@ -995,7 +1115,7 @@ class ProviderManager:
             # Model not in DB - check if it's from a BYOK provider
             # Handle format is "provider_name/model_name"
             if "/" in handle:
-                provider_name, model_name = handle.split("/", 1)
+                provider_name, _model_name = handle.split("/", 1)
                 byok_providers = await self.list_providers_async(
                     actor=actor,
                     name=provider_name,

@@ -136,7 +136,7 @@ class OpenAIEmbedder(BaseEmbedder):
             )
 
         # Extract just the chunk text and indices for processing
-        chunk_indices = [i for i, _ in valid_chunks]
+        [i for i, _ in valid_chunks]
         chunks_to_embed = [chunk for _, chunk in valid_chunks]
 
         embedding_start = time.time()

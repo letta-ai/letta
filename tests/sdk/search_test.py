@@ -220,7 +220,7 @@ def test_passage_search_basic(client: Letta, enable_turbopuffer):
             # Clean up archive
             try:
                 client.archives.delete(archive_id=archive.id)
-            except:
+            except Exception:
                 pass
 
     finally:
@@ -282,7 +282,7 @@ def test_passage_search_with_tags(client: Letta, enable_turbopuffer):
             # Clean up archive
             try:
                 client.archives.delete(archive_id=archive.id)
-            except:
+            except Exception:
                 pass
 
     finally:
@@ -350,7 +350,7 @@ def test_passage_search_with_date_filters(client: Letta, enable_turbopuffer):
             # Clean up archive
             try:
                 client.archives.delete(archive_id=archive.id)
-            except:
+            except Exception:
                 pass
 
     finally:
@@ -489,7 +489,7 @@ def test_passage_search_pagination(client: Letta, enable_turbopuffer):
             # Clean up archive
             try:
                 client.archives.delete(archive_id=archive.id)
-            except:
+            except Exception:
                 pass
 
     finally:
@@ -554,11 +554,11 @@ def test_passage_search_org_wide(client: Letta, enable_turbopuffer):
             # Clean up archives
             try:
                 client.archives.delete(archive_id=archive1.id)
-            except:
+            except Exception:
                 pass
             try:
                 client.archives.delete(archive_id=archive2.id)
-            except:
+            except Exception:
                 pass
 
     finally:

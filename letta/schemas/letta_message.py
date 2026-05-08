@@ -1,14 +1,16 @@
 import json
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, ClassVar, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from letta.schemas.letta_message_content import (
     LettaAssistantMessageContentUnion,
+    LettaToolReturnContentUnion,
     LettaUserMessageContentUnion,
     get_letta_assistant_message_content_union_str_json_schema,
+    get_letta_tool_return_content_union_str_json_schema,
     get_letta_user_message_content_union_str_json_schema,
 )
 
@@ -35,7 +37,11 @@ class ApprovalReturn(MessageReturn):
 
 class ToolReturn(MessageReturn):
     type: Literal[MessageReturnType.tool] = Field(default=MessageReturnType.tool, description="The message type to be created.")
-    tool_return: str
+    tool_return: Union[str, List[LettaToolReturnContentUnion]] = Field(
+        ...,
+        description="The tool return value - either a string or list of content parts (text/image)",
+        json_schema_extra=get_letta_tool_return_content_union_str_json_schema(),
+    )
     status: Literal["success", "error"]
     tool_call_id: str
     stdout: Optional[List[str]] = None
@@ -55,6 +61,8 @@ class MessageType(str, Enum):
     tool_return_message = "tool_return_message"
     approval_request_message = "approval_request_message"
     approval_response_message = "approval_response_message"
+    summary_message = "summary_message"
+    event_message = "event_message"
 
 
 class LettaMessage(BaseModel):
@@ -68,7 +76,9 @@ class LettaMessage(BaseModel):
         date (datetime): The date the message was created in ISO format
         name (Optional[str]): The name of the sender of the message
         message_type (MessageType): The type of the message
-        otid (Optional[str]): The offline threading id associated with this message
+        otid (Optional[str]): The offline threading id (OTID) associated with this message. Set by the client to deduplicate
+            requests. This key is used for idempotency in background mode for streaming — it is critical that each message
+            in a request has a unique OTID. The only exception is retries of the same request, which should reuse the same OTIDs.
         sender_id (Optional[str]): The id of the sender of the message, can be an identity id or agent id
         step_id (Optional[str]): The step id associated with the message
         is_err (Optional[bool]): Whether the message is an errored message or not. Used for debugging purposes only.
@@ -78,7 +88,12 @@ class LettaMessage(BaseModel):
     date: datetime
     name: str | None = None
     message_type: MessageType = Field(..., description="The type of the message.")
-    otid: str | None = None
+    otid: str | None = Field(
+        None,
+        description="The offline threading id (OTID). Set by the client to deduplicate requests. "
+        "Used for idempotency in background streaming mode — each message in a request must have a unique OTID. "
+        "Retries of the same request should reuse the same OTIDs.",
+    )
     sender_id: str | None = None
     step_id: str | None = None
     is_err: bool | None = None
@@ -238,7 +253,7 @@ class ToolCallMessage(LettaMessage):
         return data
 
     class Config:
-        json_encoders = {
+        json_encoders: ClassVar[dict] = {
             ToolCallDelta: lambda v: v.model_dump(exclude_none=True),
             ToolCall: lambda v: v.model_dump(exclude_none=True),
         }
@@ -377,6 +392,7 @@ class LettaErrorMessage(BaseModel):
         error_type (str): The type of error
         message (str): The error message
         detail (Optional[str]): An optional error detail
+        seq_id (Optional[int]): The sequence ID for cursor-based pagination
     """
 
     message_type: Literal["error_message"] = "error_message"
@@ -384,6 +400,43 @@ class LettaErrorMessage(BaseModel):
     error_type: str
     message: str
     detail: Optional[str] = None
+    seq_id: Optional[int] = None
+
+
+class CompactionStats(BaseModel):
+    """
+    Statistics about a memory compaction operation.
+    """
+
+    trigger: str = Field(..., description="What triggered the compaction (e.g., 'context_window_exceeded', 'post_step_context_check')")
+    context_tokens_before: Optional[int] = Field(
+        None, description="Token count before compaction (from LLM usage stats, includes full context sent to LLM)"
+    )
+    context_tokens_after: Optional[int] = Field(
+        None, description="Token count after compaction (message tokens only, does not include tool definitions)"
+    )
+    context_window: int = Field(..., description="The model's context window size")
+    messages_count_before: int = Field(..., description="Number of messages before compaction")
+    messages_count_after: int = Field(..., description="Number of messages after compaction")
+
+
+def extract_compaction_stats_from_packed_json(text_content: str) -> Optional[CompactionStats]:
+    """
+    Extract CompactionStats from a packed summary message JSON string.
+
+    Args:
+        text_content: The packed JSON string from summary message content
+
+    Returns:
+        CompactionStats if found and valid, None otherwise
+    """
+    try:
+        packed_json = json.loads(text_content)
+        if isinstance(packed_json, dict) and "compaction_stats" in packed_json:
+            return CompactionStats(**packed_json["compaction_stats"])
+    except (json.JSONDecodeError, TypeError, ValueError):
+        pass
+    return None
 
 
 class SummaryMessage(LettaMessage):
@@ -391,8 +444,9 @@ class SummaryMessage(LettaMessage):
     A message representing a summary of the conversation. Sent to the LLM as a user or system message depending on the provider.
     """
 
-    message_type: Literal["summary"] = "summary_message"
+    message_type: Literal["summary_message"] = "summary_message"
     summary: str
+    compaction_stats: Optional[CompactionStats] = None
 
 
 class EventMessage(LettaMessage):
@@ -400,7 +454,7 @@ class EventMessage(LettaMessage):
     A message for notifying the developer that an event that has occured (e.g. a compaction). Events are NOT part of the context window.
     """
 
-    message_type: Literal["event"] = "event_message"
+    message_type: Literal["event_message"] = "event_message"
     event_type: Literal["compaction"]
     event_data: dict
 
@@ -451,28 +505,10 @@ def create_letta_message_union_schema():
                 "assistant_message": "#/components/schemas/AssistantMessage",
                 "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
                 "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
-                "summary": "#/components/schemas/SummaryMessage",
-                "event": "#/components/schemas/EventMessage",
+                "summary_message": "#/components/schemas/SummaryMessage",
+                "event_message": "#/components/schemas/EventMessage",
             },
         },
-    }
-
-
-def create_letta_ping_schema():
-    return {
-        "properties": {
-            "message_type": {
-                "type": "string",
-                "const": "ping",
-                "title": "Message Type",
-                "description": "The type of the message.",
-                "default": "ping",
-            }
-        },
-        "type": "object",
-        "required": ["message_type"],
-        "title": "LettaPing",
-        "description": "Ping messages are a keep-alive to prevent SSE streams from timing out during long running requests.",
     }
 
 
@@ -505,6 +541,11 @@ def create_letta_error_message_schema():
                 "type": "string",
                 "title": "Detail",
                 "description": "An optional error detail.",
+            },
+            "seq_id": {
+                "type": "integer",
+                "title": "Seq ID",
+                "description": "The sequence ID for cursor-based pagination.",
             },
         },
         "type": "object",
@@ -574,6 +615,10 @@ class SystemMessageListResult(UpdateSystemMessage):
         default=None,
         description="The unique identifier of the agent that owns the message.",
     )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
+    )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")
 
@@ -591,6 +636,10 @@ class UserMessageListResult(UpdateUserMessage):
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
     )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")
@@ -610,6 +659,10 @@ class ReasoningMessageListResult(UpdateReasoningMessage):
         default=None,
         description="The unique identifier of the agent that owns the message.",
     )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
+    )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")
 
@@ -627,6 +680,10 @@ class AssistantMessageListResult(UpdateAssistantMessage):
     agent_id: str | None = Field(
         default=None,
         description="The unique identifier of the agent that owns the message.",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="The unique identifier of the conversation that the message belongs to.",
     )
 
     created_at: datetime = Field(..., description="The time the message was created in ISO format.")

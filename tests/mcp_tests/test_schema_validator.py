@@ -186,7 +186,7 @@ class TestSchemaValidator:
         }
 
         # This should actually be STRICT_COMPLIANT since empty arrays with defined items are OK
-        status, reasons = validate_complete_json_schema(schema)
+        status, _reasons = validate_complete_json_schema(schema)
         assert status == SchemaHealth.STRICT_COMPLIANT
 
     def test_array_without_constraints_invalid(self):
@@ -228,7 +228,6 @@ class TestSchemaValidator:
         # Validator is relaxed - schemas with optional fields are now STRICT_COMPLIANT
         assert status == SchemaHealth.STRICT_COMPLIANT
         assert reasons == []
-
 
     def test_root_level_without_required_non_strict(self):
         """Test that root-level objects without 'required' field are STRICT_COMPLIANT (validator is relaxed)."""

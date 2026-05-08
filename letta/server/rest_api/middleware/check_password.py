@@ -8,8 +8,16 @@ class CheckPasswordMiddleware(BaseHTTPMiddleware):
         self.password = password
 
     async def dispatch(self, request, call_next):
-        # Exclude health check endpoint from password protection
-        if request.url.path in {"/v1/health", "/v1/health/", "/latest/health/"}:
+        # Exclude health/readiness probe endpoints from password protection
+        if request.url.path in {
+            "/v1/health",
+            "/v1/health/",
+            "/latest/health/",
+            "/v1/ready",
+            "/v1/ready/",
+            "/latest/ready",
+            "/latest/ready/",
+        }:
             return await call_next(request)
 
         if (

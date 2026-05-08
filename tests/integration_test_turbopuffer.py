@@ -45,7 +45,7 @@ async def sarah_agent(server, default_user):
     # Cleanup
     try:
         await server.agent_manager.delete_agent_async(agent.id, default_user)
-    except:
+    except Exception:
         pass
 
 
@@ -151,7 +151,7 @@ async def wait_for_embedding(
             if any(msg["id"] == message_id for msg, _, _ in results):
                 return True
 
-        except Exception as e:
+        except Exception:
             # Log but don't fail - Turbopuffer might still be processing
             pass
 
@@ -347,7 +347,7 @@ async def test_turbopuffer_metadata_attributes(default_user, enable_turbopuffer)
         # Clean up on error
         try:
             await client.delete_all_passages(archive_id)
-        except:
+        except Exception:
             pass
         raise e
 
@@ -409,7 +409,7 @@ async def test_hybrid_search_with_real_tpuf(default_user, enable_turbopuffer):
         ]
 
         # Create simple embeddings for testing (normally you'd use a real embedding model)
-        embeddings = [[float(i), float(i + 5), float(i + 10)] for i in range(len(texts))]
+        [[float(i), float(i + 5), float(i + 10)] for i in range(len(texts))]
         passage_ids = [f"passage-{str(uuid.uuid4())}" for _ in texts]
 
         # Insert passages
@@ -487,7 +487,7 @@ async def test_hybrid_search_with_real_tpuf(default_user, enable_turbopuffer):
         # Clean up
         try:
             await client.delete_all_passages(archive_id)
-        except:
+        except Exception:
             pass
 
 
@@ -522,7 +522,7 @@ async def test_tag_filtering_with_real_tpuf(default_user, enable_turbopuffer):
             ["javascript", "react"],
         ]
 
-        embeddings = [[float(i), float(i + 5), float(i + 10)] for i in range(len(texts))]
+        [[float(i), float(i + 5), float(i + 10)] for i in range(len(texts))]
         passage_ids = [f"passage-{str(uuid.uuid4())}" for _ in texts]
 
         # Insert passages with tags
@@ -615,7 +615,7 @@ async def test_tag_filtering_with_real_tpuf(default_user, enable_turbopuffer):
         # Clean up
         try:
             await client.delete_all_passages(archive_id)
-        except:
+        except Exception:
             pass
 
 
@@ -754,7 +754,7 @@ async def test_temporal_filtering_with_real_tpuf(default_user, enable_turbopuffe
         # Clean up
         try:
             await client.delete_all_passages(archive_id)
-        except:
+        except Exception:
             pass
 
 
@@ -865,12 +865,6 @@ def test_message_text_extraction(server, default_user):
         agent_id="test-agent",
     )
     text6 = manager._extract_message_text(msg6)
-    expected_parts = [
-        "User said:",
-        'Tool call: search({\n  "query": "test"\n})',
-        "Tool result: Found 5 results",
-        "I should help the user",
-    ]
     assert (
         text6
         == '{"content": "User said: Tool call: search({\\n  \\"query\\": \\"test\\"\\n}) Tool result: Found 5 results I should help the user"}'
@@ -1112,7 +1106,7 @@ async def test_message_dual_write_with_real_tpuf(enable_message_embedding, defau
         created_ats = [datetime.now(timezone.utc) for _ in message_texts]
 
         # Generate embeddings (dummy for test)
-        embeddings = [[float(i), float(i + 1), float(i + 2)] for i in range(len(message_texts))]
+        [[float(i), float(i + 1), float(i + 2)] for i in range(len(message_texts))]
 
         # Insert messages into Turbopuffer
         success = await client.insert_messages(
@@ -1144,7 +1138,7 @@ async def test_message_dual_write_with_real_tpuf(enable_message_embedding, defau
         # Clean up namespace
         try:
             await client.delete_all_messages(agent_id)
-        except:
+        except Exception:
             pass
 
 
@@ -1205,7 +1199,7 @@ async def test_message_vector_search_with_real_tpuf(enable_message_embedding, de
         # Clean up namespace
         try:
             await client.delete_all_messages(agent_id)
-        except:
+        except Exception:
             pass
 
 
@@ -1268,7 +1262,7 @@ async def test_message_hybrid_search_with_real_tpuf(enable_message_embedding, de
         # Clean up namespace
         try:
             await client.delete_all_messages(agent_id)
-        except:
+        except Exception:
             pass
 
 
@@ -1340,7 +1334,7 @@ async def test_message_role_filtering_with_real_tpuf(enable_message_embedding, d
         # Clean up namespace
         try:
             await client.delete_all_messages(agent_id)
-        except:
+        except Exception:
             pass
 
 
@@ -1357,7 +1351,7 @@ async def test_message_search_fallback_to_sql(server, default_user, sarah_agent)
         settings.embed_all_messages = False
 
         # Create messages
-        messages = await server.message_manager.create_many_messages_async(
+        await server.message_manager.create_many_messages_async(
             pydantic_msgs=[
                 PydanticMessage(
                     role=MessageRole.user,
@@ -1398,7 +1392,7 @@ async def test_message_update_reindexes_in_turbopuffer(server, default_user, sar
     """Test that updating a message properly deletes and re-inserts with new embedding in Turbopuffer"""
     from letta.schemas.message import MessageUpdate
 
-    embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+    sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
 
     # Create initial message
     messages = await server.message_manager.create_many_messages_async(
@@ -1492,8 +1486,6 @@ async def test_message_deletion_syncs_with_turbopuffer(server, default_user, ena
         ),
         actor=default_user,
     )
-
-    embedding_config = agent_a.embedding_config
 
     try:
         # Create 5 messages for agent A
@@ -1597,7 +1589,7 @@ async def test_turbopuffer_failure_does_not_break_postgres(server, default_user,
 
     from letta.schemas.message import MessageUpdate
 
-    embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+    sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
 
     # Create initial messages
     messages = await server.message_manager.create_many_messages_async(
@@ -1668,7 +1660,7 @@ async def test_turbopuffer_failure_does_not_break_postgres(server, default_user,
 @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
 async def test_message_creation_background_mode(server, default_user, sarah_agent, enable_message_embedding):
     """Test that messages are embedded in background when strict_mode=False"""
-    embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+    sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
 
     # Create message in background mode
     messages = await server.message_manager.create_many_messages_async(
@@ -1723,7 +1715,7 @@ async def test_message_update_background_mode(server, default_user, sarah_agent,
     """Test that message updates work in background mode"""
     from letta.schemas.message import MessageUpdate
 
-    embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+    sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
 
     # Create initial message with strict_mode=True to ensure it's embedded
     messages = await server.message_manager.create_many_messages_async(
@@ -1899,7 +1891,7 @@ async def test_message_date_filtering_with_real_tpuf(enable_message_embedding, d
         # Clean up namespace
         try:
             await client.delete_all_messages(agent_id)
-        except:
+        except Exception:
             pass
 
 
@@ -2403,7 +2395,7 @@ async def test_query_messages_with_mixed_conversation_id_presence(enable_message
             async with AsyncTurbopuffer(api_key=client.api_key, region=client.region) as tpuf:
                 namespace = tpuf.namespace(namespace_name)
                 await namespace.delete_all()
-        except:
+        except Exception:
             pass
 
 
@@ -2485,14 +2477,14 @@ async def test_query_messages_by_org_id_with_missing_conversation_id_schema(enab
             async with AsyncTurbopuffer(api_key=client.api_key, region=client.region) as tpuf:
                 namespace = tpuf.namespace(namespace_name)
                 await namespace.delete_all()
-        except:
+        except Exception:
             pass
 
 
 @pytest.mark.asyncio
 async def test_system_messages_not_embedded_during_agent_creation(server, default_user, enable_message_embedding):
     """Test that system messages are filtered out before being passed to the embedding pipeline during agent creation"""
-    from unittest.mock import AsyncMock, patch
+    from unittest.mock import patch
 
     from letta.schemas.agent import CreateAgent
     from letta.schemas.llm_config import LLMConfig
@@ -2541,5 +2533,5 @@ async def test_system_messages_not_embedded_during_agent_creation(server, defaul
         # Clean up
         try:
             await server.agent_manager.delete_agent_async(agent.id, default_user)
-        except:
+        except Exception:
             pass

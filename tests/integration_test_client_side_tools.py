@@ -318,7 +318,7 @@ def get_secret_code(input_text: str) -> str:
             print("  ✓ Without client_tools, server tool executed directly (no approval required)")
 
             # The response should eventually contain the server value
-            all_content = " ".join([msg.content for msg in response4.messages if hasattr(msg, "content") and msg.content])
+            " ".join([msg.content for msg in response4.messages if hasattr(msg, "content") and msg.content])
             tool_returns = [msg for msg in response4.messages if msg.message_type == "tool_return_message"]
             if tool_returns:
                 server_return_value = tool_returns[0].tool_return

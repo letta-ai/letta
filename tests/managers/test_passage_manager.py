@@ -1,105 +1,22 @@
 import json
-import logging
 import os
-import random
-import re
-import string
-import time
-import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from _pytest.python_api import approx
-from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 
 # Import shared fixtures and constants from conftest
 from conftest import (
-    CREATE_DELAY_SQLITE,
     DEFAULT_EMBEDDING_CONFIG,
-    USING_SQLITE,
 )
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from sqlalchemy.orm.exc import StaleDataError
 
-from letta.config import LettaConfig
-from letta.constants import (
-    BASE_MEMORY_TOOLS,
-    BASE_SLEEPTIME_TOOLS,
-    BASE_TOOLS,
-    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
-    BASE_VOICE_SLEEPTIME_TOOLS,
-    BUILTIN_TOOLS,
-    DEFAULT_ORG_ID,
-    DEFAULT_ORG_NAME,
-    FILES_TOOLS,
-    LETTA_TOOL_EXECUTION_DIR,
-    LETTA_TOOL_SET,
-    LOCAL_ONLY_MULTI_AGENT_TOOLS,
-    MCP_TOOL_TAG_NAME_PREFIX,
-    MULTI_AGENT_TOOLS,
-)
-from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import LettaAgentNotFoundError
-from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.functions.mcp_client.types import MCPTool
-from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import AsyncTimer
-from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
-from letta.orm import Base, Block
-from letta.orm.block_history import BlockHistory
-from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
-from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
-from letta.schemas.embedding_config import EmbeddingConfig
+from letta.orm.errors import NoResultFound
 from letta.schemas.enums import (
-    ActorType,
-    AgentStepStatus,
-    FileProcessingStatus,
-    JobStatus,
-    JobType,
-    MessageRole,
-    ProviderType,
-    SandboxType,
-    StepStatus,
     TagMatchMode,
-    ToolType,
-    VectorDBProvider,
 )
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
-from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import BatchJob, Job, Job as PydanticJob, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
-from letta.schemas.letta_message_content import TextContent
-from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
-from letta.schemas.pip_requirement import PipRequirement
-from letta.schemas.run import Run as PydanticRun
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.source import Source as PydanticSource, SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
-from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser, UserUpdate
-from letta.server.db import db_registry
 from letta.server.server import SyncServer
-from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
-from letta.services.step_manager import FeedbackType
-from letta.settings import settings, tool_settings
-from letta.utils import calculate_file_defaults_based_on_context_window
-from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
-from tests.utils import random_string
 
 # ======================================================================================================================
 # Agent Manager - Passages Tests
@@ -220,6 +137,52 @@ async def test_agent_list_passages_filtering(server, default_user, sarah_agent, 
         actor=default_user, agent_id=sarah_agent.id, start_date=past_date, end_date=future_date
     )
     assert len(date_filtered) == 5
+
+
+@pytest.mark.asyncio
+async def test_agent_query_passages_time_only(server, default_user, default_archive, disable_turbopuffer):
+    """Test querying passages with date filters and no query text."""
+    now = datetime.now(timezone.utc)
+    older_date = now - timedelta(days=2)
+    newer_date = now - timedelta(hours=2)
+
+    older_passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            organization_id=default_user.organization_id,
+            archive_id=default_archive.id,
+            text="Older passage",
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            created_at=older_date,
+        ),
+        actor=default_user,
+    )
+
+    newer_passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            organization_id=default_user.organization_id,
+            archive_id=default_archive.id,
+            text="Newer passage",
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            created_at=newer_date,
+        ),
+        actor=default_user,
+    )
+
+    results = await server.agent_manager.query_agent_passages_async(
+        actor=default_user,
+        archive_id=default_archive.id,
+        start_date=now - timedelta(days=1),
+        end_date=now + timedelta(minutes=1),
+    )
+
+    assert len(results) == 1
+    passage, _, _ = results[0]
+    assert passage.id == newer_passage.id
+    assert passage.id != older_passage.id
+    assert passage.created_at >= now - timedelta(days=1)
+    assert passage.created_at <= now + timedelta(minutes=1)
 
 
 @pytest.fixture

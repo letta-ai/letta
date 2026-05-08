@@ -23,7 +23,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # determine backfill value based on current pinecone settings
     try:
-        from pinecone import IndexEmbed, PineconeAsyncio
+        from pinecone import IndexEmbed, PineconeAsyncio  # noqa: F401
 
         pinecone_available = True
     except ImportError:

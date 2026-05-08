@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 
 from letta.local_llm.settings.settings import get_completions_settings
-from letta.local_llm.utils import count_tokens, post_json_auth_request
+from letta.local_llm.utils import post_json_auth_request
 
 KOBOLDCPP_API_SUFFIX = "/api/v1/generate"
 
@@ -10,7 +10,8 @@ def get_koboldcpp_completion(endpoint, auth_type, auth_key, prompt, context_wind
     """See https://lite.koboldai.net/koboldcpp_api for API spec"""
     from letta.utils import printd
 
-    prompt_tokens = count_tokens(prompt)
+    # Approximate token count: bytes / 4
+    prompt_tokens = len(prompt.encode("utf-8")) // 4
     if prompt_tokens > context_window:
         raise Exception(f"Request exceeds maximum context length ({prompt_tokens} > {context_window} tokens)")
 

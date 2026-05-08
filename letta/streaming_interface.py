@@ -334,7 +334,7 @@ class StreamingRefreshCLIInterface(AgentRefreshStreamingInterface):
             if self.separate_send_message and function_name == "send_message":
                 try:
                     message = json.loads(function_args)["message"]
-                except:
+                except Exception:
                     prefix = '{\n  "message": "'
                     if len(function_args) < len(prefix):
                         message = "..."

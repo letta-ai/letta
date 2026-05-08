@@ -24,7 +24,8 @@ class OllamaProvider(OpenAIProvider):
     base_url: str = Field(..., description="Base URL for the Ollama API.")
     api_key: str | None = Field(None, description="API key for the Ollama API (default: `None`).")
     default_prompt_formatter: str = Field(
-        ..., description="Default prompt formatter (aka model wrapper) to use on a /completions style API."
+        default="chatml",
+        description="Default prompt formatter (aka model wrapper) to use on a /completions style API.",
     )
 
     @property

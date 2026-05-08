@@ -27,7 +27,7 @@ async def retrieve_provider_trace(
             provider_trace = await server.telemetry_manager.get_provider_trace_by_step_id_async(
                 step_id=step_id, actor=await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
             )
-        except:
+        except Exception:
             pass
 
     return provider_trace

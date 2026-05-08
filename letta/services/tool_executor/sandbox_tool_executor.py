@@ -5,7 +5,7 @@ from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_fun
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import SandboxType, ToolSourceType
+from letta.schemas.enums import SandboxType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -149,12 +149,21 @@ class SandboxToolExecutor(ToolExecutor):
     @staticmethod
     def _prepare_function_args(function_args: JsonDict, tool: Tool, function_name: str) -> dict:
         """Prepare function arguments with proper type coercion."""
+        # Skip Python AST parsing for TypeScript tools - they use json_schema for type info
+        if tool.source_type == "typescript":
+            return function_args
+
+        # Some built-in sandbox tools (e.g., multi-agent tools) do not persist
+        # source_code in DB and hydrate it at execution time.
+        if not isinstance(tool.source_code, str) or not tool.source_code:
+            return function_args
+
         try:
-            # Parse the source code to extract function annotations
+            # Parse the source code to extract function annotations (Python only)
             annotations = get_function_annotations_from_source(tool.source_code, function_name)
             # Coerce the function arguments to the correct types based on the annotations
             return coerce_dict_args_by_annotations(function_args, annotations)
-        except ValueError:
+        except (ValueError, TypeError):
             # Just log the error and continue with original args
             # This is defensive programming - we try to coerce but fall back if it fails
             return function_args

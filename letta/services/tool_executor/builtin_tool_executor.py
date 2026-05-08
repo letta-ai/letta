@@ -320,11 +320,20 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             String containing the webpage content in markdown/text format
         """
         import asyncio
+        from urllib.parse import urlparse
 
         import html2text
         import requests
         from readability import Document
         from trafilatura import extract, fetch_url
+
+        # Validate URL scheme - only HTTP and HTTPS are supported
+        parsed_url = urlparse(url)
+        if parsed_url.scheme.lower() not in ("http", "https"):
+            raise ValueError(
+                f"Invalid URL scheme '{parsed_url.scheme}'. Only 'http' and 'https' URLs are supported. "
+                f"Local file paths (file://) and other protocols cannot be fetched."
+            )
 
         # Try exa first
         try:

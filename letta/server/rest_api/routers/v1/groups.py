@@ -5,11 +5,8 @@ from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.schemas.group import Group, GroupBase, GroupCreate, GroupUpdate, ManagerType
-from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
-from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import BaseMessage
+from letta.schemas.group import Group, GroupCreate, GroupUpdate, ManagerType
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.validators import GroupId, MessageId
@@ -17,7 +14,7 @@ from letta.validators import GroupId, MessageId
 router = APIRouter(prefix="/groups", tags=["groups"])
 
 
-@router.get("/", response_model=List[Group], operation_id="list_groups")
+@router.get("/", response_model=List[Group], operation_id="list_groups", deprecated=True)
 async def list_groups(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -56,7 +53,7 @@ async def list_groups(
     )
 
 
-@router.get("/count", response_model=int, operation_id="count_groups")
+@router.get("/count", response_model=int, operation_id="count_groups", deprecated=True)
 async def count_groups(
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -68,7 +65,7 @@ async def count_groups(
     return await server.group_manager.size(actor=actor)
 
 
-@router.get("/{group_id}", response_model=Group, operation_id="retrieve_group")
+@router.get("/{group_id}", response_model=Group, operation_id="retrieve_group", deprecated=True)
 async def retrieve_group(
     group_id: GroupId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -81,7 +78,7 @@ async def retrieve_group(
     return await server.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
 
 
-@router.post("/", response_model=Group, operation_id="create_group")
+@router.post("/", response_model=Group, operation_id="create_group", deprecated=True)
 async def create_group(
     group: GroupCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -97,7 +94,7 @@ async def create_group(
     return await server.group_manager.create_group_async(group, actor=actor)
 
 
-@router.patch("/{group_id}", response_model=Group, operation_id="modify_group")
+@router.patch("/{group_id}", response_model=Group, operation_id="modify_group", deprecated=True)
 async def modify_group(
     group_id: GroupId,
     group: GroupUpdate = Body(...),
@@ -114,7 +111,7 @@ async def modify_group(
     return await server.group_manager.modify_group_async(group_id=group_id, group_update=group, actor=actor)
 
 
-@router.delete("/{group_id}", response_model=None, operation_id="delete_group")
+@router.delete("/{group_id}", response_model=None, operation_id="delete_group", deprecated=True)
 async def delete_group(
     group_id: GroupId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -128,81 +125,12 @@ async def delete_group(
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Group id={group_id} successfully deleted"})
 
 
-@router.post(
-    "/{group_id}/messages",
-    response_model=LettaResponse,
-    operation_id="send_group_message",
-)
-async def send_group_message(
-    group_id: GroupId,
-    server: SyncServer = Depends(get_letta_server),
-    request: LettaRequest = Body(...),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Process a user message and return the group's response.
-    This endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    result = await server.send_group_message_to_agent(
-        group_id=group_id,
-        actor=actor,
-        input_messages=request.messages,
-        stream_steps=False,
-        stream_tokens=False,
-        # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-    )
-    return result
-
-
-@router.post(
-    "/{group_id}/messages/stream",
-    response_model=None,
-    operation_id="send_group_message_streaming",
-    responses={
-        200: {
-            "description": "Successful response",
-            "content": {
-                "text/event-stream": {"description": "Server-Sent Events stream"},
-            },
-        }
-    },
-)
-async def send_group_message_streaming(
-    group_id: GroupId,
-    server: SyncServer = Depends(get_letta_server),
-    request: LettaStreamingRequest = Body(...),
-    headers: HeaderParams = Depends(get_headers),
-):
-    """
-    Process a user message and return the group's responses.
-    This endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.
-    It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
-    """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    result = await server.send_group_message_to_agent(
-        group_id=group_id,
-        actor=actor,
-        input_messages=request.messages,
-        stream_steps=True,
-        stream_tokens=request.stream_tokens,
-        # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-    )
-    return result
-
-
 GroupMessagesResponse = Annotated[
     List[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
 ]
 
 
-@router.patch("/{group_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_group_message")
+@router.patch("/{group_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_group_message", deprecated=True)
 async def modify_group_message(
     group_id: GroupId,
     message_id: MessageId,
@@ -218,7 +146,7 @@ async def modify_group_message(
     return await server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
-@router.get("/{group_id}/messages", response_model=GroupMessagesResponse, operation_id="list_group_messages")
+@router.get("/{group_id}/messages", response_model=GroupMessagesResponse, operation_id="list_group_messages", deprecated=True)
 async def list_group_messages(
     group_id: GroupId,
     before: Optional[str] = Query(
@@ -237,6 +165,7 @@ async def list_group_messages(
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages", deprecated=True),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool.", deprecated=True),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument.", deprecated=True),
+    include_return_message_types: Optional[List[MessageType]] = Query(None, description="Message types to include in response. When null, all message types are returned."),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -247,7 +176,6 @@ async def list_group_messages(
     group = await server.group_manager.retrieve_group_async(group_id=group_id, actor=actor)
     if group.manager_agent_id:
         return await server.get_agent_recall_async(
-            user_id=actor.id,
             agent_id=group.manager_agent_id,
             after=after,
             before=before,
@@ -258,6 +186,8 @@ async def list_group_messages(
             use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            include_return_message_types=include_return_message_types,
+            actor=actor,
         )
     else:
         return await server.group_manager.list_group_messages_async(
@@ -265,15 +195,15 @@ async def list_group_messages(
             after=after,
             before=before,
             limit=limit,
-            ascending=(order == "asc"),
             actor=actor,
             use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            include_return_message_types=include_return_message_types,
         )
 
 
-@router.patch("/{group_id}/reset-messages", response_model=None, operation_id="reset_group_messages")
+@router.patch("/{group_id}/reset-messages", response_model=None, operation_id="reset_group_messages", deprecated=True)
 async def reset_group_messages(
     group_id: GroupId,
     server: "SyncServer" = Depends(get_letta_server),
@@ -286,7 +216,7 @@ async def reset_group_messages(
     await server.group_manager.reset_messages_async(group_id=group_id, actor=actor)
 
 
-@router.patch("/{group_id}/blocks/attach/{block_id}", response_model=None, operation_id="attach_block_to_group")
+@router.patch("/{group_id}/blocks/attach/{block_id}", response_model=None, operation_id="attach_block_to_group", deprecated=True)
 async def attach_block_to_group(
     block_id: str,
     group_id: GroupId,
@@ -306,7 +236,7 @@ async def attach_block_to_group(
     return None
 
 
-@router.patch("/{group_id}/blocks/detach/{block_id}", response_model=None, operation_id="detach_block_from_group")
+@router.patch("/{group_id}/blocks/detach/{block_id}", response_model=None, operation_id="detach_block_from_group", deprecated=True)
 async def detach_block_from_group(
     block_id: str,
     group_id: GroupId,

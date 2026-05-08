@@ -22,7 +22,7 @@ class AuthRequest(BaseModel):
 
 
 def setup_auth_router(server: SyncServer, interface: QueuingInterface, password: str) -> APIRouter:
-    @router.post("/auth", tags=["auth"], response_model=AuthResponse)
+    @router.post("/auth", tags=["auth"])
     def authenticate_user(request: AuthRequest) -> AuthResponse:
         """
         Authenticates the user and sends response with User related data.

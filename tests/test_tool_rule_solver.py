@@ -77,7 +77,7 @@ def test_get_allowed_tool_names_no_matching_rule_error():
     solver = ToolRulesSolver(tool_rules=[init_rule])
 
     solver.register_tool_call(UNRECOGNIZED_TOOL)
-    with pytest.raises(ValueError, match="No valid tools found based on tool rules."):
+    with pytest.raises(ValueError, match=r"No valid tools found based on tool rules."):
         solver.get_allowed_tool_names(set(), error_on_empty=True)
 
 
@@ -119,7 +119,7 @@ def test_conditional_tool_rule():
 
 
 def test_invalid_conditional_tool_rule():
-    with pytest.raises(ValueError, match="Conditional tool rule must have at least one child tool."):
+    with pytest.raises(ValueError, match=r"Conditional tool rule must have at least one child tool."):
         ConditionalToolRule(tool_name=START_TOOL, default_child=END_TOOL, child_output_mapping={})
 
 
@@ -402,7 +402,7 @@ def test_cross_type_hash_distinguishes_types(a, b):
 )
 def test_equality_with_non_rule_objects(rule):
     assert rule != object()
-    assert rule != None  # noqa: E711
+    assert rule != None
 
 
 def test_conditional_tool_rule_mapping_order_and_hash():
