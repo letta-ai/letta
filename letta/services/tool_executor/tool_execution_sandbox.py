@@ -1,7 +1,7 @@
 import base64
 import io
+import json
 import os
-import pickle
 import subprocess
 import sys
 import tempfile
@@ -473,13 +473,17 @@ class ToolExecutionSandbox:
     # general utility functions
 
     def parse_best_effort(self, text: str) -> Any:
+        """Decode the JSON-encoded payload emitted by the tool sandbox.
+
+        AgentState is rehydrated via pydantic validation.
+        """
         if not text:
             return None, None
-        result = pickle.loads(base64.b64decode(text))
-        agent_state = None
-        if result["agent_state"] is not None:
-            agent_state = result["agent_state"]
-        return result["results"], agent_state
+        decoded = base64.b64decode(text).decode("utf-8")
+        result = json.loads(decoded)
+        agent_state_payload = result.get("agent_state")
+        agent_state = AgentState.model_validate(agent_state_payload) if agent_state_payload else None
+        return result.get("results"), agent_state
 
     def generate_execution_script(self, agent_state: AgentState, wrap_print_with_markers: bool = False) -> str:
         """
@@ -501,6 +505,7 @@ class ToolExecutionSandbox:
         # dump JSON representation of agent state to re-load
         code = "from typing import *\n"
         code += "import pickle\n"
+        code += "import json as _letta_json\n"
         code += "import sys\n"
         code += "import base64\n"
 
@@ -556,14 +561,23 @@ class ToolExecutionSandbox:
 
         # TODO: handle wrapped print
 
+        code += "if agent_state is not None:\n"
+        code += "    try:\n"
+        code += "        _letta_agent_state_payload = agent_state.model_dump(mode='json')\n"
+        code += "    except Exception:\n"
+        code += "        _letta_agent_state_payload = None\n"
+        code += "else:\n"
+        code += "    _letta_agent_state_payload = None\n"
         code += (
             self.LOCAL_SANDBOX_RESULT_VAR_NAME
             + ' = {"results": '
             + self.invoke_function_call(inject_agent_state=inject_agent_state)  # this inject_agent_state is the main difference
-            + ', "agent_state": agent_state}\n'
+            + ', "agent_state": _letta_agent_state_payload}\n'
         )
         code += (
-            f"{self.LOCAL_SANDBOX_RESULT_VAR_NAME} = base64.b64encode(pickle.dumps({self.LOCAL_SANDBOX_RESULT_VAR_NAME})).decode('utf-8')\n"
+            f"{self.LOCAL_SANDBOX_RESULT_VAR_NAME} = base64.b64encode("
+            f"_letta_json.dumps({self.LOCAL_SANDBOX_RESULT_VAR_NAME}, default=str).encode('utf-8')"
+            f").decode('utf-8')\n"
         )
 
         if wrap_print_with_markers:
