@@ -10714,7 +10714,7 @@ async def test_create_mcp_server(mock_get_client, server, default_user):
 async def test_create_mcp_server_with_tools(mock_get_client, server, default_user):
     """Test that creating an MCP server automatically syncs and persists its tools."""
     from letta.functions.mcp_client.types import MCPToolHealth
-    from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig
+    from letta.schemas.mcp import MCPServer, MCPServerType
     from letta.settings import tool_settings
 
     if tool_settings.mcp_read_from_config:
@@ -11126,7 +11126,7 @@ async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, d
 @pytest.mark.asyncio
 async def test_mcp_server_resync_tools(server, default_user, default_organization):
     """Test that resyncing MCP server tools correctly handles added, deleted, and updated tools."""
-    from unittest.mock import AsyncMock, MagicMock, patch
+    from unittest.mock import AsyncMock, patch
 
     from letta.functions.mcp_client.types import MCPTool, MCPToolHealth
     from letta.schemas.mcp import MCPServer as PydanticMCPServer, MCPServerType

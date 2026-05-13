@@ -1,7 +1,6 @@
 import httpx
 import pytest
 from dotenv import load_dotenv
-
 from letta.embeddings import GoogleEmbeddings  # type: ignore[import-untyped]  # Adjust the import based on your module structure
 
 load_dotenv()

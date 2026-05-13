@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Union
 
-from sqlalchemy import and_, func, or_, select, tuple_, update
+from sqlalchemy import and_, func, select, tuple_, update
 
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound

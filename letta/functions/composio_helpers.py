@@ -79,7 +79,7 @@ async def execute_composio_action_async(
         print(type(e))
         raise RuntimeError(f"An unexpected error occurred in Composio SDK while executing action '{action_name}': {str(e)}")
 
-    if "error" in response and response["error"]:
+    if response.get("error"):
         raise RuntimeError(f"Error while executing action '{action_name}': {str(response['error'])}")
 
     return response.get("data")
