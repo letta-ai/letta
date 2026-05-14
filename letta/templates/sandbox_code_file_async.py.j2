@@ -1,6 +1,7 @@
 {{ 'from __future__ import annotations' if future_import else '' }}
 from typing import *
 import pickle
+import json as _letta_json
 import sys
 import base64
 import struct
@@ -48,9 +49,17 @@ async def _async_wrapper():
         print(f"Failed to serialize result with Pydantic wrapper: {e}")
         _serialized_result = str(_function_result)
 
+    if agent_state is not None:
+        try:
+            _letta_agent_state_payload = agent_state.model_dump(mode='json')
+        except Exception:
+            _letta_agent_state_payload = None
+    else:
+        _letta_agent_state_payload = None
+
     return {
         "results": _serialized_result,
-        "agent_state": agent_state
+        "agent_state": _letta_agent_state_payload
     }
 
 {# Run the async function - method depends on environment #}
@@ -62,7 +71,7 @@ async def _async_wrapper():
 {{ local_sandbox_result_var_name }} = asyncio.run(_async_wrapper())
 {% endif %}
 
-{{ local_sandbox_result_var_name }}_pkl = pickle.dumps({{ local_sandbox_result_var_name }})
+{{ local_sandbox_result_var_name }}_pkl = _letta_json.dumps({{ local_sandbox_result_var_name }}, default=str).encode('utf-8')
 
 {% if wrap_print_with_markers %}
 {# Combine everything to flush and write at once. #}

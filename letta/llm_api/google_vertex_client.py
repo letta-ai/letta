@@ -40,7 +40,6 @@ from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentType
 from letta.schemas.enums import ProviderCategory
-from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool, Tool as OpenAITool

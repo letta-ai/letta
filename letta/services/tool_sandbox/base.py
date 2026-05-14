@@ -199,6 +199,7 @@ class AsyncToolSandboxBase(ABC):
             [
                 "from typing import *",
                 "import pickle",
+                "import json as _letta_json",
                 "import sys",
                 "import base64",
                 "import struct",
@@ -309,11 +310,18 @@ class AsyncToolSandboxBase(ABC):
                     '    print(f"Failed to serialize result with Pydantic wrapper: {e}")',
                     "    _serialized_result = str(_function_result)",
                     "",
+                    "if agent_state is not None:",
+                    "    try:",
+                    "        _letta_agent_state_payload = agent_state.model_dump(mode='json')",
+                    "    except Exception:",
+                    "        _letta_agent_state_payload = None",
+                    "else:",
+                    "    _letta_agent_state_payload = None",
                     f"{local_sandbox_result_var_name} = {{",
                     '    "results": _serialized_result,',
-                    '    "agent_state": agent_state',
+                    '    "agent_state": _letta_agent_state_payload',
                     "}",
-                    f"{local_sandbox_result_var_name}_pkl = pickle.dumps({local_sandbox_result_var_name})",
+                    f"{local_sandbox_result_var_name}_pkl = _letta_json.dumps({local_sandbox_result_var_name}, default=str).encode('utf-8')",
                 ]
             )
         else:
@@ -339,9 +347,16 @@ class AsyncToolSandboxBase(ABC):
                     '        print(f"Failed to serialize result with Pydantic wrapper: {e}")',
                     "        _serialized_result = str(_function_result)",
                     "",
+                    "    if agent_state is not None:",
+                    "        try:",
+                    "            _letta_agent_state_payload = agent_state.model_dump(mode='json')",
+                    "        except Exception:",
+                    "            _letta_agent_state_payload = None",
+                    "    else:",
+                    "        _letta_agent_state_payload = None",
                     "    return {",
                     '        "results": _serialized_result,',
-                    '        "agent_state": agent_state',
+                    '        "agent_state": _letta_agent_state_payload',
                     "    }",
                 ]
             )
@@ -349,7 +364,9 @@ class AsyncToolSandboxBase(ABC):
                 lines.append(f"{local_sandbox_result_var_name} = await _async_wrapper()")
             else:
                 lines.append(f"{local_sandbox_result_var_name} = asyncio.run(_async_wrapper())")
-            lines.append(f"{local_sandbox_result_var_name}_pkl = pickle.dumps({local_sandbox_result_var_name})")
+            lines.append(
+                f"{local_sandbox_result_var_name}_pkl = _letta_json.dumps({local_sandbox_result_var_name}, default=str).encode('utf-8')"
+            )
 
         if wrap_print_with_markers:
             lines.extend(

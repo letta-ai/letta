@@ -4,11 +4,11 @@ from typing import List, Literal, Optional
 
 import aiohttp
 import requests
+from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
+from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from pydantic import BaseModel, Field, model_validator
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LETTA_MODEL_ENDPOINT, LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
-from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
-from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.embedding_config_overrides import EMBEDDING_HANDLE_OVERRIDES
 from letta.schemas.enums import ProviderCategory, ProviderType
@@ -1537,8 +1537,9 @@ class BedrockProvider(Provider):
 
     def check_api_key(self):
         """Check if the Bedrock credentials are valid"""
-        from letta.errors import LLMAuthenticationError
         from letta.llm_api.aws_bedrock import bedrock_get_model_list
+
+        from letta.errors import LLMAuthenticationError
 
         try:
             # For BYOK providers, use the custom credentials
