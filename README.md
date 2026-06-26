@@ -120,3 +120,10 @@ Letta is an open source project built by over a hundred contributors from around
 ---
 
 ***Legal notices**: By using Letta and related Letta services (such as the Letta endpoint or hosted service), you are agreeing to our [privacy policy](https://www.letta.com/privacy-policy) and [terms of service](https://www.letta.com/terms-of-service).*
+
+<img
+  referrerpolicy="no-referrer-when-downgrade"
+  src="https://static.scarf.sh/a.png?x-pxid=0486b269-51d8-4a28-b1ec-2d9bad999839&page=README.md"
+  alt=""
+  aria-hidden="true"
+/>
