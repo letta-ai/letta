@@ -203,3 +203,47 @@ async def test_openai_embedding_minimum_chunk_failure(default_user):
 
         with pytest.raises(Exception, match="API error"):
             await client.request_embeddings(test_inputs, embedding_config)
+
+
+@pytest.mark.asyncio
+async def test_embedder_uses_correct_client_for_azure():
+    """Test that OpenAIEmbedder uses AzureClient when embedding_endpoint_type is azure.
+
+    This is a regression test for https://github.com/letta-ai/letta/issues/3163
+    where Azure embedding requests returned 404 because the wrong client was used.
+    """
+    from letta.llm_api.azure_client import AzureClient
+    from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+
+    azure_config = EmbeddingConfig(
+        embedding_endpoint_type="azure",
+        embedding_model="text-embedding-3-small",
+        embedding_dim=768,
+    )
+
+    embedder = OpenAIEmbedder(embedding_config=azure_config)
+
+    # The client should be an AzureClient, not OpenAIClient
+    assert isinstance(embedder.client, AzureClient), (
+        f"Expected AzureClient for azure embedding config, got {type(embedder.client).__name__}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_embedder_uses_correct_client_for_openai():
+    """Test that OpenAIEmbedder uses OpenAIClient when embedding_endpoint_type is openai."""
+    from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
+
+    openai_config = EmbeddingConfig(
+        embedding_endpoint_type="openai",
+        embedding_endpoint="https://api.openai.com/v1",
+        embedding_model="text-embedding-3-small",
+        embedding_dim=1536,
+    )
+
+    embedder = OpenAIEmbedder(embedding_config=openai_config)
+
+    # The client should be an OpenAIClient
+    assert isinstance(embedder.client, OpenAIClient), (
+        f"Expected OpenAIClient for openai embedding config, got {type(embedder.client).__name__}"
+    )
