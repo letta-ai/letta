@@ -495,7 +495,7 @@ class OpenAIClient(LLMClientBase):
             request_obj=data,
         )
 
-        request_data = data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True, exclude_none=True)
         return request_data
 
     @trace_method
@@ -690,7 +690,7 @@ class OpenAIClient(LLMClientBase):
                 if not supports_structured_output(llm_config):
                     # Provider doesn't support structured output - ensure strict is False
                     tool.function.strict = False
-        request_data = data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True, exclude_none=True)
 
         # If Ollama
         # if llm_config.handle.startswith("ollama/") and llm_config.enable_reasoner:
