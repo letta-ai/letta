@@ -2,11 +2,11 @@
 
 Build AI with advanced memory that can learn and self-improve over time.
 
-* [Letta Agent](https://docs.letta.com/letta-agent): run agents locally in your terminal or via the desktop app
+* [Letta Agent](https://docs.letta.com/letta-agent): run agents locally in your terminal, via the desktop app, or via channels like Slack
 * [Letta Agent SDK](https://docs.letta.com/letta-agent-sdk/overview): build agents into your applications
 
 > [!NOTE]
-> This repository contains the legacy Letta server (the self-hosted Docker server behind the Letta V1 API and SDKs). Active development has moved to the [Letta Agent harness](https://github.com/letta-ai/letta-code), and self-hosting is now done via the [App Server](https://docs.letta.com/letta-agent/app-server). See [AGENTS.md](AGENTS.md) for details.
+> This repository contains the legacy Letta server (the API server behind the Letta V1 API and SDKs). Active development has moved to the [Letta Agent repo](https://github.com/letta-ai/letta-code), and self-hosting an API server is now done via the [App Server](https://docs.letta.com/letta-agent/app-server). See [AGENTS.md](AGENTS.md) for details.
 
 ## Get started in the CLI
 
@@ -17,7 +17,7 @@ Requires [Node.js 22.19+](https://nodejs.org/en/download)
 
 When running the CLI tool, your agent can help you code and do any task you can do on your computer.
 
-Letta Code supports [skills](https://docs.letta.com/letta-agent/skills) and [subagents](https://docs.letta.com/letta-agent/subagents), and bundles pre-built skills/subagents for advanced memory and continual learning. Letta is fully model-agnostic, though we recommend Opus 4.5 and GPT-5.2 for best performance (see our [model leaderboard](https://leaderboard.letta.com/) for our rankings).
+Letta Code supports [skills](https://docs.letta.com/letta-agent/skills) and [subagents](https://docs.letta.com/letta-agent/subagents), and bundles pre-built skills/subagents for advanced memory and continual learning. Letta is fully model-agnostic, though we recommend the latest Anthropic, OpenAI, and zAI models for best performance (see our [model leaderboard](https://leaderboard.letta.com/) for our rankings).
 
 ## Get started with the Letta Agent SDK
 
