@@ -15,6 +15,7 @@ ARG LETTA_ENVIRONMENT=DEV
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     UV_NO_PROGRESS=1 \
     UV_PYTHON_PREFERENCE=system \
+    UV_HTTP_TIMEOUT=120 \
     UV_CACHE_DIR=/tmp/uv_cache
 
 # Set for other builds
@@ -36,7 +37,8 @@ COPY pyproject.toml uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN uv sync --frozen --no-dev --all-extras --python 3.11
+RUN --mount=type=cache,target=/tmp/uv_cache \
+    uv sync --frozen --no-dev --all-extras --python 3.11
 
 # Runtime stage
 FROM pgvector/pgvector:0.8.1-pg15 AS runtime
@@ -85,7 +87,9 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     POSTGRES_DB=letta
 
 ARG LETTA_VERSION
-ENV LETTA_VERSION=${LETTA_VERSION}
+ARG LETTA_DOCKER_EOL=false
+ENV LETTA_VERSION=${LETTA_VERSION} \
+    LETTA_DOCKER_EOL=${LETTA_DOCKER_EOL}
 
 WORKDIR /app
 

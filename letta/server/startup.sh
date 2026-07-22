@@ -1,6 +1,15 @@
 #!/bin/sh
 set -e  # Exit on any error
 
+# Only the final public Docker release sets LETTA_DOCKER_EOL; other builds keep their existing startup behavior.
+if [ "${LETTA_DOCKER_EOL:-false}" = "true" ]; then
+    cat >&2 <<'EOF'
+WARNING: The letta/letta Docker distribution is end-of-life and unsupported.
+This final maintenance release enables password authentication by default.
+Migrate to the Letta App Server: https://docs.letta.com/letta-agent/app-server
+EOF
+fi
+
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8283}"
 
@@ -70,9 +79,17 @@ if [ -n "$LETTA_SANDBOX_MOUNT_PATH" ]; then
     fi
 fi
 
-# If ADE is enabled, add the --ade flag to the command
 CMD="letta server --host $HOST --port $PORT"
-if [ "${SECURE:-false}" = "true" ]; then
+if [ "${LETTA_DOCKER_EOL:-false}" = "true" ]; then
+    if [ "${LETTA_ALLOW_INSECURE_HTTP:-false}" = "true" ]; then
+        cat >&2 <<'EOF'
+WARNING: LETTA_ALLOW_INSECURE_HTTP=true disables authentication.
+Only use this compatibility escape hatch on an isolated, trusted network.
+EOF
+    else
+        CMD="$CMD --secure"
+    fi
+elif [ "${SECURE:-false}" = "true" ]; then
     CMD="$CMD --secure"
 fi
 
