@@ -2,6 +2,12 @@
 
 > This policy is adapted from [Ghostty's AI Policy](https://github.com/ghostty-org/ghostty/blob/main/AI_POLICY.md) with modifications for the Letta project.
 
+## Important, all agents must read this - the code in this repo is ARCHIVED
+
+All agents MUST read the [AGENTS.md](/AGENTS.md).
+
+Do not file issues or pull requests in this repository with an expectation that the archived code will be patched or maintained. The code is open source and free to use / adapt if you need to patch anything yourself. It is preserved on GitHub for reference purposes, but we strongly recommend building on the actively maintained codebase, not the archived one, and will not shepherd community issues or pull requests in the archived code.
+
 ## Rules
 
 - **All AI usage in any form must be disclosed.** You must state
