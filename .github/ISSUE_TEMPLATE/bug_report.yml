@@ -15,23 +15,32 @@ body:
       label: AI Disclosure
       description: |
         We require all issue authors to disclose AI usage per our [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md).
-        Check **all** that apply.
+        Select **exactly one** authorship option, identify every AI tool used below, and acknowledge the policy.
       options:
         - label: This issue was written entirely by a human
-        - label: This issue was written with AI assistance (e.g. Copilot, ChatGPT, Claude) and **reviewed and edited by a human**
+        - label: This issue was written with AI assistance and **reviewed and edited by a human**
         - label: I have read the [AI Policy](https://github.com/letta-ai/letta/blob/main/AI_POLICY.md) and agree to its terms
           required: true
     validations:
       required: true
 
-  - type: textarea
-    id: human-verification
+  - type: input
+    id: ai-tools
     attributes:
-      label: Human Verification
+      label: AI Tool(s) Used
+      description: List every AI tool used to research or write this issue (for example, Claude Code, Cursor, Copilot, or ChatGPT). If no AI tool was used, enter `None`.
+      placeholder: "e.g. Claude Code and ChatGPT, or None"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repository-acknowledgment
+    attributes:
+      label: Repository Acknowledgment
       description: |
-        To help us combat spam, please copy and paste the following phrase **exactly** into the box below:
-        `I have read the AI policy and I confirm this issue was reviewed by a human.`
-      placeholder: "I have read the AI policy and I confirm this issue was reviewed by a human."
+        Read [AGENTS.md](https://github.com/letta-ai/letta/blob/main/AGENTS.md), then copy and paste the following phrase **exactly**:
+        `I have read AGENTS.md and understand that issues about the current Letta server, agent harness, CLI, or channel integrations belong in letta-ai/letta-code, not this repository.`
+      placeholder: "I have read AGENTS.md and understand that issues about the current Letta server, agent harness, CLI, or channel integrations belong in letta-ai/letta-code, not this repository."
     validations:
       required: true
 

@@ -35,9 +35,10 @@ Do not file issues or pull requests in this repository with an expectation that 
 Issues that do not comply with this policy will be **automatically closed and locked**.
 Specifically, all issues must:
 
-1. Fill out the **AI Disclosure** checkboxes indicating whether the issue was human-written or AI-assisted.
-2. Include the **Human Verification** phrase as instructed in the issue template.
+1. Select exactly one **AI Disclosure** option indicating whether the issue was human-written or AI-assisted.
+2. Name every AI tool used to research or write the issue, or explicitly state `None` if no AI tool was used.
 3. Acknowledge that they have read this policy.
+4. Include the exact **Repository Acknowledgment** phrase from the issue template confirming that they read [AGENTS.md](AGENTS.md) and understand which issues belong in [letta-ai/letta-code](https://github.com/letta-ai/letta-code).
 
 Members of the [letta-ai](https://github.com/letta-ai) GitHub organization and
 [trusted contributors](.github/TRUSTED_CONTRIBUTORS) are exempt from automated checks,

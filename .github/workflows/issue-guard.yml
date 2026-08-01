@@ -80,10 +80,10 @@ jobs:
 
             const failures = [];
 
-            // Check 1: Magic phrase
-            const magicPhrase = 'I have read the AI policy and I confirm this issue was reviewed by a human.';
-            if (!body.includes(magicPhrase)) {
-              failures.push('Missing human verification phrase');
+            // Check 1: Repository acknowledgment phrase
+            const repositoryAcknowledgment = 'I have read AGENTS.md and understand that issues about the current Letta server, agent harness, CLI, or channel integrations belong in letta-ai/letta-code, not this repository.';
+            if (!body.includes(repositoryAcknowledgment)) {
+              failures.push('Missing exact repository acknowledgment phrase');
             }
 
             // Check 2: AI disclosure checkbox (the required one: "I have read the AI Policy")
@@ -93,11 +93,24 @@ jobs:
               failures.push('AI Policy acknowledgment checkbox not checked');
             }
 
-            // Check 3: At least one of the two disclosure options is checked
+            // Check 3: Exactly one authorship option must be checked
             const humanWritten = /- \[[xX]\] This issue was written entirely by a human/.test(body);
             const aiAssisted = /- \[[xX]\] This issue was written with AI assistance/.test(body);
-            if (!humanWritten && !aiAssisted) {
-              failures.push('No AI disclosure option selected (must indicate whether issue is human-written or AI-assisted)');
+            if (humanWritten === aiAssisted) {
+              failures.push('Select exactly one authorship option (human-written or AI-assisted)');
+            }
+
+            // Check 4: AI tools must be explicitly disclosed. GitHub issue forms render
+            // input values under a level-three Markdown heading.
+            const aiToolsMatch = body.match(/### AI Tool\(s\) Used\s*\n+([\s\S]*?)(?=\n### |$)/i);
+            const aiTools = (aiToolsMatch?.[1] || '').trim();
+            const noTools = /^(none|n\/a|no ai(?: tools?)?)\.?$/i.test(aiTools);
+            if (!aiTools || /^_?no response_?$/i.test(aiTools)) {
+              failures.push('AI Tool(s) Used must list every tool used, or state None');
+            } else if (aiAssisted && noTools) {
+              failures.push('AI-assisted issues must name the AI tool(s) used');
+            } else if (humanWritten && !noTools) {
+              failures.push('Human-written issues must state None under AI Tool(s) Used');
             }
 
             if (failures.length === 0) {
@@ -116,9 +129,10 @@ jobs:
               ``,
               `**To submit an issue, please:**`,
               `1. Use one of the [issue templates](https://github.com/${context.repo.owner}/${context.repo.repo}/issues/new/choose)`,
-              `2. Fill out the **AI Disclosure** checkboxes`,
-              `3. Copy the **Human Verification** phrase exactly as shown`,
-              `4. Read our [AI Policy](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AI_POLICY.md)`,
+              `2. Select exactly one **AI Disclosure** authorship option`,
+              `3. Name every AI tool used, or state **None**`,
+              `4. Copy the **Repository Acknowledgment** phrase exactly as shown`,
+              `5. Read our [AI Policy](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AI_POLICY.md) and [AGENTS.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AGENTS.md)`,
               ``,
               `If you believe this was a mistake, please reach out on [Discord](https://discord.gg/9GEQrxmVyE).`,
             ].join('\n');
