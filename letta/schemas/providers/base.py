@@ -199,6 +199,7 @@ class Provider(ProviderBase):
             SGLangProvider,
             TogetherProvider,
             VLLMProvider,
+            VoyageAIProvider,
             XAIProvider,
             ZAICodingProvider,
             ZAIProvider,
@@ -254,6 +255,8 @@ class Provider(ProviderBase):
                 return MiniMaxProvider(**self.model_dump(exclude_none=True))
             case ProviderType.openrouter:
                 return OpenRouterProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.voyageai:
+                return VoyageAIProvider(**self.model_dump(exclude_none=True))
             case _:
                 raise ValueError(f"Unknown provider type: {self.provider_type}")
 
