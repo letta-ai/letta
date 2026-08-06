@@ -1,9 +1,9 @@
 import asyncio
 import time
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple
 
 from letta.llm_api.llm_client import LLMClient
-from letta.llm_api.openai_client import OpenAIClient
+from letta.llm_api.llm_client_base import LLMClientBase
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -35,14 +35,11 @@ class OpenAIEmbedder(BaseEmbedder):
         )
         self.embedding_config = embedding_config or self.default_embedding_config
 
-        # TODO: Unify to global OpenAI client
-        self.client: OpenAIClient = cast(
-            OpenAIClient,
-            LLMClient.create(
-                provider_type=ProviderType.openai,
-                put_inner_thoughts_first=False,
-                actor=None,  # Not necessary
-            ),
+        # Use the correct client type based on embedding config's provider
+        self.client: LLMClientBase = LLMClient.create(
+            provider_type=ProviderType(self.embedding_config.embedding_endpoint_type),
+            put_inner_thoughts_first=False,
+            actor=None,
         )
 
     @trace_method
