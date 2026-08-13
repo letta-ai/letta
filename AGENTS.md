@@ -17,3 +17,5 @@ If you are an agent working here, you most likely want one of these instead:
 
 - New features and integrations should target [letta-ai/letta-code](https://github.com/letta-ai/letta-code) and the [Letta Agent SDK](https://docs.letta.com/letta-agent-sdk/overview), not this codebase.
 - All contributions (issues, PRs, discussions) must comply with the [AI usage policy](AI_POLICY.md): AI assistance must be disclosed, and a human must fully understand and review everything submitted.
+- Do not use issues, pull requests, or discussions to advertise a product or service, generate leads, promote referral or affiliate links, or send other unsolicited commercial pitches. Self-promotional spam will be reported to GitHub, and the account will be blocked from this repository.
+- If a legitimate issue mentions a third-party product or service, disclose your relationship to it, including whether you are its creator, employee, contractor, investor, affiliate, sponsor, or paid promoter. Hiding or misrepresenting that relationship will be treated as spam.

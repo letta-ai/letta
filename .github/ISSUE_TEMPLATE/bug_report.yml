@@ -10,6 +10,36 @@ body:
         > This repository is for the core Letta server only.
 
   - type: checkboxes
+    id: third-party-product
+    attributes:
+      label: Third-Party Product Disclosure
+      description: Select **exactly one** option. If this issue mentions a third-party product or service, disclose your relationship to it below.
+      options:
+        - label: This issue does not mention or promote a third-party product or service
+        - label: This issue mentions a third-party product or service, and I have disclosed my relationship to it below
+    validations:
+      required: true
+
+  - type: input
+    id: third-party-relationship
+    attributes:
+      label: Relationship to Third-Party Product or Service
+      description: State whether you are the creator, employee, contractor, investor, affiliate, sponsor, paid promoter, user, or customer. State `No relationship` if you are unaffiliated, or `Not applicable` if no third-party product or service is mentioned.
+      placeholder: "e.g. Creator, employee, affiliate, no relationship, or not applicable"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: anti-spam-acknowledgment
+    attributes:
+      label: Anti-Spam Acknowledgment
+      options:
+        - label: I understand that self-promotional spam, advertising, lead generation, affiliate or referral pitches, and deceptive disclosures will be reported to GitHub as spam, and the account will be blocked from this repository
+          required: true
+    validations:
+      required: true
+
+  - type: checkboxes
     id: ai-disclosure
     attributes:
       label: AI Disclosure
