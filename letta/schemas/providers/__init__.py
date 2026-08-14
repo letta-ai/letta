@@ -21,6 +21,7 @@ from .openrouter import OpenRouterProvider
 from .sglang import SGLangProvider
 from .together import TogetherProvider
 from .vllm import VLLMProvider
+from .voyageai import VoyageAIProvider
 from .xai import XAIProvider
 from .zai import ZAICodingProvider, ZAIProvider
 
@@ -50,6 +51,7 @@ __all__ = [
     "SGLangProvider",
     "TogetherProvider",
     "VLLMProvider",
+    "VoyageAIProvider",
     "XAIProvider",
     "ZAICodingProvider",
     "ZAIProvider",
