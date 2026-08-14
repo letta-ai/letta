@@ -86,21 +86,47 @@ jobs:
               failures.push('Missing exact repository acknowledgment phrase');
             }
 
-            // Check 2: AI disclosure checkbox (the required one: "I have read the AI Policy")
+            // Check 2: Anti-spam acknowledgment checkbox
             // YAML form checkboxes render as "- [x] text" when checked.
+            const antiSpamChecked = /- \[[xX]\] I understand that self-promotional spam, advertising, lead generation, affiliate or referral pitches, and deceptive disclosures will be reported to GitHub as spam, and the account will be blocked from this repository/.test(body);
+            if (!antiSpamChecked) {
+              failures.push('Anti-Spam Acknowledgment checkbox not checked');
+            }
+
+            // Check 3: Exactly one third-party product option must be checked
+            const noThirdPartyProduct = /- \[[xX]\] This issue does not mention or promote a third-party product or service/.test(body);
+            const hasThirdPartyProduct = /- \[[xX]\] This issue mentions a third-party product or service/.test(body);
+            if (noThirdPartyProduct === hasThirdPartyProduct) {
+              failures.push('Select exactly one Third-Party Product Disclosure option');
+            }
+
+            // Check 4: Third-party relationships must be disclosed
+            const relationshipMatch = body.match(/### Relationship to Third-Party Product or Service\s*\n+([\s\S]*?)(?=\n### |$)/i);
+            const relationship = (relationshipMatch?.[1] || '').trim();
+            const noRelationshipResponse = !relationship || /^_?no response_?$/i.test(relationship);
+            const notApplicable = /^(not applicable|n\/a)\.?$/i.test(relationship);
+            if (noRelationshipResponse) {
+              failures.push('Relationship to Third-Party Product or Service is required');
+            } else if (hasThirdPartyProduct && notApplicable) {
+              failures.push('Issues mentioning a third-party product or service must disclose the author’s relationship to it');
+            } else if (noThirdPartyProduct && !notApplicable) {
+              failures.push('Issues that do not mention a third-party product or service must state Not applicable under Relationship');
+            }
+
+            // Check 5: AI disclosure checkbox (the required one: "I have read the AI Policy")
             const aiPolicyChecked = /- \[[xX]\] I have read the \[AI Policy\]/.test(body);
             if (!aiPolicyChecked) {
               failures.push('AI Policy acknowledgment checkbox not checked');
             }
 
-            // Check 3: Exactly one authorship option must be checked
+            // Check 6: Exactly one authorship option must be checked
             const humanWritten = /- \[[xX]\] This issue was written entirely by a human/.test(body);
             const aiAssisted = /- \[[xX]\] This issue was written with AI assistance/.test(body);
             if (humanWritten === aiAssisted) {
               failures.push('Select exactly one authorship option (human-written or AI-assisted)');
             }
 
-            // Check 4: AI tools must be explicitly disclosed. GitHub issue forms render
+            // Check 7: AI tools must be explicitly disclosed. GitHub issue forms render
             // input values under a level-three Markdown heading.
             const aiToolsMatch = body.match(/### AI Tool\(s\) Used\s*\n+([\s\S]*?)(?=\n### |$)/i);
             const aiTools = (aiToolsMatch?.[1] || '').trim();
@@ -129,10 +155,12 @@ jobs:
               ``,
               `**To submit an issue, please:**`,
               `1. Use one of the [issue templates](https://github.com/${context.repo.owner}/${context.repo.repo}/issues/new/choose)`,
-              `2. Select exactly one **AI Disclosure** authorship option`,
-              `3. Name every AI tool used, or state **None**`,
-              `4. Copy the **Repository Acknowledgment** phrase exactly as shown`,
-              `5. Read our [AI Policy](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AI_POLICY.md) and [AGENTS.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AGENTS.md)`,
+              `2. Complete the **Third-Party Product Disclosure** and relationship field`,
+              `3. Accept the **Anti-Spam Acknowledgment**`,
+              `4. Select exactly one **AI Disclosure** authorship option`,
+              `5. Name every AI tool used, or state **None**`,
+              `6. Copy the **Repository Acknowledgment** phrase exactly as shown`,
+              `7. Read our [AI Policy](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AI_POLICY.md) and [AGENTS.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/AGENTS.md)`,
               ``,
               `If you believe this was a mistake, please reach out on [Discord](https://discord.gg/9GEQrxmVyE).`,
             ].join('\n');
