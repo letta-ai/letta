@@ -945,6 +945,8 @@ def start_server(
                 ssl_keyfile="certs/localhost-key.pem",
                 ssl_certfile="certs/localhost.pem",
                 access_log=False,
+                proxy_headers=True,
+                forwarded_allow_ips="*",
             )
 
     else:
@@ -984,4 +986,6 @@ def start_server(
                 reload=reload or settings.uvicorn_reload,
                 timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
                 access_log=False,
+                proxy_headers=True,
+                forwarded_allow_ips="*",
             )
