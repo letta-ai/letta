@@ -28,6 +28,18 @@ jobs:
       id: extract_version
       run: echo "CURRENT_VERSION=$(awk -F '\"' '/version =/ { print $2 }' pyproject.toml | head -n 1)" >> $GITHUB_ENV
 
+    - name: Build release image for security smoke test
+      uses: docker/build-push-action@v6
+      with:
+        load: true
+        tags: letta-eol-test:${{ github.sha }}
+        build-args: |
+          LETTA_VERSION=${{ env.CURRENT_VERSION }}
+          LETTA_DOCKER_EOL=true
+
+    - name: Verify secure EOL defaults
+      run: ./scripts/test_docker_security.sh letta-eol-test:${{ github.sha }}
+
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
@@ -36,5 +48,9 @@ jobs:
         tags: |
           letta/letta:${{ env.CURRENT_VERSION }}
           letta/letta:latest
+          letta/letta:nightly
           memgpt/letta:${{ env.CURRENT_VERSION }}
           memgpt/letta:latest
+        build-args: |
+          LETTA_VERSION=${{ env.CURRENT_VERSION }}
+          LETTA_DOCKER_EOL=true

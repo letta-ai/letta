@@ -8,6 +8,9 @@ Build AI with advanced memory that can learn and self-improve over time.
 > [!NOTE]
 > This repository contains the legacy Letta server (the API server behind the Letta V1 API and SDKs). Active development has moved to the [Letta Agent repo](https://github.com/letta-ai/letta-code), and self-hosting an API server is now done via the [App Server](https://docs.letta.com/letta-agent/app-server). See [AGENTS.md](AGENTS.md) for details.
 
+> [!WARNING]
+> The `letta/letta` Docker distribution is end-of-life and unsupported. Version 0.16.9 is its final maintenance release and enables password authentication by default. Migrate to the [Letta App Server](https://docs.letta.com/letta-agent/app-server).
+
 ## Get started in the CLI
 
 Requires [Node.js 22.19+](https://nodejs.org/en/download)
