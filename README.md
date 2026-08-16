@@ -1,19 +1,42 @@
-# Letta legacy server (archived)
+# Letta
 
-> [!WARNING]
-> This repository is archived. The legacy Letta V1 server is unsupported, receives no fixes or security updates, and should not be used in production.
+Build stateful agents with memory that can learn and improve over time.
 
-The former server source has been removed from `main` so that new checkouts do not mistake it for the current Letta server. Its final state is preserved on the [`archive`](https://github.com/letta-ai/letta/tree/archive) branch for historical reference only.
+Letta is actively developed. The current source code lives in [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code), which includes the agent harness, interactive terminal UI, App Server, channels, and the runtime used by the desktop and web apps.
 
-## Current Letta development
+> [!NOTE]
+> This repository now serves as a landing page for the Letta project. The retired Letta V1 server source is preserved on the [`archive`](https://github.com/letta-ai/letta/tree/archive) branch for historical reference.
 
-The current Letta agent harness, CLI, and App Server are developed in [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code).
+## Get started
 
-- [Install and use Letta Code](https://docs.letta.com/letta-code/cli)
-- [Run the current App Server](https://docs.letta.com/letta-code/app-server)
-- [Report current bugs or request features](https://github.com/letta-ai/letta-code/issues)
-- [Read the current documentation](https://docs.letta.com)
+Install Letta from npm:
+
+```bash
+npm install -g @letta-ai/letta-code
+```
+
+Launch the interactive terminal UI:
+
+```bash
+letta
+```
+
+Run the App Server for local or self-hosted agents:
+
+```bash
+letta server
+```
+
+You can also use Letta through:
+
+- the [desktop app](https://docs.letta.com/letta-code/desktop-app) for macOS, Windows, and Linux
+- [chat.letta.com](https://chat.letta.com) in your browser, including on mobile
+- [Slack, Telegram, Discord, and custom channels](https://docs.letta.com/letta-code/channels)
+- the [Letta Agent SDK](https://docs.letta.com/letta-agent-sdk/overview) for building agents into TypeScript applications
+- [Letta Cloud](https://github.com/letta-ai/letta-code#letta-cloud) for keeping agent memory, identity, and conversations available across computers
+
+See the [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code) README and the [Letta documentation](https://docs.letta.com) for current installation, development, and deployment instructions.
 
 ## Historical source
 
-The [`archive`](https://github.com/letta-ai/letta/tree/archive) branch contains the retired Letta V1 API server as it existed when this repository was archived. Existing tags and releases remain available for reproducibility. The archived source is not maintained and is not a supported starting point for new work.
+The [`archive`](https://github.com/letta-ai/letta/tree/archive) branch contains the retired Letta V1 API server as it existed when this repository was archived. Existing tags and releases remain available for reproducibility. That source is unsupported, receives no fixes or security updates, and should not be used in production.
