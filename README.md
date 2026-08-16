@@ -2,7 +2,7 @@
 
 Build stateful agents with memory that can learn and improve over time.
 
-Letta is actively developed. The current source code lives in [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code), which includes the agent harness, interactive terminal UI, App Server, channels, and the runtime used by the desktop and web apps.
+Letta (f.k.a. MemGPT) is actively developed. The current source code lives in [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code), which includes the agent harness, interactive terminal UI, App Server, channels, and the runtime used by the desktop and web apps.
 
 > [!NOTE]
 > This repository now serves as a landing page for the Letta project. The retired Letta V1 server source is preserved on the [`archive`](https://github.com/letta-ai/letta/tree/archive) branch for historical reference.
