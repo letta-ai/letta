@@ -1,6 +1,0 @@
-{
-  "embedding_endpoint_type": "azure",
-  "embedding_model": "text-embedding-3-small",
-  "embedding_dim": 768,
-  "embedding_chunk_size": 300
-}

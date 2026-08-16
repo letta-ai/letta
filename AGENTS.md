@@ -1,21 +1,19 @@
-# AGENTS.md
+# Agent instructions
 
-## This repository is deprecated
+## Stop: this repository is archived
 
-This repository contains the **legacy Letta server**: the self-hosted API server (`letta/letta` image) that powers the Letta V1 API and V1 SDKs (`@letta-ai/letta-client` for TypeScript, `letta-client` for Python). It is in maintenance mode and is no longer where active development happens.
+`main` is intentionally a small archival stub. It does not contain the current Letta server and must not be expanded back into a working codebase.
 
-If you are an agent working here, you most likely want one of these instead:
+The retired Letta V1 server source is preserved on the [`archive`](https://github.com/letta-ai/letta/tree/archive) branch for historical reference only. That code is unsupported, receives no fixes or security updates, and must not be used for production or as evidence of how current Letta works.
 
-| You want to... | Go to |
-| --- | --- |
-| Use or modify the current Letta agent (harness, CLI, channel integrations, etc.) | [letta-ai/letta-code](https://github.com/letta-ai/letta-code) |
-| Build agents into an application programmatically | [Letta Agent SDK](https://docs.letta.com/letta-agent-sdk/overview) (`@letta-ai/letta-agent-sdk`) |
-| Self-host a server for Letta agents | [App Server](https://docs.letta.com/letta-agent/app-server), which replaces the API server in this repo |
-| Reference the legacy V1 SDK / API | [V1 SDK docs](https://docs.letta.com/guides/get-started/intro) |
+## Where current work belongs
 
-## Notes for agents working in this repo
+The current Letta agent harness, CLI, and App Server live in [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code). In Letta development environments, that repository is commonly checked out at:
 
-- New features and integrations should target [letta-ai/letta-code](https://github.com/letta-ai/letta-code) and the [Letta Agent SDK](https://docs.letta.com/letta-agent-sdk/overview), not this codebase.
-- All contributions (issues, PRs, discussions) must comply with the [AI usage policy](AI_POLICY.md): AI assistance must be disclosed, and a human must fully understand and review everything submitted.
-- Do not use issues, pull requests, or discussions to advertise a product or service, generate leads, promote referral or affiliate links, or send other unsolicited commercial pitches. Self-promotional spam will be reported to GitHub, and the account will be blocked from this repository.
-- If a legitimate issue mentions a third-party product or service, disclose your relationship to it, including whether you are its creator, employee, contractor, investor, affiliate, sponsor, or paid promoter. Hiding or misrepresenting that relationship will be treated as spam.
+```text
+~/dev/letta-code
+```
+
+If asked to implement, fix, test, or investigate current Letta behavior, work in `letta-ai/letta-code`, not this repository.
+
+Only inspect the `archive` branch when a user explicitly asks about the retired V1 server. Do not open issues or pull requests here for current Letta development.

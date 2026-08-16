@@ -1,9 +1,0 @@
-{
-  "handle": "azure/gpt-4o-mini",
-  "model_settings": {
-    "provider_type": "azure",
-    "temperature": 1.0,
-    "max_output_tokens": 4096,
-    "parallel_tool_calls": false
-  }
-}
