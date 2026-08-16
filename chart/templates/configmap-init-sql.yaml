@@ -1,0 +1,12 @@
+{{- if .Values.database.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "letta.fullname" . }}-init-sql
+  labels:
+    {{- include "letta.db.labels" . | nindent 4 }}
+data:
+  init.sql: |
+{{ .Files.Get "files/init.sql" | indent 4 }}
+{{- end }}
+

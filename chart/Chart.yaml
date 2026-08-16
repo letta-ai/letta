@@ -1,0 +1,15 @@
+apiVersion: v2
+name: letta
+description: A Helm chart for Letta AI - Platform for building stateful agents
+type: application
+version: 0.1.0
+appVersion: "0.15.1"
+keywords:
+  - letta
+  - ai
+  - agents
+  - llm
+maintainers:
+  - name: Letta Team
+    email: contact@letta.com
+
