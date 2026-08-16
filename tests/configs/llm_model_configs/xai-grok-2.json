@@ -1,6 +1,0 @@
-{
-  "context_window": 131072,
-  "model": "grok-2-1212",
-  "model_endpoint_type": "xai",
-  "model_endpoint": "https://api.x.ai/v1"
-}

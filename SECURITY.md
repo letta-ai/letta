@@ -1,14 +1,9 @@
 # Security Policy
 
-## Reporting a Vulnerability
+## Archived source
 
-Please email support@letta.com with a description of the vulnerability, steps to reproduce, and any relevant details.
+The legacy Letta V1 server preserved on the [`archive`](https://github.com/letta-ai/letta/tree/archive) branch is unsupported and receives no security updates. It should not be used in production.
 
-Do **not** open a public issue for security vulnerabilities.
+## Reporting a vulnerability in current Letta products
 
-We will acknowledge receipt within 48 hours and aim to provide
-a fix or mitigation timeline within 7 days.
-
-## Supported Versions
-  
-Security fixes are applied to the latest release only.
+Please email support@letta.com with a description of the vulnerability, steps to reproduce, and any relevant details. Do not open a public issue for security vulnerabilities.

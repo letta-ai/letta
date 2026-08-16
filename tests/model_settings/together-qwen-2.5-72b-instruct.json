@@ -1,9 +1,0 @@
-{
-  "handle": "together/Qwen/Qwen2.5-72B-Instruct-Turbo",
-  "model_settings": {
-    "provider_type": "together",
-    "temperature": 1.0,
-    "max_output_tokens": 4096,
-    "parallel_tool_calls": false
-  }
-}

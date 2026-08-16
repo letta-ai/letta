@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Letta Code Issues
+  - name: Letta Code issues
     url: https://github.com/letta-ai/letta-code/issues
-    about: For bugs and feature requests related to Letta Code (the CLI tool).
-  - name: Discord
-    url: https://discord.gg/9GEQrxmVyE
-    about: Chat with the Letta community and get help.
-  - name: Documentation
+    about: Report bugs and request features for the current Letta agent harness, CLI, and App Server.
+  - name: Letta documentation
     url: https://docs.letta.com
-    about: Check the docs before filing an issue.
+    about: Read the current documentation.
+  - name: Letta Discord
+    url: https://discord.gg/letta
+    about: Ask questions and chat with the Letta community.
