@@ -1,0 +1,13 @@
+# Trusted Contributors
+#
+# Users listed here bypass issue validation checks (AI disclosure,
+# human verification phrase). One GitHub username per line.
+#
+# Note: Members of the letta-ai GitHub organization are automatically
+# trusted and do not need to be listed here. This file is for
+# non-org contributors who have earned trust.
+#
+# To add someone, open a PR adding their username to this list.
+
+# Letta community contributors
+ezra-letta
