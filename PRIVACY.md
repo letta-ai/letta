@@ -185,7 +185,7 @@ If your appeal is denied, in some US states (Colorado, Connecticut, and Virginia
 
 ### How to Reach Us
 
-If you have a question about this Privacy Policy, please contact us through our via [email](mailto:contact@charlespacker.com).
+If you have a question about this Privacy Policy, please contact us at [support@letta.com](mailto:support@letta.com).
 
 ### Other Things You Should Know (Keep Reading!)
 
