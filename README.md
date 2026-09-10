@@ -32,7 +32,7 @@ You can also use Letta through:
 - the [Letta Agent SDK](https://docs.letta.com/letta-agent-sdk/overview) for building agents into TypeScript applications
 - [Letta Cloud](https://github.com/letta-ai/letta-code#letta-cloud) for keeping agent memory, identity, and conversations available across computers
 
-See the [`letta-ai/letta-code`](https://github.com/letta-ai/letta-code) README and the [Letta documentation](https://docs.letta.com) for current installation, development, and deployment instructions.
+See the [Letta documentation](https://docs.letta.com) for current installation, development, and deployment instructions.
 
 ## Historical source
 
